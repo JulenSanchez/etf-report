@@ -231,8 +231,195 @@
             padding: 20px;
             margin-bottom: 15px;
             border-left: 4px solid #f59e0b;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 15px;
         }
-        .report-card p { color: #d1d5db; line-height: 1.8; }
+        .report-card p { color: #d1d5db; line-height: 1.8; flex: 1; margin: 0; }
+        .report-card a {
+            color: inherit;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        .report-card a:hover {
+            color: #3b82f6;
+            text-decoration: underline;
+        }
+        .report-date {
+            font-size: 0.85rem;
+            color: #6b7280;
+            white-space: nowrap;
+            padding-top: 2px;
+        }
+        
+        /* 宏观新闻信源标签样式 */
+        .source-tag {
+            display: inline-block;
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: 6px;
+            font-weight: 500;
+            vertical-align: middle;
+        }
+        /* 财新 - 深蓝色 */
+        .source-caixin {
+            background-color: #1e40af;
+            color: #ffffff;
+        }
+        /* 财联社 - 红色 */
+        .source-cls {
+            background-color: #dc2626;
+            color: #ffffff;
+        }
+        /* 新华财经 - 红黄渐变 */
+        .source-xinhua {
+            background-color: #c2410c;
+            color: #ffffff;
+        }
+        /* 央视新闻 - 深红色 */
+        .source-cctv {
+            background-color: #991b1b;
+            color: #ffffff;
+        }
+        /* 证券时报 - 蓝色 */
+        .source-stcn {
+            background-color: #2563eb;
+            color: #ffffff;
+        }
+        /* 上证报 - 深蓝 */
+        .source-cnstock {
+            background-color: #1d4ed8;
+            color: #ffffff;
+        }
+        /* 中证报 - 蓝绿 */
+        .source-cs {
+            background-color: #0891b2;
+            color: #ffffff;
+        }
+        /* 21世纪经济报道 - 橙色 */
+        .source-21jingji {
+            background-color: #ea580c;
+            color: #ffffff;
+        }
+        /* 彭博 - 黑色 */
+        .source-bloomberg {
+            background-color: #1f2937;
+            color: #ffffff;
+        }
+        /* 路透 - 橙色 */
+        .source-reuters {
+            background-color: #f97316;
+            color: #ffffff;
+        }
+        /* Jefferies - 绿色 */
+        .source-jefferies {
+            background-color: #059669;
+            color: #ffffff;
+        }
+        /* 快讯 - 灰色 */
+        .source-flash {
+            background-color: #6b7280;
+            color: #ffffff;
+        }
+        /* 同花顺 - 橙红色 */
+        .source-ths {
+            background-color: #ea580c;
+            color: #ffffff;
+        }
+        /* 富途 - 深绿色 */
+        .source-futu {
+            background-color: #15803d;
+            color: #ffffff;
+        }
+        /* 默认 - 灰色 */
+        .source-default {
+            background-color: #9ca3af;
+            color: #ffffff;
+        }
+        
+        /* 新闻分页样式 */
+        /* 新闻容器固定最小高度，避免翻页时跳动过大 */
+        .news-container {
+            min-height: 420px;  /* 预留 6条新闻 × 每条约2行(~70px) 的高度 */
+            position: relative;
+        }
+        .news-page {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 15px 0;
+        }
+        .news-page li {
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            line-height: 1.8;
+        }
+        .news-page li:last-child {
+            border-bottom: none;
+        }
+        .news-pagination {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .page-num {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #a0aec0;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        .page-num:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+        }
+        .page-num.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #ffffff;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+        }
+        
+        /* 简介和持仓并排布局 */
+        .info-holdings-row {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .info-holdings-row > .panel-section {
+            flex: 1;
+            margin-bottom: 0;
+            min-width: 0;
+        }
+        .info-holdings-row .fund-info {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+        .info-holdings-row .info-item {
+            padding: 15px;
+        }
+        .info-holdings-row .performance-table th,
+        .info-holdings-row .performance-table td {
+            padding: 10px 8px;
+            font-size: 0.9rem;
+        }
+        @media (max-width: 1200px) {
+            .info-holdings-row {
+                flex-direction: column;
+            }
+        }
+
         .rating-section {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -437,10 +624,10 @@
             <div class="header-content">
                 <h1 class="report-title">A股ETF综合投资分析报告</h1>
                 <div class="meta-info">
-                    <div class="meta-item"><span>📅</span><span>报告日期: <strong style="color: #3b82f6;">2026年03月19日</strong></span></div>
+                    <div class="meta-item"><span>📅</span><span>报告日期: <strong style="color: #3b82f6;">2026年03月20日</strong></span></div>
                     <div class="meta-item"><span>📊</span><span>分析标的: <strong style="color: #10b981;">6支行业ETF</strong></span></div>
                     <div class="meta-item"><span>🎯</span><span>分析维度: 技术面 + 基本面 + 宏观环境</span></div>
-                    <div class="meta-item"><span>⏰</span><span>数据截止: 2026-03-19</span></div>
+                    <div class="meta-item"><span>⏰</span><span>数据截止: 2026-03-20</span></div>
                 </div>
             </div>
         </header>
@@ -760,13 +947,14 @@
         </div>
 
         <div id="panel-512400" class="etf-panel">
+            <div class="info-holdings-row">
             <section class="panel-section fade-in">
                 <h2 class="section-title">📋 南方中证申万有色金属ETF（512400）</h2>
                 <div class="fund-info">
                     <div class="info-item"><div class="info-label">基金代码</div><div class="info-value">512400</div></div>
                     <div class="info-item"><div class="info-label">基金规模</div><div class="info-value">205.91亿元</div></div>
                     <div class="info-item"><div class="info-label">最新净值</div><div class="info-value">2.1947元</div></div>
-                    <div class="info-item"><div class="info-label">日涨跌幅</div><div class="info-value" style="color: #ef4444;">-6.31%</div></div>
+                    <div class="info-item"><div class="info-label">日涨跌幅</div><div class="info-value" style="color: #ef4444;">-1.39%</div></div>
                     <div class="info-item"><div class="info-label">业绩基准</div><div class="info-value">沪深300指数</div></div>
                     <div class="info-item"><div class="info-label">基金类型</div><div class="info-value">有色金属</div></div>
                 </div>
@@ -775,53 +963,6 @@
                     <tr><th>近1月</th><th>近3月</th><th>近6月</th><th>近1年</th></tr>
                     <tr><td class="positive">+0.23%</td><td class="positive">+23.77%</td><td class="positive">+41.95%</td><td class="positive">+102.81%</td></tr>
                 </table>
-            </section>
-
-            <section class="panel-section fade-in">
-                <h2 class="section-title">📊 技术面分析</h2>
-                <div class="kline-section">
-                    <h3>📈 K线走势图</h3>
-                    <div class="kline-row">
-                        <div class="kline-card">
-                            <h4>📅 日K线（近60个交易日）</h4>
-                            <div id="kline-daily-512400" class="kline-container-small"></div>
-                        </div>
-                        <div class="kline-card">
-                            <h4>📆 周K线（近52周）</h4>
-                            <div id="kline-weekly-512400" class="kline-container-small"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="tech-grid">
-                    <div class="tech-card">
-                        <h4>📈 均线趋势（周线）</h4>
-                        <div class="tech-status bullish">震荡上行</div>
-                        <p class="tech-desc">价格趋势整体向上，均线系统呈多头排列。</p>
-                    </div>
-                    <div class="tech-card">
-                        <h4>📉 RSI指标（日线）</h4>
-                        <div class="tech-status bearish">超卖（25-30）</div>
-                        <p class="tech-desc">RSI指标状态分析，判断超买超卖情况。</p>
-                    </div>
-                    <div class="tech-card">
-                        <h4>📊 量价关系</h4>
-                        <div class="tech-status bullish">温和放量</div>
-                        <p class="tech-desc">成交量与价格配合情况分析。</p>
-                    </div>
-                    <div class="tech-card">
-                        <h4>🎯 基准对比</h4>
-                        <div class="tech-status bullish">显著跑赢大盘</div>
-                        <p class="tech-desc">相对基准指数的表现对比。</p>
-                    </div>
-                </div>
-                <div class="rating-section">
-                    <div class="rating-card">
-                        <div class="rating-label">技术面评分</div>
-                        <div class="rating-value high">★★★★☆</div>
-                        <div style="color: #10b981; font-size: 0.9rem;">看好</div>
-                    </div>
-                </div>
             </section>
 
             <section class="panel-section fade-in">
@@ -838,16 +979,16 @@
                             }
                             const chart = echarts.init(chartDom);
                         const data = [
-                            { name: '紫金矿业', value: 10.23, change: '-7.45%', changeColor: '#ef4444' },
-                            { name: '洛阳钼业', value: 8.17, change: '-8.04%', changeColor: '#ef4444' },
-                            { name: '北方稀土', value: 5.46, change: '-4.88%', changeColor: '#ef4444' },
-                            { name: '华友钴业', value: 4.84, change: '-6.81%', changeColor: '#ef4444' },
-                            { name: '中国铝业', value: 4.53, change: '-6.41%', changeColor: '#ef4444' },
-                            { name: '赣锋锂业', value: 3.32, change: '-4.82%', changeColor: '#ef4444' },
-                            { name: '山东黄金', value: 3.27, change: '-7.04%', changeColor: '#ef4444' },
-                            { name: '云铝股份', value: 3.2, change: '-5.95%', changeColor: '#ef4444' },
-                            { name: '中金黄金', value: 3.18, change: '-7.80%', changeColor: '#ef4444' },
-                            { name: '藏格矿业', value: 3.1, change: '-7.10%', changeColor: '#ef4444' },
+                            { name: '紫金矿业', value: 10.23, change: '-2.07%', changeColor: '#ef4444' },
+                            { name: '洛阳钼业', value: 8.17, change: '-1.68%', changeColor: '#ef4444' },
+                            { name: '北方稀土', value: 5.46, change: '-1.33%', changeColor: '#ef4444' },
+                            { name: '华友钴业', value: 4.84, change: '+1.59%', changeColor: '#10b981' },
+                            { name: '中国铝业', value: 4.53, change: '-2.54%', changeColor: '#ef4444' },
+                            { name: '赣锋锂业', value: 3.32, change: '+6.29%', changeColor: '#10b981' },
+                            { name: '山东黄金', value: 3.27, change: '-2.36%', changeColor: '#ef4444' },
+                            { name: '云铝股份', value: 3.2, change: '-2.47%', changeColor: '#ef4444' },
+                            { name: '中金黄金', value: 3.18, change: '-2.32%', changeColor: '#ef4444' },
+                            { name: '藏格矿业', value: 3.1, change: '+0.61%', changeColor: '#10b981' },
                             { name: '其他', value: 50.7, change: '--', changeColor: '#9ca3af' },
                         ];
                         
@@ -945,15 +1086,62 @@
                     })();
                 </script>
             </section>
+            </div>
+
+            <section class="panel-section fade-in">
+                <h2 class="section-title">📊 技术面分析</h2>
+                <div class="kline-section">
+                    <h3>📈 K线走势图</h3>
+                    <div class="kline-row">
+                        <div class="kline-card">
+                            <h4>📅 日K线（近60个交易日）</h4>
+                            <div id="kline-daily-512400" class="kline-container-small"></div>
+                        </div>
+                        <div class="kline-card">
+                            <h4>📆 周K线（近52周）</h4>
+                            <div id="kline-weekly-512400" class="kline-container-small"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tech-grid">
+                    <div class="tech-card">
+                        <h4>📈 均线趋势（周线）</h4>
+                        <div class="tech-status bullish">震荡上行</div>
+                        <p class="tech-desc">价格趋势整体向上，均线系统呈多头排列。</p>
+                    </div>
+                    <div class="tech-card">
+                        <h4>📉 RSI指标（日线）</h4>
+                        <div class="tech-status bearish">超卖（25-30）</div>
+                        <p class="tech-desc">RSI指标状态分析，判断超买超卖情况。</p>
+                    </div>
+                    <div class="tech-card">
+                        <h4>📊 量价关系</h4>
+                        <div class="tech-status bullish">温和放量</div>
+                        <p class="tech-desc">成交量与价格配合情况分析。</p>
+                    </div>
+                    <div class="tech-card">
+                        <h4>🎯 基准对比</h4>
+                        <div class="tech-status bullish">显著跑赢大盘</div>
+                        <p class="tech-desc">相对基准指数的表现对比。</p>
+                    </div>
+                </div>
+                </section>
+
 
             <section class="panel-section fade-in">
                 <h2 class="section-title">📰 行业研究报告</h2>
-                <div class="report-card"><p>💡 地缘冲突升级推动油价高位波动，PPI跳升叠加降息预期降温，有色板块短期承压</p></div><div class="report-card"><p>💡 <span class="highlight-blue">华福证券</span>：洛阳钼业2025年归母净利润预计200亿以上，维持<span class="highlight-green">'买入'</span>评级</p></div><div class="report-card"><p>💡 <span class="highlight-blue">国泰海通证券</span>：洛阳钼业迈向'铜金双轮驱动'国际矿企，给予<span class="highlight-green">'增持'</span>评级</p></div><div class="report-card"><p>💡 贵金属底层货币属性持续夯实，<span class="highlight">中长期配置价值突出</span></p></div>
+                <div class="report-card"><p><a href="https://pdf.dfcfw.com/pdf/H3_AP202601181818068538_1.pdf" target="_blank" title="点击查看研报原文 (PDF)">💡 <span class="highlight-blue">太平洋</span>：矿产金目标超预期，业绩持续高增，评级<span class="highlight-green">'买入'</span></a></p><span class="report-date">2026-01-18</span></div><div class="report-card"><p><a href="https://pdf.dfcfw.com/pdf/H3_AP202510221767005218_1.pdf" target="_blank" title="点击查看研报原文 (PDF)">💡 <span class="highlight-blue">国信证券</span>：三季报点评：三季度业绩表现亮眼，紫金黄金国际上市后有望带来估值提升，评级<span class="highlight-green">'增持'</span></a></p><span class="report-date">2025-10-22</span></div><div class="report-card"><p><a href="https://pdf.dfcfw.com/pdf/H3_AP202510221766962996_1.pdf" target="_blank" title="点击查看研报原文 (PDF)">💡 <span class="highlight-blue">华鑫证券</span>：公司事件点评报告：金铜销售价格不同程度上涨，助力业绩高增长，评级<span class="highlight-green">'买入'</span></a></p><span class="report-date">2025-10-22</span></div><div class="report-card"><p><a href="https://pdf.dfcfw.com/pdf/H3_AP202510311772625013_1.pdf" target="_blank" title="点击查看研报原文 (PDF)">💡 <span class="highlight-blue">中邮证券</span>：业绩再创新高，静待KFM二期落地，评级<span class="highlight-green">'买入'</span></a></p><span class="report-date">2025-10-31</span></div>
                 <div class="rating-section">
                     <div class="rating-card">
                         <div class="rating-label">基本面评分</div>
                         <div class="rating-value high">★★★★★</div>
                         <div style="font-size: 0.9rem;">强烈看好</div>
+                    </div>
+                    <div class="rating-card">
+                        <div class="rating-label">技术面评分</div>
+                        <div class="rating-value high">★★★★☆</div>
+                        <div style="color: #10b981; font-size: 0.9rem;">看好</div>
                     </div>
                     <div class="rating-card">
                         <div class="rating-label">综合建议</div>
@@ -965,13 +1153,14 @@
         </div>
 
         <div id="panel-513120" class="etf-panel">
+            <div class="info-holdings-row">
             <section class="panel-section fade-in">
                 <h2 class="section-title">📋 广发中证香港创新药ETF(QDII)（513120）</h2>
                 <div class="fund-info">
                     <div class="info-item"><div class="info-label">基金代码</div><div class="info-value">513120</div></div>
                     <div class="info-item"><div class="info-label">基金规模</div><div class="info-value">234.03亿元</div></div>
                     <div class="info-item"><div class="info-label">最新净值</div><div class="info-value">1.1592元</div></div>
-                    <div class="info-item"><div class="info-label">日涨跌幅</div><div class="info-value" style="color: #ef4444;">-2.64%</div></div>
+                    <div class="info-item"><div class="info-label">日涨跌幅</div><div class="info-value" style="color: #ef4444;">-1.95%</div></div>
                     <div class="info-item"><div class="info-label">业绩基准</div><div class="info-value">恒生医疗保健指数</div></div>
                     <div class="info-item"><div class="info-label">基金类型</div><div class="info-value">港股创新药</div></div>
                 </div>
@@ -980,53 +1169,6 @@
                     <tr><th>近1月</th><th>近3月</th><th>近6月</th><th>近1年</th></tr>
                     <tr><td class="negative">-10.73%</td><td class="negative">-11.48%</td><td class="negative">-24.19%</td><td class="positive">+38.76%</td></tr>
                 </table>
-            </section>
-
-            <section class="panel-section fade-in">
-                <h2 class="section-title">📊 技术面分析</h2>
-                <div class="kline-section">
-                    <h3>📈 K线走势图</h3>
-                    <div class="kline-row">
-                        <div class="kline-card">
-                            <h4>📅 日K线（近60个交易日）</h4>
-                            <div id="kline-daily-513120" class="kline-container-small"></div>
-                        </div>
-                        <div class="kline-card">
-                            <h4>📆 周K线（近52周）</h4>
-                            <div id="kline-weekly-513120" class="kline-container-small"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="tech-grid">
-                    <div class="tech-card">
-                        <h4>📈 均线趋势（周线）</h4>
-                        <div class="tech-status bearish">弱势下跌</div>
-                        <p class="tech-desc">价格趋势整体向上，均线系统呈多头排列。</p>
-                    </div>
-                    <div class="tech-card">
-                        <h4>📉 RSI指标（日线）</h4>
-                        <div class="tech-status bearish">超卖（25-30）</div>
-                        <p class="tech-desc">RSI指标状态分析，判断超买超卖情况。</p>
-                    </div>
-                    <div class="tech-card">
-                        <h4>📊 量价关系</h4>
-                        <div class="tech-status bearish">放量下跌</div>
-                        <p class="tech-desc">成交量与价格配合情况分析。</p>
-                    </div>
-                    <div class="tech-card">
-                        <h4>🎯 基准对比</h4>
-                        <div class="tech-status bullish">跑赢大盘</div>
-                        <p class="tech-desc">相对基准指数的表现对比。</p>
-                    </div>
-                </div>
-                <div class="rating-section">
-                    <div class="rating-card">
-                        <div class="rating-label">技术面评分</div>
-                        <div class="rating-value medium">★★★☆☆</div>
-                        <div style="color: #10b981; font-size: 0.9rem;">中性</div>
-                    </div>
-                </div>
             </section>
 
             <section class="panel-section fade-in">
@@ -1043,16 +1185,16 @@
                             }
                             const chart = echarts.init(chartDom);
                             const data = [
-                            { name: '百济神州', value: 9.97, change: '-3.14%', changeColor: '#ef4444' },
-                            { name: '信达生物', value: 9.61, change: '-3.77%', changeColor: '#ef4444' },
-                            { name: '康方生物', value: 8.4, change: '-2.58%', changeColor: '#ef4444' },
-                            { name: '药明生物', value: 8.22, change: '-3.83%', changeColor: '#ef4444' },
-                            { name: '中国生物制药', value: 7.04, change: '-2.88%', changeColor: '#ef4444' },
-                            { name: '石药集团', value: 6.87, change: '-1.85%', changeColor: '#ef4444' },
-                            { name: '翰森制药', value: 6.55, change: '-1.27%', changeColor: '#ef4444' },
-                            { name: '药明康德', value: 5.09, change: '-2.18%', changeColor: '#ef4444' },
-                            { name: '三生制药', value: 4.94, change: '-2.99%', changeColor: '#ef4444' },
-                            { name: '晶泰控股', value: 3.23, change: '-5.05%', changeColor: '#ef4444' },
+                            { name: '百济神州', value: 9.97, change: '-0.18%', changeColor: '#ef4444' },
+                            { name: '信达生物', value: 9.61, change: '-1.22%', changeColor: '#ef4444' },
+                            { name: '康方生物', value: 8.4, change: '-1.71%', changeColor: '#ef4444' },
+                            { name: '药明生物', value: 8.22, change: '-0.82%', changeColor: '#ef4444' },
+                            { name: '中国生物制药', value: 7.04, change: '-0.83%', changeColor: '#ef4444' },
+                            { name: '石药集团', value: 6.87, change: '-2.88%', changeColor: '#ef4444' },
+                            { name: '翰森制药', value: 6.55, change: '-1.35%', changeColor: '#ef4444' },
+                            { name: '药明康德', value: 5.09, change: '-1.21%', changeColor: '#ef4444' },
+                            { name: '三生制药', value: 4.94, change: '-3.08%', changeColor: '#ef4444' },
+                            { name: '晶泰控股', value: 3.23, change: '-0.42%', changeColor: '#ef4444' },
                             { name: '其他', value: 30.08, change: '--', changeColor: '#9ca3af' },
                         ];
                         
@@ -1150,15 +1292,62 @@
                     })();
                 </script>
             </section>
+            </div>
+
+            <section class="panel-section fade-in">
+                <h2 class="section-title">📊 技术面分析</h2>
+                <div class="kline-section">
+                    <h3>📈 K线走势图</h3>
+                    <div class="kline-row">
+                        <div class="kline-card">
+                            <h4>📅 日K线（近60个交易日）</h4>
+                            <div id="kline-daily-513120" class="kline-container-small"></div>
+                        </div>
+                        <div class="kline-card">
+                            <h4>📆 周K线（近52周）</h4>
+                            <div id="kline-weekly-513120" class="kline-container-small"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tech-grid">
+                    <div class="tech-card">
+                        <h4>📈 均线趋势（周线）</h4>
+                        <div class="tech-status bearish">弱势下跌</div>
+                        <p class="tech-desc">价格趋势整体向上，均线系统呈多头排列。</p>
+                    </div>
+                    <div class="tech-card">
+                        <h4>📉 RSI指标（日线）</h4>
+                        <div class="tech-status bearish">超卖（25-30）</div>
+                        <p class="tech-desc">RSI指标状态分析，判断超买超卖情况。</p>
+                    </div>
+                    <div class="tech-card">
+                        <h4>📊 量价关系</h4>
+                        <div class="tech-status bearish">放量下跌</div>
+                        <p class="tech-desc">成交量与价格配合情况分析。</p>
+                    </div>
+                    <div class="tech-card">
+                        <h4>🎯 基准对比</h4>
+                        <div class="tech-status bullish">跑赢大盘</div>
+                        <p class="tech-desc">相对基准指数的表现对比。</p>
+                    </div>
+                </div>
+                </section>
+
 
             <section class="panel-section fade-in">
                 <h2 class="section-title">📰 行业研究报告</h2>
-                <div class="report-card"><p>💡 <span class="highlight-green">百济神州</span>2025年首次实现年度盈利，GAAP净利润2.87亿美元</p></div><div class="report-card"><p>💡 港股创新药ETF估值处于<span class="highlight">历史低位</span>，市盈率仅30.23倍</p></div><div class="report-card"><p>💡 创新药进展密集：国内脑机接口迎里程碑，抗阿尔茨海默病研究启动</p></div><div class="report-card"><p>💡 地缘政治扰动下，创新药板块<span class="highlight">估值优势显现</span></p></div>
+                <div class="report-card"><p><a href="https://pdf.dfcfw.com/pdf/H3_AP202603091820412129_1.pdf" target="_blank" title="点击查看研报原文 (PDF)">💡 <span class="highlight-blue">浦银国际证券</span>：四季度收入符合预期，2026年催化剂丰富，评级<span class="highlight-green">'买入'</span></a></p><span class="report-date">2026-03-09</span></div><div class="report-card"><p><a href="https://pdf.dfcfw.com/pdf/H3_AP202511211785558432_1.pdf" target="_blank" title="点击查看研报原文 (PDF)">💡 <span class="highlight-blue">中邮证券</span>：盈利稳步提升，全年收入指引下限上调，评级<span class="highlight-green">'买入'</span></a></p><span class="report-date">2025-11-21</span></div><div class="report-card"><p><a href="https://pdf.dfcfw.com/pdf/H3_AP202511131780332591_1.pdf" target="_blank" title="点击查看研报原文 (PDF)">💡 <span class="highlight-blue">东吴证券</span>：2025年三季报点评：盈利大幅跃升，泽布替尼引领增长，评级<span class="highlight-green">'买入'</span></a></p><span class="report-date">2025-11-13</span></div><div class="report-card"><p><a href="https://pdf.dfcfw.com/pdf/H3_AP202601291818537917_1.pdf" target="_blank" title="点击查看研报原文 (PDF)">💡 <span class="highlight-blue">开源证券</span>：公司首次覆盖报告：小分子CDMO龙头，多肽与小核酸共筑新增长极，评级<span class="highlight-green">'买入'</span></a></p><span class="report-date">2026-01-29</span></div>
                 <div class="rating-section">
                     <div class="rating-card">
                         <div class="rating-label">基本面评分</div>
                         <div class="rating-value medium">★★★★☆</div>
                         <div style="font-size: 0.9rem;">看好</div>
+                    </div>
+                    <div class="rating-card">
+                        <div class="rating-label">技术面评分</div>
+                        <div class="rating-value medium">★★★☆☆</div>
+                        <div style="color: #10b981; font-size: 0.9rem;">中性</div>
                     </div>
                     <div class="rating-card">
                         <div class="rating-label">综合建议</div>
@@ -1170,13 +1359,14 @@
         </div>
 
         <div id="panel-512070" class="etf-panel">
+            <div class="info-holdings-row">
             <section class="panel-section fade-in">
                 <h2 class="section-title">📋 易方达沪深300非银ETF（512070）</h2>
                 <div class="fund-info">
                     <div class="info-item"><div class="info-label">基金代码</div><div class="info-value">512070</div></div>
                     <div class="info-item"><div class="info-label">基金规模</div><div class="info-value">176.13亿元</div></div>
                     <div class="info-item"><div class="info-label">最新净值</div><div class="info-value">0.8360元</div></div>
-                    <div class="info-item"><div class="info-label">日涨跌幅</div><div class="info-value" style="color: #ef4444;">-1.77%</div></div>
+                    <div class="info-item"><div class="info-label">日涨跌幅</div><div class="info-value" style="color: #ef4444;">-1.68%</div></div>
                     <div class="info-item"><div class="info-label">业绩基准</div><div class="info-value">沪深300指数</div></div>
                     <div class="info-item"><div class="info-label">基金类型</div><div class="info-value">证券保险</div></div>
                 </div>
@@ -1185,53 +1375,6 @@
                     <tr><th>近1月</th><th>近3月</th><th>近6月</th><th>近1年</th></tr>
                     <tr><td class="negative">-6.46%</td><td class="negative">-6.34%</td><td class="negative">-5.47%</td><td class="positive">+8.33%</td></tr>
                 </table>
-            </section>
-
-            <section class="panel-section fade-in">
-                <h2 class="section-title">📊 技术面分析</h2>
-                <div class="kline-section">
-                    <h3>📈 K线走势图</h3>
-                    <div class="kline-row">
-                        <div class="kline-card">
-                            <h4>📅 日K线（近60个交易日）</h4>
-                            <div id="kline-daily-512070" class="kline-container-small"></div>
-                        </div>
-                        <div class="kline-card">
-                            <h4>📆 周K线（近52周）</h4>
-                            <div id="kline-weekly-512070" class="kline-container-small"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="tech-grid">
-                    <div class="tech-card">
-                        <h4>📈 均线趋势（周线）</h4>
-                        <div class="tech-status neutral">震荡整理</div>
-                        <p class="tech-desc">价格趋势整体向上，均线系统呈多头排列。</p>
-                    </div>
-                    <div class="tech-card">
-                        <h4>📉 RSI指标（日线）</h4>
-                        <div class="tech-status neutral">正常区间（40-60）</div>
-                        <p class="tech-desc">RSI指标状态分析，判断超买超卖情况。</p>
-                    </div>
-                    <div class="tech-card">
-                        <h4>📊 量价关系</h4>
-                        <div class="tech-status bearish">放量下跌</div>
-                        <p class="tech-desc">成交量与价格配合情况分析。</p>
-                    </div>
-                    <div class="tech-card">
-                        <h4>🎯 基准对比</h4>
-                        <div class="tech-status neutral">与大盘持平</div>
-                        <p class="tech-desc">相对基准指数的表现对比。</p>
-                    </div>
-                </div>
-                <div class="rating-section">
-                    <div class="rating-card">
-                        <div class="rating-label">技术面评分</div>
-                        <div class="rating-value medium">★★★☆☆</div>
-                        <div style="color: #10b981; font-size: 0.9rem;">中性</div>
-                    </div>
-                </div>
             </section>
 
             <section class="panel-section fade-in">
@@ -1248,16 +1391,16 @@
                             }
                             const chart = echarts.init(chartDom);
                             const data = [
-                            { name: '中国平安', value: 27.71, change: '-2.05%', changeColor: '#ef4444' },
-                            { name: '东方财富', value: 11.15, change: '-0.84%', changeColor: '#ef4444' },
-                            { name: '中信证券', value: 10.65, change: '-1.39%', changeColor: '#ef4444' },
-                            { name: '国泰海通', value: 8.82, change: '-2.02%', changeColor: '#ef4444' },
-                            { name: '中国太保', value: 5.45, change: '-2.48%', changeColor: '#ef4444' },
-                            { name: '华泰证券', value: 5.24, change: '-2.69%', changeColor: '#ef4444' },
-                            { name: '中国人寿', value: 2.88, change: '-1.60%', changeColor: '#ef4444' },
-                            { name: '广发证券', value: 2.47, change: '-1.85%', changeColor: '#ef4444' },
-                            { name: '招商证券', value: 2.35, change: '-0.81%', changeColor: '#ef4444' },
-                            { name: '新华保险', value: 2.21, change: '-3.08%', changeColor: '#ef4444' },
+                            { name: '中国平安', value: 27.71, change: '-1.45%', changeColor: '#ef4444' },
+                            { name: '东方财富', value: 11.15, change: '-5.25%', changeColor: '#ef4444' },
+                            { name: '中信证券', value: 10.65, change: '-1.21%', changeColor: '#ef4444' },
+                            { name: '国泰海通', value: 8.82, change: '+0.23%', changeColor: '#10b981' },
+                            { name: '中国太保', value: 5.45, change: '-1.51%', changeColor: '#ef4444' },
+                            { name: '华泰证券', value: 5.24, change: '-0.89%', changeColor: '#ef4444' },
+                            { name: '中国人寿', value: 2.88, change: '-1.58%', changeColor: '#ef4444' },
+                            { name: '广发证券', value: 2.47, change: '-0.26%', changeColor: '#ef4444' },
+                            { name: '招商证券', value: 2.35, change: '-1.32%', changeColor: '#ef4444' },
+                            { name: '新华保险', value: 2.21, change: '-2.16%', changeColor: '#ef4444' },
                             { name: '其他', value: 21.07, change: '--', changeColor: '#9ca3af' },
                         ];
                         
@@ -1355,15 +1498,62 @@
                     })();
                 </script>
             </section>
+            </div>
+
+            <section class="panel-section fade-in">
+                <h2 class="section-title">📊 技术面分析</h2>
+                <div class="kline-section">
+                    <h3>📈 K线走势图</h3>
+                    <div class="kline-row">
+                        <div class="kline-card">
+                            <h4>📅 日K线（近60个交易日）</h4>
+                            <div id="kline-daily-512070" class="kline-container-small"></div>
+                        </div>
+                        <div class="kline-card">
+                            <h4>📆 周K线（近52周）</h4>
+                            <div id="kline-weekly-512070" class="kline-container-small"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tech-grid">
+                    <div class="tech-card">
+                        <h4>📈 均线趋势（周线）</h4>
+                        <div class="tech-status neutral">震荡整理</div>
+                        <p class="tech-desc">价格趋势整体向上，均线系统呈多头排列。</p>
+                    </div>
+                    <div class="tech-card">
+                        <h4>📉 RSI指标（日线）</h4>
+                        <div class="tech-status neutral">正常区间（40-60）</div>
+                        <p class="tech-desc">RSI指标状态分析，判断超买超卖情况。</p>
+                    </div>
+                    <div class="tech-card">
+                        <h4>📊 量价关系</h4>
+                        <div class="tech-status bearish">放量下跌</div>
+                        <p class="tech-desc">成交量与价格配合情况分析。</p>
+                    </div>
+                    <div class="tech-card">
+                        <h4>🎯 基准对比</h4>
+                        <div class="tech-status neutral">与大盘持平</div>
+                        <p class="tech-desc">相对基准指数的表现对比。</p>
+                    </div>
+                </div>
+                </section>
+
 
             <section class="panel-section fade-in">
                 <h2 class="section-title">📰 行业研究报告</h2>
-                <div class="report-card"><p>💡 券商普遍认为2026年市场将从<span class="highlight">流动性驱动转向盈利驱动</span></p></div><div class="report-card"><p>💡 <span class="highlight-blue">华泰证券</span>：AI资本开支基建化将推动PPI回升</p></div><div class="report-card"><p>💡 <span class="highlight-green">中国平安</span>：高股息+低估值凸显配置价值</p></div><div class="report-card"><p>💡 证券保险板块近期表现疲软，但<span class="highlight">估值优势逐渐显现</span></p></div>
+                <div class="report-card"><p><a href="https://pdf.dfcfw.com/pdf/H3_AP202603121820516518_1.pdf" target="_blank" title="点击查看研报原文 (PDF)">💡 <span class="highlight-blue">国金证券</span>：公司深度研究：负债扩表资产修复，低配红利重估在即，评级<span class="highlight-green">'买入'</span></a></p><span class="report-date">2026-03-12</span></div><div class="report-card"><p><a href="https://pdf.dfcfw.com/pdf/H3_AP202601311818862295_1.pdf" target="_blank" title="点击查看研报原文 (PDF)">💡 <span class="highlight-blue">东吴证券</span>：银保业务引领业绩增长，高股息+低估值凸显配置价值，评级<span class="highlight-green">'买入'</span></a></p><span class="report-date">2026-02-01</span></div><div class="report-card"><p><a href="https://pdf.dfcfw.com/pdf/H3_AP202601291818550396_1.pdf" target="_blank" title="点击查看研报原文 (PDF)">💡 <span class="highlight-blue">国信证券</span>：价值增长，估值提升——“重估平安”系列之二，评级<span class="highlight-green">'增持'</span></a></p><span class="report-date">2026-01-29</span></div><div class="report-card"><p><a href="https://pdf.dfcfw.com/pdf/H3_AP202603201820664324_1.pdf" target="_blank" title="点击查看研报原文 (PDF)">💡 <span class="highlight-blue">开源证券</span>：东方财富2025年报点评：证券市占率和业绩略低于预期，基金市占率回升，评级<span class="highlight-green">'买入'</span></a></p><span class="report-date">2026-03-20</span></div>
                 <div class="rating-section">
                     <div class="rating-card">
                         <div class="rating-label">基本面评分</div>
                         <div class="rating-value medium">★★★☆☆</div>
                         <div style="font-size: 0.9rem;">中性</div>
+                    </div>
+                    <div class="rating-card">
+                        <div class="rating-label">技术面评分</div>
+                        <div class="rating-value medium">★★★☆☆</div>
+                        <div style="color: #10b981; font-size: 0.9rem;">中性</div>
                     </div>
                     <div class="rating-card">
                         <div class="rating-label">综合建议</div>
@@ -1375,13 +1565,14 @@
         </div>
 
         <div id="panel-515880" class="etf-panel">
+            <div class="info-holdings-row">
             <section class="panel-section fade-in">
                 <h2 class="section-title">📋 国泰中证全指通信设备ETF（515880）</h2>
                 <div class="fund-info">
                     <div class="info-item"><div class="info-label">基金代码</div><div class="info-value">515880</div></div>
                     <div class="info-item"><div class="info-label">基金规模</div><div class="info-value">136.38亿元</div></div>
                     <div class="info-item"><div class="info-label">最新净值</div><div class="info-value">1.0768元</div></div>
-                    <div class="info-item"><div class="info-label">日涨跌幅</div><div class="info-value" style="color: #ef4444;">-0.84%</div></div>
+                    <div class="info-item"><div class="info-label">日涨跌幅</div><div class="info-value" style="color: #10b981;">+1.70%</div></div>
                     <div class="info-item"><div class="info-label">业绩基准</div><div class="info-value">科创50+中证TMT</div></div>
                     <div class="info-item"><div class="info-label">基金类型</div><div class="info-value">通信设备</div></div>
                 </div>
@@ -1390,53 +1581,6 @@
                     <tr><th>近1月</th><th>近3月</th><th>近6月</th><th>近1年</th></tr>
                     <tr><td class="positive">+3.09%</td><td class="positive">+8.44%</td><td class="positive">+23.11%</td><td class="positive">+143.51%</td></tr>
                 </table>
-            </section>
-
-            <section class="panel-section fade-in">
-                <h2 class="section-title">📊 技术面分析</h2>
-                <div class="kline-section">
-                    <h3>📈 K线走势图</h3>
-                    <div class="kline-row">
-                        <div class="kline-card">
-                            <h4>📅 日K线（近60个交易日）</h4>
-                            <div id="kline-daily-515880" class="kline-container-small"></div>
-                        </div>
-                        <div class="kline-card">
-                            <h4>📆 周K线（近52周）</h4>
-                            <div id="kline-weekly-515880" class="kline-container-small"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="tech-grid">
-                    <div class="tech-card">
-                        <h4>📈 均线趋势（周线）</h4>
-                        <div class="tech-status bullish">震荡上行</div>
-                        <p class="tech-desc">价格趋势整体向上，均线系统呈多头排列。</p>
-                    </div>
-                    <div class="tech-card">
-                        <h4>📉 RSI指标（日线）</h4>
-                        <div class="tech-status neutral">正常区间（40-60）</div>
-                        <p class="tech-desc">RSI指标状态分析，判断超买超卖情况。</p>
-                    </div>
-                    <div class="tech-card">
-                        <h4>📊 量价关系</h4>
-                        <div class="tech-status bullish">温和放量</div>
-                        <p class="tech-desc">成交量与价格配合情况分析。</p>
-                    </div>
-                    <div class="tech-card">
-                        <h4>🎯 基准对比</h4>
-                        <div class="tech-status bullish">显著跑赢大盘</div>
-                        <p class="tech-desc">相对基准指数的表现对比。</p>
-                    </div>
-                </div>
-                <div class="rating-section">
-                    <div class="rating-card">
-                        <div class="rating-label">技术面评分</div>
-                        <div class="rating-value high">★★★★★</div>
-                        <div style="color: #10b981; font-size: 0.9rem;">强烈看好</div>
-                    </div>
-                </div>
             </section>
 
             <section class="panel-section fade-in">
@@ -1453,16 +1597,16 @@
                             }
                             const chart = echarts.init(chartDom);
                             const data = [
-                            { name: '中际旭创', value: 15.2, change: '-0.83%', changeColor: '#ef4444' },
-                            { name: '新易盛', value: 15.14, change: '+2.20%', changeColor: '#10b981' },
-                            { name: '工业富联', value: 13.08, change: '-3.07%', changeColor: '#ef4444' },
-                            { name: '中兴通讯', value: 6.48, change: '-2.48%', changeColor: '#ef4444' },
-                            { name: '天孚通信', value: 4.94, change: '+1.55%', changeColor: '#10b981' },
-                            { name: '信维通信', value: 3.19, change: '-2.87%', changeColor: '#ef4444' },
-                            { name: '中天科技', value: 2.63, change: '-2.63%', changeColor: '#ef4444' },
-                            { name: '亨通光电', value: 2.59, change: '-3.15%', changeColor: '#ef4444' },
-                            { name: '传音控股', value: 2.02, change: '-2.50%', changeColor: '#ef4444' },
-                            { name: '剑桥科技', value: 1.96, change: '+2.79%', changeColor: '#10b981' },
+                            { name: '中际旭创', value: 15.2, change: '+6.40%', changeColor: '#10b981' },
+                            { name: '新易盛', value: 15.14, change: '+8.32%', changeColor: '#10b981' },
+                            { name: '工业富联', value: 13.08, change: '-0.32%', changeColor: '#ef4444' },
+                            { name: '中兴通讯', value: 6.48, change: '-3.06%', changeColor: '#ef4444' },
+                            { name: '天孚通信', value: 4.94, change: '+1.30%', changeColor: '#10b981' },
+                            { name: '信维通信', value: 3.19, change: '-2.69%', changeColor: '#ef4444' },
+                            { name: '中天科技', value: 2.63, change: '-0.77%', changeColor: '#ef4444' },
+                            { name: '亨通光电', value: 2.59, change: '-0.30%', changeColor: '#ef4444' },
+                            { name: '传音控股', value: 2.02, change: '-0.76%', changeColor: '#ef4444' },
+                            { name: '剑桥科技', value: 1.96, change: '-0.29%', changeColor: '#ef4444' },
                             { name: '其他', value: 32.77, change: '--', changeColor: '#9ca3af' },
                         ];
                         
@@ -1560,42 +1704,7 @@
                     })();
                 </script>
             </section>
-
-            <section class="panel-section fade-in">
-                <h2 class="section-title">📰 行业研究报告</h2>
-                <div class="report-card"><p>💡 2026年是中际旭创的<span class="highlight-green">'1.6T放量元年'</span>，净利润有望冲击250亿</p></div><div class="report-card"><p>💡 <span class="highlight-blue">英伟达</span>与光通信企业签署战略合作，CPO技术规模化量产</p></div><div class="report-card"><p>💡 通信ETF近1年涨幅<span class="highlight-green">143.51%</span>，AI算力需求持续爆发</p></div><div class="report-card"><p>💡 <span class="highlight-blue">群益证券</span>：需求带动业绩高增长，关注1.6T大规模出货</p></div>
-                <div class="rating-section">
-                    <div class="rating-card">
-                        <div class="rating-label">基本面评分</div>
-                        <div class="rating-value high">★★★★★</div>
-                        <div style="font-size: 0.9rem;">强烈看好</div>
-                    </div>
-                    <div class="rating-card">
-                        <div class="rating-label">综合建议</div>
-                        <div class="rating-value high">★★★★★</div>
-                        <div style="font-size: 0.9rem;">强烈推荐</div>
-                    </div>
-                </div>
-            </section>
-        </div>
-
-        <div id="panel-159566" class="etf-panel">
-            <section class="panel-section fade-in">
-                <h2 class="section-title">📋 易方达国证新能源电池ETF（159566）</h2>
-                <div class="fund-info">
-                    <div class="info-item"><div class="info-label">基金代码</div><div class="info-value">159566</div></div>
-                    <div class="info-item"><div class="info-label">基金规模</div><div class="info-value">38.90亿元</div></div>
-                    <div class="info-item"><div class="info-label">最新净值</div><div class="info-value">2.3376元</div></div>
-                    <div class="info-item"><div class="info-label">日涨跌幅</div><div class="info-value" style="color: #ef4444;">-1.23%</div></div>
-                    <div class="info-item"><div class="info-label">业绩基准</div><div class="info-value">创业板指数</div></div>
-                    <div class="info-item"><div class="info-label">基金类型</div><div class="info-value">储能电池</div></div>
-                </div>
-                <h3 style="margin-top: 30px; margin-bottom: 15px; color: #3b82f6;">📈 近期业绩表现</h3>
-                <table class="performance-table">
-                    <tr><th>近1月</th><th>近3月</th><th>近6月</th><th>近1年</th></tr>
-                    <tr><td class="positive">+8.05%</td><td class="positive">+12.95%</td><td class="positive">+20.03%</td><td class="positive">+65.82%</td></tr>
-                </table>
-            </section>
+            </div>
 
             <section class="panel-section fade-in">
                 <h2 class="section-title">📊 技术面分析</h2>
@@ -1604,11 +1713,11 @@
                     <div class="kline-row">
                         <div class="kline-card">
                             <h4>📅 日K线（近60个交易日）</h4>
-                            <div id="kline-daily-159566" class="kline-container-small"></div>
+                            <div id="kline-daily-515880" class="kline-container-small"></div>
                         </div>
                         <div class="kline-card">
                             <h4>📆 周K线（近52周）</h4>
-                            <div id="kline-weekly-159566" class="kline-container-small"></div>
+                            <div id="kline-weekly-515880" class="kline-container-small"></div>
                         </div>
                     </div>
                 </div>
@@ -1635,13 +1744,49 @@
                         <p class="tech-desc">相对基准指数的表现对比。</p>
                     </div>
                 </div>
+                </section>
+
+
+            <section class="panel-section fade-in">
+                <h2 class="section-title">📰 行业研究报告</h2>
+                <div class="report-card"><p><a href="https://pdf.dfcfw.com/pdf/H3_AP202511191784337653_1.pdf" target="_blank" title="点击查看研报原文 (PDF)">💡 <span class="highlight-blue">开源证券</span>：公司首次覆盖报告：新兴市场手机王者，多元化/全球化/高端化打开空间，评级<span class="highlight-green">'买入'</span></a></p><span class="report-date">2025-11-19</span></div><div class="report-card"><p><a href="https://pdf.dfcfw.com/pdf/H3_AP202511101778796724_1.pdf" target="_blank" title="点击查看研报原文 (PDF)">💡 <span class="highlight-blue">华源证券</span>：出货量提升、盈利承压，端侧AI布局提升成长空间，评级<span class="highlight-green">'买入'</span></a></p><span class="report-date">2025-11-10</span></div><div class="report-card"><p><a href="https://pdf.dfcfw.com/pdf/H3_AP202511071776663756_1.pdf" target="_blank" title="点击查看研报原文 (PDF)">💡 <span class="highlight-blue">太平洋</span>：单季度收入增长利润承压，看好端侧AI布局，评级<span class="highlight-green">'买入'</span></a></p><span class="report-date">2025-11-07</span></div><div class="report-card"><p><a href="https://pdf.dfcfw.com/pdf/H3_AP202602021819273624_1.pdf" target="_blank" title="点击查看研报原文 (PDF)">💡 <span class="highlight-blue">群益证券</span>：全年利润持续高速增长，800G光模块市场份额预计快速提升，评级<span class="highlight-green">'增持'</span></a></p><span class="report-date">2026-02-02</span></div>
                 <div class="rating-section">
+                    <div class="rating-card">
+                        <div class="rating-label">基本面评分</div>
+                        <div class="rating-value high">★★★★★</div>
+                        <div style="font-size: 0.9rem;">强烈看好</div>
+                    </div>
                     <div class="rating-card">
                         <div class="rating-label">技术面评分</div>
                         <div class="rating-value high">★★★★★</div>
                         <div style="color: #10b981; font-size: 0.9rem;">强烈看好</div>
                     </div>
+                    <div class="rating-card">
+                        <div class="rating-label">综合建议</div>
+                        <div class="rating-value high">★★★★★</div>
+                        <div style="font-size: 0.9rem;">强烈推荐</div>
+                    </div>
                 </div>
+            </section>
+        </div>
+
+        <div id="panel-159566" class="etf-panel">
+            <div class="info-holdings-row">
+            <section class="panel-section fade-in">
+                <h2 class="section-title">📋 易方达国证新能源电池ETF（159566）</h2>
+                <div class="fund-info">
+                    <div class="info-item"><div class="info-label">基金代码</div><div class="info-value">159566</div></div>
+                    <div class="info-item"><div class="info-label">基金规模</div><div class="info-value">38.90亿元</div></div>
+                    <div class="info-item"><div class="info-label">最新净值</div><div class="info-value">2.3376元</div></div>
+                    <div class="info-item"><div class="info-label">日涨跌幅</div><div class="info-value" style="color: #10b981;">+2.71%</div></div>
+                    <div class="info-item"><div class="info-label">业绩基准</div><div class="info-value">创业板指数</div></div>
+                    <div class="info-item"><div class="info-label">基金类型</div><div class="info-value">储能电池</div></div>
+                </div>
+                <h3 style="margin-top: 30px; margin-bottom: 15px; color: #3b82f6;">📈 近期业绩表现</h3>
+                <table class="performance-table">
+                    <tr><th>近1月</th><th>近3月</th><th>近6月</th><th>近1年</th></tr>
+                    <tr><td class="positive">+8.05%</td><td class="positive">+12.95%</td><td class="positive">+20.03%</td><td class="positive">+65.82%</td></tr>
+                </table>
             </section>
 
             <section class="panel-section fade-in">
@@ -1658,16 +1803,16 @@
                             }
                             const chart = echarts.init(chartDom);
                             const data = [
-                            { name: '宁德时代', value: 9.29, change: '-0.38%', changeColor: '#ef4444' },
-                            { name: '阳光电源', value: 9.22, change: '-0.89%', changeColor: '#ef4444' },
-                            { name: '亿纬锂能', value: 9.06, change: '-0.67%', changeColor: '#ef4444' },
-                            { name: '英维克', value: 7.68, change: '-2.45%', changeColor: '#ef4444' },
-                            { name: '国轩高科', value: 5.12, change: '-0.08%', changeColor: '#ef4444' },
-                            { name: '麦格米特', value: 4.49, change: '-5.38%', changeColor: '#ef4444' },
-                            { name: '欣旺达', value: 4.3, change: '+2.50%', changeColor: '#10b981' },
-                            { name: '德业股份', value: 3.87, change: '+0.10%', changeColor: '#10b981' },
-                            { name: '科达利', value: 3.39, change: '-3.44%', changeColor: '#ef4444' },
-                            { name: '金盘科技', value: 2.7, change: '-3.80%', changeColor: '#ef4444' },
+                            { name: '宁德时代', value: 9.29, change: '+3.12%', changeColor: '#10b981' },
+                            { name: '阳光电源', value: 9.22, change: '+5.15%', changeColor: '#10b981' },
+                            { name: '亿纬锂能', value: 9.06, change: '+5.58%', changeColor: '#10b981' },
+                            { name: '英维克', value: 7.68, change: '+0.89%', changeColor: '#10b981' },
+                            { name: '国轩高科', value: 5.12, change: '+1.95%', changeColor: '#10b981' },
+                            { name: '麦格米特', value: 4.49, change: '-0.32%', changeColor: '#ef4444' },
+                            { name: '欣旺达', value: 4.3, change: '+2.93%', changeColor: '#10b981' },
+                            { name: '德业股份', value: 3.87, change: '+9.91%', changeColor: '#10b981' },
+                            { name: '科达利', value: 3.39, change: '+2.35%', changeColor: '#10b981' },
+                            { name: '金盘科技', value: 2.7, change: '-1.57%', changeColor: '#ef4444' },
                             { name: '其他', value: 40.88, change: '--', changeColor: '#9ca3af' },
                         ];
                         
@@ -1765,42 +1910,7 @@
                     })();
                 </script>
             </section>
-
-            <section class="panel-section fade-in">
-                <h2 class="section-title">📰 行业研究报告</h2>
-                <div class="report-card"><p>💡 <span class="highlight-green">宁德时代</span>2025年净利润722亿元，连续5年储能电池出货量全球第一</p></div><div class="report-card"><p>💡 <span class="highlight-blue">华西证券</span>：新兴市场迎来户储、工商储发展大机遇</p></div><div class="report-card"><p>💡 <span class="highlight-blue">西部证券</span>：宁德时代2026年锂电确定性主线，维持<span class="highlight-green">'买入'</span>评级</p></div><div class="report-card"><p>💡 储能电池ETF近1年涨幅<span class="highlight-green">65.82%</span>，资金持续流入</p></div>
-                <div class="rating-section">
-                    <div class="rating-card">
-                        <div class="rating-label">基本面评分</div>
-                        <div class="rating-value medium">★★★★☆</div>
-                        <div style="font-size: 0.9rem;">看好</div>
-                    </div>
-                    <div class="rating-card">
-                        <div class="rating-label">综合建议</div>
-                        <div class="rating-value high">★★★★★</div>
-                        <div style="font-size: 0.9rem;">强烈推荐</div>
-                    </div>
-                </div>
-            </section>
-        </div>
-
-        <div id="panel-159698" class="etf-panel">
-            <section class="panel-section fade-in">
-                <h2 class="section-title">📋 鹏华国证粮食产业ETF（159698）</h2>
-                <div class="fund-info">
-                    <div class="info-item"><div class="info-label">基金代码</div><div class="info-value">159698</div></div>
-                    <div class="info-item"><div class="info-label">基金规模</div><div class="info-value">1.25亿元</div></div>
-                    <div class="info-item"><div class="info-label">最新净值</div><div class="info-value">1.1992元</div></div>
-                    <div class="info-item"><div class="info-label">日涨跌幅</div><div class="info-value" style="color: #ef4444;">-2.79%</div></div>
-                    <div class="info-item"><div class="info-label">业绩基准</div><div class="info-value">沪深300指数</div></div>
-                    <div class="info-item"><div class="info-label">基金类型</div><div class="info-value">粮食产业</div></div>
-                </div>
-                <h3 style="margin-top: 30px; margin-bottom: 15px; color: #3b82f6;">📈 近期业绩表现</h3>
-                <table class="performance-table">
-                    <tr><th>近1月</th><th>近3月</th><th>近6月</th><th>近1年</th></tr>
-                    <tr><td class="positive">+12.24%</td><td class="positive">+18.56%</td><td class="positive">+22.33%</td><td class="positive">+39.56%</td></tr>
-                </table>
-            </section>
+            </div>
 
             <section class="panel-section fade-in">
                 <h2 class="section-title">📊 技术面分析</h2>
@@ -1809,11 +1919,11 @@
                     <div class="kline-row">
                         <div class="kline-card">
                             <h4>📅 日K线（近60个交易日）</h4>
-                            <div id="kline-daily-159698" class="kline-container-small"></div>
+                            <div id="kline-daily-159566" class="kline-container-small"></div>
                         </div>
                         <div class="kline-card">
                             <h4>📆 周K线（近52周）</h4>
-                            <div id="kline-weekly-159698" class="kline-container-small"></div>
+                            <div id="kline-weekly-159566" class="kline-container-small"></div>
                         </div>
                     </div>
                 </div>
@@ -1821,7 +1931,7 @@
                 <div class="tech-grid">
                     <div class="tech-card">
                         <h4>📈 均线趋势（周线）</h4>
-                        <div class="tech-status bullish">强势上涨</div>
+                        <div class="tech-status bullish">震荡上行</div>
                         <p class="tech-desc">价格趋势整体向上，均线系统呈多头排列。</p>
                     </div>
                     <div class="tech-card">
@@ -1836,17 +1946,53 @@
                     </div>
                     <div class="tech-card">
                         <h4>🎯 基准对比</h4>
-                        <div class="tech-status bullish">跑赢大盘</div>
+                        <div class="tech-status bullish">显著跑赢大盘</div>
                         <p class="tech-desc">相对基准指数的表现对比。</p>
                     </div>
                 </div>
+                </section>
+
+
+            <section class="panel-section fade-in">
+                <h2 class="section-title">📰 行业研究报告</h2>
+                <div class="report-card"><p><a href="https://pdf.dfcfw.com/pdf/H3_AP202603161820571903_1.pdf" target="_blank" title="点击查看研报原文 (PDF)">💡 <span class="highlight-blue">西南证券</span>：2025年年报点评：出货高增长，增长模式从“产品”到“服务”演进，评级<span class="highlight-green">'买入'</span></a></p><span class="report-date">2026-03-16</span></div><div class="report-card"><p><a href="https://pdf.dfcfw.com/pdf/H3_AP202603131820554662_1.pdf" target="_blank" title="点击查看研报原文 (PDF)">💡 <span class="highlight-blue">国信证券</span>：电池龙头盈利强劲，产能扩张加速推进，评级<span class="highlight-green">'增持'</span></a></p><span class="report-date">2026-03-13</span></div><div class="report-card"><p><a href="https://pdf.dfcfw.com/pdf/H3_AP202603111820490289_1.pdf" target="_blank" title="点击查看研报原文 (PDF)">💡 <span class="highlight-blue">开源证券</span>：公司信息更新报告：量利齐升，盈利韧性再超预期，评级<span class="highlight-green">'买入'</span></a></p><span class="report-date">2026-03-11</span></div><div class="report-card"><p><a href="https://pdf.dfcfw.com/pdf/H3_AP202601161817882114_1.pdf" target="_blank" title="点击查看研报原文 (PDF)">💡 <span class="highlight-blue">海通国际</span>：首次覆盖：逆变器筑基+储能领航双驱动，储能高增长跃升为新增长引擎，锚定全球能源龙头，评级<span class="highlight-green">'增持'</span></a></p><span class="report-date">2026-01-16</span></div>
                 <div class="rating-section">
+                    <div class="rating-card">
+                        <div class="rating-label">基本面评分</div>
+                        <div class="rating-value medium">★★★★☆</div>
+                        <div style="font-size: 0.9rem;">看好</div>
+                    </div>
                     <div class="rating-card">
                         <div class="rating-label">技术面评分</div>
                         <div class="rating-value high">★★★★★</div>
                         <div style="color: #10b981; font-size: 0.9rem;">强烈看好</div>
                     </div>
+                    <div class="rating-card">
+                        <div class="rating-label">综合建议</div>
+                        <div class="rating-value high">★★★★★</div>
+                        <div style="font-size: 0.9rem;">强烈推荐</div>
+                    </div>
                 </div>
+            </section>
+        </div>
+
+        <div id="panel-159698" class="etf-panel">
+            <div class="info-holdings-row">
+            <section class="panel-section fade-in">
+                <h2 class="section-title">📋 鹏华国证粮食产业ETF（159698）</h2>
+                <div class="fund-info">
+                    <div class="info-item"><div class="info-label">基金代码</div><div class="info-value">159698</div></div>
+                    <div class="info-item"><div class="info-label">基金规模</div><div class="info-value">1.25亿元</div></div>
+                    <div class="info-item"><div class="info-label">最新净值</div><div class="info-value">1.1992元</div></div>
+                    <div class="info-item"><div class="info-label">日涨跌幅</div><div class="info-value" style="color: #ef4444;">-1.62%</div></div>
+                    <div class="info-item"><div class="info-label">业绩基准</div><div class="info-value">沪深300指数</div></div>
+                    <div class="info-item"><div class="info-label">基金类型</div><div class="info-value">粮食产业</div></div>
+                </div>
+                <h3 style="margin-top: 30px; margin-bottom: 15px; color: #3b82f6;">📈 近期业绩表现</h3>
+                <table class="performance-table">
+                    <tr><th>近1月</th><th>近3月</th><th>近6月</th><th>近1年</th></tr>
+                    <tr><td class="positive">+12.24%</td><td class="positive">+18.56%</td><td class="positive">+22.33%</td><td class="positive">+39.56%</td></tr>
+                </table>
             </section>
 
             <section class="panel-section fade-in">
@@ -1863,16 +2009,16 @@
                             }
                             const chart = echarts.init(chartDom);
                             const data = [
-                            { name: '大北农', value: 9.86, change: '-0.72%', changeColor: '#ef4444' },
-                            { name: '隆平高科', value: 7.58, change: '-1.84%', changeColor: '#ef4444' },
-                            { name: '北大荒', value: 7.1, change: '-1.29%', changeColor: '#ef4444' },
-                            { name: '荃银高科', value: 5.52, change: '-1.16%', changeColor: '#ef4444' },
-                            { name: '神农种业', value: 4.66, change: '-1.15%', changeColor: '#ef4444' },
-                            { name: '藏格矿业', value: 3.48, change: '-7.10%', changeColor: '#ef4444' },
-                            { name: '亚盛集团', value: 3.29, change: '-5.70%', changeColor: '#ef4444' },
-                            { name: '农发种业', value: 3.13, change: '-3.22%', changeColor: '#ef4444' },
-                            { name: '盐湖股份', value: 3.12, change: '-5.20%', changeColor: '#ef4444' },
-                            { name: '云天化', value: 3.09, change: '-4.55%', changeColor: '#ef4444' },
+                            { name: '大北农', value: 9.86, change: '-1.21%', changeColor: '#ef4444' },
+                            { name: '隆平高科', value: 7.58, change: '-0.49%', changeColor: '#ef4444' },
+                            { name: '北大荒', value: 7.1, change: '-1.96%', changeColor: '#ef4444' },
+                            { name: '荃银高科', value: 5.52, change: '-1.41%', changeColor: '#ef4444' },
+                            { name: '神农种业', value: 4.66, change: '-5.45%', changeColor: '#ef4444' },
+                            { name: '藏格矿业', value: 3.48, change: '+0.61%', changeColor: '#10b981' },
+                            { name: '亚盛集团', value: 3.29, change: '-3.97%', changeColor: '#ef4444' },
+                            { name: '农发种业', value: 3.13, change: '-6.06%', changeColor: '#ef4444' },
+                            { name: '盐湖股份', value: 3.12, change: '+3.17%', changeColor: '#10b981' },
+                            { name: '云天化', value: 3.09, change: '+0.68%', changeColor: '#10b981' },
                             { name: '其他', value: 49.17, change: '--', changeColor: '#9ca3af' },
                         ];
                         
@@ -1970,15 +2116,62 @@
                     })();
                 </script>
             </section>
+            </div>
+
+            <section class="panel-section fade-in">
+                <h2 class="section-title">📊 技术面分析</h2>
+                <div class="kline-section">
+                    <h3>📈 K线走势图</h3>
+                    <div class="kline-row">
+                        <div class="kline-card">
+                            <h4>📅 日K线（近60个交易日）</h4>
+                            <div id="kline-daily-159698" class="kline-container-small"></div>
+                        </div>
+                        <div class="kline-card">
+                            <h4>📆 周K线（近52周）</h4>
+                            <div id="kline-weekly-159698" class="kline-container-small"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tech-grid">
+                    <div class="tech-card">
+                        <h4>📈 均线趋势（周线）</h4>
+                        <div class="tech-status bullish">强势上涨</div>
+                        <p class="tech-desc">价格趋势整体向上，均线系统呈多头排列。</p>
+                    </div>
+                    <div class="tech-card">
+                        <h4>📉 RSI指标（日线）</h4>
+                        <div class="tech-status neutral">正常区间（40-60）</div>
+                        <p class="tech-desc">RSI指标状态分析，判断超买超卖情况。</p>
+                    </div>
+                    <div class="tech-card">
+                        <h4>📊 量价关系</h4>
+                        <div class="tech-status bullish">温和放量</div>
+                        <p class="tech-desc">成交量与价格配合情况分析。</p>
+                    </div>
+                    <div class="tech-card">
+                        <h4>🎯 基准对比</h4>
+                        <div class="tech-status bullish">跑赢大盘</div>
+                        <p class="tech-desc">相对基准指数的表现对比。</p>
+                    </div>
+                </div>
+                </section>
+
 
             <section class="panel-section fade-in">
                 <h2 class="section-title">📰 行业研究报告</h2>
-                <div class="report-card"><p>💡 农业农村部公告<span class="highlight-green">27个转基因玉米和3个转基因大豆品种通过初审</span></p></div><div class="report-card"><p>💡 <span class="highlight-blue">银河证券</span>：千亿斤粮食产能提升行动下，种业技术变革是核心方向</p></div><div class="report-card"><p>💡 粮食ETF近1月上涨<span class="highlight-green">12.24%</span>，转基因技术红利释放</p></div><div class="report-card"><p>💡 <span class="highlight">隆平高科</span>在生物育种领域专利储备丰富，技术迭代加速</p></div>
+                <div class="report-card"><p><a href="https://pdf.dfcfw.com/pdf/H3_AP202511031774257407_1.pdf" target="_blank" title="点击查看研报原文 (PDF)">💡 <span class="highlight-blue">国信证券</span>：2025三季报点评：养殖板块盈利修复，种业板块持续拓展，评级<span class="highlight-green">'增持'</span></a></p><span class="report-date">2025-11-03</span></div><div class="report-card"><p><a href="https://pdf.dfcfw.com/pdf/H3_AP202510281770662463_1.pdf" target="_blank" title="点击查看研报原文 (PDF)">💡 <span class="highlight-blue">华安证券</span>：全年出栏有望突破800万头，完全成本降至12.6元，评级<span class="highlight-green">'买入'</span></a></p><span class="report-date">2025-10-28</span></div><div class="report-card"><p><a href="https://pdf.dfcfw.com/pdf/H3_AP202509011737678558_1.pdf" target="_blank" title="点击查看研报原文 (PDF)">💡 <span class="highlight-blue">华安证券</span>：生猪出栏800万头可期，完全成本已降至12.7元，评级<span class="highlight-green">'买入'</span></a></p><span class="report-date">2025-09-01</span></div><div class="report-card"><p><a href="https://pdf.dfcfw.com/pdf/H3_AP202512111798177177_1.pdf" target="_blank" title="点击查看研报原文 (PDF)">💡 <span class="highlight-blue">中银证券</span>：转基因布局具备先发优势，公司经营彰显韧性，种业龙头地位稳固，评级<span class="highlight-green">'增持'</span></a></p><span class="report-date">2025-12-11</span></div>
                 <div class="rating-section">
                     <div class="rating-card">
                         <div class="rating-label">基本面评分</div>
                         <div class="rating-value medium">★★★☆☆</div>
                         <div style="font-size: 0.9rem;">中性</div>
+                    </div>
+                    <div class="rating-card">
+                        <div class="rating-label">技术面评分</div>
+                        <div class="rating-value high">★★★★★</div>
+                        <div style="color: #10b981; font-size: 0.9rem;">强烈看好</div>
                     </div>
                     <div class="rating-card">
                         <div class="rating-label">综合建议</div>
@@ -1995,21 +2188,67 @@
                 <div class="macro-grid">
                     <div class="macro-card">
                         <h3>🇨🇳 国内政策与事件</h3>
-                        <ul>
-                            <li>📊 中国3月LPR：1年期3.0%，5年期以上3.5%，连续第9个月按兵不动</li>
-                            <li>💰 央行推出一揽子结构性货币政策，强化对科技创新、小微企业支持</li>
-                            <li>🌾 农业农村部公告27个转基因玉米和3个转基因大豆品种通过初审</li>
-                            <li>📈 '加力实施新一轮千亿斤粮食产能提升行动'成为农业发展重点</li>
-                        </ul>
+                        <div class="news-container">
+<ul class="news-page" data-page="1">
+<li>📊 冲突引发的原油和天然气价格飙升加剧了通胀担忧。 <span class="source-tag source-caixin">财新</span></li>
+<li>📊 股指震荡调整，有色金属板块大幅领跌，化工、钢铁、建材及房地产行业表现较差。 <span class="source-tag source-caixin">财新</span></li>
+<li>📊 据同花顺iFinD数据，截至目前，南向资金净卖出超120亿港元。 <span class="source-tag source-ths">同花顺</span></li>
+<li>📊 3月20日，市场监管总局召开2026年一季度例行新闻发布会。 <span class="source-tag source-flash">快讯</span></li>
+<li>📊 国家市场监督管理总局20日通报。 <span class="source-tag source-flash">快讯</span></li>
+<li>📊 记者在今天召开的市场监管总局一季度例行发布会上了解到。 <span class="source-tag source-cctv">央视新闻</span></li>
+</ul>
+<ul class="news-page" data-page="2" style="display: none;">
+<li>📊 据同花顺iFinD数据，截至目前，南向资金净卖出超100亿港元。 <span class="source-tag source-ths">同花顺</span></li>
+<li>📊 据同花顺iFinD数据，截至目前，南向资金净卖出超70亿港元。 <span class="source-tag source-ths">同花顺</span></li>
+<li>📊 据同花顺iFinD数据，截至目前，南向资金净卖出超60亿港元。 <span class="source-tag source-ths">同花顺</span></li>
+<li>📊 在今天召开的市场监管总局一季度例行发布会了解到。 <span class="source-tag source-cctv">央视新闻</span></li>
+<li>📊 在今天召开的市场监管总局一季度例行发布会上了解到，此前。 <span class="source-tag source-cctv">央视新闻</span></li>
+<li>📊 人力资源社会保障部、财政部发布关于做好2026年高校毕业生等青年就业工作的通知。 <span class="source-tag source-flash">快讯</span></li>
+</ul>
+<ul class="news-page" data-page="3" style="display: none;">
+<li>📊 工信部公开征求《物联网卡连接管理能力开放连接管理能力接口技术要求》等20项... <span class="source-tag source-flash">快讯</span></li>
+</ul>
+</div>
+<div class="news-pagination"><span class="page-num active" data-target="domestic" data-page="1">1</span><span class="page-num" data-target="domestic" data-page="2">2</span><span class="page-num" data-target="domestic" data-page="3">3</span></div>
                     </div>
                     <div class="macro-card">
                         <h3>🌐 国际重大新闻</h3>
-                        <ul>
-                            <li>🏦 美联储3月会议预计维持利率3.50%-3.75%不变，降息预期推迟至9月</li>
-                            <li>🛢️ 中东地缘冲突升级推动油价高位波动，能源价格冲击加剧通胀风险</li>
-                            <li>📉 高盛、巴克莱下调降息预期，年内降息次数预期降至1-2次</li>
-                            <li>🏆 地缘政治秩序加速重构，硬资产成为避风港</li>
-                        </ul>
+                        <div class="news-container">
+<ul class="news-page" data-page="1">
+<li>🌐 海外需求紧俏，储能概念大涨；媒体称马斯克团队在国内头部光伏设备厂采购的订单... <span class="source-tag source-caixin">财新</span></li>
+<li>🌐 在伊朗战争爆发的最初几天里，投资公司Arkevium的创始人Maxence... <span class="source-tag source-caixin">财新</span></li>
+<li>🌐 全球最大的液化天然气工厂每停运一周。 <span class="source-tag source-caixin">财新</span></li>
+<li>🌐 知情人士透露，寻求进口液化天然气的企业已直接联系美国燃料卖方——包括生产商... <span class="source-tag source-caixin">财新</span></li>
+<li>🌐 根据科威特国家石油公司，该炼油厂的日产能为34.6万桶。 <span class="source-tag source-caixin">财新</span></li>
+<li>🌐 在本次中东战局中，香港股市展现出令人意外的韧性。 <span class="source-tag source-caixin">财新</span></li>
+</ul>
+<ul class="news-page" data-page="2" style="display: none;">
+<li>🌐 自战争爆发以来基准天然气期货价格已上涨超过一倍 <span class="source-tag source-caixin">财新</span></li>
+<li>🌐 卡塔尔当局周三晚间表示，拉斯拉凡工业城遭到了一枚伊朗导弹袭击。 <span class="source-tag source-caixin">财新</span></li>
+<li>🌐 美联储主席杰罗姆·鲍威尔讲话后，美国国债价格下挫。 <span class="source-tag source-caixin">财新</span></li>
+<li>🌐 随着军事行动几乎没有缓和迹象，布伦特原油价格接近每桶110美元 <span class="source-tag source-caixin">财新</span></li>
+<li>🌐 美光科技在周三发布的季度报告中表示，截至8月的本财年资本支出将超过250亿美元。 <span class="source-tag source-caixin">财新</span></li>
+<li>🌐 韩国当局采取措施限制上市公司将子公司上市的行为，韩国股市应声上涨。 <span class="source-tag source-caixin">财新</span></li>
+</ul>
+<ul class="news-page" data-page="3" style="display: none;">
+<li>🌐 伊拉克与库尔德斯坦达成协议，恢复通过这个半自治地区的一条管道输送石油。 <span class="source-tag source-caixin">财新</span></li>
+<li>🌐 伊朗通过霍尔木兹海峡运输原油的速度与战前相比变化不太大。 <span class="source-tag source-caixin">财新</span></li>
+<li>🌐 3月20日，外交部发言人林剑主持例行记者会。 <span class="source-tag source-reuters">路透</span></li>
+<li>🌐 据伊朗法尔斯通讯社20日报道，伊朗伊斯兰革命卫队发言人当天表示，伊朗的导弹... <span class="source-tag source-flash">快讯</span></li>
+<li>🌐 工商银行发布关于修订代理个人客户贵金属竞价交易业务协议并明确强平保证金比例... <span class="source-tag source-flash">快讯</span></li>
+<li>🌐 总台记者获悉，当地时间3月20日。 <span class="source-tag source-cctv">央视新闻</span></li>
+</ul>
+<ul class="news-page" data-page="4" style="display: none;">
+<li>🌐 上期所贵金属及有色金属仓单及变化数据：
+铜期货仓单287852吨。 <span class="source-tag source-flash">快讯</span></li>
+<li>🌐 当地时间19日，美国方面援引消息人士的话报道称，美国正加速向中东地区部署数... <span class="source-tag source-cctv">央视新闻</span></li>
+<li>🌐 总台记者获悉，据韩国消防部门20日下午通报。 <span class="source-tag source-cctv">央视新闻</span></li>
+<li>🌐 欧洲央行管委维勒鲁瓦：我们有能力根据需要采取行动。 <span class="source-tag source-flash">快讯</span></li>
+<li>🌐 欧洲央行管委维勒鲁瓦：我们正面临不确定性。 <span class="source-tag source-flash">快讯</span></li>
+<li>🌐 欧洲央行管委维勒鲁瓦：欧洲央行将保持警惕。 <span class="source-tag source-flash">快讯</span></li>
+</ul>
+</div>
+<div class="news-pagination"><span class="page-num active" data-target="intl" data-page="1">1</span><span class="page-num" data-target="intl" data-page="2">2</span><span class="page-num" data-target="intl" data-page="3">3</span><span class="page-num" data-target="intl" data-page="4">4</span></div>
                     </div>
                     <div class="macro-card">
                         <h3>📊 市场情绪分析</h3>
@@ -2118,7 +2357,7 @@
         </div>
 
         <footer class="footer">
-            <p>📊 数据分析报告 | 生成时间: 2026-03-19</p>
+            <p>📊 数据分析报告 | 生成时间: 2026-03-20</p>
             <p style="margin-top: 15px; color: #4b5563;">本报告仅供参考，不构成投资建议。投资者应根据自身情况独立决策。</p>
         </footer>
     </div>
@@ -2131,7 +2370,6 @@
                 "benchmark_name": "沪深300",
                 "daily": {
                         "dates": [
-                                "2025-12-16",
                                 "2025-12-17",
                                 "2025-12-18",
                                 "2025-12-19",
@@ -2190,15 +2428,10 @@
                                 "2026-03-16",
                                 "2026-03-17",
                                 "2026-03-18",
-                                "2026-03-19"
+                                "2026-03-19",
+                                "2026-03-20"
                         ],
                         "kline": [
-                                [
-                                        1.755,
-                                        1.715,
-                                        1.702,
-                                        1.757
-                                ],
                                 [
                                         1.726,
                                         1.775,
@@ -2552,10 +2785,15 @@
                                         1.944,
                                         1.935,
                                         2.023
+                                ],
+                                [
+                                        1.935,
+                                        1.917,
+                                        1.915,
+                                        1.978
                                 ]
                         ],
                         "volumes": [
-                                590729376,
                                 440365889,
                                 401335888,
                                 408497332,
@@ -2614,12 +2852,12 @@
                                 1309281158,
                                 739588470,
                                 637007525,
-                                1240675758
+                                1240675758,
+                                923187072
                         ],
-                        "latest_close": 1.944,
-                        "latest_change": -6.31,
+                        "latest_close": 1.917,
+                        "latest_change": -1.39,
                         "ma5": [
-                                1.752,
                                 1.755,
                                 1.759,
                                 1.766,
@@ -2678,10 +2916,10 @@
                                 2.225,
                                 2.187,
                                 2.148,
-                                2.086
+                                2.086,
+                                2.031
                         ],
                         "ma20": [
-                                1.73,
                                 1.731,
                                 1.732,
                                 1.74,
@@ -2740,7 +2978,8 @@
                                 2.282,
                                 2.277,
                                 2.271,
-                                2.256
+                                2.256,
+                                2.238
                         ]
                 },
                 "weekly": {
@@ -2796,7 +3035,7 @@
                                 "2026-02-27",
                                 "2026-03-06",
                                 "2026-03-13",
-                                "2026-03-18"
+                                "2026-03-19"
                         ],
                         "kline": [
                                 [
@@ -3107,8 +3346,8 @@
                                 ],
                                 [
                                         2.163,
-                                        2.075,
-                                        2.038,
+                                        1.944,
+                                        1.935,
                                         2.183
                                 ]
                         ],
@@ -3164,10 +3403,10 @@
                                 3219280974,
                                 5052651480,
                                 3151694347,
-                                2685877153
+                                3926552911
                         ],
-                        "latest_close": 2.075,
-                        "latest_change": -5.38,
+                        "latest_close": 1.944,
+                        "latest_change": -11.35,
                         "ma5": [
                                 1.057,
                                 1.068,
@@ -3220,7 +3459,7 @@
                                 2.278,
                                 2.275,
                                 2.246,
-                                2.23
+                                2.204
                         ],
                         "ma20": [
                                 1.037,
@@ -3274,12 +3513,11 @@
                                 1.929,
                                 1.956,
                                 1.982,
-                                2.001
+                                1.994
                         ]
                 },
                 "benchmark": {
                         "dates": [
-                                "2025-12-16",
                                 "2025-12-17",
                                 "2025-12-18",
                                 "2025-12-19",
@@ -3338,10 +3576,10 @@
                                 "2026-03-16",
                                 "2026-03-17",
                                 "2026-03-18",
-                                "2026-03-19"
+                                "2026-03-19",
+                                "2026-03-20"
                         ],
                         "closes": [
-                                4497.555,
                                 4579.875,
                                 4552.793,
                                 4568.178,
@@ -3400,15 +3638,10 @@
                                 4671.559,
                                 4637.439,
                                 4658.332,
-                                4583.251
+                                4583.251,
+                                4567.018
                         ],
                         "kline": [
-                                [
-                                        4542.423,
-                                        4497.555,
-                                        4484.27,
-                                        4553.081
-                                ],
                                 [
                                         4499.773,
                                         4579.875,
@@ -3762,132 +3995,138 @@
                                         4583.251,
                                         4570.392,
                                         4634.547
+                                ],
+                                [
+                                        4602.821,
+                                        4567.018,
+                                        4563.069,
+                                        4628.712
                                 ]
                         ],
                         "normalized": [
                                 0.0,
-                                1.83,
-                                1.23,
-                                1.57,
-                                2.54,
-                                2.74,
-                                3.04,
-                                3.22,
-                                3.55,
-                                3.15,
-                                3.42,
-                                2.94,
-                                4.9,
-                                6.52,
-                                6.21,
-                                5.34,
-                                5.81,
-                                6.5,
-                                5.86,
-                                5.43,
-                                5.64,
-                                5.21,
-                                5.27,
-                                4.92,
-                                5.01,
-                                5.03,
-                                4.56,
-                                4.66,
-                                4.63,
-                                4.9,
-                                5.7,
-                                4.64,
-                                2.41,
-                                3.61,
-                                4.47,
-                                3.84,
-                                3.25,
-                                4.92,
-                                5.04,
-                                4.81,
-                                4.94,
-                                3.62,
-                                4.67,
-                                5.3,
-                                5.1,
-                                4.74,
-                                5.14,
-                                3.52,
-                                2.34,
-                                3.34,
-                                3.62,
-                                2.62,
-                                3.94,
+                                -0.59,
+                                -0.26,
+                                0.69,
+                                0.89,
+                                1.18,
+                                1.37,
+                                1.69,
+                                1.3,
+                                1.56,
+                                1.09,
+                                3.01,
                                 4.6,
-                                4.22,
-                                3.82,
-                                3.87,
-                                3.11,
-                                3.57,
-                                1.91
+                                4.3,
+                                3.45,
+                                3.91,
+                                4.59,
+                                3.96,
+                                3.54,
+                                3.75,
+                                3.32,
+                                3.38,
+                                3.04,
+                                3.13,
+                                3.14,
+                                2.68,
+                                2.77,
+                                2.75,
+                                3.02,
+                                3.8,
+                                2.76,
+                                0.57,
+                                1.75,
+                                2.59,
+                                1.98,
+                                1.39,
+                                3.04,
+                                3.15,
+                                2.92,
+                                3.05,
+                                1.76,
+                                2.79,
+                                3.41,
+                                3.21,
+                                2.86,
+                                3.25,
+                                1.66,
+                                0.5,
+                                1.48,
+                                1.76,
+                                0.78,
+                                2.07,
+                                2.72,
+                                2.35,
+                                1.95,
+                                2.0,
+                                1.26,
+                                1.71,
+                                0.07,
+                                -0.28
                         ]
                 },
                 "etf_normalized": [
                         0.0,
-                        3.5,
-                        3.32,
-                        5.36,
-                        7.7,
-                        8.4,
-                        8.98,
-                        7.7,
-                        11.95,
-                        9.5,
-                        11.31,
-                        12.36,
-                        15.51,
-                        20.12,
-                        20.58,
-                        18.48,
-                        22.1,
-                        23.5,
-                        24.84,
-                        25.25,
-                        28.63,
-                        26.82,
-                        26.94,
-                        27.35,
-                        31.37,
-                        30.38,
-                        33.7,
-                        40.76,
-                        39.42,
-                        48.63,
-                        51.31,
-                        36.38,
-                        22.74,
-                        31.14,
-                        31.37,
-                        25.01,
-                        25.54,
-                        28.22,
-                        27.99,
-                        31.55,
-                        32.42,
-                        27.87,
-                        31.78,
-                        36.85,
-                        35.8,
-                        40.52,
-                        45.66,
-                        37.73,
-                        36.73,
-                        35.63,
-                        32.89,
-                        31.6,
-                        32.89,
-                        32.42,
-                        31.43,
-                        27.87,
-                        23.97,
-                        21.92,
-                        20.99,
-                        13.35
+                        -0.17,
+                        1.8,
+                        4.06,
+                        4.73,
+                        5.3,
+                        4.06,
+                        8.17,
+                        5.8,
+                        7.55,
+                        8.56,
+                        11.61,
+                        16.06,
+                        16.51,
+                        14.48,
+                        17.97,
+                        19.32,
+                        20.62,
+                        21.01,
+                        24.28,
+                        22.54,
+                        22.65,
+                        23.04,
+                        26.93,
+                        25.97,
+                        29.18,
+                        36.0,
+                        34.7,
+                        43.61,
+                        46.2,
+                        31.77,
+                        18.59,
+                        26.7,
+                        26.93,
+                        20.79,
+                        21.3,
+                        23.89,
+                        23.66,
+                        27.1,
+                        27.94,
+                        23.55,
+                        27.32,
+                        32.23,
+                        31.21,
+                        35.77,
+                        40.73,
+                        33.07,
+                        32.11,
+                        31.04,
+                        28.39,
+                        27.15,
+                        28.39,
+                        27.94,
+                        26.99,
+                        23.55,
+                        19.77,
+                        17.8,
+                        16.9,
+                        9.52,
+                        8.0
                 ]
         },
         "513120": {
@@ -3895,7 +4134,6 @@
                 "benchmark_name": "沪深300",
                 "daily": {
                         "dates": [
-                                "2025-12-16",
                                 "2025-12-17",
                                 "2025-12-18",
                                 "2025-12-19",
@@ -3954,15 +4192,10 @@
                                 "2026-03-16",
                                 "2026-03-17",
                                 "2026-03-18",
-                                "2026-03-19"
+                                "2026-03-19",
+                                "2026-03-20"
                         ],
                         "kline": [
-                                [
-                                        1.258,
-                                        1.237,
-                                        1.221,
-                                        1.263
-                                ],
                                 [
                                         1.243,
                                         1.244,
@@ -4316,10 +4549,15 @@
                                         1.178,
                                         1.176,
                                         1.199
+                                ],
+                                [
+                                        1.182,
+                                        1.155,
+                                        1.154,
+                                        1.202
                                 ]
                         ],
                         "volumes": [
-                                3108198684,
                                 2571991288,
                                 2618552077,
                                 4010045359,
@@ -4378,12 +4616,12 @@
                                 4035845511,
                                 4895569080,
                                 3938140041,
-                                2921580947
+                                2921580947,
+                                3833948819
                         ],
-                        "latest_close": 1.178,
-                        "latest_change": -2.64,
+                        "latest_close": 1.155,
+                        "latest_change": -1.95,
                         "ma5": [
-                                1.278,
                                 1.267,
                                 1.258,
                                 1.252,
@@ -4442,10 +4680,10 @@
                                 1.189,
                                 1.184,
                                 1.187,
-                                1.188
+                                1.188,
+                                1.186
                         ],
                         "ma20": [
-                                1.32,
                                 1.315,
                                 1.31,
                                 1.309,
@@ -4504,7 +4742,8 @@
                                 1.223,
                                 1.219,
                                 1.213,
-                                1.206
+                                1.206,
+                                1.199
                         ]
                 },
                 "weekly": {
@@ -4560,7 +4799,7 @@
                                 "2026-02-27",
                                 "2026-03-06",
                                 "2026-03-13",
-                                "2026-03-18"
+                                "2026-03-19"
                         ],
                         "kline": [
                                 [
@@ -4871,7 +5110,7 @@
                                 ],
                                 [
                                         1.161,
-                                        1.21,
+                                        1.178,
                                         1.146,
                                         1.228
                                 ]
@@ -4928,10 +5167,10 @@
                                 8969247714,
                                 17906918625,
                                 17373365985,
-                                12869554632
+                                15791135579
                         ],
-                        "latest_close": 1.21,
-                        "latest_change": 4.13,
+                        "latest_close": 1.178,
+                        "latest_change": 1.38,
                         "ma5": [
                                 0.861,
                                 0.873,
@@ -4984,7 +5223,7 @@
                                 1.275,
                                 1.251,
                                 1.229,
-                                1.218
+                                1.211
                         ],
                         "ma20": [
                                 0.765,
@@ -5038,12 +5277,11 @@
                                 1.319,
                                 1.306,
                                 1.294,
-                                1.288
+                                1.286
                         ]
                 },
                 "benchmark": {
                         "dates": [
-                                "2025-12-16",
                                 "2025-12-17",
                                 "2025-12-18",
                                 "2025-12-19",
@@ -5102,10 +5340,10 @@
                                 "2026-03-16",
                                 "2026-03-17",
                                 "2026-03-18",
-                                "2026-03-19"
+                                "2026-03-19",
+                                "2026-03-20"
                         ],
                         "closes": [
-                                4497.555,
                                 4579.875,
                                 4552.793,
                                 4568.178,
@@ -5164,15 +5402,10 @@
                                 4671.559,
                                 4637.439,
                                 4658.332,
-                                4583.251
+                                4583.251,
+                                4567.018
                         ],
                         "kline": [
-                                [
-                                        4542.423,
-                                        4497.555,
-                                        4484.27,
-                                        4553.081
-                                ],
                                 [
                                         4499.773,
                                         4579.875,
@@ -5526,132 +5759,138 @@
                                         4583.251,
                                         4570.392,
                                         4634.547
+                                ],
+                                [
+                                        4602.821,
+                                        4567.018,
+                                        4563.069,
+                                        4628.712
                                 ]
                         ],
                         "normalized": [
                                 0.0,
-                                1.83,
-                                1.23,
-                                1.57,
-                                2.54,
-                                2.74,
-                                3.04,
-                                3.22,
-                                3.55,
-                                3.15,
-                                3.42,
-                                2.94,
-                                4.9,
-                                6.52,
-                                6.21,
-                                5.34,
-                                5.81,
-                                6.5,
-                                5.86,
-                                5.43,
-                                5.64,
-                                5.21,
-                                5.27,
-                                4.92,
-                                5.01,
-                                5.03,
-                                4.56,
-                                4.66,
-                                4.63,
-                                4.9,
-                                5.7,
-                                4.64,
-                                2.41,
-                                3.61,
-                                4.47,
-                                3.84,
-                                3.25,
-                                4.92,
-                                5.04,
-                                4.81,
-                                4.94,
-                                3.62,
-                                4.67,
-                                5.3,
-                                5.1,
-                                4.74,
-                                5.14,
-                                3.52,
-                                2.34,
-                                3.34,
-                                3.62,
-                                2.62,
-                                3.94,
+                                -0.59,
+                                -0.26,
+                                0.69,
+                                0.89,
+                                1.18,
+                                1.37,
+                                1.69,
+                                1.3,
+                                1.56,
+                                1.09,
+                                3.01,
                                 4.6,
-                                4.22,
-                                3.82,
-                                3.87,
-                                3.11,
-                                3.57,
-                                1.91
+                                4.3,
+                                3.45,
+                                3.91,
+                                4.59,
+                                3.96,
+                                3.54,
+                                3.75,
+                                3.32,
+                                3.38,
+                                3.04,
+                                3.13,
+                                3.14,
+                                2.68,
+                                2.77,
+                                2.75,
+                                3.02,
+                                3.8,
+                                2.76,
+                                0.57,
+                                1.75,
+                                2.59,
+                                1.98,
+                                1.39,
+                                3.04,
+                                3.15,
+                                2.92,
+                                3.05,
+                                1.76,
+                                2.79,
+                                3.41,
+                                3.21,
+                                2.86,
+                                3.25,
+                                1.66,
+                                0.5,
+                                1.48,
+                                1.76,
+                                0.78,
+                                2.07,
+                                2.72,
+                                2.35,
+                                1.95,
+                                2.0,
+                                1.26,
+                                1.71,
+                                0.07,
+                                -0.28
                         ]
                 },
                 "etf_normalized": [
                         0.0,
-                        0.57,
-                        0.73,
-                        2.91,
-                        1.7,
+                        0.16,
+                        2.33,
                         1.13,
-                        0.65,
-                        0.73,
-                        0.73,
-                        -0.65,
-                        -2.18,
-                        -3.48,
-                        2.26,
-                        3.23,
-                        6.95,
-                        7.84,
-                        9.38,
-                        8.89,
-                        11.24,
-                        12.37,
-                        11.32,
-                        9.94,
-                        7.11,
-                        6.14,
-                        5.66,
-                        5.34,
-                        6.71,
-                        4.77,
-                        5.17,
-                        6.39,
-                        5.34,
-                        2.75,
-                        -1.05,
-                        0.97,
-                        2.26,
-                        1.29,
-                        2.26,
-                        3.31,
-                        6.63,
-                        6.87,
-                        4.53,
-                        3.88,
-                        3.07,
-                        3.23,
+                        0.56,
                         0.08,
-                        -0.32,
-                        -3.23,
-                        -6.79,
-                        -9.05,
-                        -6.63,
-                        -3.07,
-                        -5.58,
-                        -1.37,
-                        -3.48,
-                        -5.01,
-                        -6.06,
-                        -3.64,
-                        -3.31,
-                        -2.18,
-                        -4.77
+                        0.16,
+                        0.16,
+                        -1.21,
+                        -2.73,
+                        -4.02,
+                        1.69,
+                        2.65,
+                        6.35,
+                        7.23,
+                        8.76,
+                        8.28,
+                        10.61,
+                        11.74,
+                        10.69,
+                        9.32,
+                        6.51,
+                        5.55,
+                        5.06,
+                        4.74,
+                        6.11,
+                        4.18,
+                        4.58,
+                        5.79,
+                        4.74,
+                        2.17,
+                        -1.61,
+                        0.4,
+                        1.69,
+                        0.72,
+                        1.69,
+                        2.73,
+                        6.03,
+                        6.27,
+                        3.94,
+                        3.3,
+                        2.49,
+                        2.65,
+                        -0.48,
+                        -0.88,
+                        -3.78,
+                        -7.32,
+                        -9.57,
+                        -7.15,
+                        -3.62,
+                        -6.11,
+                        -1.93,
+                        -4.02,
+                        -5.55,
+                        -6.59,
+                        -4.18,
+                        -3.86,
+                        -2.73,
+                        -5.31,
+                        -7.15
                 ]
         },
         "512070": {
@@ -5659,7 +5898,6 @@
                 "benchmark_name": "沪深300",
                 "daily": {
                         "dates": [
-                                "2025-12-16",
                                 "2025-12-17",
                                 "2025-12-18",
                                 "2025-12-19",
@@ -5718,15 +5956,10 @@
                                 "2026-03-16",
                                 "2026-03-17",
                                 "2026-03-18",
-                                "2026-03-19"
+                                "2026-03-19",
+                                "2026-03-20"
                         ],
                         "kline": [
-                                [
-                                        0.909,
-                                        0.905,
-                                        0.901,
-                                        0.918
-                                ],
                                 [
                                         0.905,
                                         0.926,
@@ -6080,10 +6313,15 @@
                                         0.832,
                                         0.83,
                                         0.839
+                                ],
+                                [
+                                        0.833,
+                                        0.818,
+                                        0.818,
+                                        0.835
                                 ]
                         ],
                         "volumes": [
-                                750128682,
                                 734712883,
                                 916208827,
                                 1081980380,
@@ -6142,12 +6380,12 @@
                                 533908100,
                                 1088701034,
                                 430938957,
-                                574700900
+                                574700900,
+                                532982800
                         ],
-                        "latest_close": 0.832,
-                        "latest_change": -1.77,
+                        "latest_close": 0.818,
+                        "latest_change": -1.68,
                         "ma5": [
-                                0.897,
                                 0.904,
                                 0.911,
                                 0.917,
@@ -6206,10 +6444,10 @@
                                 0.84,
                                 0.841,
                                 0.841,
-                                0.838
+                                0.838,
+                                0.835
                         ],
                         "ma20": [
-                                0.873,
                                 0.876,
                                 0.878,
                                 0.881,
@@ -6268,7 +6506,8 @@
                                 0.87,
                                 0.866,
                                 0.863,
-                                0.858
+                                0.858,
+                                0.854
                         ]
                 },
                 "weekly": {
@@ -6324,7 +6563,7 @@
                                 "2026-02-27",
                                 "2026-03-06",
                                 "2026-03-13",
-                                "2026-03-18"
+                                "2026-03-19"
                         ],
                         "kline": [
                                 [
@@ -6635,7 +6874,7 @@
                                 ],
                                 [
                                         0.834,
-                                        0.847,
+                                        0.832,
                                         0.827,
                                         0.862
                                 ]
@@ -6692,10 +6931,10 @@
                                 2400179622,
                                 3649908985,
                                 2038325174,
-                                2053548091
+                                2628248991
                         ],
-                        "latest_close": 0.847,
-                        "latest_change": 1.44,
+                        "latest_close": 0.832,
+                        "latest_change": -0.36,
                         "ma5": [
                                 0.782,
                                 0.78,
@@ -6748,7 +6987,7 @@
                                 0.898,
                                 0.889,
                                 0.874,
-                                0.861
+                                0.858
                         ],
                         "ma20": [
                                 0.802,
@@ -6802,12 +7041,11 @@
                                 0.897,
                                 0.896,
                                 0.894,
-                                0.892
+                                0.891
                         ]
                 },
                 "benchmark": {
                         "dates": [
-                                "2025-12-16",
                                 "2025-12-17",
                                 "2025-12-18",
                                 "2025-12-19",
@@ -6866,10 +7104,10 @@
                                 "2026-03-16",
                                 "2026-03-17",
                                 "2026-03-18",
-                                "2026-03-19"
+                                "2026-03-19",
+                                "2026-03-20"
                         ],
                         "closes": [
-                                4497.555,
                                 4579.875,
                                 4552.793,
                                 4568.178,
@@ -6928,15 +7166,10 @@
                                 4671.559,
                                 4637.439,
                                 4658.332,
-                                4583.251
+                                4583.251,
+                                4567.018
                         ],
                         "kline": [
-                                [
-                                        4542.423,
-                                        4497.555,
-                                        4484.27,
-                                        4553.081
-                                ],
                                 [
                                         4499.773,
                                         4579.875,
@@ -7290,132 +7523,138 @@
                                         4583.251,
                                         4570.392,
                                         4634.547
+                                ],
+                                [
+                                        4602.821,
+                                        4567.018,
+                                        4563.069,
+                                        4628.712
                                 ]
                         ],
                         "normalized": [
                                 0.0,
-                                1.83,
-                                1.23,
-                                1.57,
-                                2.54,
-                                2.74,
-                                3.04,
-                                3.22,
-                                3.55,
-                                3.15,
-                                3.42,
-                                2.94,
-                                4.9,
-                                6.52,
-                                6.21,
-                                5.34,
-                                5.81,
-                                6.5,
-                                5.86,
-                                5.43,
-                                5.64,
-                                5.21,
-                                5.27,
-                                4.92,
-                                5.01,
-                                5.03,
-                                4.56,
-                                4.66,
-                                4.63,
-                                4.9,
-                                5.7,
-                                4.64,
-                                2.41,
-                                3.61,
-                                4.47,
-                                3.84,
-                                3.25,
-                                4.92,
-                                5.04,
-                                4.81,
-                                4.94,
-                                3.62,
-                                4.67,
-                                5.3,
-                                5.1,
-                                4.74,
-                                5.14,
-                                3.52,
-                                2.34,
-                                3.34,
-                                3.62,
-                                2.62,
-                                3.94,
+                                -0.59,
+                                -0.26,
+                                0.69,
+                                0.89,
+                                1.18,
+                                1.37,
+                                1.69,
+                                1.3,
+                                1.56,
+                                1.09,
+                                3.01,
                                 4.6,
-                                4.22,
-                                3.82,
-                                3.87,
-                                3.11,
-                                3.57,
-                                1.91
+                                4.3,
+                                3.45,
+                                3.91,
+                                4.59,
+                                3.96,
+                                3.54,
+                                3.75,
+                                3.32,
+                                3.38,
+                                3.04,
+                                3.13,
+                                3.14,
+                                2.68,
+                                2.77,
+                                2.75,
+                                3.02,
+                                3.8,
+                                2.76,
+                                0.57,
+                                1.75,
+                                2.59,
+                                1.98,
+                                1.39,
+                                3.04,
+                                3.15,
+                                2.92,
+                                3.05,
+                                1.76,
+                                2.79,
+                                3.41,
+                                3.21,
+                                2.86,
+                                3.25,
+                                1.66,
+                                0.5,
+                                1.48,
+                                1.76,
+                                0.78,
+                                2.07,
+                                2.72,
+                                2.35,
+                                1.95,
+                                2.0,
+                                1.26,
+                                1.71,
+                                0.07,
+                                -0.28
                         ]
                 },
                 "etf_normalized": [
                         0.0,
-                        2.32,
-                        1.66,
-                        2.1,
-                        2.1,
-                        2.43,
-                        2.65,
-                        3.76,
-                        4.2,
-                        3.31,
-                        2.21,
-                        2.1,
-                        5.86,
-                        9.83,
-                        8.84,
-                        5.3,
-                        4.75,
-                        4.64,
-                        4.75,
-                        3.65,
-                        2.54,
-                        1.55,
-                        1.1,
-                        1.66,
-                        0.77,
-                        -0.11,
-                        -1.22,
+                        -0.65,
+                        -0.22,
+                        -0.22,
                         0.11,
+                        0.32,
+                        1.4,
+                        1.84,
+                        0.97,
                         -0.11,
-                        -0.11,
-                        2.65,
-                        0.99,
-                        -0.33,
-                        -0.33,
-                        1.1,
-                        1.1,
-                        0.33,
-                        2.1,
-                        1.77,
-                        1.1,
-                        0.11,
-                        -1.1,
-                        -1.77,
-                        -1.55,
-                        -3.09,
-                        -3.09,
-                        -4.42,
-                        -4.53,
-                        -6.96,
-                        -6.52,
-                        -5.75,
-                        -7.62,
-                        -6.63,
-                        -6.3,
-                        -6.85,
-                        -7.73,
-                        -8.18,
-                        -6.41,
-                        -6.41,
-                        -8.07
+                        -0.22,
+                        3.46,
+                        7.34,
+                        6.37,
+                        2.92,
+                        2.38,
+                        2.27,
+                        2.38,
+                        1.3,
+                        0.22,
+                        -0.76,
+                        -1.19,
+                        -0.65,
+                        -1.51,
+                        -2.38,
+                        -3.46,
+                        -2.16,
+                        -2.38,
+                        -2.38,
+                        0.32,
+                        -1.3,
+                        -2.59,
+                        -2.59,
+                        -1.19,
+                        -1.19,
+                        -1.94,
+                        -0.22,
+                        -0.54,
+                        -1.19,
+                        -2.16,
+                        -3.35,
+                        -4.0,
+                        -3.78,
+                        -5.29,
+                        -5.29,
+                        -6.59,
+                        -6.7,
+                        -9.07,
+                        -8.64,
+                        -7.88,
+                        -9.72,
+                        -8.75,
+                        -8.42,
+                        -8.96,
+                        -9.83,
+                        -10.26,
+                        -8.53,
+                        -8.53,
+                        -10.15,
+                        -11.66
                 ]
         },
         "515880": {
@@ -7423,7 +7662,6 @@
                 "benchmark_name": "沪深300",
                 "daily": {
                         "dates": [
-                                "2025-12-16",
                                 "2025-12-17",
                                 "2025-12-18",
                                 "2025-12-19",
@@ -7482,15 +7720,10 @@
                                 "2026-03-16",
                                 "2026-03-17",
                                 "2026-03-18",
-                                "2026-03-19"
+                                "2026-03-19",
+                                "2026-03-20"
                         ],
                         "kline": [
-                                [
-                                        2.894,
-                                        2.826,
-                                        2.797,
-                                        2.903
-                                ],
                                 [
                                         2.827,
                                         2.983,
@@ -7844,10 +8077,15 @@
                                         1.06,
                                         1.048,
                                         1.08
+                                ],
+                                [
+                                        1.092,
+                                        1.078,
+                                        1.075,
+                                        1.114
                                 ]
                         ],
                         "volumes": [
-                                442510383,
                                 651846137,
                                 470710144,
                                 403340900,
@@ -7906,12 +8144,12 @@
                                 1175130404,
                                 2006570856,
                                 2144392476,
-                                1222882768
+                                1222882768,
+                                1983745381
                         ],
-                        "latest_close": 1.06,
-                        "latest_change": -0.84,
+                        "latest_close": 1.078,
+                        "latest_change": 1.7,
                         "ma5": [
-                                2.941,
                                 2.926,
                                 2.923,
                                 2.916,
@@ -7970,10 +8208,10 @@
                                 1.089,
                                 1.074,
                                 1.068,
+                                1.062,
                                 1.062
                         ],
                         "ma20": [
-                                2.753,
                                 2.772,
                                 2.789,
                                 2.813,
@@ -8032,6 +8270,7 @@
                                 1.081,
                                 1.079,
                                 1.078,
+                                1.079,
                                 1.079
                         ]
                 },
@@ -8088,7 +8327,7 @@
                                 "2026-02-27",
                                 "2026-03-06",
                                 "2026-03-13",
-                                "2026-03-18"
+                                "2026-03-19"
                         ],
                         "kline": [
                                 [
@@ -8399,7 +8638,7 @@
                                 ],
                                 [
                                         1.072,
-                                        1.069,
+                                        1.06,
                                         1.021,
                                         1.085
                                 ]
@@ -8456,10 +8695,10 @@
                                 4307574715,
                                 5421750119,
                                 6975762918,
-                                5326093736
+                                6548976504
                         ],
-                        "latest_close": 1.069,
-                        "latest_change": -0.83,
+                        "latest_close": 1.06,
+                        "latest_change": -1.67,
                         "ma5": [
                                 1.361,
                                 1.32,
@@ -8512,7 +8751,7 @@
                                 1.916,
                                 1.503,
                                 1.064,
-                                1.075
+                                1.073
                         ],
                         "ma20": [
                                 1.366,
@@ -8566,12 +8805,11 @@
                                 2.591,
                                 2.513,
                                 2.444,
-                                2.359
+                                2.358
                         ]
                 },
                 "benchmark": {
                         "dates": [
-                                "2025-12-16",
                                 "2025-12-17",
                                 "2025-12-18",
                                 "2025-12-19",
@@ -8630,10 +8868,10 @@
                                 "2026-03-16",
                                 "2026-03-17",
                                 "2026-03-18",
-                                "2026-03-19"
+                                "2026-03-19",
+                                "2026-03-20"
                         ],
                         "closes": [
-                                4497.555,
                                 4579.875,
                                 4552.793,
                                 4568.178,
@@ -8692,15 +8930,10 @@
                                 4671.559,
                                 4637.439,
                                 4658.332,
-                                4583.251
+                                4583.251,
+                                4567.018
                         ],
                         "kline": [
-                                [
-                                        4542.423,
-                                        4497.555,
-                                        4484.27,
-                                        4553.081
-                                ],
                                 [
                                         4499.773,
                                         4579.875,
@@ -9054,132 +9287,138 @@
                                         4583.251,
                                         4570.392,
                                         4634.547
+                                ],
+                                [
+                                        4602.821,
+                                        4567.018,
+                                        4563.069,
+                                        4628.712
                                 ]
                         ],
                         "normalized": [
                                 0.0,
-                                1.83,
-                                1.23,
-                                1.57,
-                                2.54,
-                                2.74,
-                                3.04,
-                                3.22,
-                                3.55,
-                                3.15,
-                                3.42,
-                                2.94,
-                                4.9,
-                                6.52,
-                                6.21,
-                                5.34,
-                                5.81,
-                                6.5,
-                                5.86,
-                                5.43,
-                                5.64,
-                                5.21,
-                                5.27,
-                                4.92,
-                                5.01,
-                                5.03,
-                                4.56,
-                                4.66,
-                                4.63,
-                                4.9,
-                                5.7,
-                                4.64,
-                                2.41,
-                                3.61,
-                                4.47,
-                                3.84,
-                                3.25,
-                                4.92,
-                                5.04,
-                                4.81,
-                                4.94,
-                                3.62,
-                                4.67,
-                                5.3,
-                                5.1,
-                                4.74,
-                                5.14,
-                                3.52,
-                                2.34,
-                                3.34,
-                                3.62,
-                                2.62,
-                                3.94,
+                                -0.59,
+                                -0.26,
+                                0.69,
+                                0.89,
+                                1.18,
+                                1.37,
+                                1.69,
+                                1.3,
+                                1.56,
+                                1.09,
+                                3.01,
                                 4.6,
-                                4.22,
-                                3.82,
-                                3.87,
-                                3.11,
-                                3.57,
-                                1.91
+                                4.3,
+                                3.45,
+                                3.91,
+                                4.59,
+                                3.96,
+                                3.54,
+                                3.75,
+                                3.32,
+                                3.38,
+                                3.04,
+                                3.13,
+                                3.14,
+                                2.68,
+                                2.77,
+                                2.75,
+                                3.02,
+                                3.8,
+                                2.76,
+                                0.57,
+                                1.75,
+                                2.59,
+                                1.98,
+                                1.39,
+                                3.04,
+                                3.15,
+                                2.92,
+                                3.05,
+                                1.76,
+                                2.79,
+                                3.41,
+                                3.21,
+                                2.86,
+                                3.25,
+                                1.66,
+                                0.5,
+                                1.48,
+                                1.76,
+                                0.78,
+                                2.07,
+                                2.72,
+                                2.35,
+                                1.95,
+                                2.0,
+                                1.26,
+                                1.71,
+                                0.07,
+                                -0.28
                         ]
                 },
                 "etf_normalized": [
                         0.0,
-                        5.56,
-                        3.47,
-                        4.14,
-                        9.06,
-                        8.78,
-                        10.93,
-                        11.11,
-                        9.84,
-                        10.16,
-                        10.23,
-                        8.99,
-                        11.22,
-                        10.83,
-                        11.75,
-                        10.69,
-                        11.25,
-                        14.61,
-                        10.37,
-                        12.38,
-                        12.95,
-                        13.59,
-                        11.68,
-                        8.17,
-                        9.34,
-                        12.35,
-                        11.39,
-                        10.19,
-                        12.85,
-                        13.23,
-                        11.92,
-                        15.75,
-                        11.82,
-                        -61.64,
-                        -62.81,
+                        -1.98,
+                        -1.34,
+                        3.32,
+                        3.05,
+                        5.1,
+                        5.26,
+                        4.06,
+                        4.36,
+                        4.43,
+                        3.25,
+                        5.36,
+                        4.99,
+                        5.87,
+                        4.86,
+                        5.4,
+                        8.58,
+                        4.56,
+                        6.47,
+                        7.01,
+                        7.61,
+                        5.8,
+                        2.48,
+                        3.59,
+                        6.44,
+                        5.53,
+                        4.39,
+                        6.91,
+                        7.27,
+                        6.03,
+                        9.65,
+                        5.93,
+                        -63.66,
+                        -64.77,
+                        -65.64,
+                        -65.91,
+                        -63.96,
+                        -64.03,
+                        -64.8,
+                        -64.23,
+                        -64.93,
+                        -63.86,
+                        -63.66,
+                        -62.72,
+                        -63.22,
+                        -62.59,
                         -63.73,
-                        -64.01,
-                        -61.96,
-                        -62.03,
-                        -62.85,
-                        -62.24,
-                        -62.99,
-                        -61.85,
-                        -61.64,
-                        -60.65,
-                        -61.18,
-                        -60.51,
-                        -61.71,
-                        -62.28,
-                        -61.29,
-                        -61.64,
-                        -62.77,
-                        -61.11,
-                        -60.97,
-                        -61.5,
-                        -61.85,
-                        -61.82,
-                        -63.77,
-                        -62.17,
-                        -62.49
+                        -64.26,
+                        -63.33,
+                        -63.66,
+                        -64.73,
+                        -63.16,
+                        -63.02,
+                        -63.53,
+                        -63.86,
+                        -63.83,
+                        -65.67,
+                        -64.16,
+                        -64.47,
+                        -63.86
                 ]
         },
         "159566": {
@@ -9852,7 +10091,7 @@
                                 "2026-02-27",
                                 "2026-03-06",
                                 "2026-03-13",
-                                "2026-03-18"
+                                "2026-03-19"
                         ],
                         "kline": [
                                 [
@@ -10163,7 +10402,7 @@
                                 ],
                                 [
                                         2.339,
-                                        2.276,
+                                        2.248,
                                         2.233,
                                         2.36
                                 ]
@@ -10220,10 +10459,10 @@
                                 472884481,
                                 704210234,
                                 1770383067,
-                                885018913
+                                1186521331
                         ],
-                        "latest_close": 2.276,
-                        "latest_change": -2.61,
+                        "latest_close": 2.248,
+                        "latest_change": -3.81,
                         "ma5": [
                                 1.407,
                                 1.4,
@@ -10276,7 +10515,7 @@
                                 2.16,
                                 2.163,
                                 2.206,
-                                2.241
+                                2.235
                         ],
                         "ma20": [
                                 1.351,
@@ -10330,12 +10569,11 @@
                                 2.111,
                                 2.119,
                                 2.139,
-                                2.149
+                                2.148
                         ]
                 },
                 "benchmark": {
                         "dates": [
-                                "2025-12-16",
                                 "2025-12-17",
                                 "2025-12-18",
                                 "2025-12-19",
@@ -10394,10 +10632,10 @@
                                 "2026-03-16",
                                 "2026-03-17",
                                 "2026-03-18",
-                                "2026-03-19"
+                                "2026-03-19",
+                                "2026-03-20"
                         ],
                         "closes": [
-                                4497.555,
                                 4579.875,
                                 4552.793,
                                 4568.178,
@@ -10456,15 +10694,10 @@
                                 4671.559,
                                 4637.439,
                                 4658.332,
-                                4583.251
+                                4583.251,
+                                4567.018
                         ],
                         "kline": [
-                                [
-                                        4542.423,
-                                        4497.555,
-                                        4484.27,
-                                        4553.081
-                                ],
                                 [
                                         4499.773,
                                         4579.875,
@@ -10818,69 +11051,75 @@
                                         4583.251,
                                         4570.392,
                                         4634.547
+                                ],
+                                [
+                                        4602.821,
+                                        4567.018,
+                                        4563.069,
+                                        4628.712
                                 ]
                         ],
                         "normalized": [
                                 0.0,
-                                1.83,
-                                1.23,
-                                1.57,
-                                2.54,
-                                2.74,
-                                3.04,
-                                3.22,
-                                3.55,
-                                3.15,
-                                3.42,
-                                2.94,
-                                4.9,
-                                6.52,
-                                6.21,
-                                5.34,
-                                5.81,
-                                6.5,
-                                5.86,
-                                5.43,
-                                5.64,
-                                5.21,
-                                5.27,
-                                4.92,
-                                5.01,
-                                5.03,
-                                4.56,
-                                4.66,
-                                4.63,
-                                4.9,
-                                5.7,
-                                4.64,
-                                2.41,
-                                3.61,
-                                4.47,
-                                3.84,
-                                3.25,
-                                4.92,
-                                5.04,
-                                4.81,
-                                4.94,
-                                3.62,
-                                4.67,
-                                5.3,
-                                5.1,
-                                4.74,
-                                5.14,
-                                3.52,
-                                2.34,
-                                3.34,
-                                3.62,
-                                2.62,
-                                3.94,
+                                -0.59,
+                                -0.26,
+                                0.69,
+                                0.89,
+                                1.18,
+                                1.37,
+                                1.69,
+                                1.3,
+                                1.56,
+                                1.09,
+                                3.01,
                                 4.6,
-                                4.22,
-                                3.82,
-                                3.87,
-                                3.11,
-                                3.57,
-                                1.91
+                                4.3,
+                                3.45,
+                                3.91,
+                                4.59,
+                                3.96,
+                                3.54,
+                                3.75,
+                                3.32,
+                                3.38,
+                                3.04,
+                                3.13,
+                                3.14,
+                                2.68,
+                                2.77,
+                                2.75,
+                                3.02,
+                                3.8,
+                                2.76,
+                                0.57,
+                                1.75,
+                                2.59,
+                                1.98,
+                                1.39,
+                                3.04,
+                                3.15,
+                                2.92,
+                                3.05,
+                                1.76,
+                                2.79,
+                                3.41,
+                                3.21,
+                                2.86,
+                                3.25,
+                                1.66,
+                                0.5,
+                                1.48,
+                                1.76,
+                                0.78,
+                                2.07,
+                                2.72,
+                                2.35,
+                                1.95,
+                                2.0,
+                                1.26,
+                                1.71,
+                                0.07,
+                                -0.28
                         ]
                 },
                 "etf_normalized": [
@@ -11616,7 +11855,7 @@
                                 "2026-02-27",
                                 "2026-03-06",
                                 "2026-03-13",
-                                "2026-03-18"
+                                "2026-03-19"
                         ],
                         "kline": [
                                 [
@@ -11927,8 +12166,8 @@
                                 ],
                                 [
                                         1.194,
-                                        1.146,
-                                        1.132,
+                                        1.114,
+                                        1.11,
                                         1.238
                                 ]
                         ],
@@ -11984,10 +12223,10 @@
                                 115015625,
                                 641817019,
                                 651958970,
-                                367659806
+                                473477406
                         ],
-                        "latest_close": 1.146,
-                        "latest_change": -4.42,
+                        "latest_close": 1.114,
+                        "latest_change": -7.09,
                         "ma5": [
                                 0.861,
                                 0.858,
@@ -12040,7 +12279,7 @@
                                 1.113,
                                 1.129,
                                 1.136,
-                                1.148
+                                1.142
                         ],
                         "ma20": [
                                 0.879,
@@ -12094,12 +12333,11 @@
                                 1.042,
                                 1.052,
                                 1.064,
-                                1.073
+                                1.071
                         ]
                 },
                 "benchmark": {
                         "dates": [
-                                "2025-12-16",
                                 "2025-12-17",
                                 "2025-12-18",
                                 "2025-12-19",
@@ -12158,10 +12396,10 @@
                                 "2026-03-16",
                                 "2026-03-17",
                                 "2026-03-18",
-                                "2026-03-19"
+                                "2026-03-19",
+                                "2026-03-20"
                         ],
                         "closes": [
-                                4497.555,
                                 4579.875,
                                 4552.793,
                                 4568.178,
@@ -12220,15 +12458,10 @@
                                 4671.559,
                                 4637.439,
                                 4658.332,
-                                4583.251
+                                4583.251,
+                                4567.018
                         ],
                         "kline": [
-                                [
-                                        4542.423,
-                                        4497.555,
-                                        4484.27,
-                                        4553.081
-                                ],
                                 [
                                         4499.773,
                                         4579.875,
@@ -12582,69 +12815,75 @@
                                         4583.251,
                                         4570.392,
                                         4634.547
+                                ],
+                                [
+                                        4602.821,
+                                        4567.018,
+                                        4563.069,
+                                        4628.712
                                 ]
                         ],
                         "normalized": [
                                 0.0,
-                                1.83,
-                                1.23,
-                                1.57,
-                                2.54,
-                                2.74,
-                                3.04,
-                                3.22,
-                                3.55,
-                                3.15,
-                                3.42,
-                                2.94,
-                                4.9,
-                                6.52,
-                                6.21,
-                                5.34,
-                                5.81,
-                                6.5,
-                                5.86,
-                                5.43,
-                                5.64,
-                                5.21,
-                                5.27,
-                                4.92,
-                                5.01,
-                                5.03,
-                                4.56,
-                                4.66,
-                                4.63,
-                                4.9,
-                                5.7,
-                                4.64,
-                                2.41,
-                                3.61,
-                                4.47,
-                                3.84,
-                                3.25,
-                                4.92,
-                                5.04,
-                                4.81,
-                                4.94,
-                                3.62,
-                                4.67,
-                                5.3,
-                                5.1,
-                                4.74,
-                                5.14,
-                                3.52,
-                                2.34,
-                                3.34,
-                                3.62,
-                                2.62,
-                                3.94,
+                                -0.59,
+                                -0.26,
+                                0.69,
+                                0.89,
+                                1.18,
+                                1.37,
+                                1.69,
+                                1.3,
+                                1.56,
+                                1.09,
+                                3.01,
                                 4.6,
-                                4.22,
-                                3.82,
-                                3.87,
-                                3.11,
-                                3.57,
-                                1.91
+                                4.3,
+                                3.45,
+                                3.91,
+                                4.59,
+                                3.96,
+                                3.54,
+                                3.75,
+                                3.32,
+                                3.38,
+                                3.04,
+                                3.13,
+                                3.14,
+                                2.68,
+                                2.77,
+                                2.75,
+                                3.02,
+                                3.8,
+                                2.76,
+                                0.57,
+                                1.75,
+                                2.59,
+                                1.98,
+                                1.39,
+                                3.04,
+                                3.15,
+                                2.92,
+                                3.05,
+                                1.76,
+                                2.79,
+                                3.41,
+                                3.21,
+                                2.86,
+                                3.25,
+                                1.66,
+                                0.5,
+                                1.48,
+                                1.76,
+                                0.78,
+                                2.07,
+                                2.72,
+                                2.35,
+                                1.95,
+                                2.0,
+                                1.26,
+                                1.71,
+                                0.07,
+                                -0.28
                         ]
                 },
                 "etf_normalized": [
@@ -13173,6 +13412,55 @@
         window.onload = initCharts;
 
 
+    </script>
+    
+    <!-- 新闻分页 JavaScript -->
+    <script>
+        (function() {
+            // 新闻分页功能
+            function initNewsPagination() {
+                const pageNums = document.querySelectorAll('.page-num');
+                
+                pageNums.forEach(function(pageNum) {
+                    pageNum.addEventListener('click', function() {
+                        const targetSection = this.getAttribute('data-target');
+                        const targetPage = parseInt(this.getAttribute('data-page'));
+                        
+                        // 找到对应的新闻容器（父级 macro-card）
+                        const macroCard = this.closest('.macro-card');
+                        if (!macroCard) return;
+                        
+                        // 隐藏所有页面
+                        const allPages = macroCard.querySelectorAll('.news-page');
+                        allPages.forEach(function(page) {
+                            page.style.display = 'none';
+                        });
+                        
+                        // 显示目标页面
+                        const targetPageEl = macroCard.querySelector('.news-page[data-page="' + targetPage + '"]');
+                        if (targetPageEl) {
+                            targetPageEl.style.display = 'block';
+                        }
+                        
+                        // 更新页码激活状态
+                        const pagination = macroCard.querySelector('.news-pagination');
+                        if (pagination) {
+                            pagination.querySelectorAll('.page-num').forEach(function(num) {
+                                num.classList.remove('active');
+                            });
+                            this.classList.add('active');
+                        }
+                    });
+                });
+            }
+            
+            // DOM 加载完成后初始化
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initNewsPagination);
+            } else {
+                initNewsPagination();
+            }
+        })();
     </script>
 </body>
 </html>
