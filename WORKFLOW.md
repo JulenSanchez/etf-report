@@ -10,6 +10,7 @@
 - [快速开始](#快速开始)
 - [执行步骤详解](#执行步骤详解)
 - [模式说明](#模式说明)
+- [项目审计工作流](#项目审计工作流)
 - [常见问题](#常见问题)
 - [故障排除](#故障排除)
 
@@ -380,6 +381,58 @@ python update_report.py --publish
 
 ---
 
+## 🔍 项目审计工作流
+
+**用途**: 定期梳理项目结构、检查敏感信息泄露、验证文档一致性、优化 Git 配置
+
+**详细文档**: [`docs/AUDIT_WORKFLOW.md`](docs/AUDIT_WORKFLOW.md)
+
+### 快速审计（10 秒）
+
+```bash
+python scripts/audit_project.py --quick
+```
+
+检查项：项目结构 + 敏感信息扫描
+
+### 完整审计（30 秒）
+
+```bash
+python scripts/audit_project.py --full
+```
+
+检查项：结构 + 安全 + 文档一致性 + Git 配置（4 个模块）
+
+### 单项审计
+
+```bash
+python scripts/audit_project.py --structure          # 结构审计
+python scripts/audit_project.py --security           # 安全审计
+python scripts/audit_project.py --documentation      # 文档审计
+python scripts/audit_project.py --git-config         # Git 配置审计
+```
+
+### 审计报告
+
+- **终端输出**：彩色表格汇总
+- **JSON 报告**：`logs/audit_YYYYMMDD_HHMMSS.json`（详细结果）
+
+### 建议审计频率
+
+| 审计类型 | 频率 | 触发条件 |
+|---------|------|--------|
+| 快速审计 | 每周 1 次 | 固定时间（如周一早上） |
+| 完整审计 | 每月 1 次 | 月末或发布前 |
+| 临时审计 | 按需 | 代码重构、架构变更、怀疑数据泄露 |
+
+### 常见修复
+
+- **删除冗余目录**：`rm -rf <dir> && git add . && git commit -m "refactor: remove empty directory"`
+- **更新 .gitignore**：编辑后使用 `git rm --cached <file> -r && git add . && git commit`
+- **更新文档**：对齐代码实现，验证所有示例和路径
+
+---
+
 ## ❓ 常见问题
 
 ### Q1: 如何验证数据是否正确？
@@ -471,6 +524,7 @@ ssh-keygen -t ed25519 -C "your_email@example.com"
 | 数据相关 | `docs/CONFIG_GUIDE.md` 或 `docs/INTEGRATION_GUIDE.md` |
 | 健康检查 | `docs/HEALTH_CHECK_USAGE.md` 或 `docs/HEALTH_CHECK_KNOWN_ISSUES.md` |
 | 日常参数更新 | `docs/DAILY_UPDATE_PARAMETERS.md` |
+| 项目审计 | `docs/AUDIT_WORKFLOW.md` |
 | Phase 1 详情 | `_working/phase1-completed/` |
 
 ---
