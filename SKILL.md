@@ -55,8 +55,10 @@ etf-report/
 ├── 📁 legacy/ (可选)            ← 历史版本存档
 │   └── ...                     ← 旧版本代码或设计文档
 │
-└── 📁 outputs/ (可选)           ← 其他临时输出
-    └── ...                     ← 部署或导出产物
+└── 📁 outputs/                  ← 开发调试用输出（不提交）
+    ├── js/                     ← 脚本生成的 main.js
+    ├── index.html              ← 备用调试版（主版本在根目录）
+    └── ...                     ← 其他临时文件
 ```
 
 ### 文件夹生命周期说明
@@ -68,6 +70,7 @@ etf-report/
 | `data/` | 运行缓存 | 每次执行自动更新 | 不提交 | 自动覆盖 |
 | `logs/` | 执行日志 | 每次执行自动生成 | 不提交 | 定期清理 |
 | **`_working/`** | **临时产物** | **开发中随时写** | **永不提交** | **每周清理** |
+| `outputs/` | 开发调试输出 | 脚本执行时更新 | 不提交 | 自动覆盖 |
 | `docs/` | 文档和参考资料 | 项目演进时补充 | 版本发布时 | 不清理 |
 | `legacy/` | 历史存档 | 不修改 | 保持历史 | 不清理 |
 
@@ -253,7 +256,12 @@ https://julensanchez.github.io/etf-report/
 ```
 
 **本地预览**：
-使用 `file://` 协议打开本地的 `index.html`
+使用 `file://` 协议打开**根目录**的 `index.html`（不是 `outputs/` 中的版本）：
+```
+file:///C:/Users/julentan/CodeBuddy/Claw/.codebuddy/skills/etf-report/index.html
+```
+
+> 💡 **说明**：`outputs/` 中的文件是开发调试辅助，不用于发布
 
 ## 版本历史
 

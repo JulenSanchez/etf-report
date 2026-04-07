@@ -39,3 +39,4 @@ secrets.yaml
 # 工作目录和备份（本地临时文件，不提交）
 _working/
 .backup/
+outputs/
