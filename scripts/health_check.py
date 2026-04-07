@@ -674,7 +674,9 @@ class WorkflowChecker:
     def check_transaction_management() -> CheckResult:
         result = CheckResult("E1", "事务管理", "E")
         try:
-            backups_dir = os.path.join(OUTPUTS_DIR, ".backups")
+            # 检查主备份目录 (.backup/ 在技能根目录)
+            skill_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            backups_dir = os.path.join(skill_root, ".backup")
             if os.path.exists(backups_dir):
                 backups = [d for d in os.listdir(backups_dir) if os.path.isdir(os.path.join(backups_dir, d))]
                 if len(backups) > 0:

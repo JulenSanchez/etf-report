@@ -468,9 +468,9 @@ ssh-keygen -t ed25519 -C "your_email@example.com"
 
 | 问题类型 | 查看文档 |
 |---------|--------|
-| 数据相关 | `references/CONFIG_GUIDE.md` |
-| 健康检查 | `references/HEALTH_CHECK_GUIDE.md` |
-| 故障排除 | `references/TROUBLESHOOTING.md`（计划中） |
+| 数据相关 | `docs/CONFIG_GUIDE.md` 或 `docs/INTEGRATION_GUIDE.md` |
+| 健康检查 | `docs/HEALTH_CHECK_USAGE.md` 或 `docs/HEALTH_CHECK_KNOWN_ISSUES.md` |
+| 日常参数更新 | `docs/DAILY_UPDATE_PARAMETERS.md` |
 | Phase 1 详情 | `_working/phase1-completed/` |
 
 ---
