@@ -13,59 +13,82 @@
 
 ---
 
-## 项目结构
+## 📁 项目结构完整说明
 
 ```
 etf-report/
-├── 📄 SKILL.md                  # 本文件（快速入门）
-├── 📄 index.html                # 根目录主报告（发布入口）
-├── 📄 README.md                 # 项目概述
-├── 📄 DESIGN.md                 # 架构设计详解
-├── 📄 WORKFLOW.md               # 详细执行步骤
 │
-├── 📁 docs/                     # 📚 文档目录
-│   ├── GIT_WORKFLOW.md          # Git 工作流与安全发布
+├── 📄 核心配置文档 (不变，版本发布时提交)
+│   ├── SKILL.md                 ← 本文件（快速入门 + 项目导航）
+│   ├── WORKFLOW.md              ← 详细工作流程教程
+│   ├── DESIGN.md                ← 架构设计文档
+│   ├── index.html               ← 发布入口（根目录报告）
+│   └── README.md                ← GitHub 用（暂保留）
+│
+├── 📁 scripts/                  ← 生产代码（可执行脚本）
+│   ├── update_report.py         ← 主控脚本（工作流入口）
+│   ├── fix_ma_and_benchmark.py  ← K线数据获取和均线计算
+│   ├── realtime_data_updater.py ← 实时行情获取
+│   └── health_check.py          ← 系统健康检查
+│
+├── 📁 config/                   ← 配置文件（开发和发布共用）
+│   ├── config.yaml              ← 主配置（ETF池、参数等）
+│   └── holdings.yaml            ← 成分股配置
+│
+├── 📁 data/                     ← 运行时数据（本地缓存，版本控制忽略）
+│   ├── etf_full_kline_data.json ← K线数据和均线
+│   └── etf_realtime_data.json   ← 实时行情数据
+│
+├── 📁 logs/                     ← 执行日志（版本控制忽略）
+│   ├── update_report_*.jsonl    ← 结构化执行日志
+│   └── health_check_latest.json ← 最新健康检查报告
+│
+├── 📁 _working/                 ← 👈 **临时产物专用目录**
+│   ├── .gitignore              ← Git忽略此目录所有内容
+│   ├── temp_*.py               ← 临时脚本、分析脚本等
+│   ├── analysis_*.md           ← 开发分析文档
+│   ├── phase*-*/               ← 各阶段完成档案袋
+│   └── ...                     ← 任何开发中间产出都放这里
+│
+├── 📁 references/ (可选)        ← 参考资料和文档扩展
+│   ├── CONFIG_GUIDE.md         ← 配置详解
+│   ├── TROUBLESHOOTING.md      ← 故障排除指南
 │   └── ...
 │
-├── 📁 scripts/                  # 🔧 可执行脚本
-│   ├── update_report.py         # 主控脚本（入口）
-│   ├── fix_ma_and_benchmark.py  # K线数据获取
-│   └── realtime_data_updater.py # 实时行情获取
+├── 📁 legacy/ (可选)            ← 历史版本存档
+│   └── ...                     ← 旧版本代码或设计文档
 │
-├── 📁 data/                     # 📊 数据文件
-│   ├── etf_full_kline_data.json
-│   └── etf_realtime_data.json
-│
-├── 📁 reports/                  # 📰 分析报告（Markdown）
-│   ├── 宏观环境与风险偏好建议.md
-│   └── {code}_{name}_分析报告.md
-│
-├── 📁 config/                   # ⚙️ 配置文件
-│   ├── config.yaml
-│   └── holdings.yaml
-│
-├── 📁 references/               # 📖 参考资料
-├── 📁 legacy/                   # 🗂️ 历史版本
-├── 📁 logs/                     # 📋 执行日志
-├── 📁 outputs/                  # 📤 临时输出
-└── 📁 .git/                     # 🔐 Git 配置
+└── 📁 outputs/ (可选)           ← 其他临时输出
+    └── ...                     ← 部署或导出产物
 ```
+
+### 文件夹生命周期说明
+
+| 文件夹 | 用途 | 何时修改 | 何时提交 | 何时清理 |
+|--------|------|---------|---------|---------|
+| `scripts/` | 生产代码 | 需求开发时 | 版本发布时 | 不清理 |
+| `config/` | 配置文件 | 新增 ETF 或调参数时 | 版本发布时 | 不清理 |
+| `data/` | 运行缓存 | 每次执行自动更新 | 不提交 | 自动覆盖 |
+| `logs/` | 执行日志 | 每次执行自动生成 | 不提交 | 定期清理 |
+| **`_working/`** | **临时产物** | **开发中随时写** | **永不提交** | **每周清理** |
+| `references/` | 参考资料 | 项目演进时补充 | 版本发布时 | 不清理 |
+| `legacy/` | 历史存档 | 不修改 | 保持历史 | 不清理 |
 
 ---
 
-## 📚 文档导航
+## 🗺️ 快速导航表
 
-> **快速查找** - 根据需求选择合适的文档：
+根据你的需求，选择合适的资源：
 
-| 我需要... | 查看文档 |
-|---------|--------|
-| 快速执行报告更新 | 👈 本文件（SKILL.md） |
-| 了解详细执行步骤 | `WORKFLOW.md` |
-| 理解架构设计思路 | `DESIGN.md` |
-| Git 工作流与安全发布 | `docs/GIT_WORKFLOW.md` |
-| 查看需求完成状态 | `BOARD.md`（需求看板） |
-| 查阅配置和参数指南 | `references/` |
-| 遇到问题需要故障排除 | `references/TROUBLESHOOTING.md`（计划中） |
+| 我的需求 | 查看文档或位置 |
+|---------|------------|
+| **我想快速执行一次更新** | 👇 本文件下方的"执行入口"部分 |
+| **我想理解完整的工作流程** | `WORKFLOW.md`（详细的 8 步教程） |
+| **我想理解系统为什么这样设计** | `DESIGN.md`（架构、原则、决策记录） |
+| **我在做一个新需求，有中间产出** | `_working/` 文件夹（放临时脚本/分析文档） |
+| **我想查配置参数怎么改** | `config/config.yaml` + `config/holdings.yaml` |
+| **我遇到了问题** | `WORKFLOW.md` 的"常见问题"或"故障排除"部分 |
+| **我想看历史版本或历史设计** | `legacy/` 或 `_working/phase*-*/` 档案袋 |
 
 ---
 
@@ -168,48 +191,62 @@ python update_report.py --publish
 └─────────────────────────────────────────┘
 ```
 
-## 架构设计
+---
 
-### 核心原则
+## 💡 开发和发布流程说明
 
-**数据+模板分离**：
-- 根目录 `index.html` 作为展示入口（GitHub Pages + 本地预览）
-- 脚本自动更新 HTML 中的动态数据部分
-- 保证 100% 样式一致性
+### 开发流程注意事项
 
-### 文件结构
+**当你在做一个新需求时**：
 
-```
-etf-report/
-├── SKILL.md                         # 本文件（工作流说明）
-├── index.html                       # 根目录主报告（发布入口）
-│
-├── scripts/                         # 执行脚本
-│   ├── update_report.py            # 主控脚本（入口）
-│   ├── fix_ma_and_benchmark.py     # K线数据获取
-│   └── realtime_data_updater.py    # 实时行情获取
-│
-├── data/                           # 数据文件
-│   ├── etf_full_kline_data.json
-│   └── etf_realtime_data.json
-│
-├── reports/                        # 分析报告（Markdown）
-│   ├── 宏观环境与风险偏好建议.md
-│   └── {code}_{name}_分析报告.md
-│
-└── config/                         # 配置文件
-    ├── config.yaml
-    └── holdings.yaml
-```
+1. ✅ **代码改动** → 在 `scripts/` 编写或修改代码
+2. ✅ **临时产出** → 所有分析文档、测试脚本、中间输出 **必须放到 `_working/` 文件夹**
+   - 例：`_working/temp_requirement_analysis.md`
+   - 例：`_working/phase3-feature-test/`
+3. ✅ **本地测试** → 不需要提交，只在本地运行
+4. ✅ **配置更改** → 改 `config/` 文件夹中的配置文件
 
-## 数据源
+**谨记**：
+- ❌ 不要在根目录、`scripts/`、`config/` 外写临时文件
+- ❌ `_working/` 文件夹中的内容 **永远不提交** 到 Git
+- ❌ 每个开发周期结束后，清理 `_working/` 中的过期内容
 
-**全部使用新浪财经API**（确保数据一致性）：
+### 文档更新协同
 
-| 数据类型 | API | 用途 |
-|---------|-----|------|
-| K线数据 | `money.finance.sina.com.cn` | 日线/周线K线图 |
-| 实时行情 | `hq.sinajs.cn` | ETF涨跌幅、成分股涨跌幅 |
+当代码改动时，**同时检查这些文档是否需要更新**：
+
+| 改动类型 | 检查更新 |
+|---------|--------|
+| 改了脚本的执行逻辑（增删步骤） | ← 更新 `WORKFLOW.md` 中的相应步骤说明 |
+| 改了架构或模块依赖 | ← 更新 `DESIGN.md` 中的"模块架构"部分 |
+| 改了 ETF 池或配置格式 | ← 更新 `config/` 中的配置文件 + `DESIGN.md` 中的配置说明 |
+| 改了触发词或执行入口 | ← 更新本文件（SKILL.md）的相应部分 |
+| 新增功能或优化 | ← 本文件的"版本历史"中记录 |
+
+### 版本发布流程
+
+**只有这些改动才提交和发布**：
+1. `scripts/` 中的代码改动
+2. `config/` 中的配置文件
+3. `SKILL.md`、`WORKFLOW.md`、`DESIGN.md` 中的文档更新
+4. `index.html`（发布产物，由脚本生成）
+
+**通过 req-manager 看板管理版本发布**：
+- 需求完成 → 在看板标记
+- 准备发布 → 提交本地改动
+- 版本发布 → 打标签、更新版本号
+
+---
+
+## ✅ 执行注意事项
+
+1. 建议在**交易日收盘后（15:00之后）**执行更新
+2. 非交易日无需更新
+3. MA均线从第一天即有完整数据（已预热19天）
+4. 基准指数线默认隐藏，可点击图例显示
+5. **预览报告时使用 `file://` 协议 + 绝对路径，不要启动 localhost 服务器**
+
+---
 
 ## 预览地址
 
@@ -219,32 +256,7 @@ https://julensanchez.github.io/etf-report/
 ```
 
 **本地预览**：
-```
-file:///C:/Users/julentan/CodeBuddy/Claw/.codebuddy/skills/etf-report/index.html
-```
-
-> ⚠️ **规则**：本地预览 HTML 报告时，**必须使用 `file://` 协议 + 绝对路径**，禁止使用 `http://localhost` 方式（无需启动本地 HTTP 服务器）。
-
-## 注意事项
-
-1. 建议在**交易日收盘后（15:00之后）**执行更新
-2. 非交易日无需更新
-3. MA均线从第一天即有完整数据（已预热19天）
-4. 基准指数线默认隐藏，可点击图例显示
-5. **预览报告时使用 `file://` 协议 + 绝对路径，不要启动 localhost 服务器**
-
-## 成分股配置
-
-成分股代码在 `scripts/realtime_data_updater.py` 的 `ETF_CONFIG` 中维护，需每季度根据ETF季报更新。
-
-## 未来规划
-
-此技能正在持续优化中。如果您计划进行下一步改进，请参考：
-
-- **`FUTURE_ROADMAP.md`** - 详细的功能规划和优先级排序
-- **`TODO_BACKLOG.md`** - 可执行的任务列表和工作量估算
-
-这些文档基于对系统的深度分析，优先考虑代码稳定性、可维护性和可扩展性。
+使用 `file://` 协议打开本地的 `index.html`
 
 ## 版本历史
 
@@ -257,3 +269,4 @@ file:///C:/Users/julentan/CodeBuddy/Claw/.codebuddy/skills/etf-report/index.html
 | v1.4 | 2026-03-17 | 添加自动化任务规则：定时任务必须使用发布模式 |
 | v2.0 | 2026-03-31 | 数据+模板分离架构，100%样式保证 |
 | v2.1 | 2026-04-01 | 系统优化与未来规划文档完善 |
+| v2.2 | 2026-04-07 | 项目结构重构：建立 `_working/` 专用临时产物目录，明确各文件夹用途和协同流程 |
