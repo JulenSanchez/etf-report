@@ -47,7 +47,7 @@ python scripts/update_report.py --publish
 | 文档 | 用途 | 优先级 |
 |-----|------|-------|
 | **[SKILL.md](SKILL.md)** | 工作流快速入门 | 🔴 必读 |
-| **[GIT_WORKFLOW.md](GIT_WORKFLOW.md)** | 安全的 Git 发布流程 | 🔴 必读 |
+| **[docs/GIT_WORKFLOW.md](docs/GIT_WORKFLOW.md)** | 安全的 Git 发布流程 | 🔴 必读 |
 | **[DESIGN.md](DESIGN.md)** | 架构设计与技术细节 | 🟠 重要 |
 | **[WORKFLOW.md](WORKFLOW.md)** | 详细执行步骤 | 🟠 参考 |
 | **[docs/HEALTH_CHECK_USAGE.md](docs/HEALTH_CHECK_USAGE.md)** | 健康检查工具使用 | 🟡 可选 |

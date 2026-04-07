@@ -13,6 +13,46 @@
 
 ---
 
+## 项目结构
+
+```
+etf-report/
+├── 📄 SKILL.md                  # 本文件（快速入门）
+├── 📄 index.html                # 根目录主报告（发布入口）
+├── 📄 README.md                 # 项目概述
+├── 📄 DESIGN.md                 # 架构设计详解
+├── 📄 WORKFLOW.md               # 详细执行步骤
+│
+├── 📁 docs/                     # 📚 文档目录
+│   ├── GIT_WORKFLOW.md          # Git 工作流与安全发布
+│   └── ...
+│
+├── 📁 scripts/                  # 🔧 可执行脚本
+│   ├── update_report.py         # 主控脚本（入口）
+│   ├── fix_ma_and_benchmark.py  # K线数据获取
+│   └── realtime_data_updater.py # 实时行情获取
+│
+├── 📁 data/                     # 📊 数据文件
+│   ├── etf_full_kline_data.json
+│   └── etf_realtime_data.json
+│
+├── 📁 reports/                  # 📰 分析报告（Markdown）
+│   ├── 宏观环境与风险偏好建议.md
+│   └── {code}_{name}_分析报告.md
+│
+├── 📁 config/                   # ⚙️ 配置文件
+│   ├── config.yaml
+│   └── holdings.yaml
+│
+├── 📁 references/               # 📖 参考资料
+├── 📁 legacy/                   # 🗂️ 历史版本
+├── 📁 logs/                     # 📋 执行日志
+├── 📁 outputs/                  # 📤 临时输出
+└── 📁 .git/                     # 🔐 Git 配置
+```
+
+---
+
 ## 📚 文档导航
 
 > **快速查找** - 根据需求选择合适的文档：
@@ -22,6 +62,7 @@
 | 快速执行报告更新 | 👈 本文件（SKILL.md） |
 | 了解详细执行步骤 | `WORKFLOW.md` |
 | 理解架构设计思路 | `DESIGN.md` |
+| Git 工作流与安全发布 | `docs/GIT_WORKFLOW.md` |
 | 查看需求完成状态 | `BOARD.md`（需求看板） |
 | 查阅配置和参数指南 | `references/` |
 | 遇到问题需要故障排除 | `references/TROUBLESHOOTING.md`（计划中） |
