@@ -1,0 +1,380 @@
+# ETF 成分股持仓配置文件 (REQ-107)
+# 
+# 说明：本文件包含6支ETF的详细成分股配置
+# 结构：按ETF代码组织，每支ETF最多包含10只成分股
+# 
+# 版本: 1.0
+# 最后更新: 2026-04-07
+
+holdings:
+  # ============================================================
+  # ETF-1: 512400 有色金属ETF
+  # ============================================================
+  "512400":
+    name: "有色金属ETF"
+    market: "sh"
+    total_ratio: 49.30
+    components:
+      - name: "紫金矿业"
+        code: "601899"
+        market: "sh"
+        ratio: 10.23
+      
+      - name: "洛阳钼业"
+        code: "603993"
+        market: "sh"
+        ratio: 8.17
+      
+      - name: "北方稀土"
+        code: "600111"
+        market: "sh"
+        ratio: 5.46
+      
+      - name: "华友钴业"
+        code: "603799"
+        market: "sh"
+        ratio: 4.84
+      
+      - name: "中国铝业"
+        code: "601600"
+        market: "sh"
+        ratio: 4.53
+      
+      - name: "赣锋锂业"
+        code: "002460"
+        market: "sz"
+        ratio: 3.32
+      
+      - name: "山东黄金"
+        code: "600547"
+        market: "sh"
+        ratio: 3.27
+      
+      - name: "云铝股份"
+        code: "000807"
+        market: "sz"
+        ratio: 3.20
+      
+      - name: "中金黄金"
+        code: "600489"
+        market: "sh"
+        ratio: 3.18
+      
+      - name: "藏格矿业"
+        code: "000408"
+        market: "sz"
+        ratio: 3.10
+
+  # ============================================================
+  # ETF-2: 513120 港股创新药ETF
+  # ============================================================
+  "513120":
+    name: "港股创新药ETF"
+    market: "sh"
+    total_ratio: 69.92
+    components:
+      - name: "百济神州"
+        code: "06160"
+        market: "hk"
+        ratio: 9.97
+      
+      - name: "信达生物"
+        code: "01801"
+        market: "hk"
+        ratio: 9.61
+      
+      - name: "康方生物"
+        code: "09926"
+        market: "hk"
+        ratio: 8.40
+      
+      - name: "药明生物"
+        code: "02269"
+        market: "hk"
+        ratio: 8.22
+      
+      - name: "中国生物制药"
+        code: "01177"
+        market: "hk"
+        ratio: 7.04
+      
+      - name: "石药集团"
+        code: "01093"
+        market: "hk"
+        ratio: 6.87
+      
+      - name: "翰森制药"
+        code: "03692"
+        market: "hk"
+        ratio: 6.55
+      
+      - name: "药明康德"
+        code: "02359"
+        market: "hk"
+        ratio: 5.09
+      
+      - name: "三生制药"
+        code: "01530"
+        market: "hk"
+        ratio: 4.94
+      
+      - name: "晶泰控股"
+        code: "02228"
+        market: "hk"
+        ratio: 3.23
+
+  # ============================================================
+  # ETF-3: 512070 证券保险ETF
+  # ============================================================
+  "512070":
+    name: "证券保险ETF"
+    market: "sh"
+    total_ratio: 78.93
+    components:
+      - name: "中国平安"
+        code: "601318"
+        market: "sh"
+        ratio: 27.71
+      
+      - name: "东方财富"
+        code: "300059"
+        market: "sz"
+        ratio: 11.15
+      
+      - name: "中信证券"
+        code: "600030"
+        market: "sh"
+        ratio: 10.65
+      
+      - name: "国泰海通"
+        code: "601211"
+        market: "sh"
+        ratio: 8.82
+      
+      - name: "中国太保"
+        code: "601601"
+        market: "sh"
+        ratio: 5.45
+      
+      - name: "华泰证券"
+        code: "601688"
+        market: "sh"
+        ratio: 5.24
+      
+      - name: "中国人寿"
+        code: "601628"
+        market: "sh"
+        ratio: 2.88
+      
+      - name: "广发证券"
+        code: "000776"
+        market: "sz"
+        ratio: 2.47
+      
+      - name: "招商证券"
+        code: "600999"
+        market: "sh"
+        ratio: 2.35
+      
+      - name: "新华保险"
+        code: "601336"
+        market: "sh"
+        ratio: 2.21
+
+  # ============================================================
+  # ETF-4: 515880 通信设备ETF
+  # ============================================================
+  "515880":
+    name: "通信设备ETF"
+    market: "sh"
+    total_ratio: 67.23
+    components:
+      - name: "中际旭创"
+        code: "300308"
+        market: "sz"
+        ratio: 15.20
+      
+      - name: "新易盛"
+        code: "300502"
+        market: "sz"
+        ratio: 15.14
+      
+      - name: "工业富联"
+        code: "601138"
+        market: "sh"
+        ratio: 13.08
+      
+      - name: "中兴通讯"
+        code: "000063"
+        market: "sz"
+        ratio: 6.48
+      
+      - name: "天孚通信"
+        code: "300394"
+        market: "sz"
+        ratio: 4.94
+      
+      - name: "信维通信"
+        code: "300136"
+        market: "sz"
+        ratio: 3.19
+      
+      - name: "中天科技"
+        code: "600522"
+        market: "sh"
+        ratio: 2.63
+      
+      - name: "亨通光电"
+        code: "600487"
+        market: "sh"
+        ratio: 2.59
+      
+      - name: "传音控股"
+        code: "688036"
+        market: "sh"
+        ratio: 2.02
+      
+      - name: "剑桥科技"
+        code: "603083"
+        market: "sh"
+        ratio: 1.96
+
+  # ============================================================
+  # ETF-5: 159566 储能电池ETF
+  # ============================================================
+  "159566":
+    name: "储能电池ETF"
+    market: "sz"
+    total_ratio: 59.12
+    components:
+      - name: "宁德时代"
+        code: "300750"
+        market: "sz"
+        ratio: 9.29
+      
+      - name: "阳光电源"
+        code: "300274"
+        market: "sz"
+        ratio: 9.22
+      
+      - name: "亿纬锂能"
+        code: "300014"
+        market: "sz"
+        ratio: 9.06
+      
+      - name: "英维克"
+        code: "002837"
+        market: "sz"
+        ratio: 7.68
+      
+      - name: "国轩高科"
+        code: "002074"
+        market: "sz"
+        ratio: 5.12
+      
+      - name: "麦格米特"
+        code: "002851"
+        market: "sz"
+        ratio: 4.49
+      
+      - name: "欣旺达"
+        code: "300207"
+        market: "sz"
+        ratio: 4.30
+      
+      - name: "德业股份"
+        code: "605117"
+        market: "sh"
+        ratio: 3.87
+      
+      - name: "科达利"
+        code: "002850"
+        market: "sz"
+        ratio: 3.39
+      
+      - name: "金盘科技"
+        code: "688676"
+        market: "sh"
+        ratio: 2.70
+
+  # ============================================================
+  # ETF-6: 159698 粮食产业ETF
+  # ============================================================
+  "159698":
+    name: "粮食产业ETF"
+    market: "sz"
+    total_ratio: 50.83
+    components:
+      - name: "大北农"
+        code: "002385"
+        market: "sz"
+        ratio: 9.86
+      
+      - name: "隆平高科"
+        code: "000998"
+        market: "sz"
+        ratio: 7.58
+      
+      - name: "北大荒"
+        code: "600598"
+        market: "sh"
+        ratio: 7.10
+      
+      - name: "荃银高科"
+        code: "300087"
+        market: "sz"
+        ratio: 5.52
+      
+      - name: "神农种业"
+        code: "300189"
+        market: "sz"
+        ratio: 4.66
+      
+      - name: "藏格矿业"
+        code: "000408"
+        market: "sz"
+        ratio: 3.48
+      
+      - name: "亚盛集团"
+        code: "600108"
+        market: "sh"
+        ratio: 3.29
+      
+      - name: "农发种业"
+        code: "600313"
+        market: "sh"
+        ratio: 3.13
+      
+      - name: "盐湖股份"
+        code: "000792"
+        market: "sz"
+        ratio: 3.12
+      
+      - name: "云天化"
+        code: "600096"
+        market: "sh"
+        ratio: 3.09
+
+# ============================================================
+# 注意事项
+# ============================================================
+# 
+# 1. 权重说明：
+#    - ratio: 单个成分股在ETF中的权重（百分比）
+#    - total_ratio: 10只成分股的总权重（不包括其他股票）
+#    - 差值 (100% - total_ratio) 代表其他持仓
+#
+# 2. 市场代码：
+#    - sh: 上海交易所（A股）
+#    - sz: 深圳交易所（A股）
+#    - hk: 香港交易所（港股）
+#
+# 3. 数据维护：
+#    - 本文件应定期更新以反映实际持仓变化
+#    - 建议每月或每季度检查一次权重数据
+#    - 如发现成分股调整，请及时更新本配置
+#
+# 4. 使用建议：
+#    - 系统启动时从本文件加载成分股配置
+#    - 配置变更无需修改Python代码
+#    - 支持动态加载，便于快速迭代

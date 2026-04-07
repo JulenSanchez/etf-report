@@ -1,0 +1,292 @@
+# ETF 报告系统配置文件示例 (REQ-107)
+#
+# 说明：本文件是配置模板示例，所有参数都包含详细注释
+# 要使用此配置，请复制此文件为 config.yaml 并修改参数值
+#
+# 版本: 1.0
+# 最后更新: 2026-04-07
+
+# ============================================================
+# 1. ETF列表与基准指数配置
+# ============================================================
+# 说明：定义系统需要跟踪的ETF及其基准指数
+# 格式：每支ETF包含代码、名称、交易所、基准指数等信息
+etfs:
+  # ETF-1: 有色金属ETF
+  - code: "512400"
+    name: "有色金属ETF"
+    market: "sh"              # 市场代码：sh=上海 sz=深圳
+    benchmark:
+      code: "sh000300"        # 基准指数代码
+      name: "沪深300"
+  
+  # ETF-2: 港股创新药ETF
+  - code: "513120"
+    name: "港股创新药ETF"
+    market: "sh"
+    benchmark:
+      code: "sh000300"
+      name: "沪深300"
+  
+  # ETF-3: 证券保险ETF
+  - code: "512070"
+    name: "证券保险ETF"
+    market: "sh"
+    benchmark:
+      code: "sh000300"
+      name: "沪深300"
+  
+  # ETF-4: 通信设备ETF
+  - code: "515880"
+    name: "通信设备ETF"
+    market: "sh"
+    benchmark:
+      code: "sh000300"
+      name: "沪深300"
+  
+  # ETF-5: 储能电池ETF
+  - code: "159566"
+    name: "储能电池ETF"
+    market: "sz"
+    benchmark:
+      code: "sh000300"
+      name: "沪深300"
+  
+  # ETF-6: 粮食产业ETF
+  - code: "159698"
+    name: "粮食产业ETF"
+    market: "sz"
+    benchmark:
+      code: "sh000300"
+      name: "沪深300"
+
+# ============================================================
+# 2. K线数据参数
+# ============================================================
+# 说明：控制K线图表的显示和获取参数
+kline:
+  daily:
+    # 日线图表在前端展示的天数
+    display_days: 60
+    
+    # MA均线（20日均线）需要的预热数据天数
+    # MA20 需要19天的历史数据才能计算出完整的均线值
+    warmup_days: 19
+    
+    # 实际从API获取的总天数 = display_days + warmup_days
+    # 注意：不要手动修改此值，由系统自动计算
+    fetch_days: 79
+  
+  weekly:
+    # 周线图表显示的周数
+    display_weeks: 52
+    
+    # 周线MA均线的预热周数
+    warmup_weeks: 19
+    
+    # 实际获取的总周数
+    fetch_weeks: 71
+  
+  # K线尺度参数（新浪财经API专用）
+  scales:
+    daily: 240    # 日线的scale参数值
+    weekly: 1200  # 周线的scale参数值
+
+# ============================================================
+# 3. API 配置 - 新浪财经
+# ============================================================
+# 说明：新浪财经API的端点、超时、请求参数等配置
+api:
+  sina:
+    # K线数据接口地址
+    # 参数说明：
+    #   - symbol: 股票代码（如 sh512400）
+    #   - scale: K线尺度（240=日线 1200=周线）
+    #   - datalen: 获取的天数
+    kline_endpoint: "https://money.finance.sina.com.cn/quotes_service/api/json_v2.php/CN_MarketData.getKLineData"
+    
+    # 实时行情接口地址
+    # 用于获取ETF和成分股的实时价格、涨跌幅等
+    realtime_endpoint: "https://hq.sinajs.cn/list="
+    
+    # 网络参数
+    timeout: 10              # 单个请求的超时时间（秒）
+    encoding: "gbk"          # 新浪API返回的编码格式
+    user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+    referer: "https://finance.sina.com.cn/"
+    
+    # 请求间隔（避免被服务器限流）
+    request_delays:
+      kline_fetch: 0.2      # 每次K线请求之间的间隔（秒）
+      realtime_fetch: 0.3   # 实时行情请求间隔（秒）
+
+# ============================================================
+# 4. 数据文件配置
+# ============================================================
+# 说明：系统使用的数据目录和文件名配置
+# 注意：所有路径都相对于 etf-report 技能目录
+files:
+  # 目录配置
+  data_dir: "data"                # 数据存储目录
+  outputs_dir: "outputs"          # HTML/JS输出目录
+  outputs_js_dir: "outputs/js"    # JavaScript文件目录
+  outputs_css_dir: "outputs/css"  # CSS文件目录
+  logs_dir: "logs"                # 日志目录
+  
+  # 数据文件名
+  data_files:
+    kline: "etf_full_kline_data.json"         # K线数据存储文件
+    realtime: "etf_realtime_data.json"        # 实时行情数据文件
+    fund_flow: "fund_flow_data.json"          # 基金流向数据文件
+  
+  # 输出文件
+  html_file: "index.html"  # 前端报告HTML文件
+  js_main: "main.js"       # 前端主JS文件
+
+# ============================================================
+# 5. HTML 更新配置
+# ============================================================
+# 说明：HTML报告更新时的定位标记和日期格式配置
+html_update:
+  # 数据定位标记（用于在HTML中精确定位需要更新的内容）
+  locators:
+    report_date_label: "报告日期:"           # 报告日期标签的定位标记
+    data_cutoff_label: "数据截止:"          # 数据截止时间的标记
+    generation_time_label: "生成时间:"       # 生成时间的标记
+    kline_const: "const klineData = "        # K线数据的JavaScript标记
+    realtime_const: "const realtimeData = "  # 实时数据的JavaScript标记
+  
+  # 日期格式正则表达式（用于匹配和替换日期）
+  date_patterns:
+    report_date: '\d{4}年\d{2}月\d{2}日'  # 匹配 2026年03月17日
+    iso_date: '\d{4}-\d{2}-\d{2}'         # 匹配 2026-03-17
+  
+  # 日期格式化模板（用于输出日期）
+  date_formats:
+    report_date_cn: "%Y年%m月%d日"  # 中文日期格式：2026年03月17日
+    iso_date: "%Y-%m-%d"            # ISO日期格式：2026-03-17
+  
+  # 涨跌幅的颜色配置（CSS颜色代码）
+  colors:
+    positive_change: "#10b981"  # 绿色，用于表示上涨
+    negative_change: "#ef4444"  # 红色，用于表示下跌
+    neutral_change: "#9ca3af"   # 灰色，用于表示平盘或无数据
+
+# ============================================================
+# 6. 系统检查配置
+# ============================================================
+# 说明：系统健康检查时需要验证的必需文件和脚本
+system_check:
+  # 必需的Python脚本（系统启动时检查这些脚本是否存在）
+  required_scripts:
+    - "update_report.py"
+    - "fix_ma_and_benchmark.py"
+    - "realtime_data_updater.py"
+    - "transaction.py"
+    - "verify_html_integrity.py"
+  
+  # 必需的数据文件（更新完成后检查这些数据文件是否存在）
+  required_data_files:
+    - "etf_full_kline_data.json"
+    - "etf_realtime_data.json"
+    - "fund_flow_data.json"
+  
+  # ETF代码列表（用于验证所有ETF数据都已正确更新）
+  etf_codes:
+    - "512400"
+    - "513120"
+    - "512070"
+    - "515880"
+    - "159566"
+    - "159698"
+
+# ============================================================
+# 7. 日志配置
+# ============================================================
+# 说明：系统日志的输出格式和文件管理配置
+logging:
+  # 日志级别（DEBUG=最详细, INFO=标准, WARNING=警告, ERROR=错误, CRITICAL=严重错误）
+  level: "INFO"
+  
+  # 日志输出格式（包含时间、模块名、日志级别、消息内容）
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  
+  # 日志存储目录
+  log_dir: "logs"
+  
+  # 单个日志文件的大小限制（字节，超过此大小会自动轮转）
+  max_file_size: 10485760  # 10MB
+  
+  # 保留的备份日志文件数量
+  backup_count: 5
+  
+  # 日志文件名前缀
+  filename_prefix: "etf_report"
+
+# ============================================================
+# 8. 更新流程控制
+# ============================================================
+# 说明：完整的报告更新流程的各个步骤控制
+update_workflow:
+  # 步骤1：K线数据更新
+  step_kline_update:
+    enabled: true
+    description: "获取K线数据并计算均线"
+  
+  # 步骤2：实时行情更新
+  step_realtime_update:
+    enabled: true
+    description: "获取实时行情数据（ETF涨跌幅+成分股涨跌幅）"
+    fail_continue: true  # 失败是否继续下一步
+  
+  # 步骤3：HTML数据更新
+  step_html_data_update:
+    enabled: true
+    description: "更新HTML中的K线数据和实时行情数据"
+  
+  # 步骤4：日期信息更新
+  step_html_date_update:
+    enabled: true
+    description: "更新报告日期、数据截止、生成时间"
+  
+  # 步骤5：HTML完整性验证
+  step_html_integrity_check:
+    enabled: true
+    description: "验证HTML结构和数据完整性"
+    fail_rollback: true  # 失败是否回滚
+  
+  # 步骤6：输出文件验证
+  step_output_verification:
+    enabled: true
+    description: "验证所有输出文件是否存在"
+
+# ============================================================
+# 9. 事务管理配置 (REQ-103)
+# ============================================================
+# 说明：数据更新时的备份和回滚配置
+transaction:
+  # 备份位置（相对于 etf-report 技能目录）
+  backup_dir: ".backup"
+  
+  # 保留的备份版本数量
+  max_backups: 5
+  
+  # 备份时间戳格式（用于生成备份文件夹名称）
+  timestamp_format: "%Y%m%d_%H%M%S"
+
+# ============================================================
+# 10. 用户提示与文档
+# ============================================================
+# 说明：系统向用户显示的提示信息
+messages:
+  # 建议的更新时间
+  update_timing: "建议在交易日收盘后(15:00之后)执行更新"
+  
+  # 数据来源说明
+  data_source: "K线/实时行情：新浪财经API"
+  
+  # MA均线预热说明
+  ma_warmup_note: "MA均线从第一天即有完整数据(已预热)"
+  
+  # 实时数据说明
+  realtime_data_note: "ETF涨跌幅和成分股涨跌幅为实时数据"
