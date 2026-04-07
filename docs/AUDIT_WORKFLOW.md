@@ -53,17 +53,24 @@
 
 **扫描模式**:
 ```
-# 个人信息
-julensanchez, julentan, @qq.com, @163.com, 手机号
+# 个人身份信息
+- 个人邮箱、QQ、微信账号
+- 电话号码（正则: \d{11})
+- 企业认证账号
 
-# 身份验证
-api_key, auth_token, password, secret, private_key, Bearer
+# 身份验证凭证
+- API 密钥、访问令牌
+- 密码和密钥
+- Bearer Token、授权信息
 
 # 企业信息
-webhook, 钉钉, 企业微信, 公司名, 项目代号
+- 内部 Webhook 地址
+- 内部通讯工具链接（钉钉、企业微信等）
+- 项目内部代号
 
 # 文档标记
-@everyone, @all, internal.only, confidential, do.not.share
+- "Internal Only" / "Confidential" 标记
+- 内部分享标签
 ```
 
 **关键发现示例**:
