@@ -46,7 +46,9 @@ python scripts/update_report.py --publish
 
 ### Step 8: GitHub Pages 部署（发布模式，~2-3s）
 
-将临时 HTML 快照复制到 Pages 仓库后执行 git add/commit/push。需配置 SSH 密钥。
+如果 GitHub Pages 直接服务当前源码仓分支，发布流程会先更新技能根目录的 `index.html`，再只把当天这一个文件提交到源码仓；只有在 `pages_repo_root` 指向**不同 remote / 不同分支**的独立 Pages 仓时，才会额外把这份 `index.html` 复制过去并执行 git add/commit/push。需配置 SSH 密钥。
+
+
 
 
 ## 常见问题

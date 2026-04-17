@@ -27,9 +27,8 @@ import webbrowser
 import time
 import json
 import argparse
-import shutil
-import tempfile
 from datetime import datetime
+
 
 
 from logger import Logger
@@ -61,29 +60,7 @@ logger.info("配置已加载", {
 })
 
 
-def prepare_publish_html_snapshot(source_html_file=None):
-    """发布模式下复制临时 HTML 快照，避免污染源码工作区。"""
-    html_source = source_html_file or HTML_FILE
-    if not os.path.exists(html_source):
-        raise FileNotFoundError(f"源 HTML 不存在: {html_source}")
 
-    temp_dir = tempfile.mkdtemp(prefix="etf_publish_")
-    temp_html_file = os.path.join(temp_dir, os.path.basename(html_source))
-    shutil.copy2(html_source, temp_html_file)
-    logger.info("发布模式已创建临时 HTML 快照", {
-        "source_html": html_source,
-        "temp_html": temp_html_file,
-    })
-    return temp_dir, temp_html_file
-
-
-def cleanup_publish_html_snapshot(temp_dir):
-    """清理发布模式生成的临时 HTML 快照目录。"""
-    if not temp_dir:
-        return
-
-    shutil.rmtree(temp_dir, ignore_errors=True)
-    logger.info("发布模式临时 HTML 快照已清理", {"temp_dir": temp_dir})
 
 
 def run_kline_update():
@@ -1011,9 +988,10 @@ def update_html_data(html_file=None):
     files_config = config.get_files_config()
     html_update_config = config.get_html_update_config()
     
-    html_file = HTML_FILE  # 使用根目录的 index.html
+    html_file = html_file or HTML_FILE
     kline_file = os.path.join(DATA_DIR, files_config.get('data_files', {}).get('kline', 'etf_full_kline_data.json'))
     realtime_file = os.path.join(DATA_DIR, files_config.get('data_files', {}).get('realtime', 'etf_realtime_data.json'))
+
     
     # 加载HTML定位标记
     locators = html_update_config.get('locators', {})
@@ -1162,7 +1140,7 @@ def verify_output_files(html_file=None):
     
     return all_exist
 
-def print_summary(html_file=None, source_html_protected=False):
+def print_summary(html_file=None):
     """打印总结信息"""
     logger.info("=" * 60)
     logger.info("更新完成")
@@ -1171,13 +1149,8 @@ def print_summary(html_file=None, source_html_protected=False):
     # 从配置加载消息提示
     messages = config._config.get('messages', {})
     active_html_file = html_file or HTML_FILE
-    local_preview = f"file:///{HTML_FILE.replace(os.sep, '/')}"
-    html_output_line = f"  - {os.path.basename(HTML_FILE)}  (综合报告，根目录主文件)"
-    protection_note = ""
-
-    if source_html_protected and os.path.abspath(active_html_file) != os.path.abspath(HTML_FILE):
-        html_output_line = "  - 临时 HTML 快照  (仅用于发布，不回写源码根目录 index.html)"
-        protection_note = "\n  - 发布模式保护：根目录 index.html 保持不变，Pages 使用临时 HTML 快照\n"
+    local_preview = f"file:///{active_html_file.replace(os.sep, '/')}"
+    html_output_line = f"  - {os.path.basename(active_html_file)}  (综合报告，根目录主文件)"
     
     summary = f"""
 报告已更新完成！
@@ -1196,9 +1169,10 @@ def print_summary(html_file=None, source_html_protected=False):
 注意事项:
   - {messages.get('update_timing', '建议在交易日收盘后(15:00之后)执行更新')}
   - {messages.get('ma_warmup_note', 'MA均线从第一天即有完整数据(已预热)')}
-  - {messages.get('realtime_data_note', 'ETF涨跌幅和成分股涨跌幅为实时数据')}{protection_note}
+  - {messages.get('realtime_data_note', 'ETF主展示按数据截止日收盘价口径，成分股涨跌幅仍来自实时数据')}
 """
     logger.info("完成总结", {"summary": summary})
+
 
 
 
@@ -1222,15 +1196,9 @@ def main(publish: bool = False):
     logger.info("=" * 60)
 
     working_html_file = HTML_FILE
-    publish_temp_dir = None
-    if publish:
-        try:
-            publish_temp_dir, working_html_file = prepare_publish_html_snapshot()
-        except Exception as e:
-            logger.error("创建发布临时 HTML 快照失败", {"error": str(e), "source_html": HTML_FILE})
-            return False
     
     logger.info("工作环境信息", {
+
         "work_dir": WORK_DIR,
         "start_time": datetime.now().strftime('%H:%M:%S'),
         "publish": publish,
@@ -1340,7 +1308,7 @@ def main(publish: bool = False):
                 logger.error("GitHub 部署失败", {"error": str(e)})
         
         # 打印总结
-        print_summary(html_file=working_html_file, source_html_protected=(os.path.abspath(working_html_file) != os.path.abspath(HTML_FILE)))
+        print_summary(html_file=working_html_file)
         
         logger.info("工作完成", {
             "end_time": datetime.now().strftime('%H:%M:%S')
@@ -1356,9 +1324,7 @@ def main(publish: bool = False):
         logger.warn("正在从备份恢复")
         tx.restore(backup_path)
         return False
-    finally:
-        if publish_temp_dir:
-            cleanup_publish_html_snapshot(publish_temp_dir)
+
 
 
 if __name__ == "__main__":

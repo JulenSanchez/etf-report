@@ -299,9 +299,11 @@ publish:
     commit_files:
       - "index.html"
     commit_message: "data: ETF daily report update - {date}"
-    # 如需同步到单独的 Pages 仓库，请在本地配置中填写绝对路径
+    # 只有在“独立 Pages 仓库”与正式源码仓不是同一个 remote / branch 时才填写
+    # 如果 GitHub Pages 直接服务当前源码仓分支，请保持为空
     pages_repo_root: ""
     pages_branch: "main"
+
 
 # ============================================================
 # 11. 用户提示与文档

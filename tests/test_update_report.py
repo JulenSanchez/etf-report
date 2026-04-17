@@ -253,6 +253,55 @@ def test_update_html_data_replaces_existing_realtime_const(tmp_path, monkeypatch
     assert 'class="etf-change positive" id="overview-card-510000-change">+59.00%</div>' in updated
 
 
+def test_update_html_data_honors_explicit_html_target(tmp_path, monkeypatch, load_module):
+    module = load_module("update_report")
+    data_dir = tmp_path / "data"
+    data_dir.mkdir()
+    source_html = tmp_path / "source.html"
+    target_html = tmp_path / "publish.html"
+
+    daily_dates = [f"2026-02-{i:02d}" for i in range(1, 61)]
+    daily_kline = [[float(price), float(price), float(price - 1), float(price + 1)] for price in range(100, 160)]
+    weekly_dates = [f"2025-W{i:02d}" for i in range(1, 53)]
+    weekly_kline = [[float(price), float(price), float(price - 1), float(price + 1)] for price in range(200, 252)]
+
+    (data_dir / "etf_full_kline_data.json").write_text(
+        json.dumps({
+            "510000": {
+                "name": "示例ETF",
+                "daily": {"dates": daily_dates, "kline": daily_kline},
+                "weekly": {"dates": weekly_dates, "kline": weekly_kline},
+            }
+        }, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    (data_dir / "etf_realtime_data.json").write_text(
+        json.dumps({"510000": {"etf_change": 1.23, "etf_price": 200.0}}, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    source_html.write_text("SOURCE-UNCHANGED", encoding="utf-8")
+    target_html.write_text(
+        '<div class="info-label" id="latest-nav-label-510000">最新净值</div>'
+        '<div class="info-value" id="latest-nav-value-510000">旧价格</div>'
+        '<div class="info-value text-red" id="daily-change-value-510000">旧值</div>'
+        '<table class="performance-table" id="performance-table-510000"><tr><td>旧业绩</td></tr></table>'
+        '<div class="etf-change negative" id="overview-card-510000-change">旧概览涨幅</div>'
+        '<script>const klineData = {"old": 1};\nconst realtimeData = {"old": true};</script>',
+        encoding="utf-8",
+    )
+
+    monkeypatch.setattr(module, "DATA_DIR", str(data_dir))
+    monkeypatch.setattr(module, "HTML_FILE", str(source_html))
+
+    assert module.update_html_data(html_file=str(target_html)) is True
+
+    assert source_html.read_text(encoding="utf-8") == "SOURCE-UNCHANGED"
+    updated = target_html.read_text(encoding="utf-8")
+    assert 'const realtimeData = {' in updated
+    assert '"etf_price": 200.0' in updated
+
+
+
 
 
 
@@ -434,8 +483,9 @@ def test_main_publish_success_runs_cleanup_and_publishers(tmp_path, monkeypatch,
         html_targets.append(("verify", html_file))
         return True
 
-    def fake_print_summary(html_file=None, source_html_protected=False):
-        publish_calls.append(("summary", html_file, source_html_protected))
+    def fake_print_summary(html_file=None):
+        publish_calls.append(("summary", html_file))
+
 
     fake_health_check = SimpleNamespace(HTML_FILE=None, run_all_checks=lambda: [SimpleNamespace(status="PASS")])
 
@@ -472,13 +522,13 @@ def test_main_publish_success_runs_cleanup_and_publishers(tmp_path, monkeypatch,
     assert "cleanup" in tx_instances[0].actions
     assert publish_calls[0][0] == "notifier"
     assert publish_calls[1][0] == "deployer"
-    temp_html = publish_calls[1][2]
-    assert temp_html is not None
-    assert temp_html != str(source_html)
-    assert source_html.read_text(encoding="utf-8") == "SOURCE-HTML"
-    assert fake_health_check.HTML_FILE == temp_html
-    assert any(kind == "data" and target == temp_html for kind, target in html_targets)
-    assert any(call[0] == "summary" and call[2] is True for call in publish_calls)
+    published_html = publish_calls[1][2]
+    assert published_html == str(source_html)
+    assert source_html.read_text(encoding="utf-8") == "PUBLISHED-HTML"
+    assert fake_health_check.HTML_FILE is None
+    assert any(kind == "data" and target == str(source_html) for kind, target in html_targets)
+    assert any(call[0] == "summary" and call[1] == str(source_html) for call in publish_calls)
+
 
 
 
@@ -509,12 +559,13 @@ def test_main_restores_backup_when_html_integrity_fails(monkeypatch, load_module
     monkeypatch.setattr(module, "update_html_data", lambda html_file=None: True)
     monkeypatch.setattr(module, "update_html_dates", lambda html_file=None: True)
     monkeypatch.setattr(module, "verify_output_files", lambda html_file=None: True)
-    monkeypatch.setattr(module, "print_summary", lambda html_file=None, source_html_protected=False: None)
+    monkeypatch.setattr(module, "print_summary", lambda html_file=None: None)
 
     monkeypatch.setitem(sys.modules, "transaction", SimpleNamespace(TransactionManager=FakeTx))
     monkeypatch.setitem(
         sys.modules,
         "verify_html_integrity",
+
         SimpleNamespace(
             verify_html_integrity=lambda _path: {"passed": False},
             print_report=lambda _result, _path: None,
@@ -634,9 +685,10 @@ def test_main_continues_when_realtime_update_fails(monkeypatch, load_module):
     monkeypatch.setattr(module, "update_html_data", lambda html_file=None: True)
     monkeypatch.setattr(module, "update_html_dates", lambda html_file=None: True)
     monkeypatch.setattr(module, "verify_output_files", lambda html_file=None: True)
-    monkeypatch.setattr(module, "print_summary", lambda html_file=None, source_html_protected=False: None)
+    monkeypatch.setattr(module, "print_summary", lambda html_file=None: None)
 
     monkeypatch.setitem(sys.modules, "transaction", SimpleNamespace(TransactionManager=FakeTx))
+
     monkeypatch.setitem(
         sys.modules,
         "verify_html_integrity",
