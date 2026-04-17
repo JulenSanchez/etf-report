@@ -16,9 +16,11 @@ import json
 import time
 import re
 import os
-from bs4 import BeautifulSoup
+from datetime import datetime
 
 from logger import Logger
+
+
 from config_manager import get_config
 
 # 日志初始化
@@ -29,20 +31,41 @@ config = get_config()
 
 # 从配置加载ETF列表和成分股配置
 etfs_list = config.get_etfs()
-holdings_all = config._config.get('holdings', {})
+
+
+def calculate_total_ratio(components):
+    """按成分股占比回算前十大持仓集中度。"""
+    return round(sum(float(item.get('ratio', 0) or 0) for item in (components or [])), 2)
+
+
+
+def resolve_total_ratio(total_ratio, components):
+    """优先使用有效 total_ratio，缺失或非正值时回退到成分股占比求和。"""
+    try:
+        numeric = float(total_ratio)
+    except (TypeError, ValueError):
+        numeric = None
+    if numeric is not None and numeric > 0:
+        return round(numeric, 2)
+    return calculate_total_ratio(components)
+
 
 # 构建ETF_CONFIG（包含ETF信息和对应的成分股）
 ETF_CONFIG = {}
 for etf_info in etfs_list:
     etf_code = etf_info['code']
-    etf_holdings_data = holdings_all.get(etf_code, {})
+    etf_holdings_data = config.get_holdings(etf_code) or {}
     # 提取成分股数组（在 holdings.yaml 中叫 components）
     components = etf_holdings_data.get('components', [])
+    total_ratio = resolve_total_ratio(etf_holdings_data.get('total_ratio'), components)
     # 合并 ETF 基本信息和成分股数据
     ETF_CONFIG[etf_code] = {
         **etf_info,  # 包含 code, name, market, benchmark
-        'holdings': components  # 直接使用 components 数组
+        'holdings': components,  # 直接使用 components 数组
+        'total_ratio': total_ratio
     }
+
+
 
 # API参数
 api_config = config.get_api_config().get('sina', {})
@@ -88,7 +111,8 @@ def fetch_realtime_quote_sina(symbols):
     }
     
     try:
-        response = requests.get(url, headers=headers, timeout=API_TIMEOUT)
+        with logger.audit_api_call("GET", url):
+            response = requests.get(url, headers=headers, timeout=API_TIMEOUT)
         response.encoding = 'gbk'
         
         results = {}
@@ -212,8 +236,10 @@ def fetch_all_realtime_data():
         all_data[etf_code] = {
             "name": config['name'],
             "etf_change": etf_change,
+            "etf_price": etf_quote.get('price'),
             "holdings": holdings_data,
-            "total_ratio": config.get('total_ratio', 0)
+            "total_ratio": config.get('total_ratio', 0),
+            "timestamp": datetime.now().isoformat()
         }
         
         time.sleep(REALTIME_DELAY)  # 避免请求过快
@@ -290,7 +316,8 @@ def update_html_etf_change(html_path, all_data):
         div_class = class_match.group(1) if class_match else 'info-value'
         
         # 构建新 div
-        new_div = f'<div class="{div_class}" style="color: {color};">{change_text}</div>'
+        color_class = 'text-green' if color == '#10b981' else ('text-red' if color == '#ef4444' else 'text-amber')
+        new_div = f'<div class="{div_class} {color_class}">{change_text}</div>'
         html_content = html_content[:div_start] + new_div + html_content[div_end:]
         
         logger.info("ETF涨跌幅更新", {
@@ -318,17 +345,15 @@ def update_html_holdings_pie(html_path, all_data):
     with open(html_path, 'r', encoding='utf-8') as f:
         html_content = f.read()
     
-    pie_counter = 0
-    
     for etf_code, data in all_data.items():
-        pie_counter += 1
-        chart_id = f"holdings-pie-{pie_counter}"
+        chart_id = f"holdings-chart-{etf_code}"
         
         logger.info("处理饼图数据", {
             "code": etf_code,
             "name": data['name'],
             "chart_id": chart_id
         })
+
         
         # 构建新的数据数组
         data_items = []
@@ -360,7 +385,8 @@ def update_html_holdings_pie(html_path, all_data):
         
         new_data_array = "[\n                            " + ",\n                            ".join(data_items) + ",\n                        ]"
         
-        # 用字符串定位：找到包含 getElementById('holdings-pie-X') 的 script 块
+        # 用字符串定位：找到包含 getElementById('holdings-chart-{etf_code}') 的 script 块
+
         chart_marker = f"getElementById('{chart_id}')"
         chart_pos = html_content.find(chart_marker)
         if chart_pos == -1:
@@ -404,8 +430,11 @@ def save_realtime_data(all_data, data_dir):
     """保存实时数据到JSON文件"""
     import os
     json_file = os.path.join(data_dir, "etf_realtime_data.json")
-    with open(json_file, "w", encoding="utf-8") as f:
-        json.dump(all_data, f, ensure_ascii=False, indent=2)
+    with logger.audit_operation("file_io", f"write {json_file}"):
+        with open(json_file, "w", encoding="utf-8") as f:
+            json.dump(all_data, f, ensure_ascii=False, indent=2)
+    file_size = os.path.getsize(json_file)
+    logger.audit("file_io", f"Realtime data saved: {json_file}", extra={"file_size_bytes": file_size, "etf_count": len(all_data)})
     logger.info("实时数据已保存", {"file": json_file})
 
 
@@ -443,7 +472,6 @@ def main():
     
     # 定义文件路径
     data_dir = os.path.join(skill_dir, "data")
-    outputs_dir = os.path.join(skill_dir, "outputs")
     
     # 1. 获取所有实时数据
     all_data = fetch_all_realtime_data()
@@ -451,25 +479,13 @@ def main():
     # 2. 保存实时数据
     save_realtime_data(all_data, data_dir)
     
-    # 3. 更新JS文件中的实时数据
-    logger.info("=" * 60)
-    logger.info("更新JS文件中的实时行情数据")
-    logger.info("=" * 60)
-    
-    js_main_file = os.path.join(outputs_dir, "js", "main.js")
-    
-    if os.path.exists(js_main_file):
-        update_js_realtime_data(js_main_file, all_data)
-        logger.info("已更新JS文件", {"file": js_main_file})
-    else:
-        logger.warn("JS文件不存在，跳过更新", {"file": js_main_file})
-    
     logger.info("=" * 60)
     logger.info("实时数据更新完成")
     logger.info("=" * 60)
     logger.info("完成信息", {
         "data_source": "新浪财经实时行情API",
-        "update_content": "ETF日涨跌幅 + 成分股当日涨跌"
+        "update_content": "ETF日涨跌幅 + ETF实时价格 + 成分股当日涨跌",
+        "injected_by": "update_report.py -> update_html_data"
     })
     
 

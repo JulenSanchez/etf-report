@@ -21,8 +21,10 @@
 import os
 import json
 import sys
+import time
+import functools
 from datetime import datetime
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Callable
 from pathlib import Path
 
 
@@ -35,6 +37,7 @@ class Logger:
         "INFO": 1,
         "WARN": 2,
         "ERROR": 3,
+        "AUDIT": 4,
     }
     
     # 控制台颜色定义（ANSI）
@@ -43,6 +46,7 @@ class Logger:
         "INFO": "\033[32m",     # 绿色
         "WARN": "\033[33m",     # 黄色
         "ERROR": "\033[31m",    # 红色
+        "AUDIT": "\033[35m",    # 紫色
         "RESET": "\033[0m",
     }
     
@@ -86,9 +90,13 @@ class Logger:
             # 日志文件路径：logs/logger_name_YYYYMMDD.jsonl
             today = datetime.now().strftime("%Y%m%d")
             self.log_file = os.path.join(self.log_dir, f"{name}_{today}.jsonl")
+            
+            # 审计日志独立文件
+            self.audit_file = os.path.join(self.log_dir, f"audit_{today}.jsonl")
         else:
             self.log_dir = None
             self.log_file = None
+            self.audit_file = None
     
     def _should_log(self, level: str) -> bool:
         """检查是否应该记录该级别的日志"""
@@ -185,9 +193,122 @@ class Logger:
         """记录 ERROR 级别日志"""
         self._log("ERROR", message, context)
     
+    def audit(
+        self,
+        event_type: str,
+        detail: str,
+        duration_ms: Optional[float] = None,
+        status: str = "ok",
+        extra: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """记录审计事件
+        
+        Args:
+            event_type: 事件类型（api_call / data_process / file_io）
+            detail: 事件描述
+            duration_ms: 耗时（毫秒）
+            status: ok / error
+            extra: 附加信息
+        """
+        if not self.audit_file:
+            return
+        
+        record = {
+            "ts": datetime.now().isoformat(),
+            "level": "AUDIT",
+            "type": event_type,
+            "detail": detail,
+            "duration_ms": duration_ms,
+            "status": status,
+        }
+        if extra:
+            record["extra"] = extra
+        
+        try:
+            with open(self.audit_file, "a", encoding="utf-8") as f:
+                f.write(json.dumps(record, ensure_ascii=False) + "\n")
+        except Exception:
+            pass  # 审计写入失败不阻塞业务
+    
     def get_log_file_path(self) -> Optional[str]:
         """获取当前日志文件路径"""
         return self.log_file
+    
+    def get_audit_file_path(self) -> Optional[str]:
+        """获取当前审计日志文件路径"""
+        return self.audit_file
+    
+    class AuditAPICall:
+        """上下文管理器：审计 API 调用的耗时和结果
+        
+        用法：
+            with logger.audit_api_call("GET", url):
+                response = requests.get(url)
+        """
+        
+        def __init__(self, logger_instance, method: str, url: str):
+            self._logger = logger_instance
+            self._method = method
+            self._url = url
+            self._start = None
+        
+        def __enter__(self):
+            self._start = time.monotonic()
+            return self
+        
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            if self._start is None:
+                return False
+            duration_ms = round((time.monotonic() - self._start) * 1000, 1)
+            status = "error" if exc_type else "ok"
+            self._logger.audit(
+                event_type="api_call",
+                detail=f"{self._method} {self._url}",
+                duration_ms=duration_ms,
+                status=status,
+                extra={"error": str(exc_val)} if exc_val else None,
+            )
+            return False  # 不吞异常
+    
+    def audit_api_call(self, method: str, url: str) -> "Logger.AuditAPICall":
+        """返回一个审计 API 调用的上下文管理器"""
+        return self.AuditAPICall(self, method, url)
+    
+    class AuditOperation:
+        """上下文管理器：审计任意操作的耗时和结果
+        
+        用法：
+            with logger.audit_operation("data_process", "MA calculation"):
+                result = calculate_ma(data, 5)
+        """
+        
+        def __init__(self, logger_instance, event_type: str, detail: str):
+            self._logger = logger_instance
+            self._event_type = event_type
+            self._detail = detail
+            self._start = None
+        
+        def __enter__(self):
+            self._start = time.monotonic()
+            return self
+        
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            if self._start is None:
+                return False
+            duration_ms = round((time.monotonic() - self._start) * 1000, 1)
+            status = "error" if exc_type else "ok"
+            self._logger.audit(
+                event_type=self._event_type,
+                detail=self._detail,
+                duration_ms=duration_ms,
+                status=status,
+                extra={"error": str(exc_val)} if exc_val else None,
+            )
+            return False
+    
+    def audit_operation(self, event_type: str, detail: str) -> "Logger.AuditOperation":
+        """返回一个审计任意操作的上下文管理器"""
+        return self.AuditOperation(self, event_type, detail)
 
 
 # ============================================================

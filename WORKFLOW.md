@@ -1,534 +1,76 @@
-# ETF 报告生成工作流 - 执行手册 (WORKFLOW)
+# ETF 报告生成工作流 — 执行手册
 
-**最后更新**: 2026-04-07  
-**版本**: 1.0
-
----
-
-## 📋 快速导航
-
-- [快速开始](#快速开始)
-- [执行步骤详解](#执行步骤详解)
-- [模式说明](#模式说明)
-- [项目审计工作流](#项目审计工作流)
-- [常见问题](#常见问题)
-- [故障排除](#故障排除)
-
----
-
-## 🚀 快速开始
-
-### 本地测试（开发模式）
+## 快速开始
 
 ```bash
-cd .codebuddy/skills/etf-report/scripts
-python update_report.py
+# 开发模式（默认）：步骤 1-6，~11 秒
+python scripts/update_report.py
+
+# 发布模式：步骤 1-8，~15 秒（含企微通知 + GitHub Pages）
+python scripts/update_report.py --publish
 ```
 
-**预期结果**：
-- 生成 6 支 ETF 报告
-- 更新 `index.html`（根目录主报告）
-- 执行时间 ~11 秒
-- 输出日志到 `logs/` 目录
+## 执行步骤
 
-### 每日自动发布（发布模式）
+### Step 1: 主流程内嵌份额变动识别并清洗 K 线数据（~3-5s）
+
+主流程会先按当前图表窗口自动同步基金拆分/折算事件，并输出结构化事件文件 `data/corporate_action_events.json`。
+随后从新浪财经 API 获取 6 支 ETF 的日线源数据，立即执行数据清洗（优先消费自动识别事件，手工配置作为兼容兜底），再基于清洗后的日线重建周线并计算 MA5/MA20/MA50（已预热 19 天）。
+输出：`data/etf_full_kline_data.json`
+
+
+
+### Step 2: 获取基准指数（~2-3s）
+
+获取沪深 300 基准指数用于对比分析，写入 K 线数据的 `benchmark` 字段。
+
+### Step 3: 获取实时行情（~2-3s）
+
+获取当日 ETF 涨跌幅、成交量、成分股涨跌幅。
+成分股列表来自 `config/holdings.yaml`。
+输出：`data/etf_realtime_data.json`
+
+### Step 4: 生成 HTML 报告（~0.8s）
+
+将数据注入到根目录 `index.html` 的 JavaScript 对象中。100% 样式保证。
+周末/节假日数据为空属正常行为。
+
+### Step 5: 健康检查（~0.8s）
+
+26 项自动检查（文件完整性、数据有效性、脚本依赖、HTML 结构、工作流逻辑、系统配置，含解释层鲜度检查）。
+主流程内会把结果汇总到终端与执行日志；如需单独查看明细，可运行 `python scripts/health_check.py` 或 `python scripts/health_check.py --json`。
+
+### Step 6-7: 企微通知（发布模式，~1-2s）
+
+推送报告摘要到企业微信。自动重试 3 次。
+
+### Step 8: GitHub Pages 部署（发布模式，~2-3s）
+
+git add/commit/push 到 GitHub。需配置 SSH 密钥。
+
+## 常见问题
+
+| 问题 | 排查 |
+|------|------|
+| 数据为空 | 检查 `config/config.example.yaml` 或本地 `config/config.yaml` 中的 ETF 代码，API 限流则等 5 分钟重试 |
+| 图表不显示 | 检查 `data/etf_full_kline_data.json` 数据格式 |
+| 健康检查出现 FAIL | 查看具体失败项；若只有少量 WARN，通常仍不影响报告生成 |
+| 发布失败 | 先检查本地 `config/config.yaml` 的 `publish` 配置，再检查 `config/secrets.yaml`、SSH：`ssh -T git@github.com` |
+| MA50 为 null | 正常，前 50 天预热期不够 |
+
+
+## 目录约定
+
+- `data/`：日更运行数据与运行时载荷。
+- `logs/`：结构化 JSONL 日志。
+- `.backup/`：事务回滚快照。
+- `_working/`：一次性人工排查输出。
+- `tests/fixtures/`：需要长期复用的样本。
+- 根目录不保留 `_pytest*.txt`、`_update_report*.txt`、`_detail_mismatch*.txt`、`*.bak*`。
+
+## 项目审计
 
 ```bash
-cd .codebuddy/skills/etf-report/scripts
-python update_report.py --publish
+python scripts/audit_project.py --quick   # 10 秒，结构 + 安全
+python scripts/audit_project.py --full    # 30 秒，4 个模块
 ```
-
-**预期结果**：
-- 完成所有更新步骤
-- 发送企微通知
-- 部署到 GitHub Pages
-- 执行时间 ~15 秒（包括网络传输）
-
----
-
-## 🔄 执行步骤详解
-
-### Step 1: 获取 K 线数据
-
-**目的**: 获取 6 支 ETF 的历史 K 线数据
-
-**输入**:
-- `config/config.yaml` 中的 `ETF_CODES`
-- 新浪财经 API
-
-**处理流程**:
-1. 从配置读取 ETF 代码（e.g., sh512400）
-2. 调用新浪财经 API 获取：
-   - 日线：过去 60 天
-   - 周线：过去 52 周
-3. 数据存储到 `data/etf_full_kline_data.json`
-4. 计算 MA5/MA20/MA50 均线
-
-**输出**:
-```json
-{
-  "sh512400": {
-    "name": "有色金属ETF",
-    "day": [
-      {"date": "2026-04-07", "open": 100.5, "close": 101.2, ...},
-      ...
-    ],
-    "week": [...],
-    "ma": {"ma5": [...], "ma20": [...], ...}
-  }
-}
-```
-
-**常见问题**:
-- ❌ **网络错误**: 检查网络连接，API 可能被限流（>3 秒）
-- ❌ **数据为空**: ETF 代码错误，检查 `config.yaml`
-- ✅ **成功标志**: 日志显示 "K线数据获取完成"
-
-**执行时间**: ~3-5 秒
-
----
-
-### Step 2: 计算均线数据
-
-**目的**: 基于 K 线数据计算技术指标
-
-**输入**:
-- Step 1 生成的 K 线数据
-- 均线参数（配置中）
-
-**处理流程**:
-1. 读取 K 线数据
-2. 对每支 ETF 计算：
-   - MA5（5 日均线）
-   - MA20（20 日均线）
-   - MA50（50 日均线）
-3. 处理预热期（前 50 天无 MA50）
-4. 结果注入到 K 线数据
-
-**输出**:
-K 线数据中增加 `ma` 字段，格式：
-```json
-{
-  "date": "2026-04-07",
-  "open": 100.5,
-  "close": 101.2,
-  "ma5": 100.8,
-  "ma20": 99.5,
-  "ma50": 98.2
-}
-```
-
-**常见问题**:
-- ⚠️ **前 50 天的 MA50 为 null**: 正常，预热期不够
-- ✅ **成功标志**: 日志显示 "均线计算完成"
-
-**执行时间**: ~1-2 秒
-
----
-
-### Step 3: 获取基准指数数据
-
-**目的**: 获取沪深 300 基准指数用于对比分析
-
-**输入**:
-- 基准指数代码（`sh000300`）
-- 新浪财经 API
-
-**处理流程**:
-1. 调用 API 获取沪深 300 数据
-2. 与 ETF 数据对齐日期
-3. 计算基准指数均线
-4. 存储到 `data/etf_full_kline_data.json` 的 `benchmark` 字段
-
-**输出**:
-```json
-{
-  "benchmark": {
-    "name": "沪深300",
-    "day": [...],
-    "ma": {...}
-  }
-}
-```
-
-**常见问题**:
-- ❌ **基准指数获取失败**: API 限流，重试即可
-- ✅ **成功标志**: 日志显示 "基准指数获取完成"
-
-**执行时间**: ~2-3 秒
-
----
-
-### Step 4: 获取实时行情数据
-
-**目的**: 获取当日 ETF 和成分股的实时涨跌幅
-
-**输入**:
-- ETF 代码列表
-- 成分股代码（`config/holdings.yaml`）
-- 新浪财经实时 API
-
-**处理流程**:
-1. 获取每支 ETF 的实时数据：
-   - 当日涨跌幅
-   - 成交量
-   - 最新价格
-2. 获取成分股实时数据（同样字段）
-3. 格式化数据，存储到 `data/etf_realtime_data.json`
-
-**输出**:
-```json
-{
-  "sh512400": {
-    "name": "有色金属ETF",
-    "price": 101.2,
-    "change_pct": 0.88,
-    "volume": 50000000,
-    "components": [
-      {"code": "sh601857", "name": "中国石油", "change_pct": 1.2},
-      ...
-    ]
-  }
-}
-```
-
-**常见问题**:
-- ⚠️ **成分股查询失败**: 检查 `config/holdings.yaml` 的格式
-- ⚠️ **周末/节假日**: 数据为空或过期，正常行为
-- ✅ **成功标志**: 日志显示 "实时数据获取完成"
-
-**执行时间**: ~2-3 秒
-
----
-
-### Step 5: 生成 HTML 报告
-
-**目的**: 将数据注入到 HTML 模板，生成最终报告
-
-**输入**:
-- K 线数据 (`data/etf_full_kline_data.json`)
-- 实时数据 (`data/etf_realtime_data.json`)
-- HTML 主文件 (`index.html`，根目录）
-
-**处理流程**:
-1. 读取根目录的 `index.html`
-2. 在 JavaScript 中注入数据：
-   ```javascript
-   const klineData = {...}  // 注入 K 线数据
-   const realtimeData = {...}  // 注入实时数据
-   ```
-3. 更新页面中的日期显示
-4. 保存回 `index.html`（覆盖）
-
-**输出**:
-更新后的 `index.html`，包含最新数据和图表
-
-**常见问题**:
-- ❌ **HTML 注入失败**: 检查 HTML 模板格式
-- ❌ **图表不显示**: 数据格式错误，检查日志
-- ✅ **成功标志**: 日志显示 "HTML更新完成"
-
-**执行时间**: ~0.8 秒
-
----
-
-### Step 6: 健康检查
-
-**目的**: 自动检查系统状态，验证数据完整性
-
-**输入**:
-- 所有生成的数据文件
-- 配置文件
-
-**检查项**（25 项）:
-- ✅ 文件完整性：5 项
-- ✅ 数据有效性：5-6 项
-- ✅ 脚本依赖：4-5 项
-- ✅ HTML 结构：3-4 项
-- ✅ 工作流逻辑：3 项
-- ✅ 系统配置：2 项
-
-**输出**:
-- 彩色表格（终端）
-- JSON 报告 (`logs/health_check_latest.json`)
-
-**常见问题**:
-- ⚠️ **检查未通过**: 查看日志具体失败项，通常不影响报告生成
-- ✅ **成功标志**: 日志显示 "健康检查完成"，22/25 通过为正常
-
-**执行时间**: ~0.8 秒
-
----
-
-### Step 7（发布模式）: 发送企微通知
-
-**目的**: 推送报告摘要到企业微信
-
-**输入**:
-- 报告数据
-- 企微 Webhook URL（环境变量）
-
-**处理流程**:
-1. 读取最新报告数据
-2. 生成摘要文本
-3. 通过 Webhook 发送
-
-**输出**:
-企微消息（示例）:
-```
-[ETF 报告更新]
-更新时间: 2026-04-07 16:44
-共 6 支 ETF 更新
-
-有色金属ETF: +0.88%
-港股创新药ETF: -0.12%
-...
-```
-
-**常见问题**:
-- ❌ **发送失败**: 检查网络连接或 Webhook URL 配置
-- ⚠️ **重试**: 自动重试 3 次
-
-**执行时间**: ~1-2 秒
-
----
-
-### Step 8（发布模式）: 部署 GitHub Pages
-
-**目的**: 将报告上传到 GitHub Pages
-
-**输入**:
-- 更新后的 `index.html`（根目录）
-- GitHub 仓库信息
-
-**处理流程**:
-1. Git add/commit 更新
-2. Git push 到 GitHub
-3. GitHub Pages 自动从根目录 `index.html` 部署
-
-**输出**:
-在线报告更新：
-```
-https://julensanchez.github.io/etf-report/
-```
-
-**常见问题**:
-- ❌ **Git 权限错误**: 检查 SSH 密钥配置
-- ❌ **网络超时**: 重试，可能是网络问题
-- ✅ **成功标志**: 日志显示 "部署完成"
-
-**执行时间**: ~2-3 秒
-
----
-
-## 🎯 模式说明
-
-### 开发模式（默认）
-
-**执行命令**:
-```bash
-python update_report.py
-```
-
-**执行步骤**: 1-6（不包括发布步骤 7-8）
-
-**适用场景**:
-- 调试新功能
-- 验证数据
-- 本地排版
-- 快速预览
-
-**输出**:
-- 本地 HTML 更新
-- 日志输出
-- 健康检查报告
-
-**特点**:
-- 执行快速（~11 秒）
-- 安全（无外部发布）
-- 适合日常开发
-
----
-
-### 发布模式
-
-**执行命令**:
-```bash
-python update_report.py --publish
-```
-
-**执行步骤**: 1-8（包括企微通知和 GitHub 部署）
-
-**适用场景**:
-- 日常定时任务
-- 每日收盘后自动更新
-- 正式发布
-
-**输出**:
-- 所有开发模式的输出
-- 企微通知消息
-- GitHub Pages 更新
-
-**特点**:
-- 完整流程
-- 自动分发
-- 适合生产环境
-
-**注意**:
-- 需要配置 GitHub SSH 密钥
-- 需要配置企微 Webhook URL
-- 执行时间较长（~15 秒）
-
----
-
-## 🔍 项目审计工作流
-
-**用途**: 定期梳理项目结构、检查敏感信息泄露、验证文档一致性、优化 Git 配置
-
-**详细文档**: [`docs/AUDIT_WORKFLOW.md`](docs/AUDIT_WORKFLOW.md)
-
-### 快速审计（10 秒）
-
-```bash
-python scripts/audit_project.py --quick
-```
-
-检查项：项目结构 + 敏感信息扫描
-
-### 完整审计（30 秒）
-
-```bash
-python scripts/audit_project.py --full
-```
-
-检查项：结构 + 安全 + 文档一致性 + Git 配置（4 个模块）
-
-### 单项审计
-
-```bash
-python scripts/audit_project.py --structure          # 结构审计
-python scripts/audit_project.py --security           # 安全审计
-python scripts/audit_project.py --documentation      # 文档审计
-python scripts/audit_project.py --git-config         # Git 配置审计
-```
-
-### 审计报告
-
-- **终端输出**：彩色表格汇总
-- **JSON 报告**：`logs/audit_YYYYMMDD_HHMMSS.json`（详细结果）
-
-### 建议审计频率
-
-| 审计类型 | 频率 | 触发条件 |
-|---------|------|--------|
-| 快速审计 | 每周 1 次 | 固定时间（如周一早上） |
-| 完整审计 | 每月 1 次 | 月末或发布前 |
-| 临时审计 | 按需 | 代码重构、架构变更、怀疑数据泄露 |
-
-### 常见修复
-
-- **删除冗余目录**：`rm -rf <dir> && git add . && git commit -m "refactor: remove empty directory"`
-- **更新 .gitignore**：编辑后使用 `git rm --cached <file> -r && git add . && git commit`
-- **更新文档**：对齐代码实现，验证所有示例和路径
-
----
-
-## ❓ 常见问题
-
-### Q1: 如何验证数据是否正确？
-
-**A**: 执行健康检查：
-```bash
-python scripts/health_check.py
-```
-
-查看输出，22/25 通过为正常。
-
----
-
-### Q2: HTML 图表不显示怎么办？
-
-**A**: 
-1. 检查日志：`tail logs/update_report_*.jsonl`
-2. 确认 K 线数据是否为空
-3. 验证数据格式（检查 `data/etf_full_kline_data.json`）
-
----
-
-### Q3: 如何修改 ETF 代码？
-
-**A**: 编辑 `config/config.yaml`，在 `etf_codes` 部分添加或修改：
-```yaml
-etf_codes:
-  - code: sh512400
-    name: 有色金属ETF
-```
-
----
-
-### Q4: 如何添加新的成分股？
-
-**A**: 编辑 `config/holdings.yaml`，按格式添加新的成分股代码。
-
----
-
-### Q5: 发布模式失败怎么办？
-
-**A**: 
-1. 检查网络连接
-2. 检查 GitHub SSH 密钥：`ssh -T git@github.com`
-3. 检查企微 Webhook 配置
-4. 查看详细日志：`cat logs/update_report_*.jsonl | grep ERROR`
-
----
-
-## 🔧 故障排除
-
-### 问题 1: "K 线数据获取完成" 但数据为空
-
-**原因**: ETF 代码错误或新浪财经 API 限流
-
-**解决**:
-1. 检查 `config/config.yaml` 中的 ETF 代码格式
-2. 等待 5 分钟后重试
-3. 检查网络连接
-
-### 问题 2: 健康检查失败（< 20/25）
-
-**原因**: 数据不完整或配置错误
-
-**解决**:
-1. 查看具体失败的检查项
-2. 检查相关配置文件
-3. 查看详细日志
-
-### 问题 3: GitHub Pages 部署失败
-
-**原因**: SSH 密钥配置错误
-
-**解决**:
-```bash
-# 测试 SSH 连接
-ssh -T git@github.com
-
-# 重新配置 SSH 密钥
-ssh-keygen -t ed25519 -C "your_email@example.com"
-```
-
----
-
-## 📞 获取帮助
-
-| 问题类型 | 查看文档 |
-|---------|--------|
-| 数据相关 | `docs/CONFIG_GUIDE.md` 或 `docs/INTEGRATION_GUIDE.md` |
-| 健康检查 | `docs/HEALTH_CHECK_USAGE.md` 或 `docs/HEALTH_CHECK_KNOWN_ISSUES.md` |
-| 日常参数更新 | `docs/DAILY_UPDATE_PARAMETERS.md` |
-| 项目审计 | `docs/AUDIT_WORKFLOW.md` |
-| Phase 1 详情 | `_working/phase1-completed/` |
-
----
-
-**版本历史**:
-- v1.0 (2026-04-07) - 初版发布
-

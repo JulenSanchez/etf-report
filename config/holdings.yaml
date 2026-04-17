@@ -298,62 +298,63 @@ holdings:
         ratio: 2.70
 
   # ============================================================
-  # ETF-6: 159698 粮食产业ETF
+  # ETF-6: 159865 养殖ETF
   # ============================================================
-  "159698":
-    name: "粮食产业ETF"
+  "159865":
+    name: "养殖ETF"
     market: "sz"
-    total_ratio: 50.83
+    total_ratio: 69.16
     components:
+      - name: "海大集团"
+        code: "002311"
+        market: "sz"
+        ratio: 11.26
+      
+      - name: "温氏股份"
+        code: "300498"
+        market: "sz"
+        ratio: 10.13
+      
+      - name: "牧原股份"
+        code: "002714"
+        market: "sz"
+        ratio: 10.11
+      
+      - name: "新希望"
+        code: "000876"
+        market: "sz"
+        ratio: 8.97
+      
+      - name: "梅花生物"
+        code: "600873"
+        market: "sh"
+        ratio: 8.80
+      
       - name: "大北农"
         code: "002385"
         market: "sz"
-        ratio: 9.86
+        ratio: 5.85
       
-      - name: "隆平高科"
-        code: "000998"
+      - name: "圣农发展"
+        code: "002299"
         market: "sz"
-        ratio: 7.58
+        ratio: 4.76
       
-      - name: "北大荒"
-        code: "600598"
+      - name: "生物股份"
+        code: "600201"
         market: "sh"
-        ratio: 7.10
+        ratio: 3.42
       
-      - name: "荃银高科"
-        code: "300087"
+      - name: "唐人神"
+        code: "002567"
         market: "sz"
-        ratio: 5.52
+        ratio: 2.98
       
-      - name: "神农种业"
-        code: "300189"
+      - name: "天康生物"
+        code: "002100"
         market: "sz"
-        ratio: 4.66
-      
-      - name: "藏格矿业"
-        code: "000408"
-        market: "sz"
-        ratio: 3.48
-      
-      - name: "亚盛集团"
-        code: "600108"
-        market: "sh"
-        ratio: 3.29
-      
-      - name: "农发种业"
-        code: "600313"
-        market: "sh"
-        ratio: 3.13
-      
-      - name: "盐湖股份"
-        code: "000792"
-        market: "sz"
-        ratio: 3.12
-      
-      - name: "云天化"
-        code: "600096"
-        market: "sh"
-        ratio: 3.09
+        ratio: 2.88
+
 
 # ============================================================
 # 注意事项

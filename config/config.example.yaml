@@ -52,13 +52,14 @@ etfs:
       code: "sh000300"
       name: "沪深300"
   
-  # ETF-6: 粮食产业ETF
-  - code: "159698"
-    name: "粮食产业ETF"
+  # ETF-6: 养殖ETF
+  - code: "159865"
+    name: "养殖ETF"
     market: "sz"
     benchmark:
       code: "sh000300"
       name: "沪深300"
+
 
 # ============================================================
 # 2. K线数据参数
@@ -142,6 +143,8 @@ files:
   # 输出文件
   html_file: "index.html"  # 前端报告HTML文件
   js_main: "main.js"       # 前端主JS文件
+  editorial_content_file: "editorial_content.yaml"  # 研究卡 / 宏观卡等解释层内容入口
+
 
 # ============================================================
 # 5. HTML 更新配置
@@ -185,11 +188,11 @@ system_check:
     - "transaction.py"
     - "verify_html_integrity.py"
   
-  # 必需的数据文件（更新完成后检查这些数据文件是否存在）
+  # 必需的数据文件（当前主流程）
   required_data_files:
     - "etf_full_kline_data.json"
     - "etf_realtime_data.json"
-    - "fund_flow_data.json"
+
   
   # ETF代码列表（用于验证所有ETF数据都已正确更新）
   etf_codes:
@@ -198,7 +201,8 @@ system_check:
     - "512070"
     - "515880"
     - "159566"
-    - "159698"
+    - "159865"
+
 
 # ============================================================
 # 7. 日志配置
@@ -275,7 +279,32 @@ transaction:
   timestamp_format: "%Y%m%d_%H%M%S"
 
 # ============================================================
-# 10. 用户提示与文档
+# 10. 发布配置（--publish 模式）
+# ============================================================
+# 说明：公开模板默认关闭发布能力；如需启用，请复制本文件为 config.yaml 后按本地环境修改
+publish:
+  # 企微 Webhook 通知
+  wecom:
+    enabled: false
+    # webhook_url 请填写到 config/secrets.yaml，不要直接写入公开仓库文件
+    mention_all: false
+
+  # GitHub Pages / Git 仓库发布
+  github:
+    enabled: false
+    # 运行发布命令时要提交的仓库根目录；默认用当前仓库
+    repo_root: "."
+    branch: "main"
+    # 当前模板只提交页面主文件；如需纳入更多文件，可在本地配置中扩展
+    commit_files:
+      - "index.html"
+    commit_message: "data: ETF daily report update - {date}"
+    # 如需同步到单独的 Pages 仓库，请在本地配置中填写绝对路径
+    pages_repo_root: ""
+    pages_branch: "main"
+
+# ============================================================
+# 11. 用户提示与文档
 # ============================================================
 # 说明：系统向用户显示的提示信息
 messages:
@@ -289,4 +318,6 @@ messages:
   ma_warmup_note: "MA均线从第一天即有完整数据(已预热)"
   
   # 实时数据说明
-  realtime_data_note: "ETF涨跌幅和成分股涨跌幅为实时数据"
+  realtime_data_note: "ETF主展示按数据截止日收盘价口径，成分股涨跌幅仍来自实时数据"
+
+

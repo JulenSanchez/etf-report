@@ -15,6 +15,12 @@ logs/
 output.txt
 health_check_output.txt
 *.tmp
+.pytest_cache/
+_pytest*.txt
+_update_report*.txt
+_detail_mismatch*.txt
+index.html.bak*
+config/*.backup
 
 # 开发数据目录（保留结构示例）
 data/
@@ -31,10 +37,16 @@ legacy/
 .DS_Store
 Thumbs.db
 
-# 开发私钥
+# 开发私钥与本地私有配置
 .env
 .env.local
 secrets.yaml
+config/config.yaml
+config/secrets.yaml
+config/*.local.yaml
+CONTRIBUTING.md
+
+
 
 # 工作目录和备份（本地临时文件，不提交）
 _working/

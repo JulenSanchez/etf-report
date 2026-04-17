@@ -62,11 +62,16 @@ class StructureAudit:
     def find_empty_dirs(self) -> List[Path]:
         """Find empty directories"""
         empty_dirs = []
+        ignored_parts = {'.git', '__pycache__', '.pytest_cache'}
+        ignored_empty_dirs = {'outputs', '_working'}
         try:
             for entry in self.root.rglob('*'):
                 if entry.is_dir() and not any(entry.iterdir()):
-                    if entry.name not in ['.git', '__pycache__', '.pytest_cache']:
-                        empty_dirs.append(entry)
+                    if any(part in ignored_parts for part in entry.parts):
+                        continue
+                    if entry.name in ignored_empty_dirs:
+                        continue
+                    empty_dirs.append(entry)
         except PermissionError:
             pass
         return empty_dirs
@@ -376,11 +381,11 @@ class GitConfigAudit:
         # Check 1: .gitignore rules
         print("\n[Check 1/5] .gitignore rules...")
         gitignore_rules = self.check_gitignore()
-        required_patterns = ['_working/', 'logs/', 'data/', '__pycache__']
+        required_patterns = ['_working/', 'logs/', 'data/', '.backup/', 'outputs/', '.pytest_cache/']
         found_patterns = [p for p in required_patterns if any(r.startswith(p) for r in gitignore_rules)]
         
         print("  Found {} rules, covering {}/{} required patterns".format(len(gitignore_rules), len(found_patterns), len(required_patterns)))
-        if len(found_patterns) >= 3:
+        if len(found_patterns) == len(required_patterns):
             result["checks"].append({"id": 1, "name": ".gitignore complete", "status": "PASS"})
             result["passed"] += 1
             print("  [PASS]")

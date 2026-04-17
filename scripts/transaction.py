@@ -4,10 +4,11 @@
 事务管理模块 - 提供备份/恢复/清理机制，确保 HTML 更新失败时可以自动回滚
 
 功能：
-1. backup()   - 创建备份快照（data/*.json + outputs/index.html + outputs/js/）
+1. backup()   - 创建备份快照（data/*.json + 根目录 index.html + outputs/js/）
 2. restore()  - 从备份恢复文件
 3. cleanup()  - 清理过期备份
 4. list_backups() - 查看所有备份
+
 
 用法（在 update_report.py 中集成）：
     tx = TransactionManager(skill_dir)
@@ -55,6 +56,8 @@ class TransactionManager:
         
         self.data_dir = os.path.join(skill_dir, files_config.get('data_dir', 'data'))
         self.outputs_dir = os.path.join(skill_dir, files_config.get('outputs_dir', 'outputs'))
+        self.html_file = os.path.join(skill_dir, files_config.get('html_file', 'index.html'))
+
         
         # 备份目录（从配置加载）
         backup_dir = transaction_config.get('backup_dir', '.backup')
@@ -85,7 +88,7 @@ class TransactionManager:
     def backup(self):
         """
         创建备份快照
-        备份 data/*.json 文件 + outputs/index.html + outputs/js/（如果存在）
+        备份 data/*.json 文件 + 根目录 index.html + 兼容 outputs/js/（如果存在）
         超过 max_backups 个备份时自动清理最旧的
 
         Returns:
@@ -106,9 +109,9 @@ class TransactionManager:
                     os.makedirs(os.path.dirname(dst), exist_ok=True)
                     shutil.copy2(src, dst)
 
-            # 备份 outputs/index.html
-            html_src = os.path.join(self.outputs_dir, "index.html")
-            html_dst = os.path.join(backup_path, "outputs", "index.html")
+            # 备份根目录 index.html
+            html_src = self.html_file
+            html_dst = os.path.join(backup_path, "root", os.path.basename(self.html_file))
             if os.path.exists(html_src):
                 os.makedirs(os.path.dirname(html_dst), exist_ok=True)
                 shutil.copy2(html_src, html_dst)
@@ -118,6 +121,7 @@ class TransactionManager:
             js_dst = os.path.join(backup_path, "outputs", "js")
             if os.path.isdir(js_src):
                 shutil.copytree(js_src, js_dst)
+
 
             logger.info("备份完成", {"path": backup_path})
 
@@ -158,12 +162,13 @@ class TransactionManager:
                         shutil.copy2(src, dst)
                         logger.info("文件恢复成功", {"file": fname})
 
-            # 恢复 outputs/index.html
-            html_src = os.path.join(backup_path, "outputs", "index.html")
-            html_dst = os.path.join(self.outputs_dir, "index.html")
+            # 恢复根目录 index.html
+            html_src = os.path.join(backup_path, "root", os.path.basename(self.html_file))
+            html_dst = self.html_file
             if os.path.exists(html_src):
                 shutil.copy2(html_src, html_dst)
-                logger.info("文件恢复成功", {"file": "index.html"})
+                logger.info("文件恢复成功", {"file": os.path.basename(self.html_file)})
+
 
             # 恢复 outputs/js/
             js_src = os.path.join(backup_path, "outputs", "js")

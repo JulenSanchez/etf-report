@@ -2,11 +2,12 @@
 
 ## 概述
 
-`health_check.py` 是 ETF 报告系统的一键健康检查工具，用于验证系统的各个方面是否正常工作。
+`health_check.py` 用于快速验证 `etf-report` 当前目录、数据、HTML、工作流和配置是否处于可运行状态。
 
-- **检查项数**: 25 项（6 大类别）
-- **执行时间**: ~0.8 秒
-- **输出格式**: 彩色终端表格、JSON、HTML（可选）
+- **检查项数**: 26 项（6 大类别，含解释层鲜度检查）
+- **默认入口**: `python scripts/health_check.py`
+- **常见输出**: 终端彩色表格；可选 JSON / HTML
+- **目录约定**: 一次性导出建议写到 `_working/`
 
 ---
 
@@ -15,36 +16,22 @@
 ### 基础检查
 
 ```bash
-cd scripts/
-python health_check.py
-```
-
-**输出示例**：
-```
-======================================================================
- ETF 系统健康检查 | 2026-04-07 16:38:30
-======================================================================
-
-[A] 文件完整性检查
-----------------------------------------------------------------------
-  [OK] PASS   | A1   | HTML 文件存在性
-  [OK] PASS   | A2   | 数据文件完整性              | 3/3
-  [OK] PASS   | A3   | 脚本文件完整性              | 5/5
-  ...
-
-总体状态: FAIL
-检查项: 22/25 通过, 1 个警告, 2 个失败
-检查时间: 0.8 秒
-======================================================================
+python scripts/health_check.py
 ```
 
 ### 生成 JSON 报告
 
 ```bash
-python health_check.py --json > health_check_baseline.json
+python scripts/health_check.py --json > _working/health_check_baseline.json
 ```
 
-保存为 JSON 格式便于程序化处理和历史对比。
+### 常用变体
+
+```bash
+python scripts/health_check.py --strict
+python scripts/health_check.py --category E
+python scripts/health_check.py --html
+```
 
 ---
 
@@ -52,19 +39,11 @@ python health_check.py --json > health_check_baseline.json
 
 | 选项 | 说明 | 示例 |
 |------|------|------|
-| `--json` | 输出 JSON 格式报告 | `python health_check.py --json` |
-| `--html` | 输出 HTML 可视化报告 | `python health_check.py --html` |
-| `--strict` | 严格模式（警告 = 失败） | `python health_check.py --strict` |
-| `--category A,B,C` | 只检查特定类别 | `python health_check.py --category A,B` |
-| `--verbose` | 详细日志输出 | `python health_check.py --verbose` |
-
-### 选项说明
-
-- **`--json`**: 输出纯 JSON 数据，便于集成到其他系统
-- **`--html`**: 生成 HTML 报告，可用浏览器查看
-- **`--strict`**: 启用严格模式，把 WARN 视为失败，返回码为 1
-- **`--category`**: 指定类别（A/B/C/D/E/F），多个类别用逗号分隔
-- **`--verbose`**: 输出详细日志，用于调试
+| `--json` | 输出 JSON 格式报告 | `python scripts/health_check.py --json` |
+| `--html` | 输出 HTML 可视化报告 | `python scripts/health_check.py --html` |
+| `--strict` | 严格模式（警告 = 失败） | `python scripts/health_check.py --strict` |
+| `--category A,B,C` | 只检查特定类别 | `python scripts/health_check.py --category A,B` |
+| `--verbose` | 输出详细日志 | `python scripts/health_check.py --verbose` |
 
 ---
 
@@ -72,219 +51,127 @@ python health_check.py --json > health_check_baseline.json
 
 | 返回码 | 含义 | 说明 |
 |--------|------|------|
-| 0 | PASS | 所有检查通过，无警告或失败 |
-| 1 | WARN | 有警告但无失败（仅在 `--strict` 模式下为 1） |
-| 2 | FAIL | 有失败项 |
-
-### 使用示例
-
-```bash
-# 基础用法
-python health_check.py
-if [ $? -eq 0 ]; then
-  echo "系统健康"
-else
-  echo "系统有问题"
-fi
-
-# 严格模式
-python health_check.py --strict
-if [ $? -ne 0 ]; then
-  echo "检查失败或有警告"
-fi
-```
+| 0 | PASS | 无警告、无失败 |
+| 1 | WARN | 仅在 `--strict` 模式下，警告会返回 1 |
+| 2 | FAIL | 存在失败项 |
 
 ---
 
-## 检查项详解
+## 检查项结构
 
-### A 类：文件完整性检查（5 项）
+### A 类：文件完整性（5 项）
+- `A1`: 根目录 `index.html` 是否存在
+- `A2`: `data/` 下 2 个必需 JSON 是否存在
+- `A3`: 5 个核心脚本是否存在
+- `A4`: HTML / K 线数据体积是否异常偏小
+- `A5`: 主 HTML 目录与关键文件是否可读写
 
-| ID | 项目 | 检查内容 | 常见问题 |
-|----|------|--------|--------|
-| A1 | HTML 文件存在性 | deploy/ 和 outputs/ 中的 index.html | 报告未生成或位置错误 |
-| A2 | 数据文件完整性 | 3 个必需的 JSON 数据文件 | 缺少数据文件 |
-| A3 | 脚本文件完整性 | 5 个核心脚本文件 | 脚本被删除或移动 |
-| A4 | 文件大小合理性 | HTML > 500 KB, K线数据 > 100 KB | 数据异常或未更新 |
-| A5 | 文件权限检查 | 文件可读、目录可写 | 权限问题（Windows 罕见） |
+### B 类：数据有效性（6 项）
+- `B1`: JSON 可解析
+- `B2`: ETF 代码完整
+- `B3`: K 线结构完整
+- `B4`: 日期可提取
+- `B5`: 数据时效性
+- `B6`: 成分股数据数量
 
-### B 类：数据有效性检查（6 项）
+### C 类：脚本依赖（5 项）
+- `C1`: Python 版本
+- `C2`: `requests` / `yaml` 导入
+- `C3`: 核心脚本导入链
+- `C4`: 新浪财经 API 可达性
+- `C5`: 技能根目录临时探针写入能力
 
-| ID | 项目 | 检查内容 | 常见问题 |
-|----|------|--------|--------|
-| B1 | JSON 解析有效性 | 数据文件能被正确解析 | JSON 格式错误 |
-| B2 | ETF 代码完整性 | 包含全 6 支 ETF | 数据不完整 |
-| B3 | K线数据结构 | 每个 ETF 有 daily 和 weekly | 数据结构不正确 |
-| B4 | 日期一致性 | K线日期与实时数据一致 | 数据更新不同步 |
-| B5 | 数据时效性 | 数据不超过 7 天陈旧 | ⚠️ 数据太旧（非交易日正常） |
-| B6 | 成分股数据 | 每个 ETF 有 ≥ 5 个成分股 | 成分股数据缺失 |
+### D 类：HTML 结构（4 项）
+- `D1`: HTML 标签平衡
+- `D2`: 必需数据块（`klineData`）存在；`realtimeData` 为可选块
+- `D3`: ECharts 引入存在
+- `D4`: 关键样式类存在
 
-### C 类：脚本依赖检查（5 项）
+### E 类：工作流逻辑（4 项）
+- `E1`: `.backup/` 事务快照目录状态
+- `E2`: HTML 日期同步
+- `E3`: `update_report.py` 主流程函数完整性
+- `E4`: 解释层鲜度（按 `freshness_policy` 校验）
 
-| ID | 项目 | 检查内容 | 常见问题 |
-|----|------|--------|--------|
-| C1 | Python 版本 | Python >= 3.8 | Python 版本过低 |
-| C2 | 必需库导入 | requests, beautifulsoup4 | ❌ 库未安装 |
-| C3 | 脚本导入链 | 核心模块可导入 | 模块有语法错误 |
-| C4 | 外部 API 可达性 | 新浪财经 API 可访问 | ⚠️ 网络问题或 API 宕机 |
-| C5 | 临时目录可写 | outputs/ 目录可写入文件 | 权限问题 |
-
-### D 类：HTML 结构检查（4 项）
-
-| ID | 项目 | 检查内容 | 常见问题 |
-|----|------|--------|--------|
-| D1 | HTML 标签平衡 | 所有标签正确配对 | HTML 代码有问题 |
-| D2 | JavaScript 数据块 | klineData, realtimeData const | ❌ 数据块缺失 |
-| D3 | ECharts CDN | 包含 ECharts 库 | 图表库未引入 |
-| D4 | 样式 CSS 完整 | 关键 CSS 类存在 | 样式表缺失 |
-
-### E 类：工作流逻辑检查（3 项）
-
-| ID | 项目 | 检查内容 | 常见问题 |
-|----|------|--------|--------|
-| E1 | 事务管理 | .backups/ 目录有备份 | 备份功能异常 |
-| E2 | 日期同步 | HTML 中的日期一致 | 日期更新失败 |
-| E3 | 更新流程完整性 | 所有核心函数存在 | update_report.py 有问题 |
-
-### F 类：系统配置检查（2 项）
-
-| ID | 项目 | 检查内容 | 常见问题 |
-|----|------|--------|--------|
-| F1 | 成分股配置 | ETF_CONFIG 有 6 支 ETF | 配置不完整 |
-| F2 | 基准指数配置 | 所有 ETF 基准设置正确 | 配置错误 |
-
----
-
-## 解读报告
-
-### 健康状态判断
-
-- ✅ **PASS**（绿色 [OK]）: 检查通过
-- ⚠️ **WARN**（黄色 [!]）: 警告，系统仍可用，建议关注
-- ❌ **FAIL**（红色 [X]）: 失败，需要立即处理
-
-### 整体状态
-
-- **总体状态: PASS** → 系统完全健康
-- **总体状态: WARN** → 有警告但可用（如 B5 数据老旧）
-- **总体状态: FAIL** → 有失败项，需要修复（如 C2 库缺失）
-
-### JSON 报告结构
-
-```json
-{
-  "timestamp": "2026-04-07T16:38:46.840973",
-  "overall_status": "FAIL",
-  "total_checks": 25,
-  "passed": 22,
-  "warnings": 1,
-  "failed": 2,
-  "categories": { ... },
-  "duration_seconds": 0.969,
-  "environment": { ... }
-}
-```
+### F 类：系统配置（2 项）
+- `F1`: ETF 成分股配置完整性
+- `F2`: 基准指数配置正确性
 
 ---
 
 ## 常见问题
 
-### Q1: C2 库缺失 (ImportError: No module named 'beautifulsoup4')
+### Q1: D2 缺少 `klineData`
 
-**症状**: 健康检查显示 C2 FAIL
+**原因**: 页面未经过主流程刷新，或 HTML 被旧文件覆盖。
 
-**解决方案**:
+**处理**:
+
 ```bash
-pip install beautifulsoup4 lxml
+python scripts/update_report.py
 ```
 
-### Q2: D2 realtimeData 块缺失
+### Q2: B5 数据时效性出现 WARN
 
-**症状**: HTML 中未找到 `const realtimeData = {...}`
+**原因**: 非交易日或最新数据尚未刷新，常见于周末 / 节假日。
 
-**原因**: 实时数据更新器尚未执行
+**处理**: 在下一个交易日收盘后重新运行 `python scripts/update_report.py`。
 
-**解决方案**:
+### Q3: E4 解释层鲜度出现 WARN / FAIL
+
+**原因**: `config/editorial_content.yaml` 中的 `content_date` 与 `freshness_policy` 不匹配。
+
+**处理**:
+- 日更内容优先使用 `manual_daily`
+- 编辑态内容可用 `sticky`
+- 修正后重新运行主流程
+
+### Q4: C2 库缺失
+
 ```bash
-cd scripts/
-python realtime_data_updater.py
-python update_report.py
+pip install requests pyyaml
 ```
-
-### Q3: B5 数据时效性警告
-
-**症状**: `WARN | B5 | 数据时效性 | age_days: 4`
-
-**原因**: 数据是 4 天前的（正常，因为在非交易日）
-
-**解决方案**: 在下一个交易日收盘后运行 `update_report.py`
-
-### Q4: C4 API 不可达
-
-**症状**: `WARN | C4 | 外部 API 可达性`
-
-**原因**: 新浪财经 API 网络问题或超时
-
-**解决方案**: 检查网络连接，稍后重试
 
 ---
 
-## 集成到自动化
+## 与主流程集成
 
-### 与 update_report.py 集成
+主流程 `python scripts/update_report.py` 末尾会自动执行健康检查，并把摘要写入终端与结构化日志。
 
-健康检查已自动集成到 `update_report.py` 的最后一步：
+如需单独留一份 JSON 基线：
 
 ```bash
-python update_report.py
+python scripts/health_check.py --json > _working/health_check_latest.json
 ```
 
-输出会包含健康检查结果（Step 6）。
+---
 
-### 定时任务（Cron）
+## 自动化示例
 
-每个交易日 16:00 自动运行：
+### 定时任务（概念示例）
 
 ```cron
-0 16 * * 1-5 cd /path/to/scripts && python health_check.py --json >> health_check_history.log
+0 16 * * 1-5 python /path/to/etf-report/scripts/health_check.py --json > /path/to/etf-report/_working/health_check_latest.json
 ```
 
-### 监控告警集成
+### 本地巡检
 
 ```bash
-#!/bin/bash
-python health_check.py --json > report.json
-failed_count=$(jq '.failed' report.json)
-
-if [ "$failed_count" -gt 0 ]; then
-  curl -X POST http://monitoring/alert \
-    -d "ETF health check failed: $failed_count items"
-fi
+python scripts/health_check.py --category E
+python scripts/health_check.py --json > _working/report.json
 ```
-
----
-
-## 性能指标
-
-| 指标 | 数值 |
-|------|------|
-| 总执行时间 | ~0.8 秒 |
-| 检查项数 | 25 项 |
-| 平均单项耗时 | 32 毫秒 |
-| 最慢项 | C4 (API 连接) ~150ms |
-| 最快项 | E2 (日期同步) ~5ms |
 
 ---
 
 ## 相关文档
 
-- [`scripts/health_check.py`](../scripts/health_check.py) - 源代码
-- [`scripts/HEALTH_CHECK_DESIGN.md`](../scripts/HEALTH_CHECK_DESIGN.md) - 设计文档
-- [`docs/HEALTH_CHECK_KNOWN_ISSUES.md`](HEALTH_CHECK_KNOWN_ISSUES.md) - 已知问题
-- [`scripts/update_report.py`](../scripts/update_report.py) - 集成位置
+- [`scripts/health_check.py`](../scripts/health_check.py)
+- [`scripts/update_report.py`](../scripts/update_report.py)
+- [`WORKFLOW.md`](../WORKFLOW.md)
+- [`HEALTH_CHECK_KNOWN_ISSUES.md`](HEALTH_CHECK_KNOWN_ISSUES.md)
 
 ---
 
-**最后更新**: 2026-04-07  
-**版本**: 1.0  
+**最后更新**: 2026-04-17  
+**版本**: 1.1  
 **状态**: ✅ 完成

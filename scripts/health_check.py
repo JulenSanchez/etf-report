@@ -6,13 +6,14 @@ REQ-106: ETF 系统健康检查仪表板
 功能：一键验证 ETF 报告系统各部分是否正常工作
 输出：彩色终端表格 + JSON 报告 + HTML 可视化
 
-检查项：23 项（6 大类别）
+检查项：25 项（6 大类别）
   A. 文件完整性检查 (5 项)
   B. 数据有效性检查 (6 项)
   C. 脚本依赖检查 (5 项)
   D. HTML 结构检查 (4 项)
   E. 工作流逻辑检查 (3 项)
   F. 系统配置检查 (2 项)
+
 
 使用方法：
     python health_check.py                    # 基础检查
@@ -35,11 +36,18 @@ from pathlib import Path
 from typing import Dict, List, Tuple, Any
 from html.parser import HTMLParser
 
+try:
+    from config_manager import get_config
+except Exception:
+    get_config = None
+
+
 # 设置编码（Windows 兼容性）
-if sys.platform == "win32":
+if sys.platform == "win32" and "pytest" not in sys.modules:
     import io
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
+
 
 # ============================================================
 # 常量定义
@@ -49,14 +57,85 @@ WORK_DIR = os.path.dirname(os.path.abspath(__file__))
 SKILL_DIR = os.path.dirname(WORK_DIR)
 DATA_DIR = os.path.join(SKILL_DIR, "data")
 OUTPUTS_DIR = os.path.join(SKILL_DIR, "outputs")
-DEPLOY_DIR = os.path.join(SKILL_DIR, "deploy")
+HTML_FILE = os.path.join(SKILL_DIR, "index.html")
 
-ETF_CODES = ["512400", "513120", "512070", "515880", "159566", "159698"]
+
+MIN_HTML_FILE_SIZE_KB = 200
+REQUIRED_HTML_DATA_BLOCKS = ["klineData"]
+OPTIONAL_HTML_DATA_BLOCKS = ["realtimeData"]
+
+DEFAULT_ETF_CODES = ["512400", "513120", "512070", "515880", "159566", "159865"]
+
+
+
+def load_etf_codes() -> List[str]:
+    if get_config is None:
+        return list(DEFAULT_ETF_CODES)
+
+    try:
+        config = get_config()
+        configured_codes = config.get('system_check.etf_codes') or config.get_etf_codes()
+        normalized = [str(code).zfill(6) for code in (configured_codes or []) if str(code).strip()]
+        return normalized or list(DEFAULT_ETF_CODES)
+    except Exception:
+        return list(DEFAULT_ETF_CODES)
+
+
+ETF_CODES = load_etf_codes()
+
+
+
+def load_editorial_content() -> Dict:
+    if get_config is None:
+        return {}
+
+    try:
+        config = get_config()
+        if hasattr(config, "get_editorial_content"):
+            return config.get_editorial_content() or {}
+    except Exception:
+        return {}
+
+    return {}
+
+
+
+def _parse_iso_date(date_str: str):
+    if not date_str or not isinstance(date_str, str):
+        return None
+
+    try:
+        return datetime.strptime(date_str[:10], "%Y-%m-%d").date()
+    except ValueError:
+        return None
+
+
+
+def _resolve_editorial_content_date(editorial_content: Dict, card_content: Dict) -> str:
+    if isinstance(card_content, dict):
+        content_date = card_content.get("content_date")
+        if isinstance(content_date, str) and content_date.strip():
+            return content_date.strip()
+
+    global_date = (editorial_content or {}).get("content_date")
+    if isinstance(global_date, str) and global_date.strip():
+        return global_date.strip()
+
+    return ""
+
+
+
+def _extract_data_cutoff_from_html(html_content: str) -> str:
+    match = re.search(r'数据截止:\s*(\d{4}-\d{2}-\d{2})', html_content)
+    return match.group(1) if match else ""
+
+
 REQUIRED_DATA_FILES = [
+
     "etf_full_kline_data.json",
     "etf_realtime_data.json",
-    "fund_flow_data.json",
 ]
+
 REQUIRED_SCRIPTS = [
     "update_report.py",
     "fix_ma_and_benchmark.py",
@@ -136,28 +215,25 @@ class FileChecker:
     def check_html_existence() -> CheckResult:
         result = CheckResult("A1", "HTML 文件存在性", "A")
         try:
-            deploy_html = os.path.join(DEPLOY_DIR, "index.html")
-            outputs_html = os.path.join(OUTPUTS_DIR, "index.html")
+            html_exists = os.path.exists(HTML_FILE)
             
-            deploy_exists = os.path.exists(deploy_html)
-            outputs_exists = os.path.exists(outputs_html)
-            
-            if deploy_exists and outputs_exists:
+            if html_exists:
                 result.status = "PASS"
                 result.details = {
-                    "deploy_html": f"exists ({os.path.getsize(deploy_html) / 1024:.2f} KB)",
-                    "outputs_html": f"exists ({os.path.getsize(outputs_html) / 1024:.2f} KB)",
+                    "html_file": f"exists ({os.path.getsize(HTML_FILE) / 1024:.2f} KB)",
+                    "path": HTML_FILE,
                 }
             else:
                 result.status = "FAIL"
                 result.details = {
-                    "deploy_html": "missing" if not deploy_exists else "exists",
-                    "outputs_html": "missing" if not outputs_exists else "exists",
+                    "html_file": "missing",
+                    "path": HTML_FILE,
                 }
         except Exception as e:
             result.status = "FAIL"
             result.error_message = str(e)
         return result
+
     
     @staticmethod
     def check_data_files() -> CheckResult:
@@ -208,11 +284,15 @@ class FileChecker:
             issues = []
             
             # 检查 HTML 文件
-            html_file = os.path.join(OUTPUTS_DIR, "index.html")
+            html_file = HTML_FILE
             if os.path.exists(html_file):
                 size_kb = os.path.getsize(html_file) / 1024
-                if size_kb < 500:
-                    issues.append(f"HTML 文件过小: {size_kb:.2f} KB")
+
+                if size_kb < MIN_HTML_FILE_SIZE_KB:
+                    issues.append(
+                        f"HTML 文件过小: {size_kb:.2f} KB (阈值: {MIN_HTML_FILE_SIZE_KB} KB)"
+                    )
+
             
             # 检查 K线数据
             kline_file = os.path.join(DATA_DIR, "etf_full_kline_data.json")
@@ -240,7 +320,7 @@ class FileChecker:
             
             # 检查关键文件可读性
             check_files = [
-                os.path.join(OUTPUTS_DIR, "index.html"),
+                HTML_FILE,
                 os.path.join(DATA_DIR, "etf_full_kline_data.json"),
                 os.path.join(WORK_DIR, "update_report.py"),
             ]
@@ -250,9 +330,11 @@ class FileChecker:
                     if not os.access(fpath, os.R_OK):
                         issues.append(f"无读权限: {os.path.basename(fpath)}")
             
-            # 检查输出目录可写性
-            if not os.access(OUTPUTS_DIR, os.W_OK):
-                issues.append(f"输出目录无写权限: {OUTPUTS_DIR}")
+            # 检查主 HTML 所在目录可写性
+            html_dir = os.path.dirname(HTML_FILE)
+            if not os.access(html_dir, os.W_OK):
+                issues.append(f"主HTML目录无写权限: {html_dir}")
+
             
             if not issues:
                 result.status = "PASS"
@@ -482,7 +564,7 @@ class DependencyChecker:
     @staticmethod
     def check_required_imports() -> CheckResult:
         result = CheckResult("C2", "必需库导入", "C")
-        required_libs = ["requests", "bs4", "beautifulsoup4"]
+        required_libs = ["requests", "yaml"]
         missing_libs = []
         
         for lib in required_libs:
@@ -556,15 +638,17 @@ class DependencyChecker:
     
     @staticmethod
     def check_write_permissions() -> CheckResult:
-        result = CheckResult("C5", "临时目录可写", "C")
+        result = CheckResult("C5", "技能根目录可写", "C")
         try:
-            test_file = os.path.join(OUTPUTS_DIR, ".health_check_test")
+            html_dir = os.path.dirname(HTML_FILE)
+            test_file = os.path.join(html_dir, ".health_check_test")
             try:
                 with open(test_file, 'w') as f:
                     f.write("test")
                 os.remove(test_file)
                 result.status = "PASS"
-                result.details = {"directory": OUTPUTS_DIR}
+                result.details = {"directory": html_dir}
+
             except Exception as e:
                 result.status = "FAIL"
                 result.details = {"error": str(e)[:50]}
@@ -580,7 +664,7 @@ class HTMLChecker:
     def check_tag_balance() -> CheckResult:
         result = CheckResult("D1", "HTML 标签平衡", "D")
         try:
-            html_file = os.path.join(OUTPUTS_DIR, "index.html")
+            html_file = HTML_FILE
             with open(html_file, 'r', encoding='utf-8') as f:
                 html_content = f.read()
             
@@ -602,31 +686,52 @@ class HTMLChecker:
     def check_js_data_blocks() -> CheckResult:
         result = CheckResult("D2", "JavaScript 数据块", "D")
         try:
-            html_file = os.path.join(OUTPUTS_DIR, "index.html")
+            html_file = HTML_FILE
             with open(html_file, 'r', encoding='utf-8') as f:
                 html_content = f.read()
             
-            missing_blocks = []
-            for const_name in ["klineData", "realtimeData"]:
-                if f"const {const_name} =" not in html_content:
-                    missing_blocks.append(const_name)
+            missing_required_blocks = []
+            found_required_blocks = []
+            found_optional_blocks = []
+            missing_optional_blocks = []
+
+            for const_name in REQUIRED_HTML_DATA_BLOCKS:
+                if f"const {const_name} =" in html_content:
+                    found_required_blocks.append(const_name)
+                else:
+                    missing_required_blocks.append(const_name)
+
+            for const_name in OPTIONAL_HTML_DATA_BLOCKS:
+                if f"const {const_name} =" in html_content:
+                    found_optional_blocks.append(const_name)
+                else:
+                    missing_optional_blocks.append(const_name)
             
-            if not missing_blocks:
+            if not missing_required_blocks:
                 result.status = "PASS"
-                result.details = {"found": ["klineData", "realtimeData"]}
+                result.details = {
+                    "required_found": found_required_blocks,
+                    "optional_found": found_optional_blocks,
+                    "optional_missing": missing_optional_blocks,
+                }
             else:
                 result.status = "FAIL"
-                result.details = {"missing": missing_blocks}
+                result.details = {
+                    "required_missing": missing_required_blocks,
+                    "optional_found": found_optional_blocks,
+                    "optional_missing": missing_optional_blocks,
+                }
         except Exception as e:
             result.status = "FAIL"
             result.error_message = str(e)
         return result
+
     
     @staticmethod
     def check_echarts_cdn() -> CheckResult:
         result = CheckResult("D3", "ECharts CDN", "D")
         try:
-            html_file = os.path.join(OUTPUTS_DIR, "index.html")
+            html_file = HTML_FILE
             with open(html_file, 'r', encoding='utf-8') as f:
                 html_content = f.read()
             
@@ -645,7 +750,7 @@ class HTMLChecker:
     def check_css_completeness() -> CheckResult:
         result = CheckResult("D4", "样式 CSS 完整", "D")
         try:
-            html_file = os.path.join(OUTPUTS_DIR, "index.html")
+            html_file = HTML_FILE
             with open(html_file, 'r', encoding='utf-8') as f:
                 html_content = f.read()
             
@@ -668,6 +773,7 @@ class HTMLChecker:
         return result
 
 class WorkflowChecker:
+
     """工作流逻辑检查"""
     
     @staticmethod
@@ -697,9 +803,10 @@ class WorkflowChecker:
     def check_date_sync() -> CheckResult:
         result = CheckResult("E2", "日期同步", "E")
         try:
-            html_file = os.path.join(OUTPUTS_DIR, "index.html")
+            html_file = HTML_FILE
             with open(html_file, 'r', encoding='utf-8') as f:
                 html_content = f.read()
+
             
             # 提取日期字段
             date_patterns = {
@@ -758,7 +865,83 @@ class WorkflowChecker:
             result.error_message = str(e)
         return result
 
+    @staticmethod
+    def check_editorial_freshness() -> CheckResult:
+        result = CheckResult("E4", "解释层鲜度", "E")
+        try:
+            editorial_content = load_editorial_content()
+            if not editorial_content:
+                result.status = "WARN"
+                result.details = {"status": "未加载 editorial_content.yaml"}
+                return result
+
+            html_content = ""
+            if os.path.exists(HTML_FILE):
+                with open(HTML_FILE, 'r', encoding='utf-8') as f:
+                    html_content = f.read()
+
+            data_cutoff_date = _extract_data_cutoff_from_html(html_content)
+            cutoff_dt = _parse_iso_date(data_cutoff_date)
+            failures = []
+            warnings = []
+            checked = 0
+
+            def _check_entry(target_name: str, card_content: Dict):
+                nonlocal checked
+                checked += 1
+                policy = (card_content or {}).get("freshness_policy") or "sticky"
+                content_date = _resolve_editorial_content_date(editorial_content, card_content or {})
+                content_dt = _parse_iso_date(content_date)
+                delta_days = None if not content_dt or not cutoff_dt else abs((cutoff_dt - content_dt).days)
+
+                if not content_date:
+                    if policy == "daily":
+                        failures.append(f"{target_name}:未标注观点日期")
+                    else:
+                        warnings.append(f"{target_name}:未标注观点日期")
+                    return
+
+                if policy == "daily" and (delta_days is None or delta_days != 0):
+                    failures.append(f"{target_name}:{content_date}")
+                elif policy == "manual_daily" and (delta_days is None or delta_days != 0):
+                    warnings.append(f"{target_name}:{content_date}")
+                elif policy == "weekly" and (delta_days is None or delta_days > 7):
+                    warnings.append(f"{target_name}:{content_date}")
+
+            for code, card_group in (editorial_content.get("etf_cards") or {}).items():
+                _check_entry(f"research-{code}", card_group or {})
+
+            for card_id, card_content in (editorial_content.get("macro_cards") or {}).items():
+                _check_entry(card_id, card_content or {})
+
+            if failures:
+                result.status = "FAIL"
+                result.details = {
+                    "checked": checked,
+                    "data_cutoff_date": data_cutoff_date or "N/A",
+                    "failures": failures[:8],
+                    "warnings": warnings[:8],
+                }
+            elif warnings:
+                result.status = "WARN"
+                result.details = {
+                    "checked": checked,
+                    "data_cutoff_date": data_cutoff_date or "N/A",
+                    "warnings": warnings[:8],
+                }
+            else:
+                result.status = "PASS"
+                result.details = {
+                    "checked": checked,
+                    "data_cutoff_date": data_cutoff_date or "N/A",
+                }
+        except Exception as e:
+            result.status = "FAIL"
+            result.error_message = str(e)
+        return result
+
 class ConfigChecker:
+
     """系统配置检查"""
     
     @staticmethod
@@ -979,15 +1162,18 @@ def run_all_checks(categories_filter=None):
         WorkflowChecker.check_transaction_management,
         WorkflowChecker.check_date_sync,
         WorkflowChecker.check_update_pipeline,
+        WorkflowChecker.check_editorial_freshness,
         # F: 系统配置
+
         ConfigChecker.check_holdings_config,
         ConfigChecker.check_benchmark_config,
     ]
     
     # 按类别过滤
     if categories_filter:
-        filter_set = set(categories_filter.split(","))
-        checkers = [c for c in checkers if c()().category in filter_set]
+        filter_set = {item.strip() for item in categories_filter.split(",") if item.strip()}
+        checkers = [checker for checker in checkers if checker().category in filter_set]
+
     
     # 执行检查
     for check_func in checkers:

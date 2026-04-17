@@ -34,7 +34,9 @@
 **关键发现示例**:
 ```
 ❌ 冗余: references/ 目录已迁移，应删除
-⚠️  警告: outputs/index.html 是备用版，主版在根目录
+✅ 一致: 根目录 index.html 是唯一主 HTML 文件，辅助流程不再依赖旧输出路径
+
+
 ✅ 正常: scripts/ 中的所有文件都有对应文档说明
 ```
 
@@ -95,18 +97,18 @@
 
 **对比清单**:
 ```
-文档说明                          实际代码                           状态
-├── "outputs/ 用于生成报告"  → scripts/update_report.py 第 49 行 ✅
-├── "运行时间 ~11 秒"         → 实测 10.8-11.2 秒                 ✅
-├── "6 支 ETF 自动分析"       → config.yaml 中配置了 6 支        ✅
-└── "生成 index.html"          → 写入根目录（第 142 行）           ✅
+文档说明                               实际代码 / 目录                         状态
+├── "主报告写入根目录 index.html"   → scripts/update_report.py 第 49 行      ✅
+├── "outputs/ 为兼容临时区"         → SKILL.md + .gitignore + 实际目录       ✅
+├── "运行时间 ~11 秒"               → 实测约 11 秒                           ✅
+└── "6 支 ETF 自动分析"             → config.yaml 中配置了 6 支              ✅
 ```
 
 **关键发现示例**:
 ```
-❌ 不一致: docs/ 中说 "输出到 outputs/"，但实际主输出在根目录
+✅ 一致: 主输出路径、兼容目录和实际代码已对齐
 ✅ 一致: 所有参数说明与 config.yaml 相符
-⚠️  过时: DESIGN.md 中的架构图需要更新
+⚠️  提醒: 设计文档中的统计口径变更后要同步更新相关说明
 ```
 
 ---
@@ -124,16 +126,16 @@
 
 **忽略规则检查**:
 ```
-✅ 已忽略: _working/, logs/, data/, .backup/
+✅ 已忽略: _working/, logs/, data/, .backup/, outputs/
 ✅ 已忽略: *.pyc, __pycache__/, .DS_Store
-⚠️  警告: outputs/ 中的 HTML 可以忽略（非发布版）
-❌ 遗漏: config/secrets.yaml 应被忽略
+✅ 已忽略: config/secrets.yaml, secrets.yaml
+✅ 约定: outputs/ 默认保持空，仅作为兼容/手工导出临时区
 ```
 
 **关键发现示例**:
 ```
-✅ 干净: git status 显示 "nothing to commit"
-❌ 问题: 误提交了 logs/debug_*.log（3.5MB）
+✅ 干净: 临时目录与缓存目录已被忽略规则覆盖
+⚠️  提醒: 根目录若重新出现 `_pytest*.txt` / `*.bak*`，应立即移回 `_working/` 或删除
 ```
 
 ---
@@ -149,7 +151,7 @@ python scripts/audit_project.py --full
 
 **预期输出**:
 - 控制台：彩色表格汇总结果
-- 文件：`logs/audit_<timestamp>.json` 详细报告
+- 文件：`logs/audit_YYYYMMDD_HHMMSS.json` 结构化审计报告
 
 ---
 
@@ -202,7 +204,7 @@ python scripts/audit_project.py --full --report-only
 | 1 | 目录大小合理 | scripts/ < 500KB, docs/ < 200KB | - |
 | 2 | 无空目录 | 所有目录都有文件 | - |
 | 3 | 无明显重复 | 同名文件不超过 2 个 | - |
-| 4 | 临时文件已隔离 | _working/ 和 outputs/ 是唯一临时区 | - |
+| 4 | 临时文件已隔离 | `_working/` 为一次性排查区，`outputs/` 为兼容/手工导出临时区 | - |
 | 5 | 职责划分清晰 | 每个目录有明确的用途说明 | - |
 
 ### 敏感信息检查表
@@ -250,9 +252,9 @@ python scripts/audit_project.py --full --report-only
 [1] Structure Audit
     ├── ✅ All directories have clear purposes
     ├── ✅ No empty directories found
-    ├── ⚠️  references/ should be deleted
     ├── ✅ Temporary files properly isolated
-    └── Status: 4/5 PASSED
+    ├── ✅ Root report remains `index.html`
+    └── Status: 5/5 PASSED
 
 [2] Security Audit
     ├── ✅ No personal information found
@@ -263,29 +265,29 @@ python scripts/audit_project.py --full --report-only
 
 [3] Documentation Audit
     ├── ✅ SKILL.md structure matches reality
-    ├── ⚠️  WORKFLOW.md needs minor updates
+    ├── ✅ WORKFLOW.md matches current execution
     ├── ✅ All paths are correct
     ├── ✅ Config examples match actual files
     ├── ✅ Internal links are valid
-    └── Status: 4/5 PASSED
+    └── Status: 5/5 PASSED
 
 [4] Git Config Audit
     ├── ✅ .gitignore covers all temporary files
     ├── ✅ No large files tracked
     ├── ✅ Working tree is clean
-    ├── ⚠️  outputs/ not yet in .gitignore
+    ├── ✅ outputs/ already covered by ignore rules
     ├── ✅ Cache directories properly ignored
-    └── Status: 4/5 PASSED
+    └── Status: 5/5 PASSED
 
 ═══════════════════════════════════════════════════════
-TOTAL: 16/19 PASSED ✅
-OVERALL STATUS: GOOD (需要 1-2 项修复)
+TOTAL: 19/19 PASSED ✅
+OVERALL STATUS: GOOD (当前目录口径一致)
 ═══════════════════════════════════════════════════════
 
 Recommendations:
-1. DELETE: references/ (empty, migration completed)
-2. ADD: outputs/ to .gitignore
-3. UPDATE: Minor corrections to docs (non-critical)
+1. KEEP: `outputs/` 默认保持空，仅作兼容/手工导出临时区
+2. ROUTE: 一次性排查产物统一进入 `_working/`
+3. UPDATE: 统计口径变更时同步刷新相关文档
 ```
 
 ### 详细 JSON 报告
@@ -336,26 +338,26 @@ Recommendations:
       "total": 5,
       "issues": [
         {
-          "severity": "warning",
+          "severity": "info",
           "file": ".gitignore",
-          "description": "outputs/ directory not in ignore list",
-          "action": "ADD_RULE"
+          "description": "outputs/、_working/、logs/、data/ 已被忽略规则覆盖",
+          "action": "VERIFY_ONLY"
         }
       ]
     }
   },
   "recommendations": [
     {
-      "priority": "HIGH",
-      "type": "DELETE",
-      "target": "references/",
-      "reason": "Empty directory (migration completed in previous commits)"
+      "priority": "MEDIUM",
+      "type": "KEEP_CONVENTION",
+      "target": "outputs/",
+      "reason": "默认保持空，仅作兼容/手工导出临时区"
     },
     {
       "priority": "MEDIUM",
-      "type": "ADD_GITIGNORE",
-      "rule": "outputs/",
-      "reason": "Prevent dev/debug builds from being committed"
+      "type": "ROUTE_TEMP_FILES",
+      "rule": "_working/",
+      "reason": "一次性排查输出应统一归位，避免再次落在技能根目录"
     }
   ]
 }
@@ -365,34 +367,24 @@ Recommendations:
 
 ## 🔧 常见修复
 
-### 修复 1: 删除冗余目录
+### 修复 1: 清理根目录一次性残留
 
 ```bash
-# 验证目录为空
-ls -la references/
+# 搜索一次性排查文件
+Get-ChildItem . -Recurse -Include _pytest*.txt,_update_report*.txt,_detail_mismatch*.txt,*.bak* | Select-Object FullName
 
-# 安全删除
-rm -rf references/
-
-# 提交删除
-git add .
-git commit -m "refactor: remove empty references/ directory"
+# 确认无长期引用后，移动到 _working/ 或直接删除
 ```
 
 ---
 
-### 修复 2: 更新 .gitignore
+### 修复 2: 校验忽略规则
 
 ```bash
-# 编辑 .gitignore，添加新规则
-echo "outputs/" >> .gitignore
+# 检查 .gitignore 是否覆盖临时目录
+type .gitignore
 
-# 从 git 中移除已追踪的文件
-git rm --cached outputs/ -r
-
-# 提交
-git add .gitignore
-git commit -m "ci: add outputs/ to gitignore"
+# 重点确认 outputs/、_working/、logs/、data/、.backup/
 ```
 
 ---

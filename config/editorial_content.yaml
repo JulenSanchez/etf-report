@@ -1,0 +1,109 @@
+content_date: "2026-04-16"
+
+etf_cards:
+  "512400":
+    freshness_policy: "manual_daily"
+    research_cards:
+      - >-
+        💡 地缘冲突升级推动油价高位波动，PPI跳升叠加降息预期降温，有色板块短期承压
+      - >-
+        💡 <span class="highlight-blue">华福证券</span>：洛阳钼业2025年归母净利润预计200亿以上，维持<span class="highlight-green">'买入'</span>评级
+      - >-
+        💡 <span class="highlight-blue">国泰海通证券</span>：洛阳钼业迈向'铜金双轮驱动'国际矿企，给予<span class="highlight-green">'增持'</span>评级
+      - >-
+        💡 贵金属底层货币属性持续夯实，<span class="highlight">中长期配置价值突出</span>
+  "513120":
+    freshness_policy: "manual_daily"
+    research_cards:
+      - >-
+        💡 <span class="highlight-green">百济神州</span>2025年首次实现年度盈利，GAAP净利润2.87亿美元
+      - >-
+        💡 港股创新药ETF估值处于<span class="highlight">历史低位</span>，市盈率仅30.23倍
+      - >-
+        💡 创新药进展密集：国内脑机接口迎里程碑，抗阿尔茨海默病研究启动
+      - >-
+        💡 地缘政治扰动下，创新药板块<span class="highlight">估值优势显现</span>
+  "512070":
+    freshness_policy: "manual_daily"
+    research_cards:
+      - >-
+        💡 券商普遍认为2026年市场将从<span class="highlight">流动性驱动转向盈利驱动</span>
+      - >-
+        💡 <span class="highlight-blue">华泰证券</span>：AI资本开支基建化将推动PPI回升
+      - >-
+        💡 <span class="highlight-green">中国平安</span>：高股息+低估值凸显配置价值
+      - >-
+        💡 证券保险板块近期表现疲软，但<span class="highlight">估值优势逐渐显现</span>
+  "515880":
+    freshness_policy: "manual_daily"
+    research_cards:
+      - >-
+        💡 2026年是中际旭创的<span class="highlight-green">'1.6T放量元年'</span>，净利润有望冲击250亿
+      - >-
+        💡 <span class="highlight-blue">英伟达</span>与光通信企业签署战略合作，CPO技术规模化量产
+      - >-
+        💡 通信ETF近1年涨幅<span class="highlight-green">143.51%</span>，AI算力需求持续爆发
+      - >-
+        💡 <span class="highlight-blue">群益证券</span>：需求带动业绩高增长，关注1.6T大规模出货
+  "159566":
+    freshness_policy: "manual_daily"
+    research_cards:
+      - >-
+        💡 <span class="highlight-green">宁德时代</span>2025年净利润722亿元，连续5年储能电池出货量全球第一
+      - >-
+        💡 <span class="highlight-blue">华西证券</span>：新兴市场迎来户储、工商储发展大机遇
+      - >-
+        💡 <span class="highlight-blue">西部证券</span>：宁德时代2026年锂电确定性主线，维持<span class="highlight-green">'买入'</span>评级
+      - >-
+        💡 储能电池ETF近1年涨幅<span class="highlight-green">65.82%</span>，资金持续流入
+  "159865":
+    freshness_policy: "manual_daily"
+    research_cards:
+      - >-
+        💡 ETF 前四大权重集中在<span class="highlight-green">海大集团、温氏股份、牧原股份、新希望</span>，覆盖饲料与生猪养殖核心龙头
+      - >-
+        💡 <span class="highlight-blue">养殖链盈利弹性</span>主要取决于猪价回升、饲料成本与疫病扰动的组合变化
+      - >-
+        💡 养殖ETF更适合作为<span class="highlight-green">周期景气工具型配置</span>，宜结合产能去化与价格拐点分批布局
+      - >-
+        💡 <span class="highlight">海大集团</span>提供饲料龙头稳健性，<span class="highlight">温氏股份 / 牧原股份</span>提供更高的周期弹性
+
+macro_cards:
+  domestic-policy-card:
+    title: "🇨🇳 国内政策与事件"
+    freshness_policy: "sticky"
+    content_date: "2026-04-16"
+
+    items:
+      - >-
+        📊 中国3月LPR：1年期3.0%，5年期以上3.5%，连续第9个月按兵不动
+      - >-
+        💰 央行推出一揽子结构性货币政策，强化对科技创新、小微企业支持
+      - >-
+        🐖 生猪价格、饲料原料成本与疫病防控节奏，仍是养殖链盈利修复的核心变量
+      - >-
+        📈 关注产能去化与消费修复共振下，畜牧养殖板块的周期弹性释放
+  global-news-card:
+    title: "🌐 国际重大新闻"
+    freshness_policy: "sticky"
+    items:
+      - >-
+        🏦 美联储3月会议预计维持利率3.50%-3.75%不变，降息预期推迟至9月
+      - >-
+        🛢️ 中东地缘冲突升级推动油价高位波动，能源价格冲击加剧通胀风险
+      - >-
+        📉 高盛、巴克莱下调降息预期，年内降息次数预期降至1-2次
+      - >-
+        🏆 地缘政治秩序加速重构，硬资产成为避风港
+  market-sentiment-card:
+    title: "📊 市场情绪分析"
+    freshness_policy: "manual_daily"
+    items:
+      - >-
+        📉 A股市场波动加大，上证指数周K线收阴十字星，成交额缩量
+      - >-
+        💹 券商认为2026年市场将从流动性驱动转向盈利驱动
+      - >-
+        🎯 '科技成长+顺周期'作为全年核心主线
+      - >-
+        🚀 海外算力强势反弹，通信、储能等科技板块表现亮眼

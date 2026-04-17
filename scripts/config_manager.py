@@ -12,8 +12,10 @@
 
 import yaml
 import os
+from copy import deepcopy
 from typing import Any, Dict, List, Optional
 from pathlib import Path
+
 
 
 class ConfigManager:
@@ -45,13 +47,48 @@ class ConfigManager:
             self._config_dir = os.path.join(skill_dir, "config")
         
         return os.path.join(self._config_dir, filename)
+
+    def _load_yaml_dict(self, path: str) -> Dict:
+        """加载 YAML 字典文件；文件不存在时返回空字典"""
+        if not os.path.exists(path):
+            return {}
+
+        with open(path, 'r', encoding='utf-8') as f:
+            data = yaml.safe_load(f) or {}
+
+        if not isinstance(data, dict):
+            raise ValueError(f"配置文件必须是字典结构: {path}")
+
+        return data
+
+    def _merge_dicts(self, base: Dict, override: Dict) -> Dict:
+        """递归合并字典，override 覆盖 base"""
+        merged = deepcopy(base)
+        for key, value in override.items():
+            if isinstance(value, dict) and isinstance(merged.get(key), dict):
+                merged[key] = self._merge_dicts(merged[key], value)
+            else:
+                merged[key] = value
+        return merged
     
     def _load_config(self):
         """加载配置文件"""
         try:
+            example_path = self._get_config_path("config.example.yaml")
             config_path = self._get_config_path("config.yaml")
-            with open(config_path, 'r', encoding='utf-8') as f:
-                self._config = yaml.safe_load(f)
+
+            base_config = self._load_yaml_dict(example_path)
+            override_config = self._load_yaml_dict(config_path)
+
+            if base_config and override_config:
+                self._config = self._merge_dicts(base_config, override_config)
+                active_sources = [example_path, config_path]
+            elif override_config:
+                self._config = override_config
+                active_sources = [config_path]
+            else:
+                self._config = base_config
+                active_sources = [example_path] if base_config else []
             
             if self._config is None:
                 self._config = {}
@@ -63,13 +100,15 @@ class ConfigManager:
                     holdings = yaml.safe_load(f)
                     if holdings and 'holdings' in holdings:
                         self._config['holdings'] = holdings['holdings']
-            
-            print(f"[OK] 配置已加载: {config_path}")
+
+            source_text = " + ".join(active_sources) if active_sources else "(empty config)"
+            print(f"[OK] 配置已加载: {source_text}")
             self._loaded = True
         except Exception as e:
             print(f"[ERROR] 配置加载失败: {e}")
             self._config = {}
             self._loaded = True
+
     
     def reload(self):
         """重新加载配置"""
@@ -112,8 +151,22 @@ class ConfigManager:
     def get_transaction_config(self) -> Dict:
         """获取事务管理配置"""
         return self._config.get('transaction', {})
+
+    def get_editorial_content(self) -> Dict:
+        """获取解释层内容配置（研究卡 / 宏观卡等）"""
+        editorial_filename = self.get('files.editorial_content_file', 'editorial_content.yaml')
+        editorial_path = self._get_config_path(editorial_filename)
+
+        if not os.path.exists(editorial_path):
+            return {}
+
+        with open(editorial_path, 'r', encoding='utf-8') as f:
+            editorial_content = yaml.safe_load(f) or {}
+
+        return editorial_content if isinstance(editorial_content, dict) else {}
     
     def get(self, key: str, default: Any = None) -> Any:
+
         """通用配置获取（支持点号分隔）
         
         例子:
