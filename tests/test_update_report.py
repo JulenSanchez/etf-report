@@ -395,10 +395,13 @@ def test_verify_output_files_returns_false_when_html_missing(tmp_path, monkeypat
 
 
 
-def test_main_publish_success_runs_cleanup_and_publishers(monkeypatch, load_module):
+def test_main_publish_success_runs_cleanup_and_publishers(tmp_path, monkeypatch, load_module):
     module = load_module("update_report")
     tx_instances = []
     publish_calls = []
+    html_targets = []
+    source_html = tmp_path / "index.html"
+    source_html.write_text("SOURCE-HTML", encoding="utf-8")
 
     class FakeTx:
         def __init__(self, _skill_dir):
@@ -417,12 +420,32 @@ def test_main_publish_success_runs_cleanup_and_publishers(monkeypatch, load_modu
             self.actions.append("cleanup")
             return 0
 
+    def fake_update_html_data(html_file=None):
+        html_targets.append(("data", html_file))
+        with open(html_file, "w", encoding="utf-8") as f:
+            f.write("PUBLISHED-HTML")
+        return True
+
+    def fake_update_html_dates(html_file=None):
+        html_targets.append(("dates", html_file))
+        return True
+
+    def fake_verify_output_files(html_file=None):
+        html_targets.append(("verify", html_file))
+        return True
+
+    def fake_print_summary(html_file=None, source_html_protected=False):
+        publish_calls.append(("summary", html_file, source_html_protected))
+
+    fake_health_check = SimpleNamespace(HTML_FILE=None, run_all_checks=lambda: [SimpleNamespace(status="PASS")])
+
+    monkeypatch.setattr(module, "HTML_FILE", str(source_html))
     monkeypatch.setattr(module, "run_kline_update", lambda: True)
     monkeypatch.setattr(module, "run_realtime_update", lambda: True)
-    monkeypatch.setattr(module, "update_html_data", lambda: True)
-    monkeypatch.setattr(module, "update_html_dates", lambda: True)
-    monkeypatch.setattr(module, "verify_output_files", lambda: True)
-    monkeypatch.setattr(module, "print_summary", lambda: None)
+    monkeypatch.setattr(module, "update_html_data", fake_update_html_data)
+    monkeypatch.setattr(module, "update_html_dates", fake_update_html_dates)
+    monkeypatch.setattr(module, "verify_output_files", fake_verify_output_files)
+    monkeypatch.setattr(module, "print_summary", fake_print_summary)
     monkeypatch.setitem(sys.modules, "transaction", SimpleNamespace(TransactionManager=FakeTx))
     monkeypatch.setitem(
         sys.modules,
@@ -432,11 +455,7 @@ def test_main_publish_success_runs_cleanup_and_publishers(monkeypatch, load_modu
             print_report=lambda _result, _path: None,
         ),
     )
-    monkeypatch.setitem(
-        sys.modules,
-        "health_check",
-        SimpleNamespace(run_all_checks=lambda: [SimpleNamespace(status="PASS")]),
-    )
+    monkeypatch.setitem(sys.modules, "health_check", fake_health_check)
     monkeypatch.setitem(
         sys.modules,
         "notifier",
@@ -445,7 +464,7 @@ def test_main_publish_success_runs_cleanup_and_publishers(monkeypatch, load_modu
     monkeypatch.setitem(
         sys.modules,
         "deployer",
-        SimpleNamespace(main=lambda skill_dir: publish_calls.append(("deployer", skill_dir))),
+        SimpleNamespace(main=lambda skill_dir, html_source_path=None: publish_calls.append(("deployer", skill_dir, html_source_path))),
     )
 
     assert module.main(publish=True) is True
@@ -453,6 +472,14 @@ def test_main_publish_success_runs_cleanup_and_publishers(monkeypatch, load_modu
     assert "cleanup" in tx_instances[0].actions
     assert publish_calls[0][0] == "notifier"
     assert publish_calls[1][0] == "deployer"
+    temp_html = publish_calls[1][2]
+    assert temp_html is not None
+    assert temp_html != str(source_html)
+    assert source_html.read_text(encoding="utf-8") == "SOURCE-HTML"
+    assert fake_health_check.HTML_FILE == temp_html
+    assert any(kind == "data" and target == temp_html for kind, target in html_targets)
+    assert any(call[0] == "summary" and call[2] is True for call in publish_calls)
+
 
 
 
@@ -479,10 +506,11 @@ def test_main_restores_backup_when_html_integrity_fails(monkeypatch, load_module
 
     monkeypatch.setattr(module, "run_kline_update", lambda: True)
     monkeypatch.setattr(module, "run_realtime_update", lambda: True)
-    monkeypatch.setattr(module, "update_html_data", lambda: True)
-    monkeypatch.setattr(module, "update_html_dates", lambda: True)
-    monkeypatch.setattr(module, "verify_output_files", lambda: True)
-    monkeypatch.setattr(module, "print_summary", lambda: None)
+    monkeypatch.setattr(module, "update_html_data", lambda html_file=None: True)
+    monkeypatch.setattr(module, "update_html_dates", lambda html_file=None: True)
+    monkeypatch.setattr(module, "verify_output_files", lambda html_file=None: True)
+    monkeypatch.setattr(module, "print_summary", lambda html_file=None, source_html_protected=False: None)
+
     monkeypatch.setitem(sys.modules, "transaction", SimpleNamespace(TransactionManager=FakeTx))
     monkeypatch.setitem(
         sys.modules,
@@ -571,8 +599,9 @@ def test_main_returns_false_when_update_html_data_fails(monkeypatch, load_module
 
     monkeypatch.setattr(module, "run_kline_update", lambda: True)
     monkeypatch.setattr(module, "run_realtime_update", lambda: True)
-    monkeypatch.setattr(module, "update_html_data", lambda: False)
+    monkeypatch.setattr(module, "update_html_data", lambda html_file=None: False)
     monkeypatch.setitem(sys.modules, "transaction", SimpleNamespace(TransactionManager=FakeTx))
+
 
     assert module.main(publish=False) is False
     assert tx_instances[0].actions == ["backup"]
@@ -602,10 +631,11 @@ def test_main_continues_when_realtime_update_fails(monkeypatch, load_module):
 
     monkeypatch.setattr(module, "run_kline_update", lambda: True)
     monkeypatch.setattr(module, "run_realtime_update", lambda: False)
-    monkeypatch.setattr(module, "update_html_data", lambda: True)
-    monkeypatch.setattr(module, "update_html_dates", lambda: True)
-    monkeypatch.setattr(module, "verify_output_files", lambda: True)
-    monkeypatch.setattr(module, "print_summary", lambda: None)
+    monkeypatch.setattr(module, "update_html_data", lambda html_file=None: True)
+    monkeypatch.setattr(module, "update_html_dates", lambda html_file=None: True)
+    monkeypatch.setattr(module, "verify_output_files", lambda html_file=None: True)
+    monkeypatch.setattr(module, "print_summary", lambda html_file=None, source_html_protected=False: None)
+
     monkeypatch.setitem(sys.modules, "transaction", SimpleNamespace(TransactionManager=FakeTx))
     monkeypatch.setitem(
         sys.modules,

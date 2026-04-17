@@ -27,7 +27,10 @@ import webbrowser
 import time
 import json
 import argparse
+import shutil
+import tempfile
 from datetime import datetime
+
 
 from logger import Logger
 
@@ -57,7 +60,34 @@ logger.info("配置已加载", {
     "outputs_dir": OUTPUTS_DIR
 })
 
+
+def prepare_publish_html_snapshot(source_html_file=None):
+    """发布模式下复制临时 HTML 快照，避免污染源码工作区。"""
+    html_source = source_html_file or HTML_FILE
+    if not os.path.exists(html_source):
+        raise FileNotFoundError(f"源 HTML 不存在: {html_source}")
+
+    temp_dir = tempfile.mkdtemp(prefix="etf_publish_")
+    temp_html_file = os.path.join(temp_dir, os.path.basename(html_source))
+    shutil.copy2(html_source, temp_html_file)
+    logger.info("发布模式已创建临时 HTML 快照", {
+        "source_html": html_source,
+        "temp_html": temp_html_file,
+    })
+    return temp_dir, temp_html_file
+
+
+def cleanup_publish_html_snapshot(temp_dir):
+    """清理发布模式生成的临时 HTML 快照目录。"""
+    if not temp_dir:
+        return
+
+    shutil.rmtree(temp_dir, ignore_errors=True)
+    logger.info("发布模式临时 HTML 快照已清理", {"temp_dir": temp_dir})
+
+
 def run_kline_update():
+
     """执行K线数据更新"""
     logger.info("=" * 60)
     logger.info("Step 1: 获取K线数据并更新JS")
@@ -126,7 +156,7 @@ def _replace_text_in_html(html_content, marker, old_pattern, replacement):
     return html_content, False
 
 
-def update_html_dates():
+def update_html_dates(html_file=None):
     """更新HTML报告中的日期信息（报告日期、数据截止、页脚生成时间）
     
     使用字符串定位替换，不经过 BS4 序列化，避免破坏 script 内容。
@@ -139,8 +169,9 @@ def update_html_dates():
     files_config = config.get_files_config()
     html_update_config = config.get_html_update_config()
     
-    html_file = HTML_FILE  # 使用根目录的 index.html
+    html_file = html_file or HTML_FILE
     kline_file = os.path.join(DATA_DIR, files_config.get('data_files', {}).get('kline', 'etf_full_kline_data.json'))
+
     
     # 加载定位标记和日期格式
     locators = html_update_config.get('locators', {})
@@ -964,7 +995,8 @@ def sync_detail_panel_snapshot_html(html_content, kline_data, realtime_data):
 
 
 
-def update_html_data():
+def update_html_data(html_file=None):
+
 
 
     """更新HTML中的klineData和realtimeData数据
@@ -1096,8 +1128,9 @@ def update_html_data():
         return False
 
 
-def verify_output_files():
+def verify_output_files(html_file=None):
     """验证输出文件"""
+
     logger.info("=" * 60)
     logger.info("Step 4: 验证输出文件")
     logger.info("=" * 60)
@@ -1105,12 +1138,14 @@ def verify_output_files():
     # 从配置加载文件配置
     files_config = config.get_files_config()
     data_files = files_config.get('data_files', {})
-    html_file_name = os.path.basename(HTML_FILE)
+    html_file = html_file or HTML_FILE
+    html_file_name = os.path.basename(html_file)
     required_files = [
         (os.path.join(DATA_DIR, data_files.get('kline', 'etf_full_kline_data.json')), data_files.get('kline', 'etf_full_kline_data.json')),
         (os.path.join(DATA_DIR, data_files.get('realtime', 'etf_realtime_data.json')), data_files.get('realtime', 'etf_realtime_data.json')),
-        (HTML_FILE, html_file_name),
+        (html_file, html_file_name),
     ]
+
     
     all_exist = True
     for path, name in required_files:
@@ -1127,7 +1162,7 @@ def verify_output_files():
     
     return all_exist
 
-def print_summary():
+def print_summary(html_file=None, source_html_protected=False):
     """打印总结信息"""
     logger.info("=" * 60)
     logger.info("更新完成")
@@ -1135,9 +1170,14 @@ def print_summary():
     
     # 从配置加载消息提示
     messages = config._config.get('messages', {})
-    
-    # 本地预览路径
+    active_html_file = html_file or HTML_FILE
     local_preview = f"file:///{HTML_FILE.replace(os.sep, '/')}"
+    html_output_line = f"  - {os.path.basename(HTML_FILE)}  (综合报告，根目录主文件)"
+    protection_note = ""
+
+    if source_html_protected and os.path.abspath(active_html_file) != os.path.abspath(HTML_FILE):
+        html_output_line = "  - 临时 HTML 快照  (仅用于发布，不回写源码根目录 index.html)"
+        protection_note = "\n  - 发布模式保护：根目录 index.html 保持不变，Pages 使用临时 HTML 快照\n"
     
     summary = f"""
 报告已更新完成！
@@ -1145,7 +1185,7 @@ def print_summary():
 输出文件:
   - data/etf_full_kline_data.json  (K线数据)
   - data/etf_realtime_data.json    (实时行情数据)
-  - {os.path.basename(HTML_FILE)}  (综合报告，根目录主文件)
+{html_output_line}
 
 本地预览:
   {local_preview}
@@ -1156,9 +1196,10 @@ def print_summary():
 注意事项:
   - {messages.get('update_timing', '建议在交易日收盘后(15:00之后)执行更新')}
   - {messages.get('ma_warmup_note', 'MA均线从第一天即有完整数据(已预热)')}
-  - {messages.get('realtime_data_note', 'ETF涨跌幅和成分股涨跌幅为实时数据')}
+  - {messages.get('realtime_data_note', 'ETF涨跌幅和成分股涨跌幅为实时数据')}{protection_note}
 """
     logger.info("完成总结", {"summary": summary})
+
 
 
 
@@ -1179,11 +1220,21 @@ def main(publish: bool = False):
     logger.info("=" * 60)
     logger.info(f"ETF投资报告更新 - {datetime.now().strftime('%Y-%m-%d')} [{mode_label}]")
     logger.info("=" * 60)
+
+    working_html_file = HTML_FILE
+    publish_temp_dir = None
+    if publish:
+        try:
+            publish_temp_dir, working_html_file = prepare_publish_html_snapshot()
+        except Exception as e:
+            logger.error("创建发布临时 HTML 快照失败", {"error": str(e), "source_html": HTML_FILE})
+            return False
     
     logger.info("工作环境信息", {
         "work_dir": WORK_DIR,
         "start_time": datetime.now().strftime('%H:%M:%S'),
-        "publish": publish
+        "publish": publish,
+        "html_target": working_html_file,
     })
     
     # REQ-103: 事务管理 — 更新 HTML 前创建备份
@@ -1202,16 +1253,16 @@ def main(publish: bool = False):
             logger.warn("实时数据更新失败，继续执行")
         
         # Step 3: 更新HTML中的数据
-        if not update_html_data():
+        if not update_html_data(html_file=working_html_file):
             logger.error("HTML数据注入失败，流程终止")
             return False
         
         # Step 4: 更新报告日期
-        update_html_dates()
+        update_html_dates(html_file=working_html_file)
 
         
         # Step 5: 验证输出文件
-        if not verify_output_files():
+        if not verify_output_files(html_file=working_html_file):
             logger.warn("部分文件缺失，请检查")
         
         # Step 6: HTML 完整性验证（REQ-102）
@@ -1220,7 +1271,7 @@ def main(publish: bool = False):
         logger.info("=" * 60)
         try:
             from verify_html_integrity import verify_html_integrity, print_report
-            html_path = HTML_FILE
+            html_path = working_html_file
             result = verify_html_integrity(html_path)
             print_report(result, html_path)
             
@@ -1240,6 +1291,8 @@ def main(publish: bool = False):
         logger.info("=" * 60)
         try:
             import health_check
+            if os.path.abspath(working_html_file) != os.path.abspath(HTML_FILE):
+                health_check.HTML_FILE = working_html_file
             health_check_results = health_check.run_all_checks()
             
             # 统计检查结果
@@ -1280,14 +1333,14 @@ def main(publish: bool = False):
             # Step 8: GitHub Pages 部署
             try:
                 import deployer
-                deployer.main(SKILL_DIR)
+                deployer.main(SKILL_DIR, html_source_path=working_html_file)
             except ImportError:
                 logger.warn("deployer 模块未找到，跳过 GitHub 部署")
             except Exception as e:
                 logger.error("GitHub 部署失败", {"error": str(e)})
         
         # 打印总结
-        print_summary()
+        print_summary(html_file=working_html_file, source_html_protected=(os.path.abspath(working_html_file) != os.path.abspath(HTML_FILE)))
         
         logger.info("工作完成", {
             "end_time": datetime.now().strftime('%H:%M:%S')
@@ -1303,6 +1356,10 @@ def main(publish: bool = False):
         logger.warn("正在从备份恢复")
         tx.restore(backup_path)
         return False
+    finally:
+        if publish_temp_dir:
+            cleanup_publish_html_snapshot(publish_temp_dir)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="ETF投资报告更新")

@@ -102,7 +102,7 @@ def _deploy_to_source_repo(config: dict) -> bool:
     return True
 
 
-def _deploy_to_pages_repo(config: dict, skill_dir: str) -> bool:
+def _deploy_to_pages_repo(config: dict, skill_dir: str, html_source_path: str = None) -> bool:
     """部署到 GitHub Pages 仓库（复制 index.html 并 push）
 
     Args:
@@ -125,8 +125,9 @@ def _deploy_to_pages_repo(config: dict, skill_dir: str) -> bool:
     logger.info("部署到 GitHub Pages 仓库", {"path": pages_root})
 
     # 复制 index.html
-    src_html = os.path.join(skill_dir, "index.html")
+    src_html = html_source_path or os.path.join(skill_dir, "index.html")
     dst_html = os.path.join(pages_root, "index.html")
+
 
     if not os.path.exists(src_html):
         logger.error("源 index.html 不存在", {"path": src_html})
@@ -171,15 +172,17 @@ def _deploy_to_pages_repo(config: dict, skill_dir: str) -> bool:
     return True
 
 
-def main(skill_dir: str) -> bool:
+def main(skill_dir: str, html_source_path: str = None) -> bool:
     """执行 GitHub 部署
 
     Args:
         skill_dir: 技能根目录的绝对路径
+        html_source_path: 可选的发布 HTML 来源路径；为空时回退到技能根目录 index.html
 
     Returns:
         True 表示成功，False 表示失败
     """
+
     logger.info("=" * 60)
     logger.info("Step 8: 部署到 GitHub")
     logger.info("=" * 60)
@@ -196,7 +199,8 @@ def main(skill_dir: str) -> bool:
     ok1 = _deploy_to_source_repo(github_config)
 
     # 8b: 复制到 Pages 仓库并推送（github-pages/etf-report）
-    ok2 = _deploy_to_pages_repo(github_config, skill_dir)
+    ok2 = _deploy_to_pages_repo(github_config, skill_dir, html_source_path=html_source_path)
+
 
     if ok1 and ok2:
         logger.info("GitHub 部署全部完成")

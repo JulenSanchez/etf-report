@@ -46,7 +46,8 @@ python scripts/update_report.py --publish
 
 ### Step 8: GitHub Pages 部署（发布模式，~2-3s）
 
-git add/commit/push 到 GitHub。需配置 SSH 密钥。
+将临时 HTML 快照复制到 Pages 仓库后执行 git add/commit/push。需配置 SSH 密钥。
+
 
 ## 常见问题
 
