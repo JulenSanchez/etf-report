@@ -45,6 +45,8 @@ config/config.yaml
 config/secrets.yaml
 config/*.local.yaml
 CONTRIBUTING.md
+PLAN.md
+
 
 
 

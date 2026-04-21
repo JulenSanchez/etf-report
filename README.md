@@ -5,11 +5,10 @@
 ![Version](https://img.shields.io/badge/version-v2.2.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-## 📂 本地预览（默认）
+## 📂 本地预览
 
-遵循用户级规则 [`~/.codebuddy/rules/local-file-open.md`](../../../../../.codebuddy/rules/local-file-open.md)：HTML 一律用 `file://` 直开，不切 `http://localhost`。
+直接打开仓库根目录的 `index.html` 即可查看本地报告页面。
 
-本项目入口：`file:///c:/Users/julentan/CodeBuddy/StockMarket/.codebuddy/skills/etf-report/index.html`
 
 ## 📊 在线报告（发布产物）
 
