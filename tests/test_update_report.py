@@ -108,17 +108,20 @@ def test_sync_fund_flow_section_html_uses_daily_realtime_snapshot(load_module):
         '<div class="stat-value text-amber" id="market-rotation-stat-average-value">旧均值</div>'
         '<div id="market-rotation-stat-breadth-name">旧宽度名</div>'
         '<div class="stat-value text-blue" id="market-rotation-stat-breadth-value">旧宽度</div>'
-        '<p id="market-rotation-note">旧注释</p>'
         '<td id="leaders-top5-table-name-1">旧股票</td>'
+        '<td id="leaders-top5-table-industry-1">旧行业</td>'
         '<td id="leaders-top5-table-weight-1">旧权重</td>'
         '<td class="text-amber text-bold" id="leaders-top5-table-change-1">旧涨幅</td>'
         '<td id="leaders-top5-table-name-2">旧股票</td>'
+        '<td id="leaders-top5-table-industry-2">旧行业</td>'
         '<td id="leaders-top5-table-weight-2">旧权重</td>'
         '<td class="text-amber text-bold" id="leaders-top5-table-change-2">旧涨幅</td>'
         '<td id="laggards-top5-table-name-1">旧股票</td>'
+        '<td id="laggards-top5-table-industry-1">旧行业</td>'
         '<td id="laggards-top5-table-weight-1">旧权重</td>'
         '<td class="text-amber text-bold" id="laggards-top5-table-change-1">旧跌幅</td>'
         '<td id="laggards-top5-table-name-2">旧股票</td>'
+        '<td id="laggards-top5-table-industry-2">旧行业</td>'
         '<td id="laggards-top5-table-weight-2">旧权重</td>'
         '<td class="text-amber text-bold" id="laggards-top5-table-change-2">旧跌幅</td>'
     )
@@ -159,17 +162,23 @@ def test_sync_fund_flow_section_html_uses_daily_realtime_snapshot(load_module):
     assert 'id="market-rotation-stat-average-name">2支ETF均值</div>' in updated
     assert 'class="stat-value text-green" id="market-rotation-stat-average-value">+0.20%</div>' in updated
     assert 'class="stat-value text-blue" id="market-rotation-stat-breadth-value">1 / 1 / 0</div>' in updated
-    assert 'id="market-rotation-note">数据截止：2026-04-16 · 行情快照：2026-04-16 15:01:00</p>' in updated
     assert 'id="leaders-top5-table-name-1">东方财富</td>' in updated
+
+    assert 'id="leaders-top5-table-industry-1">示例ETF乙</td>' in updated
     assert 'id="leaders-top5-table-weight-1">7.50%</td>' in updated
     assert 'class="text-green text-bold" id="leaders-top5-table-change-1">+4.50%</td>' in updated
     assert 'id="laggards-top5-table-name-1">隆基绿能</td>' in updated
+    assert 'id="laggards-top5-table-industry-1">示例ETF甲</td>' in updated
     assert 'id="laggards-top5-table-weight-1">8.00%</td>' in updated
     assert 'class="text-red text-bold" id="laggards-top5-table-change-1">-2.10%</td>' in updated
 
 
 
 def test_update_html_data_returns_false_when_realtime_const_missing(tmp_path, monkeypatch, load_module):
+    """BUG-011 契约翻转：新架构下 update_html_data 允许 HTML 完全不含内联 const（走 runtime_payload.js）。
+    这里保留测试函数名以记录历史契约变更，并验证新契约：即使只命中 klineData 不命中 realtimeData，
+    也不再 ERROR 退出，而是返回 True（runtime_payload.js 是唯一可靠数据源，HTML 替换变为 best-effort）。
+    """
     module = load_module("update_report")
     data_dir = tmp_path / "data"
     data_dir.mkdir()
@@ -189,8 +198,11 @@ def test_update_html_data_returns_false_when_realtime_const_missing(tmp_path, mo
     monkeypatch.setattr(module, "DATA_DIR", str(data_dir))
     monkeypatch.setattr(module, "HTML_FILE", str(html_file))
 
-    assert module.update_html_data() is False
-    assert html_file.read_text(encoding="utf-8") == original_html
+    # 新契约：即使 realtimeData 常量缺失，也应返回 True（不阻断主流程）
+    assert module.update_html_data() is True
+    # runtime_payload.js 必定已写入
+    runtime_payload = (data_dir / "runtime_payload.js").read_text(encoding="utf-8")
+    assert 'window.__ETF_REPORT_RUNTIME__ =' in runtime_payload
 
 
 
@@ -246,10 +258,10 @@ def test_update_html_data_replaces_existing_realtime_const(tmp_path, monkeypatch
     assert 'id="latest-nav-value-510000">159.00元</div>' in updated
     assert 'id="daily-change-value-510000">+0.63%</div>' in updated
     assert 'class="info-value text-green" id="daily-change-value-510000"' in updated
-    assert '<td class="positive">+14.39%</td>' in updated
-    assert '<td class="positive">+59.00%</td>' in updated
-    assert '<td class="positive">+11.56%</td>' in updated
-    assert '<td class="positive">+25.50%</td>' in updated
+    assert '<td id="performance-return-1m-510000" class="positive">+14.39%</td>' in updated
+    assert '<td id="performance-return-3m-510000" class="positive">+59.00%</td>' in updated
+    assert '<td id="performance-return-6m-510000" class="positive">+11.56%</td>' in updated
+    assert '<td id="performance-return-1y-510000" class="positive">+25.50%</td>' in updated
     assert 'class="etf-change positive" id="overview-card-510000-change">+59.00%</div>' in updated
 
 
@@ -322,6 +334,66 @@ def test_update_html_data_returns_false_when_kline_file_missing(tmp_path, monkey
 
 
 
+def test_update_html_data_succeeds_without_inline_const(tmp_path, monkeypatch, load_module):
+    """BUG-011 回归保护：新架构下 index.html 不再内联 const klineData/realtimeData
+    （已抽离到 data/runtime_payload.js）。此时 update_html_data 不应 ERROR 退出，
+    应该在 runtime_payload.js 成功写入后，对找不到内联 const 的情况降级为 INFO 跳过。
+    """
+    module = load_module("update_report")
+    data_dir = tmp_path / "data"
+    data_dir.mkdir()
+    html_file = tmp_path / "index.html"
+
+    daily_dates = [f"2026-02-{i:02d}" for i in range(1, 61)]
+    daily_kline = [[float(price), float(price), float(price - 1), float(price + 1)] for price in range(100, 160)]
+    weekly_dates = [f"2025-W{i:02d}" for i in range(1, 53)]
+    weekly_kline = [[float(price), float(price), float(price - 1), float(price + 1)] for price in range(200, 252)]
+
+    (data_dir / "etf_full_kline_data.json").write_text(
+        json.dumps({
+            "510000": {
+                "name": "示例ETF",
+                "daily": {"dates": daily_dates, "kline": daily_kline},
+                "weekly": {"dates": weekly_dates, "kline": weekly_kline},
+            }
+        }, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    (data_dir / "etf_realtime_data.json").write_text(
+        json.dumps({"510000": {"etf_change": 1.23, "etf_price": 200.0}}, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    # 关键：HTML 里完全不含 const klineData / const realtimeData，模拟 REQ-146 新架构
+    html_file.write_text(
+        '<div class="info-label" id="latest-nav-label-510000">最新净值</div>'
+        '<div class="info-value" id="latest-nav-value-510000">旧价格</div>'
+        '<div class="info-value text-red" id="daily-change-value-510000">旧值</div>'
+        '<table class="performance-table" id="performance-table-510000"><tr><td>旧业绩</td></tr></table>'
+        '<div class="etf-change negative" id="overview-card-510000-change">旧概览涨幅</div>'
+        '<script src="./data/runtime_payload.js"></script>'
+        '<script src="./assets/js/report-main.js"></script>',
+        encoding="utf-8",
+    )
+
+    monkeypatch.setattr(module, "DATA_DIR", str(data_dir))
+    monkeypatch.setattr(module, "HTML_FILE", str(html_file))
+
+    # 主要断言：即使 HTML 里没有 const，也应该返回 True（不再 ERROR 退出）
+    assert module.update_html_data() is True
+
+    # runtime_payload.js 必须已写入，这是新架构的唯一数据源
+    runtime_payload = (data_dir / "runtime_payload.js").read_text(encoding="utf-8")
+    assert 'window.__ETF_REPORT_RUNTIME__ =' in runtime_payload
+    assert '"etf_price": 200.0' in runtime_payload
+
+    # 静态快照同步仍应生效（latest-nav-value / daily-change-value / performance-table / overview-card）
+    updated = html_file.read_text(encoding="utf-8")
+    assert 'id="latest-nav-value-510000">159.00元</div>' in updated
+    assert 'id="daily-change-value-510000">+0.63%</div>' in updated
+    assert 'class="etf-change positive" id="overview-card-510000-change">+59.00%</div>' in updated
+
+
+
 def test_update_html_data_syncs_editorial_content_blocks(tmp_path, monkeypatch, load_module):
     module = load_module("update_report")
     data_dir = tmp_path / "data"
@@ -380,10 +452,10 @@ def test_update_html_data_syncs_editorial_content_blocks(tmp_path, monkeypatch, 
     assert module.update_html_data() is True
 
     updated = html_file.read_text(encoding="utf-8")
-    assert 'id="report-card-content-510000-1"><span class="report-card-text">💡 <span class="highlight-blue">新研究卡</span></span><span class="editorial-date editorial-date--warn" id="research-date-510000-1">2026-04-16</span></p>' in updated
+    assert 'id="report-card-content-510000-1"><span class="report-card-text" id="report-card-text-510000-1">💡 <span class="highlight-blue">新研究卡</span></span><span class="editorial-date editorial-date--warn" id="research-date-510000-1">2026-04-16</span></p>' in updated
     assert 'id="research-meta-510000"' not in updated
     assert 'id="editorial-meta-domestic-policy-card"' not in updated
-    assert 'id="domestic-policy-card"><h3 id="domestic-policy-card-title">🇨🇳 新宏观标题</h3><ul id="domestic-policy-card-list"><li id="domestic-policy-card-item-1"><span class="macro-item-text" id="domestic-policy-card-text-1"><span class="macro-item-content">条目一</span><span class="editorial-date" id="editorial-date-domestic-policy-card-1">2026-04-16</span></span></li><li id="domestic-policy-card-item-2"><span class="macro-item-text" id="domestic-policy-card-text-2"><span class="macro-item-content">条目二</span><span class="editorial-date" id="editorial-date-domestic-policy-card-2">2026-04-16</span></span></li></ul></div>' in updated
+    assert 'id="domestic-policy-card"><h3 id="domestic-policy-card-title">🇨🇳 新宏观标题</h3><ul id="domestic-policy-card-list"><li id="domestic-policy-card-item-1"><span class="macro-item-text" id="domestic-policy-card-text-1"><span class="macro-item-content" id="domestic-policy-card-content-1">条目一</span><span class="editorial-date" id="editorial-date-domestic-policy-card-1">2026-04-16</span></span></li><li id="domestic-policy-card-item-2"><span class="macro-item-text" id="domestic-policy-card-text-2"><span class="macro-item-content" id="domestic-policy-card-content-2">条目二</span><span class="editorial-date" id="editorial-date-domestic-policy-card-2">2026-04-16</span></span></li></ul></div>' in updated
 
 
 
@@ -706,5 +778,169 @@ def test_main_continues_when_realtime_update_fails(monkeypatch, load_module):
     assert module.main(publish=False) is True
     assert "cleanup" in tx_instances[0].actions
 
+
+
+# ---------- REQ-158 Step D：editorial 集成 ----------
+
+def test_run_editorial_update_writes_new_yaml(tmp_path, monkeypatch, load_module):
+    """editorial_fetcher 抓到新内容时应完整覆盖 editorial_content.yaml。"""
+    import yaml as _yaml
+    from types import SimpleNamespace
+
+    module = load_module("update_report")
+
+    # 构造临时 SKILL_DIR 与 config 目录
+    skill_dir = tmp_path
+    config_dir = skill_dir / "config"
+    config_dir.mkdir()
+    editorial_path = config_dir / "editorial_content.yaml"
+    editorial_path.write_text(
+        "content_date: '2026-04-16'\netf_cards: {}\nmacro_cards: {}\n",
+        encoding="utf-8",
+    )
+
+    monkeypatch.setattr(module, "SKILL_DIR", str(skill_dir))
+
+    # mock editorial_fetcher 返回一个完整的新结果
+    class FakeResult:
+        stats = {"etf:159566": {"final": 4}}
+
+        def to_yaml_dict(self):
+            return {
+                "content_date": "2026-04-21",
+                "etf_cards": {
+                    "159566": {
+                        "freshness_policy": "manual_daily",
+                        "research_cards": ["💡 宁德时代一季报靓丽", "💡 阳光电源业绩预增"],
+                    }
+                },
+                "macro_cards": {
+                    "global-news-card": {
+                        "title": "🌐 国际",
+                        "freshness_policy": "manual_daily",
+                        "items": ["美联储维持利率"],
+                    }
+                },
+            }
+
+    monkeypatch.setitem(
+        sys.modules,
+        "editorial_fetcher",
+        SimpleNamespace(fetch_all_editorial=lambda: FakeResult()),
+    )
+
+    assert module.run_editorial_update() is True
+
+    written = _yaml.safe_load(editorial_path.read_text(encoding="utf-8"))
+    assert written["content_date"] == "2026-04-21"
+    assert "159566" in written["etf_cards"]
+    assert len(written["etf_cards"]["159566"]["research_cards"]) == 2
+    assert "global-news-card" in written["macro_cards"]
+
+
+def test_run_editorial_update_falls_back_on_empty_etf(tmp_path, monkeypatch, load_module):
+    """某只 ETF 抓取返回空时，应回退该 ETF 到上一版 yaml，不丢失数据。"""
+    import yaml as _yaml
+    from types import SimpleNamespace
+
+    module = load_module("update_report")
+
+    skill_dir = tmp_path
+    config_dir = skill_dir / "config"
+    config_dir.mkdir()
+    editorial_path = config_dir / "editorial_content.yaml"
+    # 上一版含 513120 的历史卡片
+    editorial_path.write_text(
+        _yaml.safe_dump({
+            "content_date": "2026-04-16",
+            "etf_cards": {
+                "513120": {"freshness_policy": "manual_daily",
+                           "research_cards": ["💡 旧卡1", "💡 旧卡2"]}
+            },
+            "macro_cards": {},
+        }, allow_unicode=True),
+        encoding="utf-8",
+    )
+
+    monkeypatch.setattr(module, "SKILL_DIR", str(skill_dir))
+
+    # fetcher 返回 513120 的新结果为空（模拟港股成分股今天没新闻）
+    class FakeResult:
+        stats = {"etf:513120": {"final": 0}}
+
+        def to_yaml_dict(self):
+            return {
+                "content_date": "2026-04-21",
+                "etf_cards": {
+                    "513120": {"freshness_policy": "manual_daily", "research_cards": []},
+                },
+                "macro_cards": {},
+            }
+
+    monkeypatch.setitem(
+        sys.modules,
+        "editorial_fetcher",
+        SimpleNamespace(fetch_all_editorial=lambda: FakeResult()),
+    )
+
+    assert module.run_editorial_update() is True
+
+    written = _yaml.safe_load(editorial_path.read_text(encoding="utf-8"))
+    # 应保留上一版的 513120（旧卡1/旧卡2），而不是写成空
+    assert written["etf_cards"]["513120"]["research_cards"] == ["💡 旧卡1", "💡 旧卡2"]
+
+
+def test_run_editorial_update_survives_fetcher_exception(tmp_path, monkeypatch, load_module):
+    """editorial_fetcher 抛异常时不应阻断主流程，yaml 保留不动。"""
+    from types import SimpleNamespace
+
+    module = load_module("update_report")
+
+    skill_dir = tmp_path
+    config_dir = skill_dir / "config"
+    config_dir.mkdir()
+    editorial_path = config_dir / "editorial_content.yaml"
+    original = "content_date: '2026-04-16'\netf_cards: {}\nmacro_cards: {}\n"
+    editorial_path.write_text(original, encoding="utf-8")
+
+    monkeypatch.setattr(module, "SKILL_DIR", str(skill_dir))
+
+    def _boom():
+        raise RuntimeError("network down")
+
+    monkeypatch.setitem(
+        sys.modules,
+        "editorial_fetcher",
+        SimpleNamespace(fetch_all_editorial=_boom),
+    )
+
+    # 异常不应传播
+    assert module.run_editorial_update() is True
+    # yaml 保持原样
+    assert editorial_path.read_text(encoding="utf-8") == original
+
+
+def test_run_editorial_update_survives_missing_module(tmp_path, monkeypatch, load_module):
+    """editorial_fetcher 模块不存在时跳过但返回 True。"""
+    module = load_module("update_report")
+
+    skill_dir = tmp_path
+    config_dir = skill_dir / "config"
+    config_dir.mkdir()
+
+    monkeypatch.setattr(module, "SKILL_DIR", str(skill_dir))
+
+    # 让 import editorial_fetcher 失败
+    import builtins
+    original_import = builtins.__import__
+
+    def fake_import(name, *args, **kwargs):
+        if name == "editorial_fetcher":
+            raise ImportError("simulated missing module")
+        return original_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", fake_import)
+
+    assert module.run_editorial_update() is True
 
 

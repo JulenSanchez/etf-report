@@ -1,0 +1,280 @@
+# ETF 报告系统 — Editorial 内容源配置
+# ============================================================
+# REQ-158 Step C：本文件驱动 scripts/editorial_fetcher.py 按主题抓新闻/研报。
+#
+# 两条通路：
+#   1. 个股新闻（per-ETF）：按 ETF 的 top_stocks 白名单抓新浪 vCB_AllNewsStock 页
+#      A 股用 sh/sz 前缀，港股用 hk 前缀（同一 endpoint）
+#   2. 宏观卡源：新浪 feed.mix 滚动 lid 分类（lid=2517 行业研究等）
+#
+# 关键词过滤：
+#   require 命中任一 = 通过；exclude 命中任一 = 丢弃
+#   都是在抓回原文之后、合规过滤之前做的"主题相关度"过滤
+#
+# top_stocks 挑选原则：
+#   每只 ETF 取 2-3 只权重前列且行业代表性强的成分股
+#   港股 ETF（513120）的港股代码用 hk 前缀
+
+fetcher:
+  # 每只个股抓取 top_n 条（新浪页实际是 40 条列表，我们只取 top_n 做关键词过滤）
+  per_stock_top_n: 40
+  # 关键词过滤后每 ETF 最终保留条数
+  # 注意：index.html 模板的 research-date-{code}-N 只支持 N=1..4，超过 4 条会触发
+  # verify_html_integrity 的"解释层日期缺失"FAIL。务必保持 <= 4。
+  per_etf_kept_n: 4
+  # 宏观卡同理，index.html 的 editorial-date-{card}-N 也是 1..4
+  per_macro_kept_n: 4
+  # 东财关键词搜索每 keyword 保留条数
+  em_search_limit: 15
+  # 每 ETF 单次请求之间的间隔（秒），避免过频
+  inter_request_delay: 0.3
+  # HTTP 超时
+  request_timeout: 10
+  # User-Agent / Referer（单独维护）
+  http_headers:
+    User-Agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"
+    Referer: "https://finance.sina.com.cn/"
+
+etfs:
+  "512400":
+    name: "有色金属ETF"
+    top_stocks:
+      - symbol: "sh601899"
+        stock_name: "紫金矿业"
+      - symbol: "sh603993"
+        stock_name: "洛阳钼业"
+      - symbol: "sh600547"
+        stock_name: "山东黄金"
+    # 标题必须含至少一个 require 词才留，否则丢弃
+    require_keywords: ["有色", "铜", "金", "锂", "铝", "钴", "稀土", "矿业", "紫金", "洛阳钼业", "山东黄金", "金属"]
+    # 命中任一即丢弃（纯噪音）
+    exclude_keywords: ["车展", "房地产", "彩票", "娱乐"]
+
+  "513120":
+    name: "港股创新药ETF"
+    # 换更活跃的港股标的（2026-04 实测新浪/富途新闻活跃度 + BD 相关）：
+    # hk01177 中国生物制药（BD 与默沙东合作）、hk01093 石药（研发兑现）、hk03692 翰森（研报覆盖）
+    # 保留 hk06160 百济神州做业绩锚点
+    top_stocks:
+      - symbol: "hk01177"
+        stock_name: "中国生物制药"
+      - symbol: "hk01093"
+        stock_name: "石药集团"
+      - symbol: "hk03692"
+        stock_name: "翰森制药"
+      - symbol: "hk06160"
+        stock_name: "百济神州"
+    # 富途港股补充源：覆盖新浪缺失的跨平台消息
+    futu_hk_stocks:
+      - code: "01177"
+        stock_name: "中国生物制药"
+      - code: "01093"
+        stock_name: "石药集团"
+      - code: "06160"
+        stock_name: "百济神州"
+    # 东财关键词文章搜索：覆盖 BD 交易/跨国药企等宏观主题
+    em_keywords:
+      - "创新药"
+      - "创新药BD"
+      - "中国创新药"
+      - "港股医药"
+    # 关键词扩展：BD 主题 + 跨国药企（MNC）
+    require_keywords:
+      # 行业核心
+      - "创新药"
+      - "生物医药"
+      - "制药"
+      - "医药"
+      - "药"
+      - "生物"
+      - "疫苗"
+      - "抗体"
+      - "靶点"
+      - "临床"
+      - "新药"
+      - "药监"
+      - "FDA"
+      - "NMPA"
+      - "获批"
+      - "上市申报"
+      - "医保"
+      - "集采"
+      # BD 交易主题
+      - "BD"
+      - "授权"
+      - "合作协议"
+      - "License-out"
+      - "License-in"
+      - "首付款"
+      - "里程碑付款"
+      - "知识产权"
+      - "专利"
+      # 港股主题
+      - "港股"
+      # 国内 ETF 成分（供新浪+富途+东财交叉匹配）
+      - "百济"
+      - "百济神州"
+      - "信达"
+      - "信达生物"
+      - "康方"
+      - "康方生物"
+      - "药明"
+      - "药明康德"
+      - "药明生物"
+      - "石药"
+      - "翰森"
+      - "中国生物制药"
+      - "恒瑞"
+      - "恒瑞医药"
+      - "复星医药"
+      - "荣昌生物"
+      - "再鼎医药"
+      # 跨国药企（MNC）— BD 交易常涉及
+      - "礼来"
+      - "Eli Lilly"
+      - "强生"
+      - "Johnson"
+      - "辉瑞"
+      - "Pfizer"
+      - "默沙东"
+      - "Merck"
+      - "MSD"
+      - "诺华"
+      - "Novartis"
+      - "罗氏"
+      - "Roche"
+      - "AZ"
+      - "阿斯利康"
+      - "AstraZeneca"
+      - "BMS"
+      - "百时美施贵宝"
+      - "Bristol"
+      - "吉利德"
+      - "Gilead"
+      - "诺和诺德"
+      - "Novo Nordisk"
+      - "赛诺菲"
+      - "Sanofi"
+      - "GSK"
+      - "葛兰素史克"
+      - "Summit"
+      - "SMMT"
+      - "艾伯维"
+      - "AbbVie"
+    exclude_keywords:
+      - "车展"
+      - "房地产"
+      - "娱乐圈"
+      - "明星"
+      - "彩票"
+
+  "512070":
+    name: "证券保险ETF"
+    top_stocks:
+      - symbol: "sh601318"
+        stock_name: "中国平安"
+      - symbol: "sh600030"
+        stock_name: "中信证券"
+      - symbol: "sh601601"
+        stock_name: "中国太保"
+    require_keywords: ["证券", "券商", "保险", "金融", "平安", "中信", "太保", "财富管理", "寿险"]
+    exclude_keywords: ["车展", "娱乐", "彩票"]
+
+  "515880":
+    name: "通信设备ETF"
+    top_stocks:
+      - symbol: "sz300308"
+        stock_name: "中际旭创"
+      - symbol: "sz300502"
+        stock_name: "新易盛"
+      - symbol: "sh601138"
+        stock_name: "工业富联"
+    require_keywords: ["通信", "光模块", "光通信", "AI", "算力", "CPO", "中际旭创", "新易盛", "工业富联", "数据中心"]
+    exclude_keywords: ["车展", "娱乐圈", "明星"]
+
+  "159566":
+    name: "储能电池ETF"
+    top_stocks:
+      - symbol: "sz300750"
+        stock_name: "宁德时代"
+      - symbol: "sz300274"
+        stock_name: "阳光电源"
+      - symbol: "sz300014"
+        stock_name: "亿纬锂能"
+    require_keywords: ["电池", "锂电", "储能", "宁德", "阳光电源", "亿纬", "新能源", "动力电池", "锂", "电芯"]
+    exclude_keywords: ["车展", "娱乐", "彩票"]
+
+  "159865":
+    name: "养殖ETF"
+    top_stocks:
+      - symbol: "sz002311"
+        stock_name: "海大集团"
+      - symbol: "sz002714"
+        stock_name: "牧原股份"
+      - symbol: "sz300498"
+        stock_name: "温氏股份"
+    require_keywords: ["养殖", "猪", "饲料", "畜牧", "海大", "牧原", "温氏", "生猪", "农业", "农产品"]
+    exclude_keywords: ["车展", "娱乐", "明星"]
+
+# ============================================================
+# 宏观卡源
+# ============================================================
+# 2026-04 实测：新浪 feed.mix 大多数 lid 已失效，实际存活并有数据的只有
+#   lid=2517 环球市场 / 2518 A股综述 / 2669 金融要闻 / 2515 IT要闻
+# 其中 2517/2518/2669 共用同一后端数据池（前三条完全相同），所以三张宏观卡
+# 都从 lid=2517 抓同一流，靠 require_keywords 过滤出各卡主题。
+# 说明：单一数据池下 domestic-policy-card 的 A 股政策新闻可能条数较少，
+# 这是新浪合并频道导致的源端限制，不是 fetcher 问题。
+macro_cards:
+  domestic-policy-card:
+    title: "🇨🇳 国内政策与事件"
+    sources:
+      - type: "sina_roll_json"
+        lid: 2517
+        name: "环球市场（国内政策切片）"
+        keep_top: 40
+      # 华尔街见闻 A 股频道（政策解读较多）
+      - type: "wscn_lives"
+        channel: "a-stock-channel"
+        name: "华尔街见闻A股"
+        keep_top: 30
+    require_keywords: ["央行", "LPR", "MLF", "利率", "货币政策", "财政", "国务院", "发改委", "统计局",
+                       "证监会", "网信办", "中国人民银行", "政策", "监管", "国常会", "政治局", "两会", "十四五", "十五五",
+                       "改革", "减税", "降准", "降息", "A股", "外资"]
+    exclude_keywords: ["车展", "娱乐"]
+    keep_n: 4
+
+  global-news-card:
+    title: "🌐 国际重大新闻"
+    sources:
+      - type: "sina_roll_json"
+        lid: 2517
+        name: "环球市场"
+        keep_top: 40
+      # 华尔街见闻全球频道（这正是它的强项）
+      - type: "wscn_lives"
+        channel: "global-channel"
+        name: "华尔街见闻全球"
+        keep_top: 30
+    require_keywords: ["美联储", "降息", "加息", "美国", "欧洲", "欧盟", "日本", "英国",
+                       "地缘", "油价", "黄金", "美股", "纳指", "标普", "道指",
+                       "俄乌", "中东", "伊朗", "以色列", "特朗普", "拜登", "关税", "贸易战", "OPEC"]
+    exclude_keywords: ["车展", "娱乐"]
+    keep_n: 4
+
+  market-sentiment-card:
+    title: "📊 市场情绪分析"
+    sources:
+      - type: "sina_roll_json"
+        lid: 2517
+        name: "环球市场（A股情绪切片）"
+        keep_top: 40
+      - type: "wscn_lives"
+        channel: "a-stock-channel"
+        name: "华尔街见闻A股情绪"
+        keep_top: 30
+    require_keywords: ["上证", "沪深", "A股", "北向", "融资", "成交", "盘面", "板块", "主题",
+                       "港股通", "南向", "指数", "ETF", "基金", "调仓", "AI", "算力", "科技",
+                       "周期", "高股息", "红利", "新能源"]
+    exclude_keywords: ["车展", "娱乐"]
+    keep_n: 4

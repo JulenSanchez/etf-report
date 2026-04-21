@@ -60,7 +60,19 @@ OUTPUTS_DIR = os.path.join(SKILL_DIR, "outputs")
 HTML_FILE = os.path.join(SKILL_DIR, "index.html")
 
 
-MIN_HTML_FILE_SIZE_KB = 200
+# REQ-146 后 index.html 外链化，骨架+占位 ~87 KB。阈值 60 KB 作为"骨架破损"红线。
+MIN_HTML_FILE_SIZE_KB = 60
+# REQ-146 后数据从 const klineData 迁移到 data/runtime_payload.js
+MIN_RUNTIME_PAYLOAD_KB = 100  # 正常 ~200 KB（6 只 ETF 60 天日线+基准），低于 100 可能抓数出问题
+# REQ-146/147 后抽离的关键外链资源，缺一不可
+REQUIRED_ASSET_FILES = [
+    ("assets/css/report.css", 10),
+    ("assets/css/debug.css", 5),
+    ("assets/js/chart-lifecycle.js", 1),
+    ("assets/js/report-main.js", 50),
+    ("assets/js/debug-toolbar.js", 10),
+    ("data/runtime_payload.js", MIN_RUNTIME_PAYLOAD_KB),
+]
 REQUIRED_HTML_DATA_BLOCKS = ["klineData"]
 OPTIONAL_HTML_DATA_BLOCKS = ["realtimeData"]
 
@@ -282,8 +294,8 @@ class FileChecker:
         result = CheckResult("A4", "文件大小合理性", "A")
         try:
             issues = []
-            
-            # 检查 HTML 文件
+
+            # 检查 HTML 文件（骨架最小阈值）
             html_file = HTML_FILE
             if os.path.exists(html_file):
                 size_kb = os.path.getsize(html_file) / 1024
@@ -293,14 +305,25 @@ class FileChecker:
                         f"HTML 文件过小: {size_kb:.2f} KB (阈值: {MIN_HTML_FILE_SIZE_KB} KB)"
                     )
 
-            
             # 检查 K线数据
             kline_file = os.path.join(DATA_DIR, "etf_full_kline_data.json")
             if os.path.exists(kline_file):
                 size_kb = os.path.getsize(kline_file) / 1024
                 if size_kb < 100:
                     issues.append(f"K线数据过小: {size_kb:.2f} KB")
-            
+
+            # 检查 REQ-146 后抽离的 CSS/JS 关键外链资源与 runtime_payload.js（BUG-014）
+            for rel_path, min_kb in REQUIRED_ASSET_FILES:
+                abs_path = os.path.join(SKILL_DIR, rel_path)
+                if not os.path.exists(abs_path):
+                    issues.append(f"关键外链资源缺失: {rel_path}")
+                    continue
+                size_kb = os.path.getsize(abs_path) / 1024
+                if size_kb < min_kb:
+                    issues.append(
+                        f"{rel_path} 过小: {size_kb:.2f} KB (阈值: {min_kb} KB)"
+                    )
+
             if not issues:
                 result.status = "PASS"
                 result.details = {"status": "All file sizes are reasonable"}
@@ -684,12 +707,57 @@ class HTMLChecker:
     
     @staticmethod
     def check_js_data_blocks() -> CheckResult:
+        """REQ-146 后数据由 data/runtime_payload.js 承载（window.__ETF_REPORT_RUNTIME__）；
+        本检查先看外置 runtime_payload.js，找不到再回退 HTML 内联 const 兼容老架构（BUG-015）。
+        """
         result = CheckResult("D2", "JavaScript 数据块", "D")
         try:
+            # 新架构：读 runtime_payload.js
+            payload_file = os.path.join(SKILL_DIR, "data", "runtime_payload.js")
+            if os.path.exists(payload_file):
+                with open(payload_file, "r", encoding="utf-8") as f:
+                    payload_content = f.read()
+                match = re.search(
+                    r'window\.__ETF_REPORT_RUNTIME__\s*=\s*(\{[\s\S]*\})\s*;?\s*$',
+                    payload_content.strip(),
+                )
+                if match:
+                    try:
+                        payload = json.loads(match.group(1))
+                        missing_required = [k for k in REQUIRED_HTML_DATA_BLOCKS if k not in payload]
+                        found_required = [k for k in REQUIRED_HTML_DATA_BLOCKS if k in payload]
+                        found_optional = [k for k in OPTIONAL_HTML_DATA_BLOCKS if k in payload]
+                        missing_optional = [k for k in OPTIONAL_HTML_DATA_BLOCKS if k not in payload]
+                        if missing_required:
+                            result.status = "FAIL"
+                            result.details = {
+                                "source": "runtime_payload.js",
+                                "required_missing": missing_required,
+                                "optional_found": found_optional,
+                                "optional_missing": missing_optional,
+                            }
+                        else:
+                            result.status = "PASS"
+                            result.details = {
+                                "source": "runtime_payload.js",
+                                "required_found": found_required,
+                                "optional_found": found_optional,
+                                "optional_missing": missing_optional,
+                            }
+                        return result
+                    except json.JSONDecodeError as je:
+                        result.status = "FAIL"
+                        result.details = {
+                            "source": "runtime_payload.js",
+                            "error": f"runtime_payload JSON 解析失败: {je}",
+                        }
+                        return result
+                # 有文件但结构不对，继续回退到 HTML 检查
+            # 回退：HTML 内联 const
             html_file = HTML_FILE
             with open(html_file, 'r', encoding='utf-8') as f:
                 html_content = f.read()
-            
+
             missing_required_blocks = []
             found_required_blocks = []
             found_optional_blocks = []
@@ -706,10 +774,11 @@ class HTMLChecker:
                     found_optional_blocks.append(const_name)
                 else:
                     missing_optional_blocks.append(const_name)
-            
+
             if not missing_required_blocks:
                 result.status = "PASS"
                 result.details = {
+                    "source": "HTML 内联（兼容模式）",
                     "required_found": found_required_blocks,
                     "optional_found": found_optional_blocks,
                     "optional_missing": missing_optional_blocks,
@@ -717,9 +786,11 @@ class HTMLChecker:
             else:
                 result.status = "FAIL"
                 result.details = {
+                    "source": "HTML 内联（兼容模式）",
                     "required_missing": missing_required_blocks,
                     "optional_found": found_optional_blocks,
                     "optional_missing": missing_optional_blocks,
+                    "hint": "未找到 runtime_payload.js 且 HTML 无内联 const",
                 }
         except Exception as e:
             result.status = "FAIL"

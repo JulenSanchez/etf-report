@@ -83,11 +83,12 @@ def run_kline_update():
 
 
 def run_realtime_update():
+
     """执行实时行情数据更新"""
     logger.info("=" * 60)
     logger.info("Step 2: 获取实时行情数据（ETF涨跌幅+成分股涨跌幅）")
     logger.info("=" * 60)
-    
+
     try:
         # 导入并执行realtime_data_updater模块
         import realtime_data_updater
@@ -98,6 +99,86 @@ def run_realtime_update():
         import traceback
         traceback.print_exc()
         return False
+
+
+def run_editorial_update():
+    """REQ-158：抓取 editorial（研究卡 + 宏观卡）并写入 config/editorial_content.yaml。
+
+    失败策略：
+      - 任何源抓取失败：不抛出，logger.warn 记录，保留上一版 editorial_content.yaml
+      - 部分 ETF 成功部分失败：按"保留 final>0 的新条目，final=0 的回退到上一版"合并
+      - 全部成功：完整覆盖
+
+    返回 True 表示流程完成（即便有部分回退），False 表示严重故障（导入失败等）。
+    """
+    logger.info("=" * 60)
+    logger.info("Step 2.5: 抓取 editorial 内容（研究卡 + 宏观卡）")
+    logger.info("=" * 60)
+
+    try:
+        import editorial_fetcher
+        import yaml as _yaml
+    except Exception as e:
+        logger.warn("editorial_fetcher 模块未找到或导入失败，跳过 editorial 更新", {"error": str(e)})
+        return True  # 不阻断主流程，继续用上一版 yaml
+
+    try:
+        result = editorial_fetcher.fetch_all_editorial()
+    except Exception as e:
+        logger.warn("editorial 抓取异常，保留上一版 editorial_content.yaml", {"error": str(e)})
+        import traceback
+        traceback.print_exc()
+        return True
+
+    # 读取上一版，作为 fallback 基线
+    editorial_path = os.path.join(SKILL_DIR, "config", "editorial_content.yaml")
+    previous = {}
+    if os.path.exists(editorial_path):
+        try:
+            with open(editorial_path, "r", encoding="utf-8") as f:
+                previous = _yaml.safe_load(f) or {}
+        except Exception as e:
+            logger.warn("读取上一版 editorial_content.yaml 失败，将使用全新生成", {"error": str(e)})
+            previous = {}
+
+    # 合并：新抓成功的覆盖旧，新抓失败（final=0）的保留旧
+    merged = result.to_yaml_dict()
+    fallback_notes = []
+
+    prev_etfs = (previous.get("etf_cards") or {})
+    for code, new_card in list(merged.get("etf_cards", {}).items()):
+        new_cards = new_card.get("research_cards") or []
+        if not new_cards and prev_etfs.get(code):
+            merged["etf_cards"][code] = prev_etfs[code]
+            fallback_notes.append(f"etf:{code}")
+
+    prev_macro = (previous.get("macro_cards") or {})
+    for card_id, new_card in list(merged.get("macro_cards", {}).items()):
+        new_items = new_card.get("items") or []
+        if not new_items and prev_macro.get(card_id):
+            merged["macro_cards"][card_id] = prev_macro[card_id]
+            fallback_notes.append(f"macro:{card_id}")
+
+    if fallback_notes:
+        logger.warn("部分 editorial 片段回退到上一版", {"fallback": fallback_notes})
+
+    # 写回
+    try:
+        with open(editorial_path, "w", encoding="utf-8") as f:
+            _yaml.safe_dump(merged, f, allow_unicode=True, sort_keys=False, width=1000)
+        logger.info("editorial_content.yaml 已更新", {
+            "file": editorial_path,
+            "etf_count": len(merged.get("etf_cards") or {}),
+            "macro_count": len(merged.get("macro_cards") or {}),
+            "fallback_count": len(fallback_notes),
+        })
+    except Exception as e:
+        logger.warn("写入 editorial_content.yaml 失败，保留上一版", {"error": str(e)})
+
+    # 统计信息（仅记录，不阻断）
+    logger.info("editorial 抓取统计", {"stats": result.stats})
+    return True
+
 
 
 def _replace_text_in_html(html_content, marker, old_pattern, replacement):
@@ -288,7 +369,8 @@ def _replace_js_const_in_html(html_content, const_name, new_value_str):
 
 
 def write_runtime_payload_file(data_dir, kline_data, realtime_data):
-    """生成外置运行时载荷，兼容 file:// 与 http 预览。"""
+    """生成外置运行时载荷，优先服务 file:// 本地预览，也兼容已发布页面。"""
+
     payload_file = os.path.join(data_dir, "runtime_payload.js")
     payload = {
         "generatedAt": datetime.now().isoformat(),
@@ -470,6 +552,8 @@ def _build_fund_flow_snapshot(kline_data, realtime_data):
         realtime_entry = realtime_entry or {}
         kline_entry = (kline_data or {}).get(code) or {}
         etf_name = str(realtime_entry.get("name") or kline_entry.get("name") or code).strip()
+        # REQ-160：ETF 简称用于 leaders/laggards 的"ETF 归属"列
+        etf_short_name = etf_name[:-3].strip() if etf_name.endswith("ETF") else etf_name
         etf_change = _to_number(realtime_entry.get("etf_change"))
         if etf_change is not None:
             etf_entries.append({"code": code, "name": etf_name, "change": etf_change})
@@ -496,11 +580,22 @@ def _build_fund_flow_snapshot(kline_data, realtime_data):
             ratio = _to_number((holding or {}).get("ratio")) or 0.0
             aggregated = holding_map.setdefault(
                 holding_name,
-                {"name": holding_name, "ratio": 0.0, "change": holding_change},
+                {
+                    "name": holding_name,
+                    "ratio": 0.0,
+                    "change": holding_change,
+                    # REQ-160：主归属 ETF = 该股权重最大的那只 ETF 简称
+                    "primary_etf_short": etf_short_name,
+                    "primary_etf_ratio": ratio,
+                },
             )
             aggregated["ratio"] += ratio
             if aggregated.get("change") is None:
                 aggregated["change"] = holding_change
+            # 如果该股在当前 ETF 的权重比此前记录的"主归属 ETF"权重更大，更新归属
+            if ratio > (aggregated.get("primary_etf_ratio") or 0.0):
+                aggregated["primary_etf_short"] = etf_short_name
+                aggregated["primary_etf_ratio"] = ratio
 
     etf_entries.sort(key=lambda item: (item["change"], item["name"]), reverse=True)
     leader = etf_entries[0] if etf_entries else {"name": "--", "change": None}
@@ -544,11 +639,21 @@ def _build_fund_flow_snapshot(kline_data, realtime_data):
 def _sync_ranked_holding_table(html_content, table_prefix, rows):
     visible_rows = list(rows or [])[:5]
     while len(visible_rows) < 5:
-        visible_rows.append({"name": "--", "ratio": None, "change": None})
+        visible_rows.append({
+            "name": "--", "ratio": None, "change": None,
+            "primary_etf_short": None, "primary_etf_ratio": None,
+        })
 
     for index, row in enumerate(visible_rows, start=1):
         html_content, _ = _replace_element_by_id(html_content, f"{table_prefix}-name-{index}", row.get("name") or "--")
-        html_content, _ = _replace_element_by_id(html_content, f"{table_prefix}-weight-{index}", _format_weight_percent(row.get("ratio")))
+        # REQ-160：新增"ETF 归属"列 — 显示主归属 ETF 简称
+        etf_short = row.get("primary_etf_short") or "--"
+        html_content, _ = _replace_element_by_id(html_content, f"{table_prefix}-industry-{index}", etf_short)
+        # REQ-160：权重列显示主归属 ETF 内的真实权重（而非跨 ETF 累加值，避免产生不对应任何 ETF 的虚拟数字）
+        display_ratio = row.get("primary_etf_ratio")
+        if display_ratio is None:
+            display_ratio = row.get("ratio")
+        html_content, _ = _replace_element_by_id(html_content, f"{table_prefix}-weight-{index}", _format_weight_percent(display_ratio))
         html_content, _ = _replace_element_by_id(
             html_content,
             f"{table_prefix}-change-{index}",
@@ -563,9 +668,9 @@ def _sync_ranked_holding_table(html_content, table_prefix, rows):
 def sync_fund_flow_section_html(html_content, kline_data, realtime_data, data_cutoff_date=None):
     snapshot = _build_fund_flow_snapshot(kline_data, realtime_data)
     updated_at = snapshot.get("updated_at") or "--"
-    note = f'数据截止：{data_cutoff_date or "--"} · 行情快照：{updated_at}'
     breadth_value = f'{snapshot.get("positive_count", 0)} / {snapshot.get("negative_count", 0)} / {snapshot.get("flat_count", 0)}'
     average_name = f'{snapshot.get("etf_count", 0)}支ETF均值' if snapshot.get("etf_count") else '暂无可用行情'
+
 
     html_content, _ = _replace_element_by_id(html_content, "fund-flow-title", "💰 市场热度与轮动")
     html_content, _ = _replace_element_by_id(html_content, "fund-flow-source-value", snapshot.get("source") or "--")
@@ -599,8 +704,8 @@ def sync_fund_flow_section_html(html_content, kline_data, realtime_data, data_cu
         breadth_value,
         class_name="stat-value text-blue",
     )
-    html_content, _ = _replace_element_by_id(html_content, "market-rotation-note", note)
     html_content = _sync_ranked_holding_table(html_content, "leaders-top5-table", snapshot.get("leaders"))
+
     html_content = _sync_ranked_holding_table(html_content, "laggards-top5-table", snapshot.get("laggards"))
     return html_content
 
@@ -831,7 +936,7 @@ def _render_macro_card_inner_html(card_id, card_content, editorial_content, data
         item_freshness = _evaluate_editorial_freshness(editorial_content, item_context, data_cutoff_date)
         date_html = _render_editorial_date_html(f"editorial-date-{card_id}-{index}", item_freshness)
         rendered_items.append(
-            f'<li id="{card_id}-item-{index}"><span class="macro-item-text" id="{card_id}-text-{index}"><span class="macro-item-content">{item_html}</span>{date_html}</span></li>'
+            f'<li id="{card_id}-item-{index}"><span class="macro-item-text" id="{card_id}-text-{index}"><span class="macro-item-content" id="{card_id}-content-{index}">{item_html}</span>{date_html}</span></li>'
         )
 
     list_html = ''.join(rendered_items)
@@ -866,8 +971,10 @@ def sync_editorial_content_html(html_content, editorial_content, data_cutoff_dat
             target_id = f"report-card-content-{code}-{index}"
             entry_context = _build_editorial_entry_context(group, card_entry)
             entry_freshness = _evaluate_editorial_freshness(editorial_content, entry_context, data_cutoff_date)
-            rendered_html = f'<span class="report-card-text">{card_html}</span>{_render_editorial_date_html(f"research-date-{code}-{index}", entry_freshness)}'
+            text_target_id = f"report-card-text-{code}-{index}"
+            rendered_html = f'<span class="report-card-text" id="{text_target_id}">{card_html}</span>{_render_editorial_date_html(f"research-date-{code}-{index}", entry_freshness)}'
             html_content, found = _replace_element_by_id(html_content, target_id, rendered_html)
+
             if found:
                 updated_targets.append(target_id)
             else:
@@ -942,13 +1049,18 @@ def sync_detail_panel_snapshot_html(html_content, kline_data, realtime_data):
             class_name=f"info-value {_get_trend_class(daily_change)}",
         )
 
-        headers = ['近1月', '近3月', '近6月', '近1年']
+        performance_columns = [
+            ('1m', '近1月', performance_values[0]),
+            ('3m', '近3月', performance_values[1]),
+            ('6m', '近6月', performance_values[2]),
+            ('1y', '近1年', performance_values[3]),
+        ]
         cells = []
-        for value in performance_values:
+        for period_key, _label, value in performance_columns:
             class_name = '' if value is None else ('positive' if value >= 0 else 'negative')
             class_attr = f' class="{class_name}"' if class_name else ''
-            cells.append(f'<td{class_attr}>{_format_percent(value)}</td>')
-        performance_html = '<tr>' + ''.join(f'<th>{label}</th>' for label in headers) + '</tr><tr>' + ''.join(cells) + '</tr>'
+            cells.append(f'<td id="performance-return-{period_key}-{code}"{class_attr}>{_format_percent(value)}</td>')
+        performance_html = '<tr>' + ''.join(f'<th>{label}</th>' for _, label, _ in performance_columns) + '</tr><tr>' + ''.join(cells) + '</tr>'
         html_content, found_perf = _replace_element_by_id(
             html_content,
             f"performance-table-{code}",
@@ -1035,6 +1147,8 @@ def update_html_data(html_file=None):
 
     
     # 1. 更新 klineData — 用字符串替换
+    #    新架构下 index.html 不再内联 const klineData（已抽离到 data/runtime_payload.js），
+    #    此处对"找不到"场景降级为 INFO 跳过，而不是 ERROR 退出（BUG-011）。
     try:
         kline_json_str = json.dumps(kline_data, ensure_ascii=False, indent=8)
         new_kline_section = f'{kline_const}{kline_json_str}'
@@ -1044,15 +1158,17 @@ def update_html_data(html_file=None):
         if found:
             logger.info("更新klineData成功", {"etf_count": 6, "data_type": "K线数据"})
         else:
-            logger.error("未找到klineData段落", {"file": html_file, "const": const_name})
-            return False
+            logger.info("HTML 中未发现 klineData 内联常量，跳过内联注入（已走 runtime_payload.js）", {
+                "file": html_file, "const": const_name
+            })
     except Exception as e:
         logger.error("更新klineData失败", {"error": str(e)})
         import traceback
         traceback.print_exc()
         return False
-    
+
     # 2. 更新 realtimeData — 用字符串替换并强校验
+    #    同上：新架构下不再内联，找不到时降级为 INFO（BUG-011）。
     try:
         realtime_json_str = json.dumps(realtime_data, ensure_ascii=False, indent=8)
         new_realtime_section = f'{realtime_const}{realtime_json_str}'
@@ -1062,8 +1178,9 @@ def update_html_data(html_file=None):
         if found:
             logger.info("更新realtimeData成功", {"data_type": "实时行情数据"})
         else:
-            logger.error("未找到realtimeData段落", {"file": html_file, "const": const_name})
-            return False
+            logger.info("HTML 中未发现 realtimeData 内联常量，跳过内联注入（已走 runtime_payload.js）", {
+                "file": html_file, "const": const_name
+            })
     except Exception as e:
         logger.error("更新realtimeData失败", {"error": str(e)})
         import traceback
@@ -1219,7 +1336,11 @@ def main(publish: bool = False):
         # Step 2: 更新实时行情数据
         if not run_realtime_update():
             logger.warn("实时数据更新失败，继续执行")
-        
+
+        # Step 2.5: 抓取 editorial（研究卡 + 宏观卡）— REQ-158
+        # 不因抓取失败阻断主流程，失败时保留上一版 yaml
+        run_editorial_update()
+
         # Step 3: 更新HTML中的数据
         if not update_html_data(html_file=working_html_file):
             logger.error("HTML数据注入失败，流程终止")

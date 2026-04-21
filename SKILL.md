@@ -46,8 +46,8 @@
 | 配置与运行入口 | `README.md` |
 | 查配置参数 | `config/config.example.yaml` + `config/holdings.yaml`（`config/config.yaml` 为本地覆盖） |
 | 接企微通知 / 发布实现 | `scripts/notifier.py` + `scripts/deployer.py` |
-| 在线报告 | https://julensanchez.github.io/etf-report/ |
-| 本地预览 | 根目录 `index.html`（用 `file://` 打开） |
+| 本地预览（默认） | 根目录 `index.html`（遵循 `~/.codebuddy/rules/local-file-open.md`：`file://` 直开，不切 `http`） |
+| 在线报告（发布产物） | https://julensanchez.github.io/etf-report/ |
 
 
 

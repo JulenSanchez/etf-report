@@ -1,109 +1,69 @@
-content_date: "2026-04-16"
-
+content_date: '2026-04-21'
 etf_cards:
-  "512400":
-    freshness_policy: "manual_daily"
+  '512400':
+    freshness_policy: manual_daily
     research_cards:
-      - >-
-        💡 地缘冲突升级推动油价高位波动，PPI跳升叠加降息预期降温，有色板块短期承压
-      - >-
-        💡 <span class="highlight-blue">华福证券</span>：洛阳钼业2025年归母净利润预计200亿以上，维持<span class="highlight-green">'买入'</span>评级
-      - >-
-        💡 <span class="highlight-blue">国泰海通证券</span>：洛阳钼业迈向'铜金双轮驱动'国际矿企，给予<span class="highlight-green">'增持'</span>评级
-      - >-
-        💡 贵金属底层货币属性持续夯实，<span class="highlight">中长期配置价值突出</span>
-  "513120":
-    freshness_policy: "manual_daily"
+    - 💡 紫金矿业：一季度净利润同比增长97.5%
+    - 💡 紫金矿业：第一季度净利润同比增长97.50% 主营金属品种量价齐升
+    - 💡 龙净环保十大流通股东格局生变：厦门金圆资管新进，陈世辉退出，龙岩市国资投资公司等增持
+    - 💡 数据看盘机构活跃度明显下降 北向资金联手量化抢筹商业航天人气股
+  '513120':
+    freshness_policy: manual_daily
     research_cards:
-      - >-
-        💡 <span class="highlight-green">百济神州</span>2025年首次实现年度盈利，GAAP净利润2.87亿美元
-      - >-
-        💡 港股创新药ETF估值处于<span class="highlight">历史低位</span>，市盈率仅30.23倍
-      - >-
-        💡 创新药进展密集：国内脑机接口迎里程碑，抗阿尔茨海默病研究启动
-      - >-
-        💡 地缘政治扰动下，创新药板块<span class="highlight">估值优势显现</span>
-  "512070":
-    freshness_policy: "manual_daily"
+    - 💡 港股指数集体高开 恒指涨0.31% 美的集团(00300)涨1.66%
+    - 💡 中国生物制药(01177)：贝莫苏拜单抗联合安罗替尼治疗腺泡状软组织肉瘤新适应症获批上市
+    - 💡 同类更优！中国生物制药授权默沙东的双抗新药临床数据首度亮相
+    - 💡 默沙东押注！“中国创新”双抗临床数据AACR首度亮相
+  '512070':
+    freshness_policy: manual_daily
     research_cards:
-      - >-
-        💡 券商普遍认为2026年市场将从<span class="highlight">流动性驱动转向盈利驱动</span>
-      - >-
-        💡 <span class="highlight-blue">华泰证券</span>：AI资本开支基建化将推动PPI回升
-      - >-
-        💡 <span class="highlight-green">中国平安</span>：高股息+低估值凸显配置价值
-      - >-
-        💡 证券保险板块近期表现疲软，但<span class="highlight">估值优势逐渐显现</span>
-  "515880":
-    freshness_policy: "manual_daily"
+    - 💡 平安再增持中国人寿H股，持股比例超11%，总持仓超8.24亿股
+    - 💡 中国平安(601318)：“综合金融+医疗养老”战略持续深化 营运利润与派息向好
+    - 💡 国家金融监督管理总局朝阳监管分局核准王永旭中国平安财产保险股份有限公司朝阳中心支公司总经理任职资格
+    - 💡 保险业为未来产业护航
+  '515880':
+    freshness_policy: manual_daily
     research_cards:
-      - >-
-        💡 2026年是中际旭创的<span class="highlight-green">'1.6T放量元年'</span>，净利润有望冲击250亿
-      - >-
-        💡 <span class="highlight-blue">英伟达</span>与光通信企业签署战略合作，CPO技术规模化量产
-      - >-
-        💡 通信ETF近1年涨幅<span class="highlight-green">143.51%</span>，AI算力需求持续爆发
-      - >-
-        💡 <span class="highlight-blue">群益证券</span>：需求带动业绩高增长，关注1.6T大规模出货
-  "159566":
-    freshness_policy: "manual_daily"
+    - 💡 股市面面观丨AI产业链热门股一季报频“触雷” 逾百亿资金追捧液冷龙头遭“闷杀”
+    - 💡 新易盛也被传考虑赴港！“易中天”三企业业绩狂飙，港股集结号吹响？
+    - 💡 近一年“光”速飙涨200%，AI投资最锋利的矛！
+    - 💡 中际旭创(300308)：26Q1业绩环比高增 光互连龙头竞争力突出
+  '159566':
+    freshness_policy: manual_daily
     research_cards:
-      - >-
-        💡 <span class="highlight-green">宁德时代</span>2025年净利润722亿元，连续5年储能电池出货量全球第一
-      - >-
-        💡 <span class="highlight-blue">华西证券</span>：新兴市场迎来户储、工商储发展大机遇
-      - >-
-        💡 <span class="highlight-blue">西部证券</span>：宁德时代2026年锂电确定性主线，维持<span class="highlight-green">'买入'</span>评级
-      - >-
-        💡 储能电池ETF近1年涨幅<span class="highlight-green">65.82%</span>，资金持续流入
-  "159865":
-    freshness_policy: "manual_daily"
+    - 💡 宁德时代发布麒麟凝聚态电池 续航最高可达1500公里
+    - 💡 宁德时代发布第三代神行超充电池 充满电仅需6分钟
+    - 💡 全球最快速度、满电6分钟：宁德时代发布第三代神行超充电池
+    - 💡 宁德时代发布第二代骁遥超级增·混电池 综合续航2000km
+  '159865':
+    freshness_policy: manual_daily
     research_cards:
-      - >-
-        💡 ETF 前四大权重集中在<span class="highlight-green">海大集团、温氏股份、牧原股份、新希望</span>，覆盖饲料与生猪养殖核心龙头
-      - >-
-        💡 <span class="highlight-blue">养殖链盈利弹性</span>主要取决于猪价回升、饲料成本与疫病扰动的组合变化
-      - >-
-        💡 养殖ETF更适合作为<span class="highlight-green">周期景气工具型配置</span>，宜结合产能去化与价格拐点分批布局
-      - >-
-        💡 <span class="highlight">海大集团</span>提供饲料龙头稳健性，<span class="highlight">温氏股份 / 牧原股份</span>提供更高的周期弹性
-
+    - 💡 海大集团涨1.19%，成交额3.62亿元，后市是否有机会？
+    - 💡 期货日报 | 大商所华东地区农产品产业链调研报道（下）：从“望价兴叹”到“主动破局”——中小玉米企业加速拥抱衍生品
+    - 💡 海大集团：宠物食品占营收比例极低
+    - 💡 海大集团：公司专注第一核心业务（畜禽饲料以及水产饲料）的发展
 macro_cards:
   domestic-policy-card:
-    title: "🇨🇳 国内政策与事件"
-    freshness_policy: "sticky"
-    content_date: "2026-04-16"
-
+    title: 🇨🇳 国内政策与事件
+    freshness_policy: manual_daily
     items:
-      - >-
-        📊 中国3月LPR：1年期3.0%，5年期以上3.5%，连续第9个月按兵不动
-      - >-
-        💰 央行推出一揽子结构性货币政策，强化对科技创新、小微企业支持
-      - >-
-        🐖 生猪价格、饲料原料成本与疫病防控节奏，仍是养殖链盈利修复的核心变量
-      - >-
-        📈 关注产能去化与消费修复共振下，畜牧养殖板块的周期弹性释放
+    - 降息潮下跳涨35个基点！有民营银行为吸储定存利率大幅“加息”，与大额存单利率倒挂
+    - “十五五”绿色航运燃料产业深度研究及趋势前景预判报告
+    - 无锡国资成最大赢家，不到两年浮盈超110亿元，A股今年最大IPO来了
+    - 中国联通A股：一季度净利润21.37亿元，同比下降18%。
   global-news-card:
-    title: "🌐 国际重大新闻"
-    freshness_policy: "sticky"
+    title: 🌐 国际重大新闻
+    freshness_policy: manual_daily
     items:
-      - >-
-        🏦 美联储3月会议预计维持利率3.50%-3.75%不变，降息预期推迟至9月
-      - >-
-        🛢️ 中东地缘冲突升级推动油价高位波动，能源价格冲击加剧通胀风险
-      - >-
-        📉 高盛、巴克莱下调降息预期，年内降息次数预期降至1-2次
-      - >-
-        🏆 地缘政治秩序加速重构，硬资产成为避风港
+    - 美军高官称已准备好重启对伊朗作战行动
+    - “六连涨”终结！国内油价今夜下调，加满一箱少花22元，下一轮调整是“二连跌”还是反弹？
+    - 凯恩告诉Axios 美国准备好恢复对伊作战行动
+    - 特朗普称赞蒂姆·库克 并吹嘘自己帮助了苹果公司
   market-sentiment-card:
-    title: "📊 市场情绪分析"
-    freshness_policy: "manual_daily"
+    title: 📊 市场情绪分析
+    freshness_policy: manual_daily
     items:
-      - >-
-        📉 A股市场波动加大，上证指数周K线收阴十字星，成交额缩量
-      - >-
-        💹 券商认为2026年市场将从流动性驱动转向盈利驱动
-      - >-
-        🎯 '科技成长+顺周期'作为全年核心主线
-      - >-
-        🚀 海外算力强势反弹，通信、储能等科技板块表现亮眼
+    - 周期反转、天齐锂业一季度净利润暴增，业绩拐点已确立？
+    - 摩根大通上调标普500指数目标位 之前在3月份刚刚下调
+    - 无锡国资成最大赢家，不到两年浮盈超110亿元，A股今年最大IPO来了
+    - 万集科技（300552）：中标广西计算中心有限责任公司采购项目，中标金额为109.20万元

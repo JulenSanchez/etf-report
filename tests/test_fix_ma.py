@@ -196,20 +196,6 @@ def test_update_html_legend_selected_returns_true_when_config_already_exists(tmp
     assert module.update_html_legend_selected(str(html_file)) is True
 
 
-def test_update_js_file_with_kline_data_replaces_const_block(tmp_path, load_module):
-    module = load_module("fix_ma_and_benchmark")
-    js_file = tmp_path / "main.js"
-    js_file.write_text('const klineData = {"old": 1};\nconst other = 1;', encoding="utf-8")
-
-    module.update_js_file_with_kline_data(str(js_file), {"510000": {"name": "示例ETF"}})
-
-    updated = js_file.read_text(encoding="utf-8")
-    assert 'const klineData = {' in updated
-    assert '示例ETF' in updated
-    assert '"old": 1' not in updated
-
-
-
 def test_get_data_cleaning_events_prefers_detected_events_and_skips_manual_fallback(load_module, monkeypatch):
     module = load_module("fix_ma_and_benchmark")
     monkeypatch.setattr(module, "DATA_CLEANING_EVENTS", {
@@ -257,6 +243,9 @@ def test_sync_corporate_action_events_persists_detected_payload(tmp_path, monkey
 
 
 def test_main_writes_data_file_and_updates_js(tmp_path, monkeypatch, load_module):
+    """BUG-013 后 fix_ma_and_benchmark.main() 不再写 outputs/js/main.js，
+    仅产出 data/etf_full_kline_data.json；保留测试函数名以记录历史契约。
+    """
 
     module = load_module("fix_ma_and_benchmark")
     scripts_dir = tmp_path / "scripts"
@@ -266,6 +255,7 @@ def test_main_writes_data_file_and_updates_js(tmp_path, monkeypatch, load_module
     outputs_js_dir.mkdir(parents=True)
     data_dir.mkdir()
 
+    # 即便该目录下存在老版 main.js，BUG-013 后 main() 也不会再触碰它
     js_file = outputs_js_dir / "main.js"
     js_file.write_text('const klineData = {"old": 1};', encoding="utf-8")
 
@@ -310,7 +300,8 @@ def test_main_writes_data_file_and_updates_js(tmp_path, monkeypatch, load_module
 
     assert saved_json.exists()
     assert "示例ETF" in saved_json.read_text(encoding="utf-8")
-    assert "示例ETF" in js_file.read_text(encoding="utf-8")
+    # BUG-013：outputs/js/main.js 不再被主流程写入，保留原文件内容不变
+    assert js_file.read_text(encoding="utf-8") == 'const klineData = {"old": 1};'
 
 
 def test_main_falls_back_to_previous_data_when_fetch_fails(tmp_path, monkeypatch, load_module):

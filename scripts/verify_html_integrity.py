@@ -195,16 +195,49 @@ def check_html_tag_balance(html_content):
         return {"check": "HTML标签平衡", "status": "FAIL", "detail": "; ".join(errors)}
 
 
+def _load_runtime_payload():
+    """读取并解析 data/runtime_payload.js 里的 window.__ETF_REPORT_RUNTIME__ = {...};
+
+    返回 dict 或 None（文件不存在 / 解析失败）。REQ-146 后数据源从 HTML 内联
+    const 迁移到此外置 JS；本函数供 check_json_data_blocks / check_etf_data_completeness
+    在"HTML 无内联 const"新架构下使用。
+    """
+    payload_file = os.path.join(SKILL_DIR, "data", "runtime_payload.js")
+    if not os.path.exists(payload_file):
+        return None
+    try:
+        with open(payload_file, "r", encoding="utf-8") as f:
+            content = f.read()
+        match = re.search(r'window\.__ETF_REPORT_RUNTIME__\s*=\s*(\{[\s\S]*\})\s*;?\s*$', content.strip())
+        if not match:
+            return None
+        return json.loads(match.group(1))
+    except Exception:
+        return None
+
+
 def check_json_data_blocks(html_content):
-    """检查 2：JSON 数据块有效性"""
+    """检查 2：JSON 数据块有效性（兼容 REQ-146 内联 → 外置迁移）"""
     results = []
 
-    # 匹配 const xxxData = { ... };
+    # 新架构优先：从 data/runtime_payload.js 读取并验证 JSON 有效性
+    payload = _load_runtime_payload()
+    if payload is not None:
+        for key in ("klineData", "realtimeData"):
+            if key in payload:
+                results.append({"check": f"{key} JSON (runtime_payload)", "status": "PASS", "detail": ""})
+            else:
+                results.append({"check": f"{key} JSON (runtime_payload)", "status": "WARN",
+                                "detail": f"runtime_payload 中缺少 {key}"})
+        return results
+
+    # 回退：老架构 HTML 内联 const xxxData = { ... };
     pattern = r'const\s+(\w+Data)\s*=\s*(\{[\s\S]*?\n\s*\});'
     matches = re.findall(pattern, html_content)
 
     if not matches:
-        return [{"check": "JSON数据块", "status": "WARN", "detail": "未找到任何 const xxxData 块"}]
+        return [{"check": "JSON数据块", "status": "WARN",
+                 "detail": "未找到 runtime_payload.js 且 HTML 无内联 const xxxData"}]
 
     for var_name, json_str in matches:
         try:
@@ -218,28 +251,36 @@ def check_json_data_blocks(html_content):
 
 
 def check_etf_data_completeness(html_content):
-    """检查 3：6 支 ETF 数据完整性"""
+    """检查 3：6 支 ETF 数据完整性（兼容 REQ-146 内联 → 外置迁移）"""
     results = []
 
-    # 提取 klineData JSON
-    pattern = r'const\s+klineData\s*=\s*(\{[\s\S]*?\n\s*\});'
-    match = re.search(pattern, html_content)
-
-    if not match:
-        return [{"check": "ETF数据完整性", "status": "FAIL", "detail": "未找到 klineData"}]
-
-    try:
-        kline_data = json.loads(match.group(1))
-    except json.JSONDecodeError as e:
-        return [{"check": "ETF数据完整性", "status": "FAIL", "detail": f"klineData JSON 无效: {e}"}]
+    # 新架构优先：从 runtime_payload.js 读取 klineData
+    payload = _load_runtime_payload()
+    if payload is not None and isinstance(payload.get("klineData"), dict):
+        kline_data = payload["klineData"]
+        source_label = "runtime_payload"
+    else:
+        # 回退：老架构 HTML 内联 const klineData
+        pattern = r'const\s+klineData\s*=\s*(\{[\s\S]*?\n\s*\});'
+        match = re.search(pattern, html_content)
+        if not match:
+            return [{"check": "ETF数据完整性", "status": "FAIL",
+                     "detail": "未找到 klineData（runtime_payload.js 和 HTML 内联均缺失）"}]
+        try:
+            kline_data = json.loads(match.group(1))
+        except json.JSONDecodeError as e:
+            return [{"check": "ETF数据完整性", "status": "FAIL",
+                     "detail": f"klineData JSON 无效: {e}"}]
+        source_label = "HTML 内联"
 
     # 检查 ETF 数量
     missing = [code for code in ETF_CODES if code not in kline_data]
     if missing:
         results.append({"check": "ETF数量", "status": "FAIL",
-                        "detail": f"缺少: {', '.join(missing)}"})
+                        "detail": f"缺少: {', '.join(missing)} (来源: {source_label})"})
     else:
-        results.append({"check": "ETF数量", "status": "PASS", "detail": f"6 支 ETF"})
+        results.append({"check": "ETF数量", "status": "PASS",
+                        "detail": f"6 支 ETF (来源: {source_label})"})
 
     # 检查每支 ETF 的数据结构
     for code in ETF_CODES:
@@ -414,14 +455,15 @@ def _collect_debug_target_ids():
         "market-rotation-stat-breadth-label",
         "market-rotation-stat-breadth-name",
         "market-rotation-stat-breadth-value",
-        "market-rotation-note",
     ])
+
 
     for table_id in ["leaders-top5-table", "laggards-top5-table"]:
         required_ids.extend([
             f"{table_id}-head",
             f"{table_id}-header-row",
             f"{table_id}-header-name",
+            f"{table_id}-header-industry",  # REQ-160: ETF 归属列
             f"{table_id}-header-weight",
             f"{table_id}-header-change",
             f"{table_id}-body",
@@ -430,6 +472,7 @@ def _collect_debug_target_ids():
             required_ids.extend([
                 f"{table_id}-row-{index}",
                 f"{table_id}-name-{index}",
+                f"{table_id}-industry-{index}",  # REQ-160: ETF 归属
                 f"{table_id}-weight-{index}",
                 f"{table_id}-change-{index}",
             ])

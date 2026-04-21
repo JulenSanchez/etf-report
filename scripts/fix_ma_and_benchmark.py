@@ -291,13 +291,73 @@ def fetch_kline_sina(symbol, scale=240, days=60):
         latest_close = float(data[-1]['close'])
         change_pct = 0
 
-    return {
+    # 新浪 getKLineData 接口不返回成交额字段；用 AKShare 封装的新浪新版接口
+    # fund_etf_hist_sina 补拉 amount（单位：元），按 dates 对齐后返回与主序列等长的 amounts。
+    # 失败返回 None，不阻塞主流程——前端副图会回退到空状态，其他展示不受影响。
+    amounts = fetch_amounts_via_akshare(symbol, dates) if scale == 240 else None
+
+    result = {
         "dates": dates,
         "kline": kline_data,
         "volumes": volumes,
         "latest_close": latest_close,
         "latest_change": round(change_pct, 2)
     }
+    if amounts is not None:
+        result["amounts"] = amounts
+    return result
+
+
+def fetch_amounts_via_akshare(symbol, target_dates):
+    """用 AKShare fund_etf_hist_sina 补拉成交额（单位：元），按 target_dates 对齐。
+
+    Args:
+        symbol: 如 'sh512400' / 'sz159566'，与新浪 getKLineData 一致的符号格式
+        target_dates: 主 K 线返回的 dates 列表（'YYYY-MM-DD'），用于对齐 amount
+
+    Returns:
+        与 target_dates 等长的 amounts 列表（int，单位：元）；若任一步失败则返回 None
+    """
+    if not target_dates:
+        return None
+    try:
+        import akshare as ak
+    except ImportError:
+        logger.warn("akshare 未安装，跳过成交额补拉", {"symbol": symbol})
+        return None
+    try:
+        df = ak.fund_etf_hist_sina(symbol=symbol)
+    except Exception as e:
+        logger.warn("fund_etf_hist_sina 调用失败，跳过成交额补拉", {
+            "symbol": symbol, "error": f"{type(e).__name__}: {e}"
+        })
+        return None
+    if df is None or df.empty or 'date' not in df.columns or 'amount' not in df.columns:
+        logger.warn("fund_etf_hist_sina 返回缺字段，跳过成交额补拉", {"symbol": symbol})
+        return None
+
+    amount_map = {}
+    for _, row in df.iterrows():
+        try:
+            amount_map[str(row['date'])[:10]] = int(row['amount'])
+        except (TypeError, ValueError):
+            continue
+
+    aligned = []
+    missing = 0
+    for d in target_dates:
+        if d in amount_map:
+            aligned.append(amount_map[d])
+        else:
+            aligned.append(0)
+            missing += 1
+
+    logger.info("成交额补拉完成", {
+        "symbol": symbol,
+        "aligned": len(aligned),
+        "missing_days": missing,
+    })
+    return aligned
 
 
 def fetch_index_data_sina(symbol, days=60):
@@ -358,15 +418,18 @@ def build_weekly_from_daily(daily_data):
     dates = daily_data.get("dates", [])
     kline = daily_data.get("kline", [])
     volumes = daily_data.get("volumes") or [0] * len(dates)
+    amounts = daily_data.get("amounts") or [0] * len(dates)
+    has_amounts = "amounts" in daily_data
 
     weekly_dates = []
     weekly_kline = []
     weekly_volumes = []
+    weekly_amounts = []
 
     current_week_key = None
     current_bucket = None
 
-    for trade_date, candle, volume in zip(dates, kline, volumes):
+    for trade_date, candle, volume, amount in zip(dates, kline, volumes, amounts):
         week_key = datetime.strptime(trade_date, "%Y-%m-%d").isocalendar()[:2]
 
         if current_week_key != week_key:
@@ -379,6 +442,7 @@ def build_weekly_from_daily(daily_data):
                     round(current_bucket["high"], 3),
                 ])
                 weekly_volumes.append(int(current_bucket["volume"]))
+                weekly_amounts.append(int(current_bucket["amount"]))
 
             current_week_key = week_key
             current_bucket = {
@@ -388,6 +452,7 @@ def build_weekly_from_daily(daily_data):
                 "low": candle[2],
                 "high": candle[3],
                 "volume": volume,
+                "amount": amount,
             }
             continue
 
@@ -396,6 +461,7 @@ def build_weekly_from_daily(daily_data):
         current_bucket["low"] = min(current_bucket["low"], candle[2])
         current_bucket["high"] = max(current_bucket["high"], candle[3])
         current_bucket["volume"] += volume
+        current_bucket["amount"] += amount
 
     if current_bucket is not None:
         weekly_dates.append(current_bucket["date"])
@@ -406,6 +472,7 @@ def build_weekly_from_daily(daily_data):
             round(current_bucket["high"], 3),
         ])
         weekly_volumes.append(int(current_bucket["volume"]))
+        weekly_amounts.append(int(current_bucket["amount"]))
 
     latest_close = weekly_kline[-1][1] if weekly_kline else None
     latest_change = 0
@@ -413,13 +480,16 @@ def build_weekly_from_daily(daily_data):
         prev_close = weekly_kline[-2][1]
         latest_change = round((latest_close - prev_close) / prev_close * 100, 2)
 
-    return {
+    result = {
         "dates": weekly_dates,
         "kline": weekly_kline,
         "volumes": weekly_volumes,
         "latest_close": latest_close,
         "latest_change": latest_change,
     }
+    if has_amounts:
+        result["amounts"] = weekly_amounts
+    return result
 
 
 def calculate_ma(kline_data, period):
@@ -457,6 +527,8 @@ def trim_data_with_ma(data, warmup_days, display_days):
             'ma5': ma5_full[start_idx:],
             'ma20': ma20_full[start_idx:]
         }
+        if 'amounts' in data:
+            trimmed['amounts'] = data['amounts'][start_idx:]
     
     return trimmed
 
@@ -510,30 +582,6 @@ def update_html_legend_selected(html_file):
     else:
         logger.warn("未找到 legend 配置位置")
         return False
-
-
-def update_js_file_with_kline_data(js_file, all_data):
-    """更新JS文件中的klineData数据"""
-    
-    # 构建新的klineData
-    kline_data_js = json.dumps(all_data, ensure_ascii=False, indent=8)
-    new_kline_data = f'const klineData = {kline_data_js};'
-    
-    # 读取原始JS文件
-    with open(js_file, 'r', encoding='utf-8') as f:
-        js_content = f.read()
-    
-    # 找到klineData的位置并替换
-    pattern = r'const klineData = \{.*?\};'
-    
-    # 使用正则替换（考虑多行）
-    js_content = re.sub(pattern, new_kline_data, js_content, flags=re.DOTALL)
-    
-    # 写回文件
-    with open(js_file, 'w', encoding='utf-8') as f:
-        f.write(js_content)
-    
-    return True
 
 
 def load_existing_kline_data(data_dir):
@@ -689,26 +737,12 @@ def main():
         "etf_count": len(all_data)
     })
     logger.info("数据已保存", {"file": json_file})
-    
-    # 更新JS文件中的klineData
-    logger.info("=" * 60)
-    logger.info("步骤2: 更新JS文件中的K线数据")
-    logger.info("=" * 60)
-    
-    # 在 js/main.js 中查找并更新 klineData
-    js_main_file = os.path.join(outputs_dir, "js", "main.js")
-    
-    if os.path.exists(js_main_file):
-        update_js_file_with_kline_data(js_main_file, all_data)
-        logger.info("已更新JS文件", {"file": js_main_file})
-    else:
-        logger.warn("JS文件不存在，跳过更新", {"file": js_main_file})
-    
-    # 检查 js/chart_*.js 是否需要更新
-    # （通常不需要，因为数据在 main.js 中定义）
-    
+
+    # 注：REQ-146 之后数据通过 data/runtime_payload.js 提供，
+    # 已无需再向 outputs/js/main.js 注入 klineData；此处的旧注入路径已移除（BUG-013）。
+
     logger.info("=" * 60)
     logger.info("K线数据更新完成")
     logger.info("=" * 60)
-    
+
     return all_data
