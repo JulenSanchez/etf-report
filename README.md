@@ -2,69 +2,106 @@
 
 自动分析与生成 6 支 ETF 的投资分析报告。
 
-![Version](https://img.shields.io/badge/version-v2.2.0-blue)
+![Version](https://img.shields.io/badge/version-v2.5.1-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
-## 📂 本地预览
+**在线报告**：[查看最新报告](https://julensanchez.github.io/etf-report/)
 
-直接打开仓库根目录的 `index.html` 即可查看本地报告页面。
-
-
-## 📊 在线报告（发布产物）
-
-[查看最新报告](https://julensanchez.github.io/etf-report/)
-
-## 🚀 快速开始
+## 快速开始
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/etf-report.git
+git clone https://github.com/JulenSanchez/etf-report.git
 cd etf-report
 pip install -r requirements.txt
 python scripts/update_report.py
 ```
 
-## ⚙️ 配置文件说明
+clone 后无需额外配置即可运行——默认读取 `config/config.example.yaml`。
 
-- **`config/config.example.yaml`**：公开模板配置。默认直接读取它，所以 **clone 后不复制配置也能先跑主流程**。
-- **`config/config.yaml`**：本地覆盖配置。需要改 ETF 池、API 参数、发布配置时，从 `config/config.example.yaml` 复制一份再修改。
-- **`config/secrets.example.yaml`**：敏感配置模板。需要启用企微通知等敏感能力时，复制为 `config/secrets.yaml` 后在本地填写真实值。
-- **`config/holdings.yaml`**：成分股事实源。
-- **`config/editorial_content.yaml`**：解释层 / 文案内容事实源。
+## 目录结构
 
-> `config/config.yaml` 和 `config/secrets.yaml` 都属于本地私有配置，不会提交到 Git。
-
-## 🚀 运行与发布
-
-```bash
-python scripts/update_report.py             # 更新报告（默认模板或本地覆盖配置）
-python scripts/update_report.py --publish   # 发布模式（需先补本地 publish / secrets 配置）
+```
+etf-report/
+├── index.html              ← 报告页面（本地预览 / 发布产物）
+├── assets/
+│   ├── css/report.css      ← 报告样式
+│   └── js/
+│       ├── report-main.js  ← 报告主逻辑
+│       └── chart-lifecycle.js ← 图表生命周期
+├── config/
+│   ├── config.example.yaml ← 公开配置模板（默认生效）
+│   ├── secrets.example.yaml← 敏感配置模板
+│   ├── holdings.yaml       ← 成分股事实源
+│   ├── editorial_content.yaml ← 解释层内容
+│   ├── editorial_sources.yaml ← 编辑源配置
+│   └── compliance_rules.yaml  ← 合规规则
+├── scripts/                ← Python 主流程与辅助脚本（15 个）
+├── tests/                  ← 回归测试（14 个）
+├── docs/                   ← 参考文档
+│   ├── AKSHARE_SCRIPTING_REFERENCE.md
+│   ├── AKSHARE_CANDIDATE_INTERFACES.md
+│   ├── DAILY_UPDATE_PARAMETERS.md
+│   ├── ETF_REPLACEMENT_CHECKLIST.md
+│   ├── HEALTH_CHECK_KNOWN_ISSUES.md
+│   └── HEALTH_CHECK_USAGE.md
+├── .github/workflows/      ← CI 配置
+├── SKILL.md                ← AI 技能描述卡
+├── README.md               ← 本文件
+├── WORKFLOW.md             ← 执行手册
+├── DESIGN.md               ← 架构设计
+└── requirements.txt        ← Python 依赖
 ```
 
-> `--publish` 会先正常更新源码工作区根目录 `index.html`，再按 `publish.github.commit_files` 只把当天这份报告推到正式仓。若 GitHub Pages 直接服务当前源码仓的 `main` 分支，请把 `publish.github.pages_repo_root` 留空；不要再额外指向一个同 remote / 同分支的瘦 Pages 仓。
+运行后会在本地生成以下目录（不提交到 Git）：
 
+| 目录 | 内容 |
+|------|------|
+| `data/` | K 线数据、实时行情、运行时载荷 |
+| `logs/` | 每日结构化运行日志 |
 
+## 配置说明
 
+| 文件 | 说明 |
+|------|------|
+| `config/config.example.yaml` | 公开模板，clone 后默认生效 |
+| `config/config.yaml` | 本地覆盖配置（从 example 复制后修改，不提交） |
+| `config/secrets.example.yaml` | 敏感配置模板 |
+| `config/secrets.yaml` | 本地敏感配置（企微 webhook 等，不提交） |
+| `config/holdings.yaml` | 成分股事实源 |
+| `config/editorial_content.yaml` | 解释层文案 |
 
-## ✅ 推荐使用顺序
+优先级：环境变量 > 命令行参数 > `config.yaml` > `config.example.yaml` > 代码默认值。
+
+## 运行与发布
+
+```bash
+# 开发模式（默认）
+python scripts/update_report.py
+
+# 发布模式（需先配置 secrets）
+python scripts/update_report.py --publish
+```
+
+`--publish` 会先更新本地 `index.html`，再将报告推送到 GitHub Pages 并发送企微通知。
+
+## 推荐使用顺序
 
 1. 安装依赖：`pip install -r requirements.txt`
 2. 先直接运行一次：`python scripts/update_report.py`
-3. 需要自定义时，再复制并修改 `config/config.yaml`
-4. 需要发布时，再补 `config/secrets.yaml` 并执行 `--publish`
+3. 需要自定义时，复制 `config/config.example.yaml` → `config/config.yaml` 并修改
+4. 需要发布时，补 `config/secrets.yaml` 并执行 `--publish`
 
-## 📚 进一步说明
+## 进一步说明
 
-- **[WORKFLOW.md](WORKFLOW.md)** - 详细工作流程、排障步骤、验证方式
-- **[DESIGN.md](DESIGN.md)** - 架构设计
-- **[SKILL.md](SKILL.md)** - 技能定位与入口导航
-
-
-
-
-## 📝 更新时间
+| 文档 | 内容 |
+|------|------|
+| [WORKFLOW.md](WORKFLOW.md) | 详细执行步骤、排障、验证 |
+| [DESIGN.md](DESIGN.md) | 架构设计与模块依赖 |
+| [SKILL.md](SKILL.md) | AI 技能描述与触发词 |
+| [docs/](docs/) | AKShare 参考、ETF 替换清单、健康检查说明 |
 
 建议在交易日收盘后（15:00 之后）执行更新。
 
 ---
 
-**版本**: v2.2.0 | **最后更新**: 2026-04-07
+**版本**: v2.5.1 | **最后更新**: 2026-04-22

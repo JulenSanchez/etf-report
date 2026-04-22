@@ -86,8 +86,8 @@ python scripts/update_report.py
 
 ## 最佳实践
 
-- **一次性输出**：统一放 `_working/`
-- **正式运行数据**：只留在 `data/`、`logs/`、`.backup/`
+- **一次性输出**：统一放到本地临时目录（如 `_working/`），不提交到 Git
+- **正式运行数据**：只留在 `data/`、`logs/`
 - **根目录**：只保留源码、文档和主报告 `index.html`
 - **健康检查基线**：需要时用 `python scripts/health_check.py --json > _working/xxx.json`
 

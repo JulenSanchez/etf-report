@@ -62,14 +62,7 @@ python scripts/update_report.py --publish
 | MA50 为 null | 正常，前 50 天预热期不够 |
 
 
-## 目录约定
 
-- `data/`：日更运行数据与运行时载荷。
-- `logs/`：结构化 JSONL 日志。
-- `.backup/`：事务回滚快照。
-- `_working/`：一次性人工排查输出。
-- `tests/fixtures/`：需要长期复用的样本。
-- 根目录不保留 `_pytest*.txt`、`_update_report*.txt`、`_detail_mismatch*.txt`、`*.bak*`。
 
 ## 项目审计
 

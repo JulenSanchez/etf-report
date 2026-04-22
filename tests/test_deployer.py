@@ -74,7 +74,8 @@ def test_main_skips_pages_deploy_when_pages_repo_points_to_same_remote(tmp_path,
                         "enabled": True,
                         "repo_root": "C:/stale/path",
                         "branch": "main",
-                        "pages_repo_root": "C:/Users/julentan/github-pages/etf-report",
+                        "pages_repo_root": "C:/pages-repo/etf-report",
+
                         "pages_branch": "main",
                     }
                 }

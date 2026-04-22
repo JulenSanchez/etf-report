@@ -123,8 +123,7 @@ python scripts/update_report.py
 
 建议同步：
 
-- `plans/Board.md`：状态、目标版本、最后活动
-- `plans/REQ-XXX.md`：记录新 ETF 的事实确认来源与简称规则
+- 需求看板：记录替换状态、目标版本（如果你在维护此项目）
 - `SKILL.md`：如果这份 checklist 会复用，挂进导航
 
 ---

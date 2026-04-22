@@ -1,4 +1,4 @@
-# Python 编译缓存
+# ========= Python 缓存与构建产物 =========
 *.pyc
 __pycache__/
 *.egg-info/
@@ -6,51 +6,53 @@ __pycache__/
 dist/
 build/
 
-# 运行日志
+# ========= 运行产物 =========
 logs/
 *.log
+data/
+outputs/
+_working/
+.backup/
 
-# 测试输出和临时文件
-*test_output.txt
-output.txt
-health_check_output.txt
-*.tmp
+# ========= 测试缓存与一次性排查文件 =========
 .pytest_cache/
+*.tmp
 _pytest*.txt
 _update_report*.txt
 _detail_mismatch*.txt
 index.html.bak*
-config/*.backup
 
-# 开发数据目录（保留结构示例）
-data/
-legacy/
+# ========= 本地私有配置 =========
+.env
+.env.local
+config/config.yaml
+config/secrets.yaml
+config/*.local.yaml
 
-# IDE
+
+# ========= 调试资源（仅开发用） =========
+assets/css/debug.css
+assets/js/debug-toolbar.js
+
+# ========= 本地治理 / 开发过程文件 =========
+CONTRIBUTING.md
+PLAN.md
+plans/
+statusbar.config.md
+RELEASE_RUNBOOK.md
+AUDIT_RUNBOOK.md
+
+# ========= 开发者内部文档 =========
+docs/INTEGRATION_GUIDE.md
+
+# ========= IDE / 编辑器临时文件 =========
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
 
-# 系统文件
+# ========= 系统文件 =========
 .DS_Store
 Thumbs.db
 
-# 开发私钥与本地私有配置
-.env
-.env.local
-secrets.yaml
-config/config.yaml
-config/secrets.yaml
-config/*.local.yaml
-CONTRIBUTING.md
-PLAN.md
-
-
-
-
-# 工作目录和备份（本地临时文件，不提交）
-_working/
-.backup/
-outputs/
