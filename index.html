@@ -19,10 +19,10 @@
             <div class="header-content" id="report-header-content">
                 <h1 class="report-title" id="report-title-main">A股ETF综合投资分析报告</h1>
                 <div class="meta-info" id="report-meta-info">
-                    <div class="meta-item" id="report-date-item"><span id="report-date-icon">📅</span><span id="report-date-text"><span id="report-date-label">报告日期:</span> <strong class="text-blue" id="report-date-value">2026年04月27日</strong></span></div>
+                    <div class="meta-item" id="report-date-item"><span id="report-date-icon">📅</span><span id="report-date-text"><span id="report-date-label">报告日期:</span> <strong class="text-blue" id="report-date-value">2026年04月28日</strong></span></div>
                     <div class="meta-item" id="report-scope-item"><span id="report-scope-icon">📊</span><span id="report-scope-text"><span id="report-scope-label">分析标的:</span> <strong id="report-scope-value">6支行业ETF</strong></span></div>
                     <div class="meta-item" id="report-dimension-item"><span id="report-dimension-icon">🎯</span><span id="report-dimension-text"><span id="report-dimension-label">分析维度:</span> <span id="report-dimension-value">技术面 + 基本面 + 宏观环境</span></span></div>
-                    <div class="meta-item" id="report-cutoff-item"><span id="report-cutoff-icon">⏰</span><span id="report-cutoff-text"><span id="report-cutoff-label">数据截止:</span> <span id="report-cutoff-value">2026-04-27</span></span></div>
+                    <div class="meta-item" id="report-cutoff-item"><span id="report-cutoff-icon">⏰</span><span id="report-cutoff-text"><span id="report-cutoff-label">数据截止:</span> <span id="report-cutoff-value">2026-04-28</span></span></div>
                 </div>
             </div>
         </header>
@@ -33,9 +33,10 @@
             <div class="nav-tab" onclick="switchPanel('513120')">💊 港股创新药ETF</div>
             <div class="nav-tab" onclick="switchPanel('512070')">🏦 证券保险ETF</div>
             <div class="nav-tab" onclick="switchPanel('515880')">📡 通信设备ETF</div>
-            <div class="nav-tab" onclick="switchPanel('159566')">🔋 储能电池ETF</div>
+            <div class="nav-tab" onclick="switchPanel('159755')">🔋 电池ETF</div>
             <div class="nav-tab" onclick="switchPanel('159865')">🐖 养殖ETF</div>
             <div class="nav-tab" onclick="switchPanel('macro')">🌍 宏观环境</div>
+            <div class="nav-tab" onclick="switchPanel('quant')">🔬 量化回测</div>
         </nav>
 
         <!-- 总览面板 -->
@@ -44,7 +45,7 @@
                 <div class="overview-card bullish" id="overview-card-512400" onclick="switchPanel('512400')">
                     <div class="etf-code" id="overview-card-512400-code">512400</div>
                     <div class="etf-name" id="overview-card-512400-name">南方中证申万有色金属ETF</div>
-                    <div class="etf-change negative" id="overview-card-512400-change">-8.63%</div>
+                    <div class="etf-change negative" id="overview-card-512400-change">-15.37%</div>
                     <div id="overview-card-512400-change-label">近3月涨幅</div>
                     <div class="rating-stars" id="overview-card-512400-rating"><span class="filled">★★★★★</span></div>
                     <div id="overview-card-512400-recommendation-wrap">
@@ -54,7 +55,7 @@
                 <div class="overview-card neutral" id="overview-card-513120" onclick="switchPanel('513120')">
                     <div class="etf-code" id="overview-card-513120-code">513120</div>
                     <div class="etf-name" id="overview-card-513120-name">广发中证香港创新药ETF</div>
-                    <div class="etf-change negative" id="overview-card-513120-change">-6.74%</div>
+                    <div class="etf-change negative" id="overview-card-513120-change">-5.09%</div>
                     <div id="overview-card-513120-change-label">近3月涨幅</div>
                     <div class="rating-stars" id="overview-card-513120-rating"><span class="filled">★★★</span><span class="empty">★★</span></div>
                     <div id="overview-card-513120-recommendation-wrap">
@@ -64,7 +65,7 @@
                 <div class="overview-card neutral" id="overview-card-512070" onclick="switchPanel('512070')">
                     <div class="etf-code" id="overview-card-512070-code">512070</div>
                     <div class="etf-name" id="overview-card-512070-name">易方达沪深300非银ETF</div>
-                    <div class="etf-change negative" id="overview-card-512070-change">-11.52%</div>
+                    <div class="etf-change negative" id="overview-card-512070-change">-11.92%</div>
                     <div id="overview-card-512070-change-label">近3月涨幅</div>
                     <div class="rating-stars" id="overview-card-512070-rating"><span class="filled">★★★</span><span class="empty">★★</span></div>
                     <div id="overview-card-512070-recommendation-wrap">
@@ -74,27 +75,27 @@
                 <div class="overview-card bullish" id="overview-card-515880" onclick="switchPanel('515880')">
                     <div class="etf-code" id="overview-card-515880-code">515880</div>
                     <div class="etf-name" id="overview-card-515880-name">国泰中证全指通信设备ETF</div>
-                    <div class="etf-change positive" id="overview-card-515880-change">+29.17%</div>
+                    <div class="etf-change positive" id="overview-card-515880-change">+27.84%</div>
                     <div id="overview-card-515880-change-label">近3月涨幅</div>
                     <div class="rating-stars" id="overview-card-515880-rating"><span class="filled">★★★★★</span></div>
                     <div id="overview-card-515880-recommendation-wrap">
                         <span class="recommendation-badge strong-buy badge-sm" id="overview-card-515880-recommendation">🚀 强烈推荐 - 核心配置</span>
                     </div>
                 </div>
-                <div class="overview-card bullish" id="overview-card-159566" onclick="switchPanel('159566')">
-                    <div class="etf-code" id="overview-card-159566-code">159566</div>
-                    <div class="etf-name" id="overview-card-159566-name">易方达国证新能源电池ETF</div>
-                    <div class="etf-change positive" id="overview-card-159566-change">+4.22%</div>
-                    <div id="overview-card-159566-change-label">近3月涨幅</div>
-                    <div class="rating-stars" id="overview-card-159566-rating"><span class="filled">★★★★★</span></div>
-                    <div id="overview-card-159566-recommendation-wrap">
-                        <span class="recommendation-badge strong-buy badge-sm" id="overview-card-159566-recommendation">🚀 强烈推荐 - 积极配置</span>
+                <div class="overview-card bullish" id="overview-card-159755" onclick="switchPanel('159755')">
+                    <div class="etf-code" id="overview-card-159755-code">159755</div>
+                    <div class="etf-name" id="overview-card-159755-name">广发国证新能源车电池ETF</div>
+                    <div class="etf-change positive" id="overview-card-159755-change">+6.57%</div>
+                    <div id="overview-card-159755-change-label">近3月涨幅</div>
+                    <div class="rating-stars" id="overview-card-159755-rating"><span class="filled">★★★★★</span></div>
+                    <div id="overview-card-159755-recommendation-wrap">
+                        <span class="recommendation-badge strong-buy badge-sm" id="overview-card-159755-recommendation">🚀 强烈推荐 - 积极配置</span>
                     </div>
                 </div>
                 <div class="overview-card neutral" id="overview-card-159865" onclick="switchPanel('159865')">
                     <div class="etf-code" id="overview-card-159865-code">159865</div>
                     <div class="etf-name" id="overview-card-159865-name">养殖ETF</div>
-                    <div class="etf-change negative" id="overview-card-159865-change">-5.25%</div>
+                    <div class="etf-change negative" id="overview-card-159865-change">-6.54%</div>
                     <div id="overview-card-159865-change-label">近3月涨幅</div>
                     <div class="rating-stars" id="overview-card-159865-rating"><span class="filled">★★★</span><span class="empty">★★</span></div>
                     <div id="overview-card-159865-recommendation-wrap">
@@ -132,7 +133,7 @@
                         <h3 id="strong-buy-card-overview-title">🟢 强烈推荐（3支）</h3>
                         <ul id="strong-buy-card-overview-list">
                             <li id="strong-buy-card-overview-item-1"><span class="highlight-green">515880 通信设备ETF</span>：AI算力需求爆发，1.6T光模块放量元年，近1年涨幅143.51%</li>
-                            <li id="strong-buy-card-overview-item-2"><span class="highlight-green">159566 储能电池ETF</span>：储能需求超预期，宁德时代业绩确定性强，近1年涨幅65.82%</li>
+                            <li id="strong-buy-card-overview-item-2"><span class="highlight-green">159755 电池ETF</span>：储能需求超预期，宁德时代业绩确定性强，近1年涨幅65.82%</li>
                             <li id="strong-buy-card-overview-item-3"><span class="highlight-green">512400 有色金属ETF</span>：地缘冲突支撑价格，贵金属配置价值突出，近1年涨幅102.81%</li>
                         </ul>
                     </div>
@@ -147,7 +148,7 @@
                     <div class="macro-card" id="core-themes-card-overview">
                         <h3 id="core-themes-card-overview-title">📌 核心投资主线</h3>
                         <ul id="core-themes-card-overview-list">
-                            <li id="core-themes-card-overview-item-1"><span class="highlight-blue">科技成长</span>：AI算力、光模块、储能电池</li>
+                            <li id="core-themes-card-overview-item-1"><span class="highlight-blue">科技成长</span>：AI算力、光模块、新能源电池</li>
                             <li id="core-themes-card-overview-item-2"><span class="highlight-blue">资源周期</span>：有色金属、贵金属</li>
                             <li id="core-themes-card-overview-item-3"><span class="highlight-blue">周期修复</span>：生猪养殖、饲料龙头</li>
                         </ul>
@@ -161,7 +162,7 @@
             <section class="panel-section fade-in" id="fund-flow-section">
                 <h2 class="section-title" id="fund-flow-title">💰 市场热度与轮动</h2>
                 <p id="fund-flow-meta">
-                    <span id="fund-flow-source-label">数据来源：</span><span id="fund-flow-source-value">新浪财经实时行情 + 主流程K线快照</span> | <span id="fund-flow-updated-label">更新时间：</span><span id="fund-flow-updated-value">2026-04-27 16:02:47</span>
+                    <span id="fund-flow-source-label">数据来源：</span><span id="fund-flow-source-value">新浪财经实时行情 + 主流程K线快照</span> | <span id="fund-flow-updated-label">更新时间：</span><span id="fund-flow-updated-value">2026-04-28 16:04:11</span>
                 </p>
                 
                 <div class="overview-grid flow-grid" id="fund-flow-grid">
@@ -174,23 +175,23 @@
                         <div class="market-rotation-stats" id="market-rotation-stats">
                             <div class="market-rotation-stat" id="market-rotation-stat-leader">
                                 <div class="market-rotation-stat-label" id="market-rotation-stat-leader-label">今日强势ETF</div>
-                                <div class="market-rotation-stat-name" id="market-rotation-stat-leader-name">通信设备ETF</div>
-                                <div class="stat-value text-green" id="market-rotation-stat-leader-value">+1.19%</div>
+                                <div class="market-rotation-stat-name" id="market-rotation-stat-leader-name">证券保险ETF</div>
+                                <div class="stat-value text-green" id="market-rotation-stat-leader-value">+0.88%</div>
                             </div>
                             <div class="market-rotation-stat" id="market-rotation-stat-laggard">
                                 <div class="market-rotation-stat-label" id="market-rotation-stat-laggard-label">今日承压ETF</div>
-                                <div class="market-rotation-stat-name" id="market-rotation-stat-laggard-name">储能电池ETF</div>
-                                <div class="stat-value text-red" id="market-rotation-stat-laggard-value">-1.42%</div>
+                                <div class="market-rotation-stat-name" id="market-rotation-stat-laggard-name">有色金属ETF</div>
+                                <div class="stat-value text-red" id="market-rotation-stat-laggard-value">-2.48%</div>
                             </div>
                             <div class="market-rotation-stat" id="market-rotation-stat-average">
                                 <div class="market-rotation-stat-label" id="market-rotation-stat-average-label">平均日涨幅</div>
                                 <div class="market-rotation-stat-name" id="market-rotation-stat-average-name">6支ETF均值</div>
-                                <div class="stat-value text-red" id="market-rotation-stat-average-value">-0.41%</div>
+                                <div class="stat-value text-red" id="market-rotation-stat-average-value">-0.82%</div>
                             </div>
                             <div class="market-rotation-stat" id="market-rotation-stat-breadth">
                                 <div class="market-rotation-stat-label" id="market-rotation-stat-breadth-label">上涨 / 下跌 / 平盘</div>
                                 <div class="market-rotation-stat-name" id="market-rotation-stat-breadth-name">ETF日内分布</div>
-                                <div class="stat-value text-blue" id="market-rotation-stat-breadth-value">1 / 4 / 1</div>
+                                <div class="stat-value text-blue" id="market-rotation-stat-breadth-value">2 / 4 / 0</div>
                             </div>
                         </div>
                     </div>
@@ -213,34 +214,34 @@
                             </thead>
                             <tbody id="leaders-top5-table-body">
                                 <tr id="leaders-top5-table-row-1">
-                                    <td id="leaders-top5-table-name-1">信维通信</td>
-                                    <td id="leaders-top5-table-industry-1">通信设备</td>
-                                    <td id="leaders-top5-table-weight-1">3.19%</td>
-                                    <td class="text-green text-bold" id="leaders-top5-table-change-1">+8.81%</td>
+                                    <td id="leaders-top5-table-name-1">药明康德</td>
+                                    <td id="leaders-top5-table-industry-1">港股创新药</td>
+                                    <td id="leaders-top5-table-weight-1">5.09%</td>
+                                    <td class="text-green text-bold" id="leaders-top5-table-change-1">+13.25%</td>
                                 </tr>
                                 <tr id="leaders-top5-table-row-2">
-                                    <td id="leaders-top5-table-name-2">中天科技</td>
-                                    <td id="leaders-top5-table-industry-2">通信设备</td>
-                                    <td id="leaders-top5-table-weight-2">2.63%</td>
-                                    <td class="text-green text-bold" id="leaders-top5-table-change-2">+7.74%</td>
+                                    <td id="leaders-top5-table-name-2">广发证券</td>
+                                    <td id="leaders-top5-table-industry-2">证券保险</td>
+                                    <td id="leaders-top5-table-weight-2">2.47%</td>
+                                    <td class="text-green text-bold" id="leaders-top5-table-change-2">+6.03%</td>
                                 </tr>
                                 <tr id="leaders-top5-table-row-3">
-                                    <td id="leaders-top5-table-name-3">传音控股</td>
-                                    <td id="leaders-top5-table-industry-3">通信设备</td>
-                                    <td id="leaders-top5-table-weight-3">2.02%</td>
-                                    <td class="text-green text-bold" id="leaders-top5-table-change-3">+6.29%</td>
+                                    <td id="leaders-top5-table-name-3">海大集团</td>
+                                    <td id="leaders-top5-table-industry-3">养殖</td>
+                                    <td id="leaders-top5-table-weight-3">11.26%</td>
+                                    <td class="text-green text-bold" id="leaders-top5-table-change-3">+5.57%</td>
                                 </tr>
                                 <tr id="leaders-top5-table-row-4">
-                                    <td id="leaders-top5-table-name-4">康方生物</td>
-                                    <td id="leaders-top5-table-industry-4">港股创新药</td>
-                                    <td id="leaders-top5-table-weight-4">8.40%</td>
-                                    <td class="text-green text-bold" id="leaders-top5-table-change-4">+4.64%</td>
+                                    <td id="leaders-top5-table-name-4">天康生物</td>
+                                    <td id="leaders-top5-table-industry-4">养殖</td>
+                                    <td id="leaders-top5-table-weight-4">2.88%</td>
+                                    <td class="text-green text-bold" id="leaders-top5-table-change-4">+2.80%</td>
                                 </tr>
                                 <tr id="leaders-top5-table-row-5">
-                                    <td id="leaders-top5-table-name-5">工业富联</td>
-                                    <td id="leaders-top5-table-industry-5">通信设备</td>
-                                    <td id="leaders-top5-table-weight-5">13.08%</td>
-                                    <td class="text-green text-bold" id="leaders-top5-table-change-5">+3.45%</td>
+                                    <td id="leaders-top5-table-name-5">华泰证券</td>
+                                    <td id="leaders-top5-table-industry-5">证券保险</td>
+                                    <td id="leaders-top5-table-weight-5">5.24%</td>
+                                    <td class="text-green text-bold" id="leaders-top5-table-change-5">+2.72%</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -263,34 +264,34 @@
                             </thead>
                             <tbody id="laggards-top5-table-body">
                                 <tr id="laggards-top5-table-row-1">
-                                    <td id="laggards-top5-table-name-1">德业股份</td>
-                                    <td id="laggards-top5-table-industry-1">储能电池</td>
-                                    <td id="laggards-top5-table-weight-1">3.87%</td>
-                                    <td class="text-red text-bold" id="laggards-top5-table-change-1">-4.17%</td>
+                                    <td id="laggards-top5-table-name-1">石药集团</td>
+                                    <td id="laggards-top5-table-industry-1">港股创新药</td>
+                                    <td id="laggards-top5-table-weight-1">6.87%</td>
+                                    <td class="text-red text-bold" id="laggards-top5-table-change-1">-4.54%</td>
                                 </tr>
                                 <tr id="laggards-top5-table-row-2">
-                                    <td id="laggards-top5-table-name-2">中际旭创</td>
+                                    <td id="laggards-top5-table-name-2">亨通光电</td>
                                     <td id="laggards-top5-table-industry-2">通信设备</td>
-                                    <td id="laggards-top5-table-weight-2">15.20%</td>
-                                    <td class="text-red text-bold" id="laggards-top5-table-change-2">-3.38%</td>
+                                    <td id="laggards-top5-table-weight-2">2.59%</td>
+                                    <td class="text-red text-bold" id="laggards-top5-table-change-2">-4.33%</td>
                                 </tr>
                                 <tr id="laggards-top5-table-row-3">
-                                    <td id="laggards-top5-table-name-3">国泰海通</td>
-                                    <td id="laggards-top5-table-industry-3">证券保险</td>
-                                    <td id="laggards-top5-table-weight-3">8.82%</td>
-                                    <td class="text-red text-bold" id="laggards-top5-table-change-3">-2.93%</td>
+                                    <td id="laggards-top5-table-name-3">天孚通信</td>
+                                    <td id="laggards-top5-table-industry-3">通信设备</td>
+                                    <td id="laggards-top5-table-weight-3">4.94%</td>
+                                    <td class="text-red text-bold" id="laggards-top5-table-change-3">-3.86%</td>
                                 </tr>
                                 <tr id="laggards-top5-table-row-4">
-                                    <td id="laggards-top5-table-name-4">金盘科技</td>
-                                    <td id="laggards-top5-table-industry-4">储能电池</td>
-                                    <td id="laggards-top5-table-weight-4">2.70%</td>
-                                    <td class="text-red text-bold" id="laggards-top5-table-change-4">-2.91%</td>
+                                    <td id="laggards-top5-table-name-4">三花智控</td>
+                                    <td id="laggards-top5-table-industry-4">电池ETF广发</td>
+                                    <td id="laggards-top5-table-weight-4">6.42%</td>
+                                    <td class="text-red text-bold" id="laggards-top5-table-change-4">-3.81%</td>
                                 </tr>
                                 <tr id="laggards-top5-table-row-5">
-                                    <td id="laggards-top5-table-name-5">三生制药</td>
-                                    <td id="laggards-top5-table-industry-5">港股创新药</td>
-                                    <td id="laggards-top5-table-weight-5">4.94%</td>
-                                    <td class="text-red text-bold" id="laggards-top5-table-change-5">-2.64%</td>
+                                    <td id="laggards-top5-table-name-5">中际旭创</td>
+                                    <td id="laggards-top5-table-industry-5">通信设备</td>
+                                    <td id="laggards-top5-table-weight-5">15.20%</td>
+                                    <td class="text-red text-bold" id="laggards-top5-table-change-5">-3.74%</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -306,13 +307,42 @@
                 <div class="fund-info" id="fund-info-512400">
                     <div class="info-item" id="fund-code-item-512400"><div class="info-label" id="fund-code-label-512400">基金代码</div><div class="info-value" id="fund-code-value-512400">512400</div></div>
                     <div class="info-item" id="fund-size-item-512400"><div class="info-label" id="fund-size-label-512400">基金规模</div><div class="info-value" id="fund-size-value-512400">205.91亿元</div></div>
-                    <div class="info-item" id="latest-nav-item-512400"><div class="info-label" id="latest-nav-label-512400">最新收盘价</div><div class="info-value" id="latest-nav-value-512400">2.0950元</div></div>
-                    <div class="info-item" id="daily-change-item-512400"><div class="info-label" id="daily-change-label-512400">日涨跌幅</div><div class="info-value text-red" id="daily-change-value-512400" >-1.09%</div></div>
+                    <div class="info-item" id="latest-nav-item-512400"><div class="info-label" id="latest-nav-label-512400">最新收盘价</div><div class="info-value" id="latest-nav-value-512400">2.0430元</div></div>
+                    <div class="info-item" id="daily-change-item-512400"><div class="info-label" id="daily-change-label-512400">日涨跌幅</div><div class="info-value text-red" id="daily-change-value-512400" >-2.48%</div></div>
                     <div class="info-item" id="benchmark-item-512400"><div class="info-label" id="benchmark-label-512400">业绩基准</div><div class="info-value" id="benchmark-value-512400">沪深300指数</div></div>
                     <div class="info-item" id="fund-type-item-512400"><div class="info-label" id="fund-type-label-512400">基金类型</div><div class="info-value" id="fund-type-value-512400">有色金属</div></div>
                 </div>
                 <h3 class="performance-subtitle" id="performance-title-512400">📈 近期业绩表现</h3>
-                <table class="performance-table" id="performance-table-512400"><tr><th>近1月</th><th>近3月</th><th>近6月</th><th>近1年</th></tr><tr><td id="performance-return-1m-512400" class="positive">+6.02%</td><td id="performance-return-3m-512400" class="negative">-8.63%</td><td id="performance-return-6m-512400" class="positive">+23.24%</td><td id="performance-return-1y-512400" class="positive">+103.00%</td></tr></table>
+                <table class="performance-table" id="performance-table-512400"><tr><th>近1月</th><th>近3月</th><th>近6月</th><th>近1年</th></tr><tr><td id="performance-return-1m-512400" class="positive">+1.74%</td><td id="performance-return-3m-512400" class="negative">-15.37%</td><td id="performance-return-6m-512400" class="positive">+20.18%</td><td id="performance-return-1y-512400" class="positive">+97.97%</td></tr></table>
+                <div class="valuation-block" id="valuation-block-512400">
+                    <div class="valuation-header" id="valuation-header-512400">
+                        <div class="valuation-title" id="valuation-title-512400">
+                            <span>📐 估值水位</span>
+                            <span class="valuation-info-icon" id="valuation-info-512400" tabindex="0" aria-label="估值说明">
+                                ?
+                                <span class="valuation-tooltip" id="valuation-tooltip-512400">
+                                    <span class="valuation-tooltip-row"><span class="valuation-tooltip-key">指标</span><span>PB</span></span>
+                                    <span class="valuation-tooltip-row"><span class="valuation-tooltip-key">参考指数</span><span>中证申万有色金属指数</span></span>
+                                    <span class="valuation-tooltip-row"><span class="valuation-tooltip-key">口径</span><span>历史百分位 · 2014天</span></span>
+                                    <span class="valuation-tooltip-note">历史百分位 · 真实样本 2014 天</span>
+                                </span>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="valuation-bar-wrap" id="valuation-bar-wrap-512400" title="历史百分位 · 真实样本 2014 天">
+                        <div class="valuation-bar-indicator" id="valuation-bar-indicator-512400" style="left: 80.7%;"></div>
+                    </div>
+                    <div class="valuation-bar-scale">
+                        <span>0</span><span>20</span><span>40</span><span>60</span><span>80</span><span>100</span>
+                    </div>
+                    <div class="valuation-result" id="valuation-result-512400">
+                        <div>
+                            <span class="valuation-percentile-label">历史百分位</span>
+                            <span class="valuation-percentile" id="valuation-percentile-512400">80.7<span style="font-size:1rem;color:#6b7280;">%</span></span>
+                        </div>
+                        <span class="valuation-verdict-chip verdict-red" id="valuation-verdict-512400">🔴 极度高估</span>
+                    </div>
+                </div>
             </section>
 
             <section class="panel-section panel-tech-analysis fade-in" id="tech-analysis-section-512400">
@@ -351,7 +381,7 @@
 
             <section class="panel-section panel-research fade-in" id="research-section-512400">
                 <h2 class="section-title" id="research-title-512400">📰 行业研究报告</h2>
-                <div class="report-card" id="report-card-512400-1"><p id="report-card-content-512400-1"><span class="report-card-text" id="report-card-text-512400-1">💡 紫金矿业跌2.19%，成交额77.90亿元，人气排名14位！后市是否有机会？附走势预测</span><span class="editorial-date" id="research-date-512400-1">2026-04-27</span></p></div><div class="report-card" id="report-card-512400-2"><p id="report-card-content-512400-2"><span class="report-card-text" id="report-card-text-512400-2">💡 【行业深度】洞察2026：中国黄金产业竞争格局及企业布局（附市场份额、上市企业业绩等）</span><span class="editorial-date" id="research-date-512400-2">2026-04-27</span></p></div><div class="report-card" id="report-card-512400-3"><p id="report-card-content-512400-3"><span class="report-card-text" id="report-card-text-512400-3">💡 赤峰黄金首季盈利9.88亿同比翻倍 矿产金售价大涨61%负债率持续优化</span><span class="editorial-date" id="research-date-512400-3">2026-04-27</span></p></div><div class="report-card" id="report-card-512400-4"><p id="report-card-content-512400-4"><span class="report-card-text" id="report-card-text-512400-4">💡 黄金股一季度迎来亮眼表现，黄金股ETF平安(159322)交投活跃</span><span class="editorial-date" id="research-date-512400-4">2026-04-27</span></p></div>
+                <div class="report-card" id="report-card-512400-1"><p id="report-card-content-512400-1"><span class="report-card-text" id="report-card-text-512400-1">💡 研报掘金丨中邮证券：紫金矿业季度利润再创新高，维持“买入”评级</span><span class="editorial-date" id="research-date-512400-1">2026-04-28</span></p></div><div class="report-card" id="report-card-512400-2"><p id="report-card-content-512400-2"><span class="report-card-text" id="report-card-text-512400-2">💡 高盛：紫金矿业估值具吸引力，微降AH股目标价，维持“买入”评级</span><span class="editorial-date" id="research-date-512400-2">2026-04-28</span></p></div><div class="report-card" id="report-card-512400-3"><p id="report-card-content-512400-3"><span class="report-card-text" id="report-card-text-512400-3">💡 大行评级丨高盛：紫金矿业估值具吸引力，微降AH股目标价，维持“买入”评级</span><span class="editorial-date" id="research-date-512400-3">2026-04-28</span></p></div><div class="report-card" id="report-card-512400-4"><p id="report-card-content-512400-4"><span class="report-card-text" id="report-card-text-512400-4">💡 紫金矿业震荡偏弱，主力资金净流出，估值处历史高位</span><span class="editorial-date" id="research-date-512400-4">2026-04-28</span></p></div>
                 <div class="rating-section" id="research-rating-section-512400">
                     <div class="rating-card" id="fundamental-rating-card-512400"><div class="rating-label" id="fundamental-rating-label-512400">基本面评分</div><div class="rating-value high" id="fundamental-rating-value-512400">★★★★★</div><div id="fundamental-rating-text-512400">强烈看好</div></div>
                     <div class="rating-card" id="recommendation-rating-card-512400"><div class="rating-label" id="recommendation-rating-label-512400">综合建议</div><div class="rating-value high" id="recommendation-rating-value-512400">★★★★★</div><div id="recommendation-rating-text-512400">强烈推荐</div></div>
@@ -365,13 +395,30 @@
                 <div class="fund-info" id="fund-info-513120">
                     <div class="info-item" id="fund-code-item-513120"><div class="info-label" id="fund-code-label-513120">基金代码</div><div class="info-value" id="fund-code-value-513120">513120</div></div>
                     <div class="info-item" id="fund-size-item-513120"><div class="info-label" id="fund-size-label-513120">基金规模</div><div class="info-value" id="fund-size-value-513120">234.03亿元</div></div>
-                    <div class="info-item" id="latest-nav-item-513120"><div class="info-label" id="latest-nav-label-513120">最新收盘价</div><div class="info-value" id="latest-nav-value-513120">1.2310元</div></div>
-                    <div class="info-item" id="daily-change-item-513120"><div class="info-label" id="daily-change-label-513120">日涨跌幅</div><div class="info-value text-red" id="daily-change-value-513120" >-0.49%</div></div>
-                    <div class="info-item" id="benchmark-item-513120"><div class="info-label" id="benchmark-label-513120">业绩基准</div><div class="info-value" id="benchmark-value-513120">恒生医疗保健指数</div></div>
+                    <div class="info-item" id="latest-nav-item-513120"><div class="info-label" id="latest-nav-label-513120">最新收盘价</div><div class="info-value" id="latest-nav-value-513120">1.2300元</div></div>
+                    <div class="info-item" id="daily-change-item-513120"><div class="info-label" id="daily-change-label-513120">日涨跌幅</div><div class="info-value text-red" id="daily-change-value-513120" >-0.08%</div></div>
+                    <div class="info-item" id="benchmark-item-513120"><div class="info-label" id="benchmark-label-513120">业绩基准</div><div class="info-value" id="benchmark-value-513120">恒生指数(159920代理)</div></div>
                     <div class="info-item" id="fund-type-item-513120"><div class="info-label" id="fund-type-label-513120">基金类型</div><div class="info-value" id="fund-type-value-513120">港股创新药</div></div>
                 </div>
                 <h3 class="performance-subtitle" id="performance-title-513120">📈 近期业绩表现</h3>
-                <table class="performance-table" id="performance-table-513120"><tr><th>近1月</th><th>近3月</th><th>近6月</th><th>近1年</th></tr><tr><td id="performance-return-1m-513120" class="positive">+1.74%</td><td id="performance-return-3m-513120" class="negative">-6.74%</td><td id="performance-return-6m-513120" class="negative">-8.41%</td><td id="performance-return-1y-513120" class="positive">+31.94%</td></tr></table>
+                <table class="performance-table" id="performance-table-513120"><tr><th>近1月</th><th>近3月</th><th>近6月</th><th>近1年</th></tr><tr><td id="performance-return-1m-513120" class="positive">+1.49%</td><td id="performance-return-3m-513120" class="negative">-5.09%</td><td id="performance-return-6m-513120" class="negative">-8.48%</td><td id="performance-return-1y-513120" class="positive">+31.83%</td></tr></table>
+                <div class="valuation-block" id="valuation-block-513120">
+                    <div class="valuation-header" id="valuation-header-513120">
+                        <div class="valuation-title" id="valuation-title-513120">
+                            <span>📐 估值水位</span>
+                            <span class="valuation-info-icon" id="valuation-info-513120" tabindex="0" aria-label="估值说明">
+                                ?
+                                <span class="valuation-tooltip" id="valuation-tooltip-513120">
+                                    <span class="valuation-tooltip-row"><span class="valuation-tooltip-key">参考指数</span><span>中证香港创新药港币指数</span></span>
+                                    <span class="valuation-tooltip-note">暂无实时估值数据源，本支 ETF 的估值水位将基于历史锚点模式离线研究后更新。</span>
+                                </span>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="valuation-no-data" id="valuation-no-data-513120">
+                        中证香港创新药港币指数 暂无实时估值数据源 · 本支 ETF 的估值水位将基于历史锚点模式离线研究后更新
+                    </div>
+                </div>
             </section>
 
             <section class="panel-section panel-tech-analysis fade-in" id="tech-analysis-section-513120">
@@ -410,7 +457,7 @@
 
             <section class="panel-section panel-research fade-in" id="research-section-513120">
                 <h2 class="section-title" id="research-title-513120">📰 行业研究报告</h2>
-                <div class="report-card" id="report-card-513120-1"><p id="report-card-content-513120-1"><span class="report-card-text" id="report-card-text-513120-1">💡 中国生物制药4月23日回购180.00万股，耗资1005.48万港元</span><span class="editorial-date" id="research-date-513120-1">2026-04-27</span></p></div><div class="report-card" id="report-card-513120-2"><p id="report-card-content-513120-2"><span class="report-card-text" id="report-card-text-513120-2">💡 2026年中国创新药行业市场前景及投资研究报告（简版）</span><span class="editorial-date" id="research-date-513120-2">2026-04-27</span></p></div><div class="report-card" id="report-card-513120-3"><p id="report-card-content-513120-3"><span class="report-card-text" id="report-card-text-513120-3">💡 以并购筑壁垒，以创新赴全球：90后医药“并购女王”谢其润医药新征程</span><span class="editorial-date" id="research-date-513120-3">2026-04-27</span></p></div><div class="report-card" id="report-card-513120-4"><p id="report-card-content-513120-4"><span class="report-card-text" id="report-card-text-513120-4">💡 夯爆2026ASCO！康方、百利天恒、信达、迪哲....再度刷新纪录</span><span class="editorial-date" id="research-date-513120-4">2026-04-27</span></p></div>
+                <div class="report-card" id="report-card-513120-1"><p id="report-card-content-513120-1"><span class="report-card-text" id="report-card-text-513120-1">💡 【高端访谈】正大天晴陈辉：锚定药物研发“真创新” 自研、BD、并购齐发力</span><span class="editorial-date" id="research-date-513120-1">2026-04-28</span></p></div><div class="report-card" id="report-card-513120-2"><p id="report-card-content-513120-2"><span class="report-card-text" id="report-card-text-513120-2">💡 中国创新药再次闪耀ASCO，LBA数量创历史新高！港股通创新药ETF汇添富(159570)回调近1%再度“吸金”，近10日大举揽金超52亿元！</span><span class="editorial-date" id="research-date-513120-2">2026-04-28</span></p></div><div class="report-card" id="report-card-513120-3"><p id="report-card-content-513120-3"><span class="report-card-text" id="report-card-text-513120-3">💡 中国生物制药4月23日回购180.00万股，耗资1005.48万港元</span><span class="editorial-date" id="research-date-513120-3">2026-04-28</span></p></div><div class="report-card" id="report-card-513120-4"><p id="report-card-content-513120-4"><span class="report-card-text" id="report-card-text-513120-4">💡 2026年中国创新药行业市场前景及投资研究报告（简版）</span><span class="editorial-date" id="research-date-513120-4">2026-04-28</span></p></div>
                 <div class="rating-section" id="research-rating-section-513120">
                     <div class="rating-card" id="fundamental-rating-card-513120"><div class="rating-label" id="fundamental-rating-label-513120">基本面评分</div><div class="rating-value medium" id="fundamental-rating-value-513120">★★★★☆</div><div id="fundamental-rating-text-513120">看好</div></div>
                     <div class="rating-card" id="recommendation-rating-card-513120"><div class="rating-label" id="recommendation-rating-label-513120">综合建议</div><div class="rating-value medium" id="recommendation-rating-value-513120">★★★☆☆</div><div id="recommendation-rating-text-513120">观望</div></div>
@@ -424,13 +471,42 @@
                 <div class="fund-info" id="fund-info-512070">
                     <div class="info-item" id="fund-code-item-512070"><div class="info-label" id="fund-code-label-512070">基金代码</div><div class="info-value" id="fund-code-value-512070">512070</div></div>
                     <div class="info-item" id="fund-size-item-512070"><div class="info-label" id="fund-size-label-512070">基金规模</div><div class="info-value" id="fund-size-value-512070">176.13亿元</div></div>
-                    <div class="info-item" id="latest-nav-item-512070"><div class="info-label" id="latest-nav-label-512070">最新收盘价</div><div class="info-value" id="latest-nav-value-512070">0.7910元</div></div>
-                    <div class="info-item" id="daily-change-item-512070"><div class="info-label" id="daily-change-label-512070">日涨跌幅</div><div class="info-value text-amber" id="daily-change-value-512070" >0.00%</div></div>
+                    <div class="info-item" id="latest-nav-item-512070"><div class="info-label" id="latest-nav-label-512070">最新收盘价</div><div class="info-value" id="latest-nav-value-512070">0.7980元</div></div>
+                    <div class="info-item" id="daily-change-item-512070"><div class="info-label" id="daily-change-label-512070">日涨跌幅</div><div class="info-value text-green" id="daily-change-value-512070" >+0.88%</div></div>
                     <div class="info-item" id="benchmark-item-512070"><div class="info-label" id="benchmark-label-512070">业绩基准</div><div class="info-value" id="benchmark-value-512070">沪深300指数</div></div>
                     <div class="info-item" id="fund-type-item-512070"><div class="info-label" id="fund-type-label-512070">基金类型</div><div class="info-value" id="fund-type-value-512070">证券保险</div></div>
                 </div>
                 <h3 class="performance-subtitle" id="performance-title-512070">📈 近期业绩表现</h3>
-                <table class="performance-table" id="performance-table-512070"><tr><th>近1月</th><th>近3月</th><th>近6月</th><th>近1年</th></tr><tr><td id="performance-return-1m-512070" class="positive">+1.15%</td><td id="performance-return-3m-512070" class="negative">-11.52%</td><td id="performance-return-6m-512070" class="negative">-11.12%</td><td id="performance-return-1y-512070" class="positive">+7.77%</td></tr></table>
+                <table class="performance-table" id="performance-table-512070"><tr><th>近1月</th><th>近3月</th><th>近6月</th><th>近1年</th></tr><tr><td id="performance-return-1m-512070" class="positive">+2.97%</td><td id="performance-return-3m-512070" class="negative">-11.92%</td><td id="performance-return-6m-512070" class="negative">-10.34%</td><td id="performance-return-1y-512070" class="positive">+8.72%</td></tr></table>
+                <div class="valuation-block" id="valuation-block-512070">
+                    <div class="valuation-header" id="valuation-header-512070">
+                        <div class="valuation-title" id="valuation-title-512070">
+                            <span>📐 估值水位</span>
+                            <span class="valuation-info-icon" id="valuation-info-512070" tabindex="0" aria-label="估值说明">
+                                ?
+                                <span class="valuation-tooltip" id="valuation-tooltip-512070">
+                                    <span class="valuation-tooltip-row"><span class="valuation-tooltip-key">指标</span><span>PB</span></span>
+                                    <span class="valuation-tooltip-row"><span class="valuation-tooltip-key">参考指数</span><span>沪深300非银行金融指数</span></span>
+                                    <span class="valuation-tooltip-row"><span class="valuation-tooltip-key">口径</span><span>历史百分位 · 2014天</span></span>
+                                    <span class="valuation-tooltip-note">历史百分位 · 真实样本 2014 天</span>
+                                </span>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="valuation-bar-wrap" id="valuation-bar-wrap-512070" title="历史百分位 · 真实样本 2014 天">
+                        <div class="valuation-bar-indicator" id="valuation-bar-indicator-512070" style="left: 18.8%;"></div>
+                    </div>
+                    <div class="valuation-bar-scale">
+                        <span>0</span><span>20</span><span>40</span><span>60</span><span>80</span><span>100</span>
+                    </div>
+                    <div class="valuation-result" id="valuation-result-512070">
+                        <div>
+                            <span class="valuation-percentile-label">历史百分位</span>
+                            <span class="valuation-percentile" id="valuation-percentile-512070">18.8<span style="font-size:1rem;color:#6b7280;">%</span></span>
+                        </div>
+                        <span class="valuation-verdict-chip verdict-deep-green" id="valuation-verdict-512070">🟢 极度低估</span>
+                    </div>
+                </div>
             </section>
 
             <section class="panel-section panel-tech-analysis fade-in" id="tech-analysis-section-512070">
@@ -469,7 +545,7 @@
 
             <section class="panel-section panel-research fade-in" id="research-section-512070">
                 <h2 class="section-title" id="research-title-512070">📰 行业研究报告</h2>
-                <div class="report-card" id="report-card-512070-1"><p id="report-card-content-512070-1"><span class="report-card-text" id="report-card-text-512070-1">💡 “苏超”健康新宠 ｜平安康康宝，南通主场C位出圈</span><span class="editorial-date" id="research-date-512070-1">2026-04-27</span></p></div><div class="report-card" id="report-card-512070-2"><p id="report-card-content-512070-2"><span class="report-card-text" id="report-card-text-512070-2">💡 非金融机构从业人员不得通过直播等形式营销金融产品｜13精周报</span><span class="editorial-date" id="research-date-512070-2">2026-04-27</span></p></div><div class="report-card" id="report-card-512070-3"><p id="report-card-content-512070-3"><span class="report-card-text" id="report-card-text-512070-3">💡 从黄山之巅到乌镇水畔：平安寿险高峰会30年，一场寿险行业的价值重构</span><span class="editorial-date" id="research-date-512070-3">2026-04-27</span></p></div><div class="report-card" id="report-card-512070-4"><p id="report-card-content-512070-4"><span class="report-card-text" id="report-card-text-512070-4">💡 平安MVP林燕珍：不确定的时代，锚定确定的未来</span><span class="editorial-date" id="research-date-512070-4">2026-04-27</span></p></div>
+                <div class="report-card" id="report-card-512070-1"><p id="report-card-content-512070-1"><span class="report-card-text" id="report-card-text-512070-1">💡 免健告引流、理赔设槛？众安保险拒赔频发，五年承保盈利难掩信任裂痕</span><span class="editorial-date" id="research-date-512070-1">2026-04-28</span></p></div><div class="report-card" id="report-card-512070-2"><p id="report-card-content-512070-2"><span class="report-card-text" id="report-card-text-512070-2">💡 寿险新共识｜加速稀释“分红险”，对冲同类产品集中度过高风险</span><span class="editorial-date" id="research-date-512070-2">2026-04-28</span></p></div><div class="report-card" id="report-card-512070-3"><p id="report-card-content-512070-3"><span class="report-card-text" id="report-card-text-512070-3">💡 “平安行·天通卫星守护”产品发布会暨平安·电信战略合作签署仪式在兰州举行</span><span class="editorial-date" id="research-date-512070-3">2026-04-28</span></p></div><div class="report-card" id="report-card-512070-4"><p id="report-card-content-512070-4"><span class="report-card-text" id="report-card-text-512070-4">💡 保险业一季度运行稳中向好 科技保险发展加速推进</span><span class="editorial-date" id="research-date-512070-4">2026-04-28</span></p></div>
                 <div class="rating-section" id="research-rating-section-512070">
                     <div class="rating-card" id="fundamental-rating-card-512070"><div class="rating-label" id="fundamental-rating-label-512070">基本面评分</div><div class="rating-value medium" id="fundamental-rating-value-512070">★★★☆☆</div><div id="fundamental-rating-text-512070">中性</div></div>
                     <div class="rating-card" id="recommendation-rating-card-512070"><div class="rating-label" id="recommendation-rating-label-512070">综合建议</div><div class="rating-value medium" id="recommendation-rating-value-512070">★★★☆☆</div><div id="recommendation-rating-text-512070">观望</div></div>
@@ -483,13 +559,30 @@
                 <div class="fund-info" id="fund-info-515880">
                     <div class="info-item" id="fund-code-item-515880"><div class="info-label" id="fund-code-label-515880">基金代码</div><div class="info-value" id="fund-code-value-515880">515880</div></div>
                     <div class="info-item" id="fund-size-item-515880"><div class="info-label" id="fund-size-label-515880">基金规模</div><div class="info-value" id="fund-size-value-515880">136.38亿元</div></div>
-                    <div class="info-item" id="latest-nav-item-515880"><div class="info-label" id="latest-nav-label-515880">最新收盘价</div><div class="info-value" id="latest-nav-value-515880">1.3550元</div></div>
-                    <div class="info-item" id="daily-change-item-515880"><div class="info-label" id="daily-change-label-515880">日涨跌幅</div><div class="info-value text-green" id="daily-change-value-515880" >+1.19%</div></div>
-                    <div class="info-item" id="benchmark-item-515880"><div class="info-label" id="benchmark-label-515880">业绩基准</div><div class="info-value" id="benchmark-value-515880">创业板指数</div></div>
+                    <div class="info-item" id="latest-nav-item-515880"><div class="info-label" id="latest-nav-label-515880">最新收盘价</div><div class="info-value" id="latest-nav-value-515880">1.3270元</div></div>
+                    <div class="info-item" id="daily-change-item-515880"><div class="info-label" id="daily-change-label-515880">日涨跌幅</div><div class="info-value text-red" id="daily-change-value-515880" >-2.07%</div></div>
+                    <div class="info-item" id="benchmark-item-515880"><div class="info-label" id="benchmark-label-515880">业绩基准</div><div class="info-value" id="benchmark-value-515880">创业板指</div></div>
                     <div class="info-item" id="fund-type-item-515880"><div class="info-label" id="fund-type-label-515880">基金类型</div><div class="info-value" id="fund-type-value-515880">通信设备</div></div>
                 </div>
                 <h3 class="performance-subtitle" id="performance-title-515880">📈 近期业绩表现</h3>
-                <table class="performance-table" id="performance-table-515880"><tr><th>近1月</th><th>近3月</th><th>近6月</th><th>近1年</th></tr><tr><td id="performance-return-1m-515880" class="positive">+26.75%</td><td id="performance-return-3m-515880" class="positive">+29.17%</td><td id="performance-return-6m-515880" class="positive">+46.33%</td><td id="performance-return-1y-515880" class="positive">+250.13%</td></tr></table>
+                <table class="performance-table" id="performance-table-515880"><tr><th>近1月</th><th>近3月</th><th>近6月</th><th>近1年</th></tr><tr><td id="performance-return-1m-515880" class="positive">+22.42%</td><td id="performance-return-3m-515880" class="positive">+27.84%</td><td id="performance-return-6m-515880" class="positive">+43.30%</td><td id="performance-return-1y-515880" class="positive">+242.89%</td></tr></table>
+                <div class="valuation-block" id="valuation-block-515880">
+                    <div class="valuation-header" id="valuation-header-515880">
+                        <div class="valuation-title" id="valuation-title-515880">
+                            <span>📐 估值水位</span>
+                            <span class="valuation-info-icon" id="valuation-info-515880" tabindex="0" aria-label="估值说明">
+                                ?
+                                <span class="valuation-tooltip" id="valuation-tooltip-515880">
+                                    <span class="valuation-tooltip-row"><span class="valuation-tooltip-key">参考指数</span><span>中证全指通信设备指数</span></span>
+                                    <span class="valuation-tooltip-note">暂无实时估值数据源，本支 ETF 的估值水位将基于历史锚点模式离线研究后更新。</span>
+                                </span>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="valuation-no-data" id="valuation-no-data-515880">
+                        中证全指通信设备指数 暂无实时估值数据源 · 本支 ETF 的估值水位将基于历史锚点模式离线研究后更新
+                    </div>
+                </div>
             </section>
 
             <section class="panel-section panel-tech-analysis fade-in" id="tech-analysis-section-515880">
@@ -528,7 +621,7 @@
 
             <section class="panel-section panel-research fade-in" id="research-section-515880">
                 <h2 class="section-title" id="research-title-515880">📰 行业研究报告</h2>
-                <div class="report-card" id="report-card-515880-1"><p id="report-card-content-515880-1"><span class="report-card-text" id="report-card-text-515880-1">💡 沪深两市今日成交额合计2.59万亿元，中际旭创成交额居首</span><span class="editorial-date" id="research-date-515880-1">2026-04-27</span></p></div><div class="report-card" id="report-card-515880-2"><p id="report-card-content-515880-2"><span class="report-card-text" id="report-card-text-515880-2">💡 低费率通信ETF华夏(515050)连续4日合计“吸金”7.52亿元，光通信全产业链扩散，AI算力硬件赛道成最强风口</span><span class="editorial-date" id="research-date-515880-2">2026-04-27</span></p></div><div class="report-card" id="report-card-515880-3"><p id="report-card-content-515880-3"><span class="report-card-text" id="report-card-text-515880-3">💡 主力资金监控：中际旭创净卖出超25亿</span><span class="editorial-date" id="research-date-515880-3">2026-04-27</span></p></div><div class="report-card" id="report-card-515880-4"><p id="report-card-content-515880-4"><span class="report-card-text" id="report-card-text-515880-4">💡 一季报净利6.38亿元逼近预告上限，光模块业务大增120%！华工科技回应“私人安排”与业绩“换挡”</span><span class="editorial-date" id="research-date-515880-4">2026-04-27</span></p></div>
+                <div class="report-card" id="report-card-515880-1"><p id="report-card-content-515880-1"><span class="report-card-text" id="report-card-text-515880-1">💡 源杰科技业绩爆发，一季度净利大增11倍，低费率通信ETF华夏(515050)连续5天合计“吸金”7.7亿元</span><span class="editorial-date" id="research-date-515880-1">2026-04-28</span></p></div><div class="report-card" id="report-card-515880-2"><p id="report-card-content-515880-2"><span class="report-card-text" id="report-card-text-515880-2">💡 中际旭创跌3.74%，成交额245.18亿元，人气排名8位！后市是否有机会？附走势预测</span><span class="editorial-date" id="research-date-515880-2">2026-04-28</span></p></div><div class="report-card" id="report-card-515880-3"><p id="report-card-content-515880-3"><span class="report-card-text" id="report-card-text-515880-3">💡 沪深两市今日成交额合计2.54万亿元，中际旭创成交额居首</span><span class="editorial-date" id="research-date-515880-3">2026-04-28</span></p></div><div class="report-card" id="report-card-515880-4"><p id="report-card-content-515880-4"><span class="report-card-text" id="report-card-text-515880-4">💡 暴涨380%！中际旭创也来“追光”</span><span class="editorial-date" id="research-date-515880-4">2026-04-28</span></p></div>
                 <div class="rating-section" id="research-rating-section-515880">
                     <div class="rating-card" id="fundamental-rating-card-515880"><div class="rating-label" id="fundamental-rating-label-515880">基本面评分</div><div class="rating-value high" id="fundamental-rating-value-515880">★★★★★</div><div id="fundamental-rating-text-515880">强烈看好</div></div>
                     <div class="rating-card" id="recommendation-rating-card-515880"><div class="rating-label" id="recommendation-rating-label-515880">综合建议</div><div class="rating-value high" id="recommendation-rating-value-515880">★★★★★</div><div id="recommendation-rating-text-515880">强烈推荐</div></div>
@@ -536,61 +629,90 @@
             </section>
         </div>
 
-        <div id="panel-159566" class="etf-panel">
-            <section class="panel-section panel-fund-overview fade-in" id="fund-overview-section-159566">
-                <h2 class="section-title" id="fund-overview-title-159566">📋 易方达国证新能源电池ETF（159566）</h2>
-                <div class="fund-info" id="fund-info-159566">
-                    <div class="info-item" id="fund-code-item-159566"><div class="info-label" id="fund-code-label-159566">基金代码</div><div class="info-value" id="fund-code-value-159566">159566</div></div>
-                    <div class="info-item" id="fund-size-item-159566"><div class="info-label" id="fund-size-label-159566">基金规模</div><div class="info-value" id="fund-size-value-159566">38.90亿元</div></div>
-                    <div class="info-item" id="latest-nav-item-159566"><div class="info-label" id="latest-nav-label-159566">最新收盘价</div><div class="info-value" id="latest-nav-value-159566">2.2960元</div></div>
-                    <div class="info-item" id="daily-change-item-159566"><div class="info-label" id="daily-change-label-159566">日涨跌幅</div><div class="info-value text-red" id="daily-change-value-159566" >-1.42%</div></div>
-                    <div class="info-item" id="benchmark-item-159566"><div class="info-label" id="benchmark-label-159566">业绩基准</div><div class="info-value" id="benchmark-value-159566">创业板指数</div></div>
-                    <div class="info-item" id="fund-type-item-159566"><div class="info-label" id="fund-type-label-159566">基金类型</div><div class="info-value" id="fund-type-value-159566">储能电池</div></div>
+        <div id="panel-159755" class="etf-panel">
+            <section class="panel-section panel-fund-overview fade-in" id="fund-overview-section-159755">
+                <h2 class="section-title" id="fund-overview-title-159755">📋 广发国证新能源车电池ETF（159755）</h2>
+                <div class="fund-info" id="fund-info-159755">
+                    <div class="info-item" id="fund-code-item-159755"><div class="info-label" id="fund-code-label-159755">基金代码</div><div class="info-value" id="fund-code-value-159755">159755</div></div>
+                    <div class="info-item" id="fund-size-item-159755"><div class="info-label" id="fund-size-label-159755">基金规模</div><div class="info-value" id="fund-size-value-159755">38.90亿元</div></div>
+                    <div class="info-item" id="latest-nav-item-159755"><div class="info-label" id="latest-nav-label-159755">最新收盘价</div><div class="info-value" id="latest-nav-value-159755">1.1840元</div></div>
+                    <div class="info-item" id="daily-change-item-159755"><div class="info-label" id="daily-change-label-159755">日涨跌幅</div><div class="info-value text-red" id="daily-change-value-159755" >-1.99%</div></div>
+                    <div class="info-item" id="benchmark-item-159755"><div class="info-label" id="benchmark-label-159755">业绩基准</div><div class="info-value" id="benchmark-value-159755">创业板指</div></div>
+                    <div class="info-item" id="fund-type-item-159755"><div class="info-label" id="fund-type-label-159755">基金类型</div><div class="info-value" id="fund-type-value-159755">电池ETF</div></div>
                 </div>
-                <h3 class="performance-subtitle" id="performance-title-159566">📈 近期业绩表现</h3>
-                <table class="performance-table" id="performance-table-159566"><tr><th>近1月</th><th>近3月</th><th>近6月</th><th>近1年</th></tr><tr><td id="performance-return-1m-159566" class="positive">+1.68%</td><td id="performance-return-3m-159566" class="positive">+4.22%</td><td id="performance-return-6m-159566" class="positive">+10.81%</td><td id="performance-return-1y-159566" class="positive">+88.04%</td></tr></table>
+                <h3 class="performance-subtitle" id="performance-title-159755">📈 近期业绩表现</h3>
+                <table class="performance-table" id="performance-table-159755"><tr><th>近1月</th><th>近3月</th><th>近6月</th><th>近1年</th></tr><tr><td id="performance-return-1m-159755" class="positive">+6.00%</td><td id="performance-return-3m-159755" class="positive">+6.57%</td><td id="performance-return-6m-159755" class="positive">+13.09%</td><td id="performance-return-1y-159755" class="positive">+82.15%</td></tr></table>
+                <div class="valuation-block" id="valuation-block-159755">
+                    <div class="valuation-header" id="valuation-header-159755">
+                        <div class="valuation-title" id="valuation-title-159755">
+                            <span>📐 估值水位</span>
+                            <span class="valuation-info-icon" id="valuation-info-159755" tabindex="0" aria-label="估值说明">
+                                ?
+                                <span class="valuation-tooltip" id="valuation-tooltip-159755">
+                                    <span class="valuation-tooltip-row"><span class="valuation-tooltip-key">指标</span><span>PB</span></span>
+                                    <span class="valuation-tooltip-row"><span class="valuation-tooltip-key">参考指数</span><span>国证新能源车电池指数</span></span>
+                                    <span class="valuation-tooltip-row"><span class="valuation-tooltip-key">口径</span><span>历史百分位 · 1910天</span></span>
+                                    <span class="valuation-tooltip-note">历史百分位 · 真实样本 1910 天</span>
+                                </span>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="valuation-bar-wrap" id="valuation-bar-wrap-159755" title="历史百分位 · 真实样本 1910 天">
+                        <div class="valuation-bar-indicator" id="valuation-bar-indicator-159755" style="left: 44.8%;"></div>
+                    </div>
+                    <div class="valuation-bar-scale">
+                        <span>0</span><span>20</span><span>40</span><span>60</span><span>80</span><span>100</span>
+                    </div>
+                    <div class="valuation-result" id="valuation-result-159755">
+                        <div>
+                            <span class="valuation-percentile-label">历史百分位</span>
+                            <span class="valuation-percentile" id="valuation-percentile-159755">44.8<span style="font-size:1rem;color:#6b7280;">%</span></span>
+                        </div>
+                        <span class="valuation-verdict-chip verdict-gray" id="valuation-verdict-159755">⚪ 合理</span>
+                    </div>
+                </div>
             </section>
 
-            <section class="panel-section panel-tech-analysis fade-in" id="tech-analysis-section-159566">
-                <h2 class="section-title" id="tech-analysis-title-159566">📊 技术面分析</h2>
-                <div class="kline-section" id="kline-section-159566">
-                    <h3 id="kline-title-159566">📈 K线走势图</h3>
-                    <div class="kline-row" id="kline-row-159566">
-                        <div class="kline-card" id="kline-daily-card-159566">
-                            <h4 id="kline-daily-title-159566">📅 日K线（近60个交易日）</h4>
-                            <div id="kline-daily-159566" class="kline-container-small"></div>
+            <section class="panel-section panel-tech-analysis fade-in" id="tech-analysis-section-159755">
+                <h2 class="section-title" id="tech-analysis-title-159755">📊 技术面分析</h2>
+                <div class="kline-section" id="kline-section-159755">
+                    <h3 id="kline-title-159755">📈 K线走势图</h3>
+                    <div class="kline-row" id="kline-row-159755">
+                        <div class="kline-card" id="kline-daily-card-159755">
+                            <h4 id="kline-daily-title-159755">📅 日K线（近60个交易日）</h4>
+                            <div id="kline-daily-159755" class="kline-container-small"></div>
                         </div>
-                        <div class="kline-card" id="kline-weekly-card-159566">
-                            <h4 id="kline-weekly-title-159566">📆 周K线（近52周）</h4>
-                            <div id="kline-weekly-159566" class="kline-container-small"></div>
+                        <div class="kline-card" id="kline-weekly-card-159755">
+                            <h4 id="kline-weekly-title-159755">📆 周K线（近52周）</h4>
+                            <div id="kline-weekly-159755" class="kline-container-small"></div>
                         </div>
                     </div>
                 </div>
 
-                <div class="tech-grid" id="tech-grid-159566">
-                    <div class="tech-card" id="moving-average-card-159566"><h4 id="moving-average-title-159566">📈 均线趋势（周线）</h4><div class="tech-status bullish" id="moving-average-status-159566">震荡上行</div><p class="tech-desc" id="moving-average-desc-159566">价格趋势整体向上，均线系统呈多头排列。</p></div>
-                    <div class="tech-card" id="rsi-card-159566"><h4 id="rsi-title-159566">📉 RSI指标（日线）</h4><div class="tech-status neutral" id="rsi-status-159566">正常区间（40-60）</div><p class="tech-desc" id="rsi-desc-159566">RSI指标状态分析，判断超买超卖情况。</p></div>
-                    <div class="tech-card" id="volume-price-card-159566"><h4 id="volume-price-title-159566">📊 量价关系</h4><div class="tech-status bullish" id="volume-price-status-159566">温和放量</div><p class="tech-desc" id="volume-price-desc-159566">成交量与价格配合情况分析。</p></div>
-                    <div class="tech-card" id="benchmark-comparison-card-159566"><h4 id="benchmark-comparison-title-159566">🎯 基准对比</h4><div class="tech-status bullish" id="benchmark-comparison-status-159566">显著跑赢大盘</div><p class="tech-desc" id="benchmark-comparison-desc-159566">相对基准指数的表现对比。</p></div>
+                <div class="tech-grid" id="tech-grid-159755">
+                    <div class="tech-card" id="moving-average-card-159755"><h4 id="moving-average-title-159755">📈 均线趋势（周线）</h4><div class="tech-status bullish" id="moving-average-status-159755">震荡上行</div><p class="tech-desc" id="moving-average-desc-159755">价格趋势整体向上，均线系统呈多头排列。</p></div>
+                    <div class="tech-card" id="rsi-card-159755"><h4 id="rsi-title-159755">📉 RSI指标（日线）</h4><div class="tech-status neutral" id="rsi-status-159755">正常区间（40-60）</div><p class="tech-desc" id="rsi-desc-159755">RSI指标状态分析，判断超买超卖情况。</p></div>
+                    <div class="tech-card" id="volume-price-card-159755"><h4 id="volume-price-title-159755">📊 量价关系</h4><div class="tech-status bullish" id="volume-price-status-159755">温和放量</div><p class="tech-desc" id="volume-price-desc-159755">成交量与价格配合情况分析。</p></div>
+                    <div class="tech-card" id="benchmark-comparison-card-159755"><h4 id="benchmark-comparison-title-159755">🎯 基准对比</h4><div class="tech-status bullish" id="benchmark-comparison-status-159755">显著跑赢大盘</div><p class="tech-desc" id="benchmark-comparison-desc-159755">相对基准指数的表现对比。</p></div>
                 </div>
-                <div class="rating-section" id="tech-rating-section-159566">
-                    <div class="rating-card" id="tech-rating-card-159566"><div class="rating-label" id="tech-rating-label-159566">技术面评分</div><div class="rating-value high" id="tech-rating-value-159566">★★★★★</div><div id="tech-rating-text-159566">强烈看好</div></div>
+                <div class="rating-section" id="tech-rating-section-159755">
+                    <div class="rating-card" id="tech-rating-card-159755"><div class="rating-label" id="tech-rating-label-159755">技术面评分</div><div class="rating-value high" id="tech-rating-value-159755">★★★★★</div><div id="tech-rating-text-159755">强烈看好</div></div>
                 </div>
             </section>
 
-            <section class="panel-section panel-holdings fade-in" id="holdings-section-159566">
-                <h2 class="section-title" id="holdings-title-159566">💼 前十大持仓股</h2>
-                <p id="holdings-summary-159566">持仓集中度：前十大持仓占比 <span class="highlight-blue" id="holdings-concentration-value-159566">59.12%</span> | 鼠标悬停查看涨跌详情</p>
-                <div id="holdings-chart-159566" ></div>
+            <section class="panel-section panel-holdings fade-in" id="holdings-section-159755">
+                <h2 class="section-title" id="holdings-title-159755">💼 前十大持仓股</h2>
+                <p id="holdings-summary-159755">持仓集中度：前十大持仓占比 <span class="highlight-blue" id="holdings-concentration-value-159755">59.12%</span> | 鼠标悬停查看涨跌详情</p>
+                <div id="holdings-chart-159755" ></div>
 
             </section>
 
-            <section class="panel-section panel-research fade-in" id="research-section-159566">
-                <h2 class="section-title" id="research-title-159566">📰 行业研究报告</h2>
-                <div class="report-card" id="report-card-159566-1"><p id="report-card-content-159566-1"><span class="report-card-text" id="report-card-text-159566-1">💡 头部外资公募一季度持仓揭晓！大摩、小摩重仓光模块，贝莱德减仓宁德时代</span><span class="editorial-date" id="research-date-159566-1">2026-04-27</span></p></div><div class="report-card" id="report-card-159566-2"><p id="report-card-content-159566-2"><span class="report-card-text" id="report-card-text-159566-2">💡 奇瑞汽车与宁德时代签署战略合作协议 将推出换电车型</span><span class="editorial-date" id="research-date-159566-2">2026-04-27</span></p></div><div class="report-card" id="report-card-159566-3"><p id="report-card-content-159566-3"><span class="report-card-text" id="report-card-text-159566-3">💡 电力设备及新能源行业周报：电新板块持仓占比环比回升 宁德时代发布多化学体系电池矩阵</span><span class="editorial-date" id="research-date-159566-3">2026-04-27</span></p></div><div class="report-card" id="report-card-159566-4"><p id="report-card-content-159566-4"><span class="report-card-text" id="report-card-text-159566-4">💡 宁德时代在西宁成立新能源科技公司</span><span class="editorial-date" id="research-date-159566-4">2026-04-27</span></p></div>
-                <div class="rating-section" id="research-rating-section-159566">
-                    <div class="rating-card" id="fundamental-rating-card-159566"><div class="rating-label" id="fundamental-rating-label-159566">基本面评分</div><div class="rating-value medium" id="fundamental-rating-value-159566">★★★★☆</div><div id="fundamental-rating-text-159566">看好</div></div>
-                    <div class="rating-card" id="recommendation-rating-card-159566"><div class="rating-label" id="recommendation-rating-label-159566">综合建议</div><div class="rating-value high" id="recommendation-rating-value-159566">★★★★★</div><div id="recommendation-rating-text-159566">强烈推荐</div></div>
+            <section class="panel-section panel-research fade-in" id="research-section-159755">
+                <h2 class="section-title" id="research-title-159755">📰 行业研究报告</h2>
+                <div class="report-card" id="report-card-159755-1"><p id="report-card-content-159755-1"><span class="report-card-text" id="report-card-text-159755-1">💡 宁德时代，H股一度大跌近10%</span><span class="editorial-date" id="research-date-159755-1">2026-04-28</span></p></div><div class="report-card" id="report-card-159755-2"><p id="report-card-content-159755-2"><span class="report-card-text" id="report-card-text-159755-2">💡 宁德时代钠电池大单落地 我国钠电池专利超1.2万项</span><span class="editorial-date" id="research-date-159755-2">2026-04-28</span></p></div><div class="report-card" id="report-card-159755-3"><p id="report-card-content-159755-3"><span class="report-card-text" id="report-card-text-159755-3">💡 宁德时代拟配售6239万股新H股  净筹391.1亿港元</span><span class="editorial-date" id="research-date-159755-3">2026-04-28</span></p></div><div class="report-card" id="report-card-159755-4"><p id="report-card-content-159755-4"><span class="report-card-text" id="report-card-text-159755-4">💡 60GWh！宁德时代获全球最大钠离子电池订单</span><span class="editorial-date" id="research-date-159755-4">2026-04-28</span></p></div>
+                <div class="rating-section" id="research-rating-section-159755">
+                    <div class="rating-card" id="fundamental-rating-card-159755"><div class="rating-label" id="fundamental-rating-label-159755">基本面评分</div><div class="rating-value medium" id="fundamental-rating-value-159755">★★★★☆</div><div id="fundamental-rating-text-159755">看好</div></div>
+                    <div class="rating-card" id="recommendation-rating-card-159755"><div class="rating-label" id="recommendation-rating-label-159755">综合建议</div><div class="rating-value high" id="recommendation-rating-value-159755">★★★★★</div><div id="recommendation-rating-text-159755">强烈推荐</div></div>
                 </div>
             </section>
         </div>
@@ -601,13 +723,42 @@
                 <div class="fund-info" id="fund-info-159865">
                     <div class="info-item" id="fund-code-item-159865"><div class="info-label" id="fund-code-label-159865">基金代码</div><div class="info-value" id="fund-code-value-159865">159865</div></div>
                     <div class="info-item" id="fund-size-item-159865"><div class="info-label" id="fund-size-label-159865">基金规模</div><div class="info-value" id="fund-size-value-159865">以最新披露为准</div></div>
-                    <div class="info-item" id="latest-nav-item-159865"><div class="info-label" id="latest-nav-label-159865">最新收盘价</div><div class="info-value" id="latest-nav-value-159865">0.5950元</div></div>
-                    <div class="info-item" id="daily-change-item-159865"><div class="info-label" id="daily-change-label-159865">日涨跌幅</div><div class="info-value text-red" id="daily-change-value-159865" >-0.67%</div></div>
+                    <div class="info-item" id="latest-nav-item-159865"><div class="info-label" id="latest-nav-label-159865">最新收盘价</div><div class="info-value" id="latest-nav-value-159865">0.6000元</div></div>
+                    <div class="info-item" id="daily-change-item-159865"><div class="info-label" id="daily-change-label-159865">日涨跌幅</div><div class="info-value text-green" id="daily-change-value-159865" >+0.84%</div></div>
                     <div class="info-item" id="benchmark-item-159865"><div class="info-label" id="benchmark-label-159865">业绩基准</div><div class="info-value" id="benchmark-value-159865">沪深300指数</div></div>
                     <div class="info-item" id="fund-type-item-159865"><div class="info-label" id="fund-type-label-159865">基金类型</div><div class="info-value" id="fund-type-value-159865">畜牧养殖</div></div>
                 </div>
                 <h3 class="performance-subtitle" id="performance-title-159865">📈 近期业绩表现</h3>
-                <table class="performance-table" id="performance-table-159865"><tr><th>近1月</th><th>近3月</th><th>近6月</th><th>近1年</th></tr><tr><td id="performance-return-1m-159865" class="negative">-2.46%</td><td id="performance-return-3m-159865" class="negative">-5.25%</td><td id="performance-return-6m-159865" class="negative">-6.74%</td><td id="performance-return-1y-159865" class="positive">+1.88%</td></tr></table>
+                <table class="performance-table" id="performance-table-159865"><tr><th>近1月</th><th>近3月</th><th>近6月</th><th>近1年</th></tr><tr><td id="performance-return-1m-159865" class="negative">-1.80%</td><td id="performance-return-3m-159865" class="negative">-6.54%</td><td id="performance-return-6m-159865" class="negative">-5.96%</td><td id="performance-return-1y-159865" class="positive">+2.74%</td></tr></table>
+                <div class="valuation-block" id="valuation-block-159865">
+                    <div class="valuation-header" id="valuation-header-159865">
+                        <div class="valuation-title" id="valuation-title-159865">
+                            <span>📐 估值水位</span>
+                            <span class="valuation-info-icon" id="valuation-info-159865" tabindex="0" aria-label="估值说明">
+                                ?
+                                <span class="valuation-tooltip" id="valuation-tooltip-159865">
+                                    <span class="valuation-tooltip-row"><span class="valuation-tooltip-key">指标</span><span>PB</span></span>
+                                    <span class="valuation-tooltip-row"><span class="valuation-tooltip-key">参考指数</span><span>中证畜牧养殖指数</span></span>
+                                    <span class="valuation-tooltip-row"><span class="valuation-tooltip-key">口径</span><span>历史百分位 · 2014天</span></span>
+                                    <span class="valuation-tooltip-note">历史百分位 · 真实样本 2014 天</span>
+                                </span>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="valuation-bar-wrap" id="valuation-bar-wrap-159865" title="历史百分位 · 真实样本 2014 天">
+                        <div class="valuation-bar-indicator" id="valuation-bar-indicator-159865" style="left: 1.9%;"></div>
+                    </div>
+                    <div class="valuation-bar-scale">
+                        <span>0</span><span>20</span><span>40</span><span>60</span><span>80</span><span>100</span>
+                    </div>
+                    <div class="valuation-result" id="valuation-result-159865">
+                        <div>
+                            <span class="valuation-percentile-label">历史百分位</span>
+                            <span class="valuation-percentile" id="valuation-percentile-159865">1.9<span style="font-size:1rem;color:#6b7280;">%</span></span>
+                        </div>
+                        <span class="valuation-verdict-chip verdict-deep-green" id="valuation-verdict-159865">🟢 极度低估</span>
+                    </div>
+                </div>
             </section>
 
             <section class="panel-section panel-tech-analysis fade-in" id="tech-analysis-section-159865">
@@ -646,7 +797,7 @@
 
             <section class="panel-section panel-research fade-in" id="research-section-159865">
                 <h2 class="section-title" id="research-title-159865">📰 行业研究报告</h2>
-                <div class="report-card" id="report-card-159865-1"><p id="report-card-content-159865-1"><span class="report-card-text" id="report-card-text-159865-1">💡 东方证券农林牧渔行业周报：厄尔尼诺将如何影响农产品定价</span><span class="editorial-date" id="research-date-159865-1">2026-04-27</span></p></div><div class="report-card" id="report-card-159865-2"><p id="report-card-content-159865-2"><span class="report-card-text" id="report-card-text-159865-2">💡 农业ETF天弘（512620）近30个交易日净流入超4亿元，印尼将全国强制执行B50生物柴油政策，棕榈油掺混比例提至50%</span><span class="editorial-date" id="research-date-159865-2">2026-04-27</span></p></div><div class="report-card" id="report-card-159865-3"><p id="report-card-content-159865-3"><span class="report-card-text" id="report-card-text-159865-3">💡 海大集团新增质押100万股 质押占总股本比例为0.06%</span><span class="editorial-date" id="research-date-159865-3">2026-04-27</span></p></div><div class="report-card" id="report-card-159865-4"><p id="report-card-content-159865-4"><span class="report-card-text" id="report-card-text-159865-4">💡 前海开源中证大农业指数增强季报解读：C类份额赎回率109% 净值跑输基准超2个百分点</span><span class="editorial-date" id="research-date-159865-4">2026-04-27</span></p></div>
+                <div class="report-card" id="report-card-159865-1"><p id="report-card-content-159865-1"><span class="report-card-text" id="report-card-text-159865-1">💡 养殖ETF鹏华(159867)午后翻红，板块政策催化不断</span><span class="editorial-date" id="research-date-159865-1">2026-04-28</span></p></div><div class="report-card" id="report-card-159865-2"><p id="report-card-content-159865-2"><span class="report-card-text" id="report-card-text-159865-2">💡 猪肉概念震荡走高 天邦食品涨超6%</span><span class="editorial-date" id="research-date-159865-2">2026-04-28</span></p></div><div class="report-card" id="report-card-159865-3"><p id="report-card-content-159865-3"><span class="report-card-text" id="report-card-text-159865-3">💡 养殖ETF鹏华(159867)盘中净申购1200万份，机构指出政策与市场合力之下产能去化有望加快</span><span class="editorial-date" id="research-date-159865-3">2026-04-28</span></p></div><div class="report-card" id="report-card-159865-4"><p id="report-card-content-159865-4"><span class="report-card-text" id="report-card-text-159865-4">💡 养殖ETF鹏华(159867)冲刺连续5日净流入，生猪陷入亏损区间，机构称后续存在修复空间</span><span class="editorial-date" id="research-date-159865-4">2026-04-28</span></p></div>
                 <div class="rating-section" id="research-rating-section-159865">
                     <div class="rating-card" id="fundamental-rating-card-159865"><div class="rating-label" id="fundamental-rating-label-159865">基本面评分</div><div class="rating-value medium" id="fundamental-rating-value-159865">★★★☆☆</div><div id="fundamental-rating-text-159865">中性</div></div>
                     <div class="rating-card" id="recommendation-rating-card-159865"><div class="rating-label" id="recommendation-rating-label-159865">综合建议</div><div class="rating-value medium" id="recommendation-rating-value-159865">★★★☆☆</div><div id="recommendation-rating-text-159865">关注</div></div>
@@ -659,9 +810,11 @@
             <section class="macro-section fade-in" id="macro-environment-section">
                 <h2 class="section-title" id="macro-environment-title">🌍 宏观经济环境分析</h2>
                 <div class="macro-grid" id="macro-environment-grid">
-                    <div class="macro-card" id="domestic-policy-card"><h3 id="domestic-policy-card-title">🇨🇳 国内政策与事件</h3><ul id="domestic-policy-card-list"><li id="domestic-policy-card-item-1"><span class="macro-item-text" id="domestic-policy-card-text-1"><span class="macro-item-content" id="domestic-policy-card-content-1">英国央行预计本周将维持利率在3.75%不变，拟启动“长周期能源冲击”压力测试以对冲风险</span><span class="editorial-date" id="editorial-date-domestic-policy-card-1">2026-04-27</span></span></li><li id="domestic-policy-card-item-2"><span class="macro-item-text" id="domestic-policy-card-text-2"><span class="macro-item-content" id="domestic-policy-card-content-2">前董事长在美疑涉强奸指控，A股公司回应</span><span class="editorial-date" id="editorial-date-domestic-policy-card-2">2026-04-27</span></span></li><li id="domestic-policy-card-item-3"><span class="macro-item-text" id="domestic-policy-card-text-3"><span class="macro-item-content" id="domestic-policy-card-content-3">主要央行在加息问题上采取拖延战术</span><span class="editorial-date" id="editorial-date-domestic-policy-card-3">2026-04-27</span></span></li><li id="domestic-policy-card-item-4"><span class="macro-item-text" id="domestic-policy-card-text-4"><span class="macro-item-content" id="domestic-policy-card-content-4">各国主要央行暂缓加息</span><span class="editorial-date" id="editorial-date-domestic-policy-card-4">2026-04-27</span></span></li></ul></div>
-                    <div class="macro-card" id="global-news-card"><h3 id="global-news-card-title">🌐 国际重大新闻</h3><ul id="global-news-card-list"><li id="global-news-card-item-1"><span class="macro-item-text" id="global-news-card-text-1"><span class="macro-item-content" id="global-news-card-content-1">两位以色列政坛要员宣布复出 联手挑战内塔尼亚胡</span><span class="editorial-date" id="editorial-date-global-news-card-1">2026-04-27</span></span></li><li id="global-news-card-item-2"><span class="macro-item-text" id="global-news-card-text-2"><span class="macro-item-content" id="global-news-card-content-2">伊朗和谈陷入停滞，原油涨幅超 2%</span><span class="editorial-date" id="editorial-date-global-news-card-2">2026-04-27</span></span></li><li id="global-news-card-item-3"><span class="macro-item-text" id="global-news-card-text-3"><span class="macro-item-content" id="global-news-card-content-3">中东冲突下的地缘局势、能源格局与宏观影响</span><span class="editorial-date" id="editorial-date-global-news-card-3">2026-04-27</span></span></li><li id="global-news-card-item-4"><span class="macro-item-text" id="global-news-card-text-4"><span class="macro-item-content" id="global-news-card-content-4">取消巴基斯坦行程，特朗普伊朗和谈陷入两难抉择</span><span class="editorial-date" id="editorial-date-global-news-card-4">2026-04-27</span></span></li></ul></div>
-                    <div class="macro-card" id="market-sentiment-card"><h3 id="market-sentiment-card-title">📊 市场情绪分析</h3><ul id="market-sentiment-card-list"><li id="market-sentiment-card-item-1"><span class="macro-item-text" id="market-sentiment-card-text-1"><span class="macro-item-content" id="market-sentiment-card-content-1">周一，A股，两大好消息！</span><span class="editorial-date" id="editorial-date-market-sentiment-card-1">2026-04-27</span></span></li><li id="market-sentiment-card-item-2"><span class="macro-item-text" id="market-sentiment-card-text-2"><span class="macro-item-content" id="market-sentiment-card-content-2">英国央行预计本周将维持利率在3.75%不变，拟启动“长周期能源冲击”压力测试以对冲风险</span><span class="editorial-date" id="editorial-date-market-sentiment-card-2">2026-04-27</span></span></li><li id="market-sentiment-card-item-3"><span class="macro-item-text" id="market-sentiment-card-text-3"><span class="macro-item-content" id="market-sentiment-card-content-3">前董事长在美疑涉强奸指控，A股公司回应</span><span class="editorial-date" id="editorial-date-market-sentiment-card-3">2026-04-27</span></span></li><li id="market-sentiment-card-item-4"><span class="macro-item-text" id="market-sentiment-card-text-4"><span class="macro-item-content" id="market-sentiment-card-content-4">日经指数上涨1.4% 首次收于60000点上方</span><span class="editorial-date" id="editorial-date-market-sentiment-card-4">2026-04-27</span></span></li></ul></div>
+                    <div class="macro-card" id="domestic-policy-card"><h3 id="domestic-policy-card-title">🇨🇳 国内政策与事件</h3><ul id="domestic-policy-card-list"><li id="domestic-policy-card-item-1"><span class="macro-item-text" id="domestic-policy-card-text-1"><span class="macro-item-content" id="domestic-policy-card-content-1">日本央行行长植田和男：如果经济不出现大幅放缓 央行仍有可能加息</span><span class="editorial-date" id="editorial-date-domestic-policy-card-1">2026-04-28</span></span></li><li id="domestic-policy-card-item-2"><span class="macro-item-text" id="domestic-policy-card-text-2"><span class="macro-item-content" id="domestic-policy-card-content-2">A股弱势震荡收跌，两市成交25364亿元</span><span class="editorial-date" id="editorial-date-domestic-policy-card-2">2026-04-28</span></span></li><li id="domestic-policy-card-item-3"><span class="macro-item-text" id="domestic-policy-card-text-3"><span class="macro-item-content" id="domestic-policy-card-content-3">一字跌停！002779，被证监会立案</span><span class="editorial-date" id="editorial-date-domestic-policy-card-3">2026-04-28</span></span></li><li id="domestic-policy-card-item-4"><span class="macro-item-text" id="domestic-policy-card-text-4"><span class="macro-item-content" id="domestic-policy-card-content-4">央行上海总部：3月上海新发放企业贷款加权平均利率2.63%，较上年同期下降22个基点</span><span class="editorial-date" id="editorial-date-domestic-policy-card-4">2026-04-28</span></span></li></ul></div>
+                    <div class="macro-card" id="global-news-card"><h3 id="global-news-card-title">🌐 国际重大新闻</h3><ul id="global-news-card-list"><li id="global-news-card-item-1"><span class="macro-item-text" id="global-news-card-text-1"><span class="macro-item-content" id="global-news-card-content-1">伊朗战争爆发以来 似乎首次有液化天然气运输船通过霍尔木兹海峡</span><span class="editorial-date" id="editorial-date-global-news-card-1">2026-04-28</span></span></li><li id="global-news-card-item-2"><span class="macro-item-text" id="global-news-card-text-2"><span class="macro-item-content" id="global-news-card-content-2">日本央行行长植田和男：如果经济不出现大幅放缓 央行仍有可能加息</span><span class="editorial-date" id="editorial-date-global-news-card-2">2026-04-28</span></span></li><li id="global-news-card-item-3"><span class="macro-item-text" id="global-news-card-text-3"><span class="macro-item-content" id="global-news-card-content-3">特朗普对伊朗重启霍尔木兹海峡通航的计划表示不满</span><span class="editorial-date" id="editorial-date-global-news-card-3">2026-04-28</span></span></li><li id="global-news-card-item-4"><span class="macro-item-text" id="global-news-card-text-4"><span class="macro-item-content" id="global-news-card-content-4">日本公司Terra Drone扩大对乌克兰无人机行业的投资</span><span class="editorial-date" id="editorial-date-global-news-card-4">2026-04-28</span></span></li></ul></div>
+                    <div class="macro-card" id="market-sentiment-card"><h3 id="market-sentiment-card-title">📊 市场情绪分析</h3><ul id="market-sentiment-card-list"><li id="market-sentiment-card-item-1"><span class="macro-item-text" id="market-sentiment-card-text-1"><span class="macro-item-content" id="market-sentiment-card-content-1">A股弱势震荡收跌，两市成交25364亿元</span><span class="editorial-date" id="editorial-date-market-sentiment-card-1">2026-04-28</span></span></li><li id="market-sentiment-card-item-2"><span class="macro-item-text" id="market-sentiment-card-text-2"><span class="macro-item-content" id="market-sentiment-card-content-2">2026，投资理财选择芝麻AI助手，这五大优势让你无法拒绝</span><span class="editorial-date" id="editorial-date-market-sentiment-card-2">2026-04-28</span></span></li><li id="market-sentiment-card-item-3"><span class="macro-item-text" id="market-sentiment-card-text-3"><span class="macro-item-content" id="market-sentiment-card-content-3">沪深两市今日成交额合计25363.08亿元</span><span class="editorial-date" id="editorial-date-market-sentiment-card-3">2026-04-28</span></span></li><li id="market-sentiment-card-item-4"><span class="macro-item-text" id="market-sentiment-card-text-4"><span class="macro-item-content" id="market-sentiment-card-content-4">上证指数收报4078.64点，跌0.19%。
+
+深证成指收报14830.46点，跌1.…</span><span class="editorial-date" id="editorial-date-market-sentiment-card-4">2026-04-28</span></span></li></ul></div>
                 </div>
             </section>
 
@@ -729,7 +882,7 @@
                             <td id="industry-allocation-table-reason-4">AI算力需求爆发，业绩高增长确定性强</td>
                         </tr>
                         <tr id="industry-allocation-table-row-5">
-                            <td id="industry-allocation-table-industry-5">储能电池</td>
+                            <td id="industry-allocation-table-industry-5">电池ETF</td>
                             <td id="industry-allocation-table-risk-preference-5">积极型</td>
                             <td class="rating-stars" id="industry-allocation-table-allocation-5"><span class="filled">★★★★★</span></td>
                             <td id="industry-allocation-table-reason-5">储能需求超预期，龙头业绩确定性强</td>
@@ -763,14 +916,112 @@
             </section>
         </div>
 
+        <!-- 量化回测面板 -->
+        <div id="panel-quant" class="etf-panel">
+
+            <!-- Section 1: 策略模板 + 参数配置 -->
+            <section class="panel-section fade-in" id="quant-params-section">
+                <h2 class="section-title" id="quant-params-title">⚙️ 策略模板</h2>
+                <div id="quant-template-buttons" style="display:flex; gap:12px; margin-bottom:20px;">
+                    <button class="nav-tab" id="quant-tpl-btn-conservative" onclick="window.__switchQuantTemplate('conservative')">🛡️ 保守型</button>
+                    <button class="nav-tab" id="quant-tpl-btn-balanced" onclick="window.__switchQuantTemplate('balanced')">⚖️ 均衡型</button>
+                    <button class="nav-tab" id="quant-tpl-btn-aggressive" onclick="window.__switchQuantTemplate('aggressive')">🚀 激进型</button>
+                </div>
+                <div id="quant-template-desc" style="font-size:13px; color:#94a3b8; margin-bottom:16px;"></div>
+                <div id="quant-param-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(280px, 1fr)); gap:16px;"></div>
+            </section>
+
+            <!-- Section 2: 回测总览 -->
+            <section class="panel-section fade-in" id="quant-overview-section" style="margin-top:24px;">
+                <h2 class="section-title" id="quant-overview-title">📈 回测总览</h2>
+
+                <!-- 绩效指标卡片 -->
+                <div id="quant-metric-cards" style="display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:20px;">
+                    <div class="overview-card" id="quant-metric-total-return" style="text-align:center; padding:18px 16px;">
+                        <div style="font-size:12px; color:#94a3b8; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">总收益率</div>
+                        <div id="quant-metric-total-return-value" style="font-size:26px; font-weight:700; color:#e0e0e0;">--</div>
+                    </div>
+                    <div class="overview-card" id="quant-metric-annual-return" style="text-align:center; padding:18px 16px;">
+                        <div style="font-size:12px; color:#94a3b8; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">年化收益率</div>
+                        <div id="quant-metric-annual-return-value" style="font-size:26px; font-weight:700; color:#e0e0e0;">--</div>
+                    </div>
+                    <div class="overview-card" id="quant-metric-max-drawdown" style="text-align:center; padding:18px 16px;">
+                        <div style="font-size:12px; color:#94a3b8; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">最大回撤</div>
+                        <div id="quant-metric-max-drawdown-value" style="font-size:26px; font-weight:700; color:#e0e0e0;">--</div>
+                    </div>
+                    <div class="overview-card" id="quant-metric-sharpe" style="text-align:center; padding:18px 16px;">
+                        <div style="font-size:12px; color:#94a3b8; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">夏普比率</div>
+                        <div id="quant-metric-sharpe-value" style="font-size:26px; font-weight:700; color:#e0e0e0;">--</div>
+                    </div>
+                </div>
+
+                <!-- 扩展指标 -->
+                <div id="quant-metric-extended" style="display:flex; flex-wrap:wrap; gap:16px 24px; margin-bottom:20px; font-size:13px; color:#94a3b8;"></div>
+
+                <!-- 净值曲线（主体2/3） + 回撤/频率（右侧1/3上下） -->
+                <div style="display:grid; grid-template-columns:2fr 1fr; grid-template-rows:1fr 1fr; gap:16px;">
+                    <div class="chart-card" id="quant-nav-chart-card" style="grid-row:1/3;">
+                        <h3 style="font-size:14px; color:#94a3b8; margin:0 0 12px; font-weight:600;">净值曲线 &middot; 沪深300 &middot; 等权对比 <span style="font-size:11px; color:#64748b;">(点击任意位置查看调仓快照)</span></h3>
+                        <div id="quant-nav-chart" style="width:100%; height:440px;"></div>
+                    </div>
+                    <div class="chart-card" id="quant-drawdown-chart-card">
+                        <h3 style="font-size:14px; color:#94a3b8; margin:0 0 12px; font-weight:600;">回撤曲线</h3>
+                        <div id="quant-drawdown-chart" style="width:100%; height:180px;"></div>
+                    </div>
+                    <div class="chart-card" id="quant-freq-chart-card">
+                        <h3 style="font-size:14px; color:#94a3b8; margin:0 0 12px; font-weight:600;">调仓频率统计</h3>
+                        <div id="quant-freq-chart" style="width:100%; height:180px;"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 3: 周维度快照（联动区） -->
+            <section class="panel-section fade-in" id="quant-snapshot-section" style="margin-top:24px;">
+                <h2 class="section-title" id="quant-snapshot-title">🔍 调仓快照</h2>
+                <div id="quant-snapshot-subtitle" style="font-size:13px; color:#94a3b8; margin-bottom:16px;">选中最新一周</div>
+
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                    <div class="chart-card" id="quant-snapshot-ranking-card">
+                        <h3 style="font-size:14px; color:#94a3b8; margin:0 0 12px; font-weight:600;">综合打分排名</h3>
+                        <div id="quant-snapshot-ranking" style="max-height:480px; overflow-y:auto;"></div>
+                    </div>
+                    <div class="chart-card" id="quant-snapshot-position-card">
+                        <h3 style="font-size:14px; color:#94a3b8; margin:0 0 12px; font-weight:600;">目标仓位分配</h3>
+                        <div id="quant-snapshot-position-chart" style="width:100%; height:340px;"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 4: 最新仓位建议 -->
+            <section class="panel-section fade-in" id="quant-latest-signal-section" style="margin-top:24px;">
+                <h2 class="section-title" id="quant-latest-signal-title">📋 最新仓位建议</h2>
+                <div id="quant-latest-signal-subtitle" style="font-size:13px; color:#94a3b8; margin-bottom:16px;"></div>
+                <div id="quant-latest-signal-table" style="overflow-x:auto;"></div>
+            </section>
+
+            <!-- Section 5: 周度风控挂单 -->
+            <section class="panel-section fade-in" id="quant-risk-orders-section" style="margin-top:24px;">
+                <h2 class="section-title" id="quant-risk-orders-title">🛡️ 周度风控挂单</h2>
+                <div id="quant-risk-orders-subtitle" style="font-size:13px; color:#94a3b8; margin-bottom:16px;"></div>
+                <div id="quant-risk-orders-table" style="overflow-x:auto;"></div>
+            </section>
+
+            <!-- 量化面板 footer -->
+            <div id="quant-footer" style="text-align:center; padding:20px 0 8px; color:#64748b; font-size:12px;">
+                REQ-177 M3.1 &middot; 回测数据生成于 <span id="quant-generated-at">--</span>
+            </div>
+        </div>
+
         <footer class="footer">
-            <p>📊 数据分析报告 | 生成时间: 2026-04-27</p>
+            <p>📊 数据分析报告 | 生成时间: 2026-04-28</p>
             <p class="disclaimer">本报告仅供参考，不构成投资建议。投资者应根据自身情况独立决策。</p>
         </footer>
     </div>
 
     <script src="./data/runtime_payload.js"></script>
+    <script src="./data/quant_payload.js"></script>
     <script src="./assets/js/report-main.js"></script>
+    <script src="./assets/js/quant-main.js"></script>
     <script src="./assets/js/debug-toolbar.js"></script>
 
 
