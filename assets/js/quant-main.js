@@ -85,48 +85,9 @@
 
   // ── Params ────────────────────────────────────────────────
   function renderParams() {
-    var cfg = Q.config[activeTemplate];
-    var grid = document.getElementById("quant-param-grid");
-    if (!grid || !cfg) return;
-
-    var groups = [
-      { id:"quant-param-weights", title:"因子权重", items:[
-        ["EMA 偏离度",(cfg.scoring.weights.ema_deviation*100).toFixed(0)+"%"],
-        ["RSI 自适应",(cfg.scoring.weights.rsi_adaptive*100).toFixed(0)+"%"],
-        ["方向性量比",(cfg.scoring.weights.volume_ratio*100).toFixed(0)+"%"],
-        ["偏好加成",cfg.scoring.bias_bonus+" 分"],
-      ]},
-      { id:"quant-param-confidence", title:"信心函数", items:[
-        ["函数类型",cfg.confidence.type],
-        ["死区阈值","< "+cfg.confidence.dead_zone+" 分"],
-        ["满配阈值",">= "+cfg.confidence.full_zone+" 分"],
-      ]},
-      { id:"quant-param-position", title:"仓位控制", items:[
-        ["最大持仓",cfg.position.max_holdings+" 支"],
-        ["离散化步长",(cfg.position.discretize_step*100).toFixed(0)+"%"],
-      ]},
-      { id:"quant-param-factors", title:"因子参数", items:[
-        ["EMA周期",cfg.factors.ema.period_weeks+" 周"],
-        ["RSI周期",cfg.factors.rsi.period_days+" 日"],
-        ["量比窗口",cfg.factors.volume_ratio.window_days+" 日"],
-      ]},
-    ];
-
-    var cs='background:rgba(17,34,64,0.55);border:1px solid rgba(59,130,246,0.1);border-radius:12px;padding:18px;';
-    var ts='font-size:14px;color:#3b82f6;margin:0 0 14px;font-weight:600;';
-    var rs='display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.04);';
-
-    var html="";
-    for(var g=0;g<groups.length;g++){
-      html+='<div id="'+groups[g].id+'" style="'+cs+'"><h3 style="'+ts+'">'+groups[g].title+'</h3>';
-      for(var p=0;p<groups[g].items.length;p++){
-        var last=p===groups[g].items.length-1;
-        var r=last?rs.replace('border-bottom:1px solid rgba(255,255,255,0.04);',''):rs;
-        html+='<div style="'+r+'"><span style="font-size:13px;color:#94a3b8;">'+groups[g].items[p][0]+'</span><span style="font-size:13px;color:#e0e0e0;font-weight:600;font-family:monospace;">'+groups[g].items[p][1]+'</span></div>';
-      }
-      html+='</div>';
-    }
-    grid.innerHTML=html;
+    // 正式页面为纯展示模式，参数卡片已在HTML中静态展示
+    // 此函数保留但不执行动态渲染
+    return;
   }
 
   // ── Metric Cards ──────────────────────────────────────────
