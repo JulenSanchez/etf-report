@@ -49,15 +49,8 @@
   };
 
   window.__switchQuantTemplate = function (tid) {
-    if (!Q.templates[tid]) return;
-    activeTemplate = tid;
-
-    // Update button active state
-    document.querySelectorAll("#quant-template-buttons .nav-tab").forEach(function(b){ b.classList.remove("active"); });
-    var btn = document.getElementById("quant-tpl-btn-" + tid);
-    if (btn) btn.classList.add("active");
-
-    renderAll();
+    // 正式页面为纯展示模式，不支持模板切换
+    console.log('[quant-main] Template switching disabled in formal page');
   };
 
   // ── Master render ─────────────────────────────────────────
