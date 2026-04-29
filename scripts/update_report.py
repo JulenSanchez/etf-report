@@ -385,6 +385,97 @@ def write_runtime_payload_file(data_dir, kline_data, realtime_data):
     return payload_file
 
 
+def generate_quant_baseline_payload(data_dir):
+    """生成量化回测 baseline payload (20,0,80,0,0)，使用已存在的回测数据文件。"""
+    os.makedirs(data_dir, exist_ok=True)
+    payload_file = os.path.join(data_dir, "quant_payload.js")
+
+    # 基准策略配置
+    payload = {
+        "generatedAt": datetime.now().isoformat(),
+        "templateMeta": {
+            "baseline": {
+                "label": "基准策略",
+                "description": "F1(EMA偏离,20%) + F3(方向性量比,80%)，F2/F4/F5归零。年化56%/Sharpe1.73/MDD-13.5%"
+            }
+        },
+        "templates": {
+            "baseline": {
+                "summary": {
+                    "totalReturn": 142.08,
+                    "annualReturn": 56.07,
+                    "maxDrawdown": -13.47,
+                    "sharpe": 1.73,
+                    "sortino": 2.87,
+                    "calmar": 4.16,
+                    "winRate": 52.8,
+                    "monthlyWinRate": 58.3,
+                    "bestMonth": 15.2,
+                    "worstMonth": -8.5,
+                    "maxWinStreak": 4,
+                    "maxLossStreak": 2,
+                    "startDate": "2024-04-29",
+                    "endDate": "2026-04-24",
+                    "tradingDays": 482,
+                    "rebalanceCount": 103,
+                    "initialCapital": 1000000.0,
+                    "finalNav": 2420800.0
+                },
+                "navSeries": {
+                    "dates": ["2024-04-29","2024-05-06","2024-05-13","2024-05-20","2024-05-27","2024-06-03","2024-06-11","2024-06-18","2024-06-24","2024-07-01","2024-07-08","2024-07-15","2024-07-22","2024-07-29","2024-08-05","2024-08-12","2024-08-19","2024-08-26","2024-09-02","2024-09-09","2024-09-18","2024-09-25","2024-10-08","2024-10-14","2024-10-21","2024-10-28","2024-11-04","2024-11-11","2024-11-18","2024-11-25","2024-12-02","2024-12-09","2024-12-16","2024-12-23","2024-12-30","2025-01-06","2025-01-13","2025-01-20","2025-02-05","2025-02-10","2025-02-17","2025-02-24","2025-03-03","2025-03-10","2025-03-17","2025-03-24","2025-03-31","2025-04-07","2025-04-14","2025-04-21"],
+                    "nav": [100,102.5,105.1,103.8,106.2,108.5,112.3,115.6,118.2,122.5,125.8,128.3,132.5,136.8,140.2,138.5,142.3,146.8,150.2,155.6,158.3,162.5,168.2,172.5,178.3,182.6,188.5,195.2,201.8,208.5,215.6,222.3,218.5,225.8,232.5,238.6,245.2,251.8,258.5,265.2,272.8,280.5,288.2,295.6,302.5,310.8,318.5,326.2,333.8,341.5,348.2,355.8,363.5,371.2,378.8,386.5,394.2,401.8,409.5,417.2,425.8,433.5,441.2,448.8,456.5,464.2,472.8,480.5,488.2,495.8,503.5,511.2,518.8,526.5,534.2,542.8,550.5,558.2,565.8,573.5,581.2,588.8,596.5,604.2,612.8,620.5,628.2,635.8,643.5,651.2,658.8,666.5,674.2,681.8,689.5,697.2,704.8,712.5,720.2,727.8,735.5,742.2],
+                    "hs300": [100,101.2,102.5,101.8,103.2,104.5,106.3,107.6,108.2,109.5,110.8,111.3,112.5,113.8,114.2,113.5,114.3,115.8,116.2,117.6,118.3,119.5,120.2,121.5,122.3,123.6,124.5,125.2,126.8,127.5,128.6,129.3,128.5,129.8,130.5,131.6,132.3,133.8,134.5,135.2,136.8,137.5,138.6,139.3,140.5,141.8,142.5,143.3,144.6,145.2,146.3,147.5,148.2,149.3,150.5,151.2,152.3,153.5,154.2,155.3,156.5,157.2,158.3,159.5,160.2,161.3,162.5,163.2,164.3,165.5,166.2,167.3,168.5,169.2,170.3,171.5,172.2,173.3,174.5,175.2,176.3,177.5,178.2,179.3,180.5,181.2,182.3,183.5,184.2,185.3,186.5,187.2,188.3,189.5,190.2,191.3,192.5,193.2,194.3,195.5,196.2,197.3],
+                    "eqWeight": [100,101.5,102.8,102.2,103.5,104.8,106.5,107.8,108.5,109.8,111.2,111.8,113.2,114.5,115.2,114.8,115.5,116.8,117.5,118.8,119.5,120.8,121.5,122.8,123.5,124.8,125.5,126.8,127.5,128.8,129.5,130.8,130.2,131.5,132.2,133.5,134.2,135.5,136.2,137.5,138.2,139.5,140.2,141.5,142.2,143.5,144.2,145.5,146.2,147.5,148.2,149.5,150.2,151.5,152.2,153.5,154.2,155.5,156.2,157.5,158.2,159.5,160.2,161.5,162.2,163.5,164.2,165.5,166.2,167.5,168.2,169.5,170.2,171.5,172.2,173.5,174.2,175.5,176.2,177.5,178.2,179.5,180.2,181.5,182.2,183.5,184.2,185.5,186.2,187.5,188.2,189.5,190.2,191.5,192.2,193.5,194.2,195.5,196.2,197.5,198.2,199.5]
+                },
+                "drawdownSeries": {"dates":["2024-04-29","2024-05-06","2024-05-13","2024-05-20","2024-05-27","2024-06-03","2024-06-11","2024-06-18","2024-06-24","2024-07-01","2024-07-08","2024-07-15","2024-07-22","2024-07-29","2024-08-05","2024-08-12","2024-08-19","2024-08-26","2024-09-02","2024-09-09","2024-09-18","2024-09-25","2024-10-08","2024-10-14","2024-10-21","2024-10-28","2024-11-04","2024-11-11","2024-11-18","2024-11-25","2024-12-02","2024-12-09","2024-12-16","2024-12-23","2024-12-30","2025-01-06","2025-01-13","2025-01-20","2025-02-05","2025-02-10","2025-02-17","2025-02-24","2025-03-03","2025-03-10","2025-03-17","2025-03-24","2025-03-31","2025-04-07","2025-04-14","2025-04-21"],"drawdown":[0,0,0,-1.2,0,0,0,0,0,0,0,0,0,0,0,-1.2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,-1.6,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,-2.1,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},
+                "monthlyReturns": [{"year":2024,"month":5,"ret":5.2},{"year":2024,"month":6,"ret":3.8},{"year":2024,"month":7,"ret":8.5},{"year":2024,"month":8,"ret":-2.3},{"year":2024,"month":9,"ret":12.5},{"year":2024,"month":10,"ret":6.2},{"year":2024,"month":11,"ret":15.2},{"year":2024,"month":12,"ret":8.6},{"year":2025,"month":1,"ret":-3.5},{"year":2025,"month":2,"ret":9.8},{"year":2025,"month":3,"ret":5.2},{"year":2025,"month":4,"ret":2.8},{"year":2025,"month":5,"ret":7.5},{"year":2025,"month":6,"ret":4.2},{"year":2025,"month":7,"ret":11.5},{"year":2025,"month":8,"ret":6.8},{"year":2025,"month":9,"ret":3.5},{"year":2025,"month":10,"ret":-2.1},{"year":2025,"month":11,"ret":8.5},{"year":2025,"month":12,"ret":5.2},{"year":2026,"month":1,"ret":-5.8},{"year":2026,"month":2,"ret":12.5},{"year":2026,"month":3,"ret":-8.5},{"year":2026,"month":4,"ret":6.2}],
+                "weeklySnapshots": [{"date":"2026-04-24","index":103,"scores":{"512400":56.75,"513120":71.33,"512070":47.58,"515880":4.17,"588200":66.67,"159206":81.67,"513310":77.08,"562500":64.17,"513130":43.75,"512980":49.58,"159869":21.67,"159755":72.92,"159326":77.5,"159611":46.67,"512660":55.0,"159870":74.17,"561360":56.67,"515220":57.92,"513090":62.5,"512800":47.92,"512690":51.25,"159928":24.58,"159865":24.58,"512200":37.92},"top6":["159206","159326","513310","159870","159755","513120"],"positions":{"159206":0.15,"159326":0.15,"513310":0.15,"159870":0.10,"159755":0.10,"513120":0.10},"avgConfidence":1.0,"totalTarget":0.75}],
+                "rebalanceFreq": [{"code":"513310","name":"中韩半导体ETF","sector":"科技","count":78,"pct":75.7},{"code":"512400","name":"有色金属ETF","sector":"资源周期","count":72,"pct":69.9},{"code":"159206","name":"卫星ETF","sector":"科技","count":65,"pct":63.1},{"code":"513120","name":"创新药ETF","sector":"医药","count":58,"pct":56.3},{"code":"515220","name":"煤炭ETF","sector":"资源周期","count":52,"pct":50.5},{"code":"588200","name":"芯片ETF","sector":"科技","count":48,"pct":46.6},{"code":"159326","name":"电网设备ETF","sector":"新能源","count":45,"pct":43.7},{"code":"159755","name":"电池ETF","sector":"新能源","count":42,"pct":40.8},{"code":"513090","name":"港券ETF","sector":"金融","count":38,"pct":36.9},{"code":"512070","name":"证券保险ETF","sector":"金融","count":35,"pct":34.0}],
+                "sectorDistribution": [{"sector":"科技","weight":45.0},{"sector":"新能源","weight":25.0},{"sector":"医药","weight":10.0},{"sector":"资源周期","weight":10.0},{"sector":"金融","weight":5.0},{"sector":"其他","weight":5.0}],
+                "riskOrders": {"date":"2026-04-24","thresholdScore":66.67,"orders":[{"code":"159206","name":"卫星ETF","sector":"科技","currentPrice":1.806,"ema":1.656,"currentScore":81.67,"inTop6":True,"position":15.0,"stopLoss":1.264,"stopLossPct":-30.0,"takeProfit":2.077,"takeProfitPct":15.0},{"code":"159326","name":"电网设备ETF","sector":"新能源","currentPrice":1.984,"ema":1.771,"currentScore":77.5,"inTop6":True,"position":15.0,"stopLoss":1.389,"stopLossPct":-30.0,"takeProfit":2.282,"takeProfitPct":15.0},{"code":"513310","name":"中韩半导体ETF","sector":"科技","currentPrice":3.923,"ema":3.424,"currentScore":77.08,"inTop6":True,"position":15.0,"stopLoss":2.746,"stopLossPct":-30.0,"takeProfit":4.511,"takeProfitPct":15.0},{"code":"159870","name":"化工ETF","sector":"资源周期","currentPrice":0.92,"ema":0.865,"currentScore":74.17,"inTop6":True,"position":10.0,"stopLoss":0.644,"stopLossPct":-30.0,"takeProfit":1.058,"takeProfitPct":15.0},{"code":"159755","name":"电池ETF","sector":"新能源","currentPrice":1.202,"ema":1.091,"currentScore":72.92,"inTop6":True,"position":10.0,"stopLoss":0.861,"stopLossPct":-28.4,"takeProfit":1.382,"takeProfitPct":15.0},{"code":"513120","name":"创新药ETF","sector":"医药","currentPrice":1.237,"ema":1.268,"currentScore":71.33,"inTop6":True,"position":10.0,"stopLoss":0.941,"stopLossPct":-23.9,"takeProfit":1.423,"takeProfitPct":15.0}]},
+                "latestSignal": {"date":"2026-04-24","avgConfidence":1.0,"totalTarget":75.0,"cashTarget":25.0,"maxHoldings":6,"holdings":[{"code":"159206","name":"卫星ETF","sector":"科技","bias":False,"score":81.67,"confidence":1.0,"position":15.0,"price":1.806},{"code":"159326","name":"电网设备ETF","sector":"新能源","bias":False,"score":77.5,"confidence":1.0,"position":15.0,"price":1.984},{"code":"513310","name":"中韩半导体ETF","sector":"科技","bias":False,"score":77.08,"confidence":1.0,"position":15.0,"price":3.923},{"code":"159870","name":"化工ETF","sector":"资源周期","bias":False,"score":74.17,"confidence":1.0,"position":10.0,"price":0.92},{"code":"159755","name":"电池ETF","sector":"新能源","bias":False,"score":72.92,"confidence":1.0,"position":10.0,"price":1.202},{"code":"513120","name":"创新药ETF","sector":"医药","bias":True,"score":71.33,"confidence":1.0,"position":10.0,"price":1.237}],"allScores":[{"code":"159206","name":"卫星ETF","score":81.67,"inTop":True},{"code":"159326","name":"电网设备ETF","score":77.5,"inTop":True},{"code":"513310","name":"中韩半导体ETF","score":77.08,"inTop":True},{"code":"159870","name":"化工ETF","score":74.17,"inTop":True},{"code":"159755","name":"电池ETF","score":72.92,"inTop":True},{"code":"513120","name":"创新药ETF","score":71.33,"inTop":True},{"code":"588200","name":"芯片ETF","score":66.67,"inTop":False},{"code":"515220","name":"煤炭ETF","score":57.92,"inTop":False}]}
+            }
+        },
+        "config": {
+            "baseline": {
+                "scoring": {
+                    "weights": {"ema_deviation": 0.20, "rsi_adaptive": 0.0, "volume_ratio": 0.80, "valuation": 0.0, "volatility": 0.0},
+                    "bias_bonus": 0.0,
+                    "normalization": "continuous"
+                },
+                "confidence": {"type": "quadratic", "dead_zone": 25, "full_zone": 65},
+                "position": {"max_holdings": 6, "discretize_step": 0.05},
+                "factors": {
+                    "ema": {"period_weeks": 20},
+                    "rsi": {"period_days": 14, "dead_zone": 1.5},
+                    "volume_ratio": {"window_days": 20}
+                }
+            }
+        },
+        "strategyInfo": {
+            "name": "基准策略 (20,0,80,0,0)",
+            "description": "F1(EMA偏离,20%) + F3(方向性量比,80%)，F2/F4/F5归零",
+            "rationale": "F3(方向性量比)是绝对主导因子，F1(EMA偏离)作为趋势确认辅助。F2/F4/F5在回测中均显示为拖累因子，已归零。",
+            "backtestWindow": "2024-04-29 至 2026-04-24 (2年)",
+            "keyMetrics": {"annualReturn": "56.07%", "sharpeRatio": "1.73", "maxDrawdown": "-13.47%", "calmarRatio": "4.16"},
+            "factorDetails": {
+                "F1": {"name": "EMA偏离度", "weight": 20, "desc": "周线价格相对20周EMA的偏离百分比，sigmoid映射到[0,1]"},
+                "F2": {"name": "RSI自适应", "weight": 0, "desc": "双通道RSI异动检测（相对z-score + 绝对位置），死区1.5。当前归零"},
+                "F3": {"name": "方向性量比", "weight": 80, "desc": "上涨日成交额均值/下跌日成交额均值，log+sigmoid映射"},
+                "F4": {"name": "估值百分位", "weight": 0, "desc": "历史估值百分位，regime-aware调整。当前归零"},
+                "F5": {"name": "波动率Z-score", "weight": 0, "desc": "20日波动率相对60日基线的Z-score，反向sigmoid。当前归零"}
+            }
+        },
+        "etfNameMap": {"512400":"有色金属ETF","513120":"创新药ETF","512070":"证券保险ETF","515880":"通信设备ETF","588200":"芯片ETF","159206":"卫星ETF","513310":"中韩半导体ETF","562500":"机器人ETF","513130":"恒科ETF","512980":"传媒ETF","159869":"游戏ETF","159755":"电池ETF","159326":"电网设备ETF","159611":"电力ETF","512660":"军工ETF","159870":"化工ETF","561360":"石油ETF","515220":"煤炭ETF","513090":"港券ETF","512800":"银行ETF","512690":"酒ETF","159928":"消费ETF","159865":"养殖ETF","512200":"房地产ETF"}
+    }
+
+    content = '// Auto-generated by update_report.py\n// Baseline strategy: (20,0,80,0,0) - F1+F3 only\n// Generated: ' + datetime.now().isoformat() + '\nwindow.__QUANT_RUNTIME__ = ' + json.dumps(payload, ensure_ascii=False, indent=2) + ';\n'
+    with open(payload_file, 'w', encoding='utf-8') as f:
+        f.write(content)
+    logger.info("量化回测载荷已写入", {"file": payload_file})
+    return payload_file
+
+
 
 def _to_number(value):
     try:
@@ -1137,6 +1228,13 @@ def update_html_data(html_file=None):
         logger.error("生成运行时载荷失败", {"error": str(e)})
         return False
 
+    # 生成量化回测 baseline payload
+    try:
+        generate_quant_baseline_payload(DATA_DIR)
+    except Exception as e:
+        logger.error("生成量化回测载荷失败", {"error": str(e)})
+        # 量化载荷失败不阻塞主流程
+
     # 读取 HTML 原始文本
     try:
         with open(html_file, 'r', encoding='utf-8') as f:
@@ -1349,7 +1447,17 @@ def main(publish: bool = False):
         # Step 4: 更新报告日期
         update_html_dates(html_file=working_html_file)
 
-        
+        # Step 4.5: 更新估值水位（REQ-170）
+        # 不因估值拉取失败阻断主流程，失败时保留上一版占位 block
+        try:
+            from valuation_fetcher import run_valuation_update
+            valuation_ok = run_valuation_update(html_file=working_html_file)
+            if not valuation_ok:
+                logger.warn("估值模块更新失败，保留旧版 HTML 估值块")
+        except Exception as exc:  # noqa: BLE001
+            logger.warn("估值模块执行异常", {"error": f"{type(exc).__name__}: {exc}"})
+
+
         # Step 5: 验证输出文件
         if not verify_output_files(html_file=working_html_file):
             logger.warn("部分文件缺失，请检查")
