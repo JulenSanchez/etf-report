@@ -75,7 +75,7 @@
     renderMetricCards(tpl);
     renderNavChart(tpl);
     renderDrawdownChart(tpl);
-    renderSnapshot(tpl, tpl.signalHistory.length - 1);  // latest week
+    renderSnapshot(tpl, tpl.weeklySnapshots.length - 1);  // latest week
     renderFreqBar(tpl);
     renderLatestSignal(tpl);
     renderRiskOrders(tpl);
@@ -177,9 +177,9 @@
     LC.bindChart(dom,navChart);
 
     var dates=tpl.navSeries.dates;
-    var navPct=tpl.navSeries.navPct;
-    var benchPct=tpl.hs300Pct||(function(){var a=[];for(var i=0;i<dates.length;i++)a.push(100);return a;})();
-    var eqPct=tpl.eqWeightPct||null;
+    var navPct=tpl.navSeries.nav;
+    var benchPct=tpl.navSeries.hs300||(function(){var a=[];for(var i=0;i<dates.length;i++)a.push(100);return a;})();
+    var eqPct=tpl.navSeries.eqWeight||null;
 
     navChart.setOption({
       tooltip:Object.assign(baseTooltip(),{trigger:"axis",axisPointer:{type:"line",lineStyle:{color:"rgba(255,255,255,0.6)",width:1}},formatter:function(params){
@@ -216,8 +216,8 @@
       var clickDate=dates[Math.round(dataIdx)];
       // Find nearest signal at or before this date
       var bestIdx=0;
-      for(var i=0;i<tpl.signalHistory.length;i++){
-        if(tpl.signalHistory[i].date<=clickDate) bestIdx=i;
+      for(var i=0;i<tpl.weeklySnapshots.length;i++){
+        if(tpl.weeklySnapshots[i].date<=clickDate) bestIdx=i;
       }
       renderSnapshot(tpl,bestIdx);
     });
@@ -233,9 +233,9 @@
     chart.setOption({
       tooltip:Object.assign(baseTooltip(),{trigger:"axis",formatter:function(p){return p[0].axisValue+'<br/>'+p[0].marker+' 回撤: '+p[0].value.toFixed(2)+'%';}}),
       grid:{left:56,right:20,top:24,bottom:32},
-      xAxis:Object.assign(baseAxis(),{type:"category",data:tpl.navSeries.dates,boundaryGap:false}),
+      xAxis:Object.assign(baseAxis(),{type:"category",data:tpl.drawdownSeries.dates,boundaryGap:false}),
       yAxis:Object.assign(baseAxis(),{type:"value",name:"回撤(%)",nameTextStyle:{color:C.muted,fontSize:11}}),
-      series:[{type:"line",data:tpl.drawdownSeries,showSymbol:false,
+      series:[{type:"line",data:tpl.drawdownSeries.drawdown,showSymbol:false,
         lineStyle:{color:C.red,width:1.5},
         areaStyle:{color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:"rgba(239,68,68,0.3)"},{offset:1,color:"rgba(239,68,68,0.02)"}])},
         itemStyle:{color:C.red}}],
@@ -245,7 +245,7 @@
 
   // ── Snapshot (week drill-down) ────────────────────────────
   function renderSnapshot(tpl, sigIdx) {
-    var sig=tpl.signalHistory[sigIdx];
+    var sig=tpl.weeklySnapshots[sigIdx];
     if(!sig) return;
 
     // Update subtitle
