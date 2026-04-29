@@ -1,0 +1,50 @@
+# 量化回测 - 策略模板配置
+# 3 套模板，每套只写与 quant_universe.yaml 的差异项
+# 未列出的字段继承 quant_universe.yaml 的默认值
+
+templates:
+  # ============================================================
+  # 保守型：低波动、少持仓、高信心门槛
+  # ============================================================
+  conservative:
+    label: "保守型"
+    description: "低频调仓、少量持仓、高信心门槛"
+    scoring:
+      weights:
+        ema_deviation: 0.25
+        rsi_adaptive: 0.45
+        volume_ratio: 0.30
+      bias_bonus: 0.0
+    confidence:
+      dead_zone: 35
+      full_zone: 75
+    position:
+      max_holdings: 4
+      discretize_step: 0.10
+
+  # ============================================================
+  # 均衡型：沿用 quant_universe.yaml 默认值
+  # ============================================================
+  balanced:
+    label: "均衡型"
+    description: "三因子等权、标准信心函数"
+    # 无 override，全部继承默认
+
+  # ============================================================
+  # 激进型：高偏好加成、低信心门槛、多持仓
+  # ============================================================
+  aggressive:
+    label: "激进型"
+    description: "高偏好加成、多持仓、低信心门槛"
+    scoring:
+      weights:
+        ema_deviation: 0.50
+        rsi_adaptive: 0.20
+        volume_ratio: 0.30
+      bias_bonus: 8.0
+    confidence:
+      dead_zone: 15
+      full_zone: 50
+    position:
+      max_holdings: 8
+      discretize_step: 0.05

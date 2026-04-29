@@ -41,6 +41,7 @@ plans/
 statusbar.config.md
 RELEASE_RUNBOOK.md
 AUDIT_RUNBOOK.md
+.codebuddy/
 
 # ========= 开发者内部文档 =========
 docs/INTEGRATION_GUIDE.md

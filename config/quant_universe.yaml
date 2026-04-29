@@ -1,0 +1,297 @@
+# 量化打分系统 - ETF 选股池配置
+# REQ-177 M0.1
+# 25 支 ETF，统一三因子打分
+
+universe:
+  # ============================================================
+  # 偏好标的（+bias 加成）
+  # ============================================================
+  - code: "512400"
+    name: "有色金属ETF"
+    market: "sh"
+    sector: "资源周期"
+    bias: true
+
+  - code: "513120"
+    name: "创新药ETF"
+    market: "sh"
+    sector: "医药"
+    bias: true
+
+  - code: "512070"
+    name: "证券保险ETF"
+    market: "sh"
+    sector: "金融"
+    bias: true
+
+  # ============================================================
+  # 科技/TMT
+  # ============================================================
+  - code: "515880"
+    name: "通信设备ETF"
+    market: "sh"
+    sector: "科技"
+
+  - code: "588200"
+    name: "芯片ETF"
+    market: "sh"
+    sector: "科技"
+
+  - code: "159206"
+    name: "卫星ETF"
+    market: "sz"
+    sector: "科技"
+
+  - code: "513310"
+    name: "中韩半导体ETF"
+    market: "sh"
+    sector: "科技"
+
+  - code: "562500"
+    name: "机器人ETF"
+    market: "sh"
+    sector: "科技"
+
+  - code: "513130"
+    name: "恒科ETF"
+    market: "sh"
+    sector: "港股科技"
+
+  - code: "512980"
+    name: "传媒ETF"
+    market: "sh"
+    sector: "TMT"
+
+  - code: "159869"
+    name: "游戏ETF"
+    market: "sz"
+    sector: "TMT"
+
+  # ============================================================
+  # 新能源/制造
+  # ============================================================
+  - code: "159755"
+    name: "电池ETF"
+    market: "sz"
+    sector: "新能源"
+
+  - code: "159326"
+    name: "电网设备ETF"
+    market: "sz"
+    sector: "新能源"
+
+  - code: "159611"
+    name: "电力ETF"
+    market: "sz"
+    sector: "公用事业"
+
+  # ============================================================
+  # 军工/制造
+  # ============================================================
+  - code: "512660"
+    name: "军工ETF"
+    market: "sh"
+    sector: "军工"
+
+  - code: "560710"
+    name: "船舶ETF"
+    market: "sh"
+    sector: "军工"
+
+  # ============================================================
+  # 资源周期
+  # ============================================================
+  - code: "159870"
+    name: "化工ETF"
+    market: "sz"
+    sector: "资源周期"
+
+  - code: "561360"
+    name: "石油ETF"
+    market: "sh"
+    sector: "资源周期"
+
+  - code: "515220"
+    name: "煤炭ETF"
+    market: "sh"
+    sector: "资源周期"
+
+  # ============================================================
+  # 金融
+  # ============================================================
+  - code: "513090"
+    name: "港券ETF"
+    market: "sh"
+    sector: "金融"
+
+  - code: "512800"
+    name: "银行ETF"
+    market: "sh"
+    sector: "金融"
+
+  # ============================================================
+  # 消费/周期
+  # ============================================================
+  - code: "512690"
+    name: "酒ETF"
+    market: "sh"
+    sector: "消费"
+
+  - code: "159928"
+    name: "消费ETF"
+    market: "sz"
+    sector: "消费"
+
+  - code: "159865"
+    name: "养殖ETF"
+    market: "sz"
+    sector: "周期"
+
+  - code: "512200"
+    name: "房地产ETF"
+    market: "sh"
+    sector: "周期"
+
+# ============================================================
+# 打分参数（初始值，回测后校准）
+# ============================================================
+scoring:
+  # 因子权重（和为 1）
+  weights:
+    ema_deviation: 0.30
+    rsi_adaptive: 0.25
+    volume_ratio: 0.30
+    valuation: 0.15  # REQ-178: 估值因子，低估=高分
+
+  # 偏好加成（0-100 整数尺度，内部自动转换为 0-1 综合分尺度）
+  bias_bonus: 4.0
+
+  # 连续映射函数参数（替代截面标准化）
+  sensitivity:
+    f1: 8.0   # sigmoid 响应尺度：±8% 偏离对应 ~0.27/0.73，越小越敏感
+    f3: 1.0   # log+sigmoid 尺度：量比1→0.5，量比2→0.66，越小越敏感
+    f2_dead_zone: 1.5   # F2 双通道死区半宽：|z|<dz 输出 0.5（中性），1.5 对应 RSI<27.5 或 >72.5
+
+# ============================================================
+# 信心函数参数（[0, 1] 尺度，与连续映射后的综合分一致）
+# ============================================================
+confidence:
+  type: "quadratic"  # quadratic | linear | sigmoid
+  dead_zone: 25      # 低于此百分比 → f=0，不配仓位
+  full_zone: 65      # 高于此百分比 → f=1，满配
+
+# ============================================================
+# 仓位参数
+# ============================================================
+position:
+  max_holdings: 6
+  max_holdings_special: 8
+  discretize_step: 0.05  # 5% 档位
+  weighting: "arithmetic"  # arithmetic | softmax
+
+# ============================================================
+# 因子计算参数
+# ============================================================
+factors:
+  ema:
+    period_weeks: 20  # EMA 周期（周线）
+  rsi:
+    period_days: 14
+    # 趋势自适应阈值
+    bullish_overbought: 75   # 上行趋势中 RSI 超过此值减分
+    bullish_oversold: 30     # 上行趋势中 RSI 低于此值加分
+    bearish_overbought: 60   # 下行趋势中 RSI 超过此值减分
+    bearish_oversold: 20     # 下行趋势中 RSI 低于此值加分
+  volume_ratio:
+    window_days: 20  # 方向性量比滚动窗口
+
+# ============================================================
+# 策略 Preset（REQ-179）
+# ============================================================
+presets:
+  value:
+    label: "价值投资型"
+    description: "低换手，高估值权重，长期持有低估标的"
+    scoring:
+      weights:
+        ema_deviation: 0.15
+        rsi_adaptive: 0.20
+        volume_ratio: 0.15
+        valuation: 0.50
+      bias_bonus: 3.0
+      sensitivity:
+        f1: 10.0  # 价值型不敏感于趋势偏离
+        f3: 2.0   # 量比也不敏感
+        f2_dead_zone: 1.5  # 价值型 F2 死区宽，只在极端时干预
+    confidence:
+      type: "quadratic"
+      dead_zone: 20
+      full_zone: 55
+    position:
+      max_holdings: 5
+      discretize_step: 0.10
+    factors:
+      ema:
+        period_weeks: 26
+      rsi:
+        period_days: 14
+      volume_ratio:
+        window_days: 20
+
+  tech:
+    label: "技术套利型"
+    description: "高动量权重，追趋势+量价确认，高换手"
+    scoring:
+      weights:
+        ema_deviation: 0.40
+        rsi_adaptive: 0.25
+        volume_ratio: 0.30
+        valuation: 0.05
+      bias_bonus: 5.0
+      sensitivity:
+        f1: 5.0   # 技术型对趋势偏离高度敏感
+        f3: 1.0   # 量比也敏感
+        f2_dead_zone: 1.2  # 技术型 F2 死区略窄，捕捉异动
+    confidence:
+      type: "linear"
+      dead_zone: 30
+      full_zone: 70
+    position:
+      max_holdings: 6
+      discretize_step: 0.05
+    factors:
+      ema:
+        period_weeks: 12
+      rsi:
+        period_days: 10
+      volume_ratio:
+        window_days: 10
+
+  momentum:
+    label: "景气驱动型"
+    description: "均衡偏动量，中等估值，兼顾趋势与安全边际"
+    scoring:
+      weights:
+        ema_deviation: 0.30
+        rsi_adaptive: 0.25
+        volume_ratio: 0.25
+        valuation: 0.20
+      bias_bonus: 4.0
+      sensitivity:
+        f1: 8.0   # 默认敏感度
+        f3: 1.0   # 默认敏感度
+        f2_dead_zone: 1.5  # 景气型 F2 死区，只在 RSI 真正极端时触发
+    confidence:
+      type: "quadratic"
+      dead_zone: 25
+      full_zone: 65
+    position:
+      max_holdings: 6
+      discretize_step: 0.05
+    factors:
+      ema:
+        period_weeks: 20
+      rsi:
+        period_days: 14
+      volume_ratio:
+        window_days: 20
