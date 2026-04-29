@@ -63,12 +63,10 @@
   // ── Master render ─────────────────────────────────────────
   function renderAll() {
     var tpl = Q.templates[activeTemplate];
-    if (!tpl) return;
-
-    // Highlight active template button
-    document.querySelectorAll("#quant-template-buttons .nav-tab").forEach(function(b){ b.classList.remove("active"); });
-    var btn = document.getElementById("quant-tpl-btn-" + activeTemplate);
-    if (btn) btn.classList.add("active");
+    if (!tpl) {
+      console.warn('[quant-main] Template not found:', activeTemplate);
+      return;
+    }
 
     renderTemplateDesc();
     renderParams();
