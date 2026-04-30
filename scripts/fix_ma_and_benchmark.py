@@ -312,7 +312,7 @@ def fetch_amounts_via_akshare(symbol, target_dates):
     """用 AKShare fund_etf_hist_sina 补拉成交额（单位：元），按 target_dates 对齐。
 
     Args:
-        symbol: 如 'sh512400' / 'sz159566'，与新浪 getKLineData 一致的符号格式
+        symbol: 如 'sh512400' / 'sz159755'，与新浪 getKLineData 一致的符号格式
         target_dates: 主 K 线返回的 dates 列表（'YYYY-MM-DD'），用于对齐 amount
 
     Returns:
@@ -738,7 +738,7 @@ def main():
     })
     logger.info("数据已保存", {"file": json_file})
 
-    # 注：REQ-146 之后数据通过 data/runtime_payload.js 提供，
+    # 注：REQ-146 之后数据通过 assets/js/runtime_payload.js 提供，
     # 已无需再向 outputs/js/main.js 注入 klineData；此处的旧注入路径已移除（BUG-013）。
 
     logger.info("=" * 60)

@@ -220,7 +220,7 @@ def check_json_data_blocks(html_content):
     """检查 2：JSON 数据块有效性（兼容 REQ-146 内联 → 外置迁移）"""
     results = []
 
-    # 新架构优先：从 data/runtime_payload.js 读取并验证 JSON 有效性
+    # 新架构优先：从 assets/js/runtime_payload.js 读取并验证 JSON 有效性
     payload = _load_runtime_payload()
     if payload is not None:
         for key in ("klineData", "realtimeData"):

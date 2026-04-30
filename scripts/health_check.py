@@ -62,7 +62,7 @@ HTML_FILE = os.path.join(SKILL_DIR, "index.html")
 
 # REQ-146 后 index.html 外链化，骨架+占位 ~87 KB。阈值 60 KB 作为"骨架破损"红线。
 MIN_HTML_FILE_SIZE_KB = 60
-# REQ-146 后数据从 const klineData 迁移到 data/runtime_payload.js
+# REQ-146 后数据从 const klineData 迁移到 assets/js/runtime_payload.js
 MIN_RUNTIME_PAYLOAD_KB = 100  # 正常 ~200 KB（6 只 ETF 60 天日线+基准），低于 100 可能抓数出问题
 # REQ-146/147 后抽离的关键外链资源，缺一不可
 REQUIRED_ASSET_FILES = [
@@ -710,7 +710,7 @@ class HTMLChecker:
     
     @staticmethod
     def check_js_data_blocks() -> CheckResult:
-        """REQ-146 后数据由 data/runtime_payload.js 承载（window.__ETF_REPORT_RUNTIME__）；
+        """REQ-146 后数据由 assets/js/runtime_payload.js 承载（window.__ETF_REPORT_RUNTIME__）；
         本检查先看外置 runtime_payload.js，找不到再回退 HTML 内联 const 兼容老架构（BUG-015）。
         """
         result = CheckResult("D2", "JavaScript 数据块", "D")

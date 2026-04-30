@@ -1442,7 +1442,7 @@ def update_html_data(html_file=None):
 
     
     # 1. 更新 klineData — 用字符串替换
-    #    新架构下 index.html 不再内联 const klineData（已抽离到 data/runtime_payload.js），
+    #    新架构下 index.html 不再内联 const klineData（已抽离到 assets/js/runtime_payload.js），
     #    此处对"找不到"场景降级为 INFO 跳过，而不是 ERROR 退出（BUG-011）。
     try:
         kline_json_str = json.dumps(kline_data, ensure_ascii=False, indent=8)
