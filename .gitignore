@@ -9,7 +9,9 @@ build/
 # ========= 运行产物 =========
 logs/
 *.log
-data/
+data/*
+!data/runtime_payload.js
+!data/quant_payload.js
 outputs/
 _working/
 .backup/
@@ -41,6 +43,7 @@ plans/
 statusbar.config.md
 RELEASE_RUNBOOK.md
 AUDIT_RUNBOOK.md
+QUANT_RUNBOOK.md
 .codebuddy/
 
 # ========= 开发者内部文档 =========
