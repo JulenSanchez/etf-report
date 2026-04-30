@@ -2,7 +2,7 @@
  * report-main.js — ETF 报告主业务（9 个 ECharts + 消费 runtime_payload）
  * 源出处：index.html 原第 837-13031 行（REQ-146 抽离）
  * 依赖：
- *   - window.__ETF_REPORT_RUNTIME__（由 data/runtime_payload.js 注入）
+ *   - window.__ETF_REPORT_RUNTIME__（由 assets/js/runtime_payload.js 注入）
  *   - window.__etfChartLifecycle（由 chart-lifecycle.js 注入）
  * 规则：1:1 剪切，不做压缩 / 重写 / 合并
  * ============================================================ */
@@ -7065,8 +7065,8 @@
                         24.62
                 ]
         },
-        "159566": {
-                "name": "储能电池ETF",
+        "159755": {
+                "name": "电池ETF",
                 "benchmark_name": "沪深300",
                 "daily": {
                         "dates": [
@@ -10833,8 +10833,8 @@
                 "total_ratio": 67.23,
                 "timestamp": "2026-04-18T16:59:11.119070"
         },
-        "159566": {
-                "name": "储能电池ETF",
+        "159755": {
+                "name": "电池ETF",
                 "etf_change": 0.34,
                 "etf_price": 2.341,
                 "holdings": [
@@ -11435,7 +11435,7 @@
         function buildCoreThemeEntries(snapshots) {
             const snapshotMap = new Map(snapshots.map(snapshot => [snapshot.code, snapshot]));
             const themeDefinitions = [
-                { label: '科技成长', description: 'AI算力、光模块、储能电池', codes: ['515880', '159566'] },
+                { label: '科技成长', description: 'AI算力、光模块、新能源电池', codes: ['515880', '159755'] },
                 { label: '资源周期', description: '有色金属、贵金属', codes: ['512400'] },
                 { label: '创新医药', description: '港股创新药、创新平台', codes: ['513120'] },
                 { label: '金融修复', description: '券商、保险、风险偏好修复', codes: ['512070'] },
@@ -12387,6 +12387,9 @@
             }
             if (klineData[panelId]) {
                 setTimeout(() => renderETFPanel(panelId), 100);
+            }
+            if (panelId === 'quant' && typeof window.__initQuantPanel === 'function') {
+                setTimeout(() => window.__initQuantPanel(), 100);
             }
         }
 

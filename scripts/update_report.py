@@ -47,6 +47,7 @@ config = get_config()
 files_config = config.get_files_config()
 DATA_DIR = os.path.join(SKILL_DIR, files_config.get('data_dir', 'data'))
 OUTPUTS_DIR = os.path.join(SKILL_DIR, files_config.get('outputs_dir', 'outputs'))
+ASSETS_JS_DIR = os.path.join(SKILL_DIR, "assets", "js")
 # HTML 文件在技能根目录
 HTML_FILE = os.path.join(SKILL_DIR, files_config.get('html_file', 'index.html'))
 
@@ -368,10 +369,10 @@ def _replace_js_const_in_html(html_content, const_name, new_value_str):
 
 
 
-def write_runtime_payload_file(data_dir, kline_data, realtime_data):
-    """生成外置运行时载荷，优先服务 file:// 本地预览，也兼容已发布页面。"""
+def write_runtime_payload_file(kline_data, realtime_data):
+    """生成外置运行时载荷，写入 assets/js/ 以便部署到 GitHub Pages。"""
 
-    payload_file = os.path.join(data_dir, "runtime_payload.js")
+    payload_file = os.path.join(ASSETS_JS_DIR, "runtime_payload.js")
     payload = {
         "generatedAt": datetime.now().isoformat(),
         "klineData": kline_data,
@@ -385,96 +386,292 @@ def write_runtime_payload_file(data_dir, kline_data, realtime_data):
     return payload_file
 
 
-def generate_quant_baseline_payload(data_dir):
-    """生成量化回测 baseline payload (20,0,80,0,0)，使用已存在的回测数据文件。"""
-    os.makedirs(data_dir, exist_ok=True)
-    payload_file = os.path.join(data_dir, "quant_payload.js")
+def generate_quant_baseline_payload():
+    """生成量化回测 baseline payload (20,0,80,0,0)，调用 tuner 真实回测接口。"""
+    import urllib.request
+    import urllib.error
 
-    # 基准策略配置
-    payload = {
-        "generatedAt": datetime.now().isoformat(),
-        "templateMeta": {
-            "baseline": {
-                "label": "基准策略",
-                "description": "F1(EMA偏离,20%) + F3(方向性量比,80%)，F2/F4/F5归零。年化56%/Sharpe1.73/MDD-13.5%"
-            }
-        },
-        "templates": {
-            "baseline": {
-                "summary": {
-                    "totalReturn": 142.08,
-                    "annualReturn": 56.07,
-                    "maxDrawdown": -13.47,
-                    "sharpe": 1.73,
-                    "sortino": 2.87,
-                    "calmar": 4.16,
-                    "winRate": 52.8,
-                    "monthlyWinRate": 58.3,
-                    "bestMonth": 15.2,
-                    "worstMonth": -8.5,
-                    "maxWinStreak": 4,
-                    "maxLossStreak": 2,
-                    "startDate": "2024-04-29",
-                    "endDate": "2026-04-24",
-                    "tradingDays": 482,
-                    "rebalanceCount": 103,
-                    "initialCapital": 1000000.0,
-                    "finalNav": 2420800.0
-                },
-                "navSeries": {
-                    "dates": ["2024-04-29","2024-05-06","2024-05-13","2024-05-20","2024-05-27","2024-06-03","2024-06-11","2024-06-18","2024-06-24","2024-07-01","2024-07-08","2024-07-15","2024-07-22","2024-07-29","2024-08-05","2024-08-12","2024-08-19","2024-08-26","2024-09-02","2024-09-09","2024-09-18","2024-09-25","2024-10-08","2024-10-14","2024-10-21","2024-10-28","2024-11-04","2024-11-11","2024-11-18","2024-11-25","2024-12-02","2024-12-09","2024-12-16","2024-12-23","2024-12-30","2025-01-06","2025-01-13","2025-01-20","2025-02-05","2025-02-10","2025-02-17","2025-02-24","2025-03-03","2025-03-10","2025-03-17","2025-03-24","2025-03-31","2025-04-07","2025-04-14","2025-04-21"],
-                    "nav": [100,102.5,105.1,103.8,106.2,108.5,112.3,115.6,118.2,122.5,125.8,128.3,132.5,136.8,140.2,138.5,142.3,146.8,150.2,155.6,158.3,162.5,168.2,172.5,178.3,182.6,188.5,195.2,201.8,208.5,215.6,222.3,218.5,225.8,232.5,238.6,245.2,251.8,258.5,265.2,272.8,280.5,288.2,295.6,302.5,310.8,318.5,326.2,333.8,341.5,348.2,355.8,363.5,371.2,378.8,386.5,394.2,401.8,409.5,417.2,425.8,433.5,441.2,448.8,456.5,464.2,472.8,480.5,488.2,495.8,503.5,511.2,518.8,526.5,534.2,542.8,550.5,558.2,565.8,573.5,581.2,588.8,596.5,604.2,612.8,620.5,628.2,635.8,643.5,651.2,658.8,666.5,674.2,681.8,689.5,697.2,704.8,712.5,720.2,727.8,735.5,742.2],
-                    "hs300": [100,101.2,102.5,101.8,103.2,104.5,106.3,107.6,108.2,109.5,110.8,111.3,112.5,113.8,114.2,113.5,114.3,115.8,116.2,117.6,118.3,119.5,120.2,121.5,122.3,123.6,124.5,125.2,126.8,127.5,128.6,129.3,128.5,129.8,130.5,131.6,132.3,133.8,134.5,135.2,136.8,137.5,138.6,139.3,140.5,141.8,142.5,143.3,144.6,145.2,146.3,147.5,148.2,149.3,150.5,151.2,152.3,153.5,154.2,155.3,156.5,157.2,158.3,159.5,160.2,161.3,162.5,163.2,164.3,165.5,166.2,167.3,168.5,169.2,170.3,171.5,172.2,173.3,174.5,175.2,176.3,177.5,178.2,179.3,180.5,181.2,182.3,183.5,184.2,185.3,186.5,187.2,188.3,189.5,190.2,191.3,192.5,193.2,194.3,195.5,196.2,197.3],
-                    "eqWeight": [100,101.5,102.8,102.2,103.5,104.8,106.5,107.8,108.5,109.8,111.2,111.8,113.2,114.5,115.2,114.8,115.5,116.8,117.5,118.8,119.5,120.8,121.5,122.8,123.5,124.8,125.5,126.8,127.5,128.8,129.5,130.8,130.2,131.5,132.2,133.5,134.2,135.5,136.2,137.5,138.2,139.5,140.2,141.5,142.2,143.5,144.2,145.5,146.2,147.5,148.2,149.5,150.2,151.5,152.2,153.5,154.2,155.5,156.2,157.5,158.2,159.5,160.2,161.5,162.2,163.5,164.2,165.5,166.2,167.5,168.2,169.5,170.2,171.5,172.2,173.5,174.2,175.5,176.2,177.5,178.2,179.5,180.2,181.5,182.2,183.5,184.2,185.5,186.2,187.5,188.2,189.5,190.2,191.5,192.2,193.5,194.2,195.5,196.2,197.5,198.2,199.5]
-                },
-                "drawdownSeries": {"dates":["2024-04-29","2024-05-06","2024-05-13","2024-05-20","2024-05-27","2024-06-03","2024-06-11","2024-06-18","2024-06-24","2024-07-01","2024-07-08","2024-07-15","2024-07-22","2024-07-29","2024-08-05","2024-08-12","2024-08-19","2024-08-26","2024-09-02","2024-09-09","2024-09-18","2024-09-25","2024-10-08","2024-10-14","2024-10-21","2024-10-28","2024-11-04","2024-11-11","2024-11-18","2024-11-25","2024-12-02","2024-12-09","2024-12-16","2024-12-23","2024-12-30","2025-01-06","2025-01-13","2025-01-20","2025-02-05","2025-02-10","2025-02-17","2025-02-24","2025-03-03","2025-03-10","2025-03-17","2025-03-24","2025-03-31","2025-04-07","2025-04-14","2025-04-21"],"drawdown":[0,0,0,-1.2,0,0,0,0,0,0,0,0,0,0,0,-1.2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,-1.6,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,-2.1,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},
-                "monthlyReturns": [{"year":2024,"month":5,"ret":5.2},{"year":2024,"month":6,"ret":3.8},{"year":2024,"month":7,"ret":8.5},{"year":2024,"month":8,"ret":-2.3},{"year":2024,"month":9,"ret":12.5},{"year":2024,"month":10,"ret":6.2},{"year":2024,"month":11,"ret":15.2},{"year":2024,"month":12,"ret":8.6},{"year":2025,"month":1,"ret":-3.5},{"year":2025,"month":2,"ret":9.8},{"year":2025,"month":3,"ret":5.2},{"year":2025,"month":4,"ret":2.8},{"year":2025,"month":5,"ret":7.5},{"year":2025,"month":6,"ret":4.2},{"year":2025,"month":7,"ret":11.5},{"year":2025,"month":8,"ret":6.8},{"year":2025,"month":9,"ret":3.5},{"year":2025,"month":10,"ret":-2.1},{"year":2025,"month":11,"ret":8.5},{"year":2025,"month":12,"ret":5.2},{"year":2026,"month":1,"ret":-5.8},{"year":2026,"month":2,"ret":12.5},{"year":2026,"month":3,"ret":-8.5},{"year":2026,"month":4,"ret":6.2}],
-                "weeklySnapshots": [{"date":"2026-04-24","index":103,"scores":{"512400":56.75,"513120":71.33,"512070":47.58,"515880":4.17,"588200":66.67,"159206":81.67,"513310":77.08,"562500":64.17,"513130":43.75,"512980":49.58,"159869":21.67,"159755":72.92,"159326":77.5,"159611":46.67,"512660":55.0,"159870":74.17,"561360":56.67,"515220":57.92,"513090":62.5,"512800":47.92,"512690":51.25,"159928":24.58,"159865":24.58,"512200":37.92},"top6":["159206","159326","513310","159870","159755","513120"],"positions":{"159206":0.15,"159326":0.15,"513310":0.15,"159870":0.10,"159755":0.10,"513120":0.10},"avgConfidence":1.0,"totalTarget":0.75}],
-                "rebalanceFreq": [{"code":"513310","name":"中韩半导体ETF","sector":"科技","count":78,"pct":75.7},{"code":"512400","name":"有色金属ETF","sector":"资源周期","count":72,"pct":69.9},{"code":"159206","name":"卫星ETF","sector":"科技","count":65,"pct":63.1},{"code":"513120","name":"创新药ETF","sector":"医药","count":58,"pct":56.3},{"code":"515220","name":"煤炭ETF","sector":"资源周期","count":52,"pct":50.5},{"code":"588200","name":"芯片ETF","sector":"科技","count":48,"pct":46.6},{"code":"159326","name":"电网设备ETF","sector":"新能源","count":45,"pct":43.7},{"code":"159755","name":"电池ETF","sector":"新能源","count":42,"pct":40.8},{"code":"513090","name":"港券ETF","sector":"金融","count":38,"pct":36.9},{"code":"512070","name":"证券保险ETF","sector":"金融","count":35,"pct":34.0}],
-                "sectorDistribution": [{"sector":"科技","weight":45.0},{"sector":"新能源","weight":25.0},{"sector":"医药","weight":10.0},{"sector":"资源周期","weight":10.0},{"sector":"金融","weight":5.0},{"sector":"其他","weight":5.0}],
-                "riskOrders": {"date":"2026-04-24","thresholdScore":66.67,"orders":[{"code":"159206","name":"卫星ETF","sector":"科技","currentPrice":1.806,"ema":1.656,"currentScore":81.67,"inTop6":True,"position":15.0,"stopLoss":1.264,"stopLossPct":-30.0,"takeProfit":2.077,"takeProfitPct":15.0},{"code":"159326","name":"电网设备ETF","sector":"新能源","currentPrice":1.984,"ema":1.771,"currentScore":77.5,"inTop6":True,"position":15.0,"stopLoss":1.389,"stopLossPct":-30.0,"takeProfit":2.282,"takeProfitPct":15.0},{"code":"513310","name":"中韩半导体ETF","sector":"科技","currentPrice":3.923,"ema":3.424,"currentScore":77.08,"inTop6":True,"position":15.0,"stopLoss":2.746,"stopLossPct":-30.0,"takeProfit":4.511,"takeProfitPct":15.0},{"code":"159870","name":"化工ETF","sector":"资源周期","currentPrice":0.92,"ema":0.865,"currentScore":74.17,"inTop6":True,"position":10.0,"stopLoss":0.644,"stopLossPct":-30.0,"takeProfit":1.058,"takeProfitPct":15.0},{"code":"159755","name":"电池ETF","sector":"新能源","currentPrice":1.202,"ema":1.091,"currentScore":72.92,"inTop6":True,"position":10.0,"stopLoss":0.861,"stopLossPct":-28.4,"takeProfit":1.382,"takeProfitPct":15.0},{"code":"513120","name":"创新药ETF","sector":"医药","currentPrice":1.237,"ema":1.268,"currentScore":71.33,"inTop6":True,"position":10.0,"stopLoss":0.941,"stopLossPct":-23.9,"takeProfit":1.423,"takeProfitPct":15.0}]},
-                "latestSignal": {"date":"2026-04-24","avgConfidence":1.0,"totalTarget":75.0,"cashTarget":25.0,"maxHoldings":6,"holdings":[{"code":"159206","name":"卫星ETF","sector":"科技","bias":False,"score":81.67,"confidence":1.0,"position":15.0,"price":1.806},{"code":"159326","name":"电网设备ETF","sector":"新能源","bias":False,"score":77.5,"confidence":1.0,"position":15.0,"price":1.984},{"code":"513310","name":"中韩半导体ETF","sector":"科技","bias":False,"score":77.08,"confidence":1.0,"position":15.0,"price":3.923},{"code":"159870","name":"化工ETF","sector":"资源周期","bias":False,"score":74.17,"confidence":1.0,"position":10.0,"price":0.92},{"code":"159755","name":"电池ETF","sector":"新能源","bias":False,"score":72.92,"confidence":1.0,"position":10.0,"price":1.202},{"code":"513120","name":"创新药ETF","sector":"医药","bias":True,"score":71.33,"confidence":1.0,"position":10.0,"price":1.237}],"allScores":[{"code":"159206","name":"卫星ETF","score":81.67,"inTop":True},{"code":"159326","name":"电网设备ETF","score":77.5,"inTop":True},{"code":"513310","name":"中韩半导体ETF","score":77.08,"inTop":True},{"code":"159870","name":"化工ETF","score":74.17,"inTop":True},{"code":"159755","name":"电池ETF","score":72.92,"inTop":True},{"code":"513120","name":"创新药ETF","score":71.33,"inTop":True},{"code":"588200","name":"芯片ETF","score":66.67,"inTop":False},{"code":"515220","name":"煤炭ETF","score":57.92,"inTop":False}]}
-            }
-        },
-        "config": {
-            "baseline": {
-                "scoring": {
-                    "weights": {"ema_deviation": 0.20, "rsi_adaptive": 0.0, "volume_ratio": 0.80, "valuation": 0.0, "volatility": 0.0},
-                    "bias_bonus": 0.0,
-                    "normalization": "continuous"
-                },
-                "confidence": {"type": "quadratic", "dead_zone": 25, "full_zone": 65},
-                "position": {"max_holdings": 6, "discretize_step": 0.05},
-                "factors": {
-                    "ema": {"period_weeks": 20},
-                    "rsi": {"period_days": 14, "dead_zone": 1.5},
-                    "volume_ratio": {"window_days": 20}
-                }
-            }
-        },
-        "strategyInfo": {
-            "name": "基准策略 (20,0,80,0,0)",
-            "description": "F1(EMA偏离,20%) + F3(方向性量比,80%)，F2/F4/F5归零",
-            "rationale": "F3(方向性量比)是绝对主导因子，F1(EMA偏离)作为趋势确认辅助。F2/F4/F5在回测中均显示为拖累因子，已归零。",
-            "backtestWindow": "2024-04-29 至 2026-04-24 (2年)",
-            "keyMetrics": {"annualReturn": "56.07%", "sharpeRatio": "1.73", "maxDrawdown": "-13.47%", "calmarRatio": "4.16"},
-            "factorDetails": {
-                "F1": {"name": "EMA偏离度", "weight": 20, "desc": "周线价格相对20周EMA的偏离百分比，sigmoid映射到[0,1]"},
-                "F2": {"name": "RSI自适应", "weight": 0, "desc": "双通道RSI异动检测（相对z-score + 绝对位置），死区1.5。当前归零"},
-                "F3": {"name": "方向性量比", "weight": 80, "desc": "上涨日成交额均值/下跌日成交额均值，log+sigmoid映射"},
-                "F4": {"name": "估值百分位", "weight": 0, "desc": "历史估值百分位，regime-aware调整。当前归零"},
-                "F5": {"name": "波动率Z-score", "weight": 0, "desc": "20日波动率相对60日基线的Z-score，反向sigmoid。当前归零"}
-            }
-        },
-        "etfNameMap": {"512400":"有色金属ETF","513120":"创新药ETF","512070":"证券保险ETF","515880":"通信设备ETF","588200":"芯片ETF","159206":"卫星ETF","513310":"中韩半导体ETF","562500":"机器人ETF","513130":"恒科ETF","512980":"传媒ETF","159869":"游戏ETF","159755":"电池ETF","159326":"电网设备ETF","159611":"电力ETF","512660":"军工ETF","159870":"化工ETF","561360":"石油ETF","515220":"煤炭ETF","513090":"港券ETF","512800":"银行ETF","512690":"酒ETF","159928":"消费ETF","159865":"养殖ETF","512200":"房地产ETF"}
+    os.makedirs(ASSETS_JS_DIR, exist_ok=True)
+    payload_file = os.path.join(ASSETS_JS_DIR, "quant_payload.js")
+
+    # 调用 tuner server 获取真实回测数据
+    TUNER_URL = "http://localhost:5179/api/run"
+    params = {
+        "w1": 20, "w2": 0, "w3": 80, "w4": 0,
+        "bias": 0,
+        "conf_type": "quadratic",
+        "dead_zone": 25,
+        "full_zone": 65,
+        "max_holdings": 6,
+        "disc_step": 5,
+        "ema_period": 20,
+        "rsi_period": 14,
+        "vol_window": 20,
+        "f1_sensitivity": 8.0,
+        "f3_sensitivity": 1.0,
+        "f2_dead_zone": 1.5,
+        # 回测周期：默认1年
+        "start_date": None,  # tuner 会使用 data_max - 1year
+        "end_date": None     # tuner 会使用 data_max
     }
+
+    backtest_data = None
+    try:
+        req = urllib.request.Request(
+            TUNER_URL,
+            data=json.dumps(params).encode('utf-8'),
+            headers={'Content-Type': 'application/json'},
+            method='POST'
+        )
+        with urllib.request.urlopen(req, timeout=120) as resp:
+            backtest_data = json.loads(resp.read().decode('utf-8'))
+        logger.info("成功从 tuner 获取真实回测数据")
+    except Exception as e:
+        logger.warning("无法连接 tuner server 获取真实回测数据，将使用模拟数据", {"error": str(e)})
+        logger.warning("请确保 quant_tuner.py 正在运行: python scripts/quant_tuner.py")
+
+    if backtest_data and "error" not in backtest_data:
+        # 使用真实回测数据构建 payload
+        nav_dates = backtest_data.get("nav", {}).get("dates", [])
+        nav_pct = backtest_data.get("nav", {}).get("pct", [])
+        hs300_pct = backtest_data.get("hs300", [])
+        eq_weight_pct = backtest_data.get("eqWeight", [])
+        drawdown = backtest_data.get("drawdown", [])
+        summary = backtest_data.get("summary", {})
+        signal_history = backtest_data.get("signalHistory", [])
+
+        # 构建 drawdownSeries
+        drawdown_series = {"dates": nav_dates, "drawdown": drawdown}
+
+        # 构建 weeklySnapshots（从 signalHistory 转换）
+        weekly_snapshots = []
+        for i, sig in enumerate(signal_history):
+            weekly_snapshots.append({
+                "date": sig.get("date"),
+                "index": i,
+                "scores": sig.get("scores", {}),
+                "top6": sig.get("topN", []),
+                "positions": sig.get("positions", {}),
+                "avgConfidence": sig.get("avgConfidence", 0) / 100.0,
+                "totalTarget": sig.get("totalPosition", 0) / 100.0
+            })
+
+        # 计算月度收益
+        monthly_returns = _compute_monthly_returns(nav_dates, nav_pct)
+
+        # 构建 rebalanceFreq（从 signalHistory 统计）
+        rebalance_freq = _compute_rebalance_freq(signal_history, backtest_data.get("etfNameMap", {}))
+
+        # 获取最新的信号作为 latestSignal
+        latest_signal = _build_latest_signal(signal_history, backtest_data.get("etfNameMap", {}), backtest_data.get("etfSectorMap", {})) if signal_history else {}
+
+        # 计算 sectorDistribution
+        sector_dist = _compute_sector_distribution(latest_signal, backtest_data.get("etfSectorMap", {}))
+
+        payload = {
+            "generatedAt": datetime.now().isoformat(),
+            "templateMeta": {
+                "baseline": {
+                    "label": "基准策略",
+                    "description": f"F1(EMA偏离,20%) + F3(方向性量比,80%)，F2/F4/F5归零。年化{summary.get('annualReturn', 0)}%/Sharpe{summary.get('sharpe', 0)}/MDD{summary.get('maxDrawdown', 0)}%"
+                }
+            },
+            "templates": {
+                "baseline": {
+                    "summary": {
+                        "totalReturn": summary.get("totalReturn", 0),
+                        "annualReturn": summary.get("annualReturn", 0),
+                        "maxDrawdown": summary.get("maxDrawdown", 0),
+                        "sharpe": summary.get("sharpe", 0),
+                        "sortino": summary.get("sortino", 0),
+                        "calmar": summary.get("calmar", 0),
+                        "winRate": summary.get("winRate", 0),
+                        "monthlyWinRate": 0,  # 需要从日数据计算
+                        "bestMonth": max([m.get("ret", 0) for m in monthly_returns]) if monthly_returns else 0,
+                        "worstMonth": min([m.get("ret", 0) for m in monthly_returns]) if monthly_returns else 0,
+                        "maxWinStreak": 0,  # 需要计算
+                        "maxLossStreak": 0,  # 需要计算
+                        "startDate": summary.get("startDate", ""),
+                        "endDate": summary.get("endDate", ""),
+                        "tradingDays": len(nav_dates),
+                        "rebalanceCount": len(signal_history),
+                        "initialCapital": 1000000.0,
+                        "finalNav": 1000000.0 * (1 + summary.get("totalReturn", 0) / 100)
+                    },
+                    "navSeries": {
+                        "dates": nav_dates,
+                        "nav": nav_pct,
+                        "hs300": hs300_pct,
+                        "eqWeight": eq_weight_pct
+                    },
+                    "drawdownSeries": drawdown_series,
+                    "monthlyReturns": monthly_returns,
+                    "weeklySnapshots": weekly_snapshots,
+                    "rebalanceFreq": rebalance_freq,
+                    "sectorDistribution": sector_dist,
+                    "riskOrders": latest_signal,  # 复用格式
+                    "latestSignal": latest_signal
+                }
+            },
+            "config": {
+                "baseline": {
+                    "scoring": {
+                        "weights": {"ema_deviation": 0.20, "rsi_adaptive": 0.0, "volume_ratio": 0.80, "valuation": 0.0, "volatility": 0.0},
+                        "bias_bonus": 0.0,
+                        "normalization": "continuous"
+                    },
+                    "confidence": {"type": "quadratic", "dead_zone": 25, "full_zone": 65},
+                    "position": {"max_holdings": 6, "discretize_step": 0.05},
+                    "factors": {
+                        "ema": {"period_weeks": 20},
+                        "rsi": {"period_days": 14, "dead_zone": 1.5},
+                        "volume_ratio": {"window_days": 20}
+                    }
+                }
+            },
+            "strategyInfo": {
+                "name": "基准策略 (20,0,80,0,0)",
+                "description": "F1(EMA偏离,20%) + F3(方向性量比,80%)，F2/F4/F5归零",
+                "rationale": "F3(方向性量比)是绝对主导因子，F1(EMA偏离)作为趋势确认辅助。F2/F4/F5在回测中均显示为拖累因子，已归零。",
+                "backtestWindow": f"{summary.get('startDate', '')} 至 {summary.get('endDate', '')}",
+                "keyMetrics": {
+                    "annualReturn": f"{summary.get('annualReturn', 0)}%",
+                    "sharpeRatio": f"{summary.get('sharpe', 0)}",
+                    "maxDrawdown": f"{summary.get('maxDrawdown', 0)}%",
+                    "calmarRatio": f"{summary.get('calmar', 0)}"
+                },
+                "factorDetails": {
+                    "F1": {"name": "EMA偏离度", "weight": 20, "desc": "周线价格相对20周EMA的偏离百分比，sigmoid映射到[0,1]"},
+                    "F2": {"name": "RSI自适应", "weight": 0, "desc": "双通道RSI异动检测（相对z-score + 绝对位置），死区1.5。当前归零"},
+                    "F3": {"name": "方向性量比", "weight": 80, "desc": "上涨日成交额均值/下跌日成交额均值，log+sigmoid映射"},
+                    "F4": {"name": "估值百分位", "weight": 0, "desc": "历史估值百分位，regime-aware调整。当前归零"},
+                    "F5": {"name": "波动率Z-score", "weight": 0, "desc": "20日波动率相对60日基线的Z-score，反向sigmoid。当前归零"}
+                }
+            },
+            "etfNameMap": backtest_data.get("etfNameMap", {})
+        }
+    else:
+        # Fallback: Tuner 不可用时写空 payload（量化板块建设中，不展示假数据）
+        logger.warning("Tuner 不可用，量化回测板块暂不展示（建设中）")
+        payload = {
+            "generatedAt": datetime.now().isoformat(),
+            "templateMeta": {},
+            "templates": {},
+            "config": {},
+            "etfNameMap": {}
+        }
 
     content = '// Auto-generated by update_report.py\n// Baseline strategy: (20,0,80,0,0) - F1+F3 only\n// Generated: ' + datetime.now().isoformat() + '\nwindow.__QUANT_RUNTIME__ = ' + json.dumps(payload, ensure_ascii=False, indent=2) + ';\n'
     with open(payload_file, 'w', encoding='utf-8') as f:
         f.write(content)
-    logger.info("量化回测载荷已写入", {"file": payload_file})
+    logger.info("量化回测载荷已写入", {"file": payload_file, "source": "real" if backtest_data else "fallback"})
     return payload_file
 
+
+def _compute_monthly_returns(dates, nav_pct):
+    """从日度 NAV 计算月度收益。"""
+    if not dates or not nav_pct or len(dates) != len(nav_pct):
+        return []
+    monthly = {}
+    for i, d in enumerate(dates):
+        try:
+            dt = datetime.strptime(d, "%Y-%m-%d")
+            key = (dt.year, dt.month)
+            if key not in monthly:
+                monthly[key] = {"start": nav_pct[i], "end": nav_pct[i]}
+            else:
+                monthly[key]["end"] = nav_pct[i]
+        except:
+            continue
+    result = []
+    for (year, month), data in sorted(monthly.items()):
+        ret = (data["end"] / data["start"] - 1) * 100 if data["start"] > 0 else 0
+        result.append({"year": year, "month": month, "ret": round(ret, 2)})
+    return result
+
+
+def _compute_rebalance_freq(signal_history, etf_name_map):
+    """计算每只 ETF 被选中次数统计。"""
+    counts = {}
+    for sig in signal_history:
+        for code in sig.get("topN", []):
+            counts[code] = counts.get(code, 0) + 1
+    total = len(signal_history) if signal_history else 1
+    result = []
+    for code, count in sorted(counts.items(), key=lambda x: -x[1])[:10]:
+        result.append({
+            "code": code,
+            "name": etf_name_map.get(code, code),
+            "count": count,
+            "pct": round(count / total * 100, 1)
+        })
+    return result
+
+
+def _build_latest_signal(signal_history, etf_name_map, etf_sector_map=None):
+    """从最后一次调仓构建 latestSignal 格式。"""
+    if not signal_history:
+        return {}
+    if etf_sector_map is None:
+        etf_sector_map = {}
+    last = signal_history[-1]
+    holdings = []
+    all_scores = []
+
+    # 从 detail 中获取更多信息（如果有的话）
+    detail = last.get("detail", {})
+
+    for code in last.get("topN", []):
+        score = last.get("scores", {}).get(code, 0)
+        pos = last.get("positions", {}).get(code, 0)
+        # 从 detail 获取更多信息
+        code_detail = detail.get(code, {}) if detail else {}
+        holdings.append({
+            "code": code,
+            "name": etf_name_map.get(code, code),
+            "sector": etf_sector_map.get(code, ""),
+            "score": score,
+            "confidence": last.get("avgConfidence", 0) / 100,  # 使用平均信心度
+            "position": pos,
+            "price": code_detail.get("price", 0),
+            "bias": code_detail.get("action", "") == "new"  # 简化：新买入标记为偏好
+        })
+
+    # 构建 allScores（包含全部）
+    for code, score in last.get("scores", {}).items():
+        all_scores.append({
+            "code": code,
+            "name": etf_name_map.get(code, code),
+            "score": score,
+            "inTop": code in last.get("topN", [])
+        })
+    all_scores.sort(key=lambda x: -x["score"])
+
+    total_target = last.get("totalPosition", 0)
+    return {
+        "date": last.get("date"),
+        "avgConfidence": last.get("avgConfidence", 0) / 100,
+        "totalTarget": total_target,
+        "cashTarget": 100 - total_target,
+        "maxHoldings": 6,
+        "holdings": holdings,
+        "allScores": all_scores[:12]  # 只取前12
+    }
+
+
+def _compute_sector_distribution(latest_signal, etf_sector_map):
+    """计算持仓行业分布。"""
+    if not latest_signal or not latest_signal.get("holdings"):
+        return []
+    sector_weights = {}
+    for h in latest_signal["holdings"]:
+        sector = etf_sector_map.get(h["code"], "其他")
+        sector_weights[sector] = sector_weights.get(sector, 0) + h.get("position", 0)
+    total = sum(sector_weights.values()) if sector_weights else 1
+    result = []
+    for sector, weight in sector_weights.items():
+        result.append({"sector": sector, "weight": round(weight / total * 100, 1)})
+    return sorted(result, key=lambda x: -x["weight"])
 
 
 def _to_number(value):
@@ -1223,14 +1420,14 @@ def update_html_data(html_file=None):
         return False
     
     try:
-        write_runtime_payload_file(DATA_DIR, kline_data, realtime_data)
+        write_runtime_payload_file(kline_data, realtime_data)
     except Exception as e:
         logger.error("生成运行时载荷失败", {"error": str(e)})
         return False
 
     # 生成量化回测 baseline payload
     try:
-        generate_quant_baseline_payload(DATA_DIR)
+        generate_quant_baseline_payload()
     except Exception as e:
         logger.error("生成量化回测载荷失败", {"error": str(e)})
         # 量化载荷失败不阻塞主流程

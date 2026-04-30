@@ -71,12 +71,12 @@ REQUIRED_ASSET_FILES = [
     ("assets/js/chart-lifecycle.js", 1),
     ("assets/js/report-main.js", 50),
     ("assets/js/debug-toolbar.js", 10),
-    ("data/runtime_payload.js", MIN_RUNTIME_PAYLOAD_KB),
+    ("assets/js/runtime_payload.js", MIN_RUNTIME_PAYLOAD_KB),
 ]
 REQUIRED_HTML_DATA_BLOCKS = ["klineData"]
 OPTIONAL_HTML_DATA_BLOCKS = ["realtimeData"]
 
-DEFAULT_ETF_CODES = ["512400", "513120", "512070", "515880", "159566", "159865"]
+DEFAULT_ETF_CODES = ["512400", "513120", "512070", "515880", "159755", "159865"]
 
 
 
@@ -138,7 +138,10 @@ def _resolve_editorial_content_date(editorial_content: Dict, card_content: Dict)
 
 
 def _extract_data_cutoff_from_html(html_content: str) -> str:
-    match = re.search(r'数据截止:\s*(\d{4}-\d{2}-\d{2})', html_content)
+    # 宽容匹配：允许 "数据截止:" 和日期之间存在少量 HTML 标签/空白（例如
+    # <span id="report-cutoff-label">数据截止:</span> <span id="report-cutoff-value">2026-04-23</span>），
+    # 非贪婪 + 上限 120 字符，防止错误跨区段匹配到别处的日期。
+    match = re.search(r'数据截止:[^0-9]{0,120}?(\d{4}-\d{2}-\d{2})', html_content)
     return match.group(1) if match else ""
 
 
@@ -713,7 +716,7 @@ class HTMLChecker:
         result = CheckResult("D2", "JavaScript 数据块", "D")
         try:
             # 新架构：读 runtime_payload.js
-            payload_file = os.path.join(SKILL_DIR, "data", "runtime_payload.js")
+            payload_file = os.path.join(SKILL_DIR, "assets", "js", "runtime_payload.js")
             if os.path.exists(payload_file):
                 with open(payload_file, "r", encoding="utf-8") as f:
                     payload_content = f.read()
@@ -880,17 +883,19 @@ class WorkflowChecker:
 
             
             # 提取日期字段
-            date_patterns = {
-                "report_date": r"报告日期:.*?(\d{4}年\d{2}月\d{2}日)",
-                "data_cutoff": r"数据截止:\s*(\d{4}-\d{2}-\d{2})",
-                "generation_time": r"生成时间:\s*(\d{4}-\d{2}-\d{2})",
-            }
-            
             found_dates = {}
-            for key, pattern in date_patterns.items():
-                match = re.search(pattern, html_content)
-                if match:
-                    found_dates[key] = match.group(1)
+
+            report_date_match = re.search(r"报告日期:.*?(\d{4}年\d{2}月\d{2}日)", html_content)
+            if report_date_match:
+                found_dates["report_date"] = report_date_match.group(1)
+
+            gen_time_match = re.search(r"生成时间:\s*(\d{4}-\d{2}-\d{2})", html_content)
+            if gen_time_match:
+                found_dates["generation_time"] = gen_time_match.group(1)
+
+            data_cutoff = _extract_data_cutoff_from_html(html_content)
+            if data_cutoff:
+                found_dates["data_cutoff"] = data_cutoff
             
             if len(found_dates) >= 2:
                 result.status = "PASS"

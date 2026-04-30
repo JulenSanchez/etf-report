@@ -196,12 +196,15 @@ def test_update_html_data_returns_false_when_realtime_const_missing(tmp_path, mo
     html_file.write_text(original_html, encoding="utf-8")
 
     monkeypatch.setattr(module, "DATA_DIR", str(data_dir))
+    assets_js_dir = tmp_path / "assets" / "js"
+    assets_js_dir.mkdir(parents=True)
+    monkeypatch.setattr(module, "ASSETS_JS_DIR", str(assets_js_dir))
     monkeypatch.setattr(module, "HTML_FILE", str(html_file))
 
     # 新契约：即使 realtimeData 常量缺失，也应返回 True（不阻断主流程）
     assert module.update_html_data() is True
     # runtime_payload.js 必定已写入
-    runtime_payload = (data_dir / "runtime_payload.js").read_text(encoding="utf-8")
+    runtime_payload = (assets_js_dir / "runtime_payload.js").read_text(encoding="utf-8")
     assert 'window.__ETF_REPORT_RUNTIME__ =' in runtime_payload
 
 
@@ -243,12 +246,15 @@ def test_update_html_data_replaces_existing_realtime_const(tmp_path, monkeypatch
 
 
     monkeypatch.setattr(module, "DATA_DIR", str(data_dir))
+    assets_js_dir = tmp_path / "assets" / "js"
+    assets_js_dir.mkdir(parents=True)
+    monkeypatch.setattr(module, "ASSETS_JS_DIR", str(assets_js_dir))
     monkeypatch.setattr(module, "HTML_FILE", str(html_file))
 
     assert module.update_html_data() is True
 
     updated = html_file.read_text(encoding="utf-8")
-    runtime_payload = (data_dir / "runtime_payload.js").read_text(encoding="utf-8")
+    runtime_payload = (assets_js_dir / "runtime_payload.js").read_text(encoding="utf-8")
     assert 'const realtimeData = {' in updated
     assert '"etf_price": 200.0' in updated
     assert '"old": true' not in updated
@@ -303,6 +309,9 @@ def test_update_html_data_honors_explicit_html_target(tmp_path, monkeypatch, loa
     )
 
     monkeypatch.setattr(module, "DATA_DIR", str(data_dir))
+    assets_js_dir = tmp_path / "assets" / "js"
+    assets_js_dir.mkdir(parents=True)
+    monkeypatch.setattr(module, "ASSETS_JS_DIR", str(assets_js_dir))
     monkeypatch.setattr(module, "HTML_FILE", str(source_html))
 
     assert module.update_html_data(html_file=str(target_html)) is True
@@ -336,7 +345,7 @@ def test_update_html_data_returns_false_when_kline_file_missing(tmp_path, monkey
 
 def test_update_html_data_succeeds_without_inline_const(tmp_path, monkeypatch, load_module):
     """BUG-011 回归保护：新架构下 index.html 不再内联 const klineData/realtimeData
-    （已抽离到 data/runtime_payload.js）。此时 update_html_data 不应 ERROR 退出，
+    （已抽离到 assets/js/runtime_payload.js）。此时 update_html_data 不应 ERROR 退出，
     应该在 runtime_payload.js 成功写入后，对找不到内联 const 的情况降级为 INFO 跳过。
     """
     module = load_module("update_report")
@@ -370,19 +379,22 @@ def test_update_html_data_succeeds_without_inline_const(tmp_path, monkeypatch, l
         '<div class="info-value text-red" id="daily-change-value-510000">旧值</div>'
         '<table class="performance-table" id="performance-table-510000"><tr><td>旧业绩</td></tr></table>'
         '<div class="etf-change negative" id="overview-card-510000-change">旧概览涨幅</div>'
-        '<script src="./data/runtime_payload.js"></script>'
+        '<script src="./assets/js/runtime_payload.js"></script>'
         '<script src="./assets/js/report-main.js"></script>',
         encoding="utf-8",
     )
 
     monkeypatch.setattr(module, "DATA_DIR", str(data_dir))
+    assets_js_dir = tmp_path / "assets" / "js"
+    assets_js_dir.mkdir(parents=True)
+    monkeypatch.setattr(module, "ASSETS_JS_DIR", str(assets_js_dir))
     monkeypatch.setattr(module, "HTML_FILE", str(html_file))
 
     # 主要断言：即使 HTML 里没有 const，也应该返回 True（不再 ERROR 退出）
     assert module.update_html_data() is True
 
     # runtime_payload.js 必须已写入，这是新架构的唯一数据源
-    runtime_payload = (data_dir / "runtime_payload.js").read_text(encoding="utf-8")
+    runtime_payload = (assets_js_dir / "runtime_payload.js").read_text(encoding="utf-8")
     assert 'window.__ETF_REPORT_RUNTIME__ =' in runtime_payload
     assert '"etf_price": 200.0' in runtime_payload
 
@@ -425,6 +437,9 @@ def test_update_html_data_syncs_editorial_content_blocks(tmp_path, monkeypatch, 
 
 
     monkeypatch.setattr(module, "DATA_DIR", str(data_dir))
+    assets_js_dir = tmp_path / "assets" / "js"
+    assets_js_dir.mkdir(parents=True)
+    monkeypatch.setattr(module, "ASSETS_JS_DIR", str(assets_js_dir))
     monkeypatch.setattr(module, "HTML_FILE", str(html_file))
     monkeypatch.setattr(
         module,
@@ -803,13 +818,13 @@ def test_run_editorial_update_writes_new_yaml(tmp_path, monkeypatch, load_module
 
     # mock editorial_fetcher 返回一个完整的新结果
     class FakeResult:
-        stats = {"etf:159566": {"final": 4}}
+        stats = {"etf:159755": {"final": 4}}
 
         def to_yaml_dict(self):
             return {
                 "content_date": "2026-04-21",
                 "etf_cards": {
-                    "159566": {
+                    "159755": {
                         "freshness_policy": "manual_daily",
                         "research_cards": ["💡 宁德时代一季报靓丽", "💡 阳光电源业绩预增"],
                     }
@@ -833,8 +848,8 @@ def test_run_editorial_update_writes_new_yaml(tmp_path, monkeypatch, load_module
 
     written = _yaml.safe_load(editorial_path.read_text(encoding="utf-8"))
     assert written["content_date"] == "2026-04-21"
-    assert "159566" in written["etf_cards"]
-    assert len(written["etf_cards"]["159566"]["research_cards"]) == 2
+    assert "159755" in written["etf_cards"]
+    assert len(written["etf_cards"]["159755"]["research_cards"]) == 2
     assert "global-news-card" in written["macro_cards"]
 
 

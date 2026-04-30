@@ -25,7 +25,7 @@ from quant_backtest import run_backtest
 
 CONFIG_PATH = SKILL_DIR / "config" / "quant_universe.yaml"
 TEMPLATES_PATH = SKILL_DIR / "config" / "quant_templates.yaml"
-OUTPUT_PATH = SKILL_DIR / "data" / "quant_payload.js"
+OUTPUT_PATH = SKILL_DIR / "assets" / "js" / "quant_payload.js"
 
 
 def load_config():

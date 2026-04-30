@@ -34,14 +34,14 @@ def test_check_required_imports_uses_real_import_names(monkeypatch, load_module)
 
 
 def test_check_js_data_blocks_passes_when_only_kline_data_exists(tmp_path, monkeypatch, load_module):
-    """BUG-015 后 D2 优先读 data/runtime_payload.js。此测试验证回退分支：
+    """BUG-015 后 D2 优先读 assets/js/runtime_payload.js。此测试验证回退分支：
     当 runtime_payload.js 不存在时，仍能识别老架构 HTML 内联 const klineData。
     """
     module = load_module("health_check")
     html_file = tmp_path / "index.html"
     html_file.write_text('<script>const klineData = {"ok": true};</script>', encoding="utf-8")
 
-    # 将 SKILL_DIR 指向 tmp_path，确保 data/runtime_payload.js 不存在，走回退分支
+    # 将 SKILL_DIR 指向 tmp_path，确保 assets/js/runtime_payload.js 不存在，走回退分支
     monkeypatch.setattr(module, "HTML_FILE", str(html_file))
     monkeypatch.setattr(module, "SKILL_DIR", str(tmp_path))
 
@@ -54,11 +54,11 @@ def test_check_js_data_blocks_passes_when_only_kline_data_exists(tmp_path, monke
 
 
 def test_check_js_data_blocks_passes_when_runtime_payload_has_both_keys(tmp_path, monkeypatch, load_module):
-    """BUG-015 回归保护：D2 应能从 data/runtime_payload.js 读取 klineData/realtimeData。"""
+    """BUG-015 回归保护：D2 应能从 assets/js/runtime_payload.js 读取 klineData/realtimeData。"""
     module = load_module("health_check")
-    data_dir = tmp_path / "data"
-    data_dir.mkdir()
-    (data_dir / "runtime_payload.js").write_text(
+    assets_js_dir = tmp_path / "assets" / "js"
+    assets_js_dir.mkdir(parents=True)
+    (assets_js_dir / "runtime_payload.js").write_text(
         'window.__ETF_REPORT_RUNTIME__ = {\n'
         '  "klineData": {"510000": {"name": "示例ETF"}},\n'
         '  "realtimeData": {"510000": {"etf_change": 1.23}}\n'
@@ -67,7 +67,7 @@ def test_check_js_data_blocks_passes_when_runtime_payload_has_both_keys(tmp_path
     )
     # HTML 本身不含 const，模拟 REQ-146 后真实产物
     html_file = tmp_path / "index.html"
-    html_file.write_text('<script src="./data/runtime_payload.js"></script>', encoding="utf-8")
+    html_file.write_text('<script src="./assets/js/runtime_payload.js"></script>', encoding="utf-8")
 
     monkeypatch.setattr(module, "HTML_FILE", str(html_file))
     monkeypatch.setattr(module, "SKILL_DIR", str(tmp_path))
@@ -100,7 +100,7 @@ def test_check_file_sizes_accepts_current_html_scale(tmp_path, monkeypatch, load
     (assets_js / "chart-lifecycle.js").write_text("E" * (3 * 1024), encoding="utf-8")
     (assets_js / "report-main.js").write_text("F" * (100 * 1024), encoding="utf-8")
     (assets_js / "debug-toolbar.js").write_text("G" * (20 * 1024), encoding="utf-8")
-    (data_dir / "runtime_payload.js").write_text("H" * (150 * 1024), encoding="utf-8")
+    (assets_js / "runtime_payload.js").write_text("H" * (150 * 1024), encoding="utf-8")
 
     monkeypatch.setattr(module, "HTML_FILE", str(html_file))
     monkeypatch.setattr(module, "DATA_DIR", str(data_dir))

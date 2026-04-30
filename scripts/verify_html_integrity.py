@@ -39,7 +39,7 @@ HTML_FILE = os.path.join(SKILL_DIR, "index.html")
 
 
 # 6 支 ETF 代码（优先从配置读取，便于后续替换 ETF 时只维护一份名单）
-DEFAULT_ETF_CODES = ["512400", "513120", "512070", "515880", "159566", "159865"]
+DEFAULT_ETF_CODES = ["512400", "513120", "512070", "515880", "159755", "159865"]
 
 
 
@@ -196,13 +196,13 @@ def check_html_tag_balance(html_content):
 
 
 def _load_runtime_payload():
-    """读取并解析 data/runtime_payload.js 里的 window.__ETF_REPORT_RUNTIME__ = {...};
+    """读取并解析 assets/js/runtime_payload.js 里的 window.__ETF_REPORT_RUNTIME__ = {...};
 
     返回 dict 或 None（文件不存在 / 解析失败）。REQ-146 后数据源从 HTML 内联
     const 迁移到此外置 JS；本函数供 check_json_data_blocks / check_etf_data_completeness
     在"HTML 无内联 const"新架构下使用。
     """
-    payload_file = os.path.join(SKILL_DIR, "data", "runtime_payload.js")
+    payload_file = os.path.join(SKILL_DIR, "assets", "js", "runtime_payload.js")
     if not os.path.exists(payload_file):
         return None
     try:

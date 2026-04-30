@@ -9,9 +9,7 @@ build/
 # ========= 运行产物 =========
 logs/
 *.log
-data/*
-!data/runtime_payload.js
-!data/quant_payload.js
+data/
 outputs/
 _working/
 .backup/
