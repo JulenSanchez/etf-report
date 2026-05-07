@@ -144,7 +144,9 @@ class TestValuationEngine:
         engine_mod = load_module("valuation_engine")
         engine = engine_mod.ValuationEngine()
         etfs = engine.list_etfs()
-        assert set(etfs) == {"512400", "513120", "512070", "515880", "159755", "159865"}
+        # 6 支核心 ETF 必须存在（锚点表可能包含更多扩展 ETF）
+        core_etfs = {"512400", "513120", "512070", "515880", "159755", "159865"}
+        assert core_etfs.issubset(set(etfs)), f"Missing core ETFs: {core_etfs - set(etfs)}, got: {set(etfs)}"
 
     def test_evaluate_returns_none_for_unknown_etf(self, load_module):
         engine_mod = load_module("valuation_engine")
@@ -196,8 +198,9 @@ class TestValuationEngine:
             "159865": 3.6,  # median
         }
         results = engine.evaluate_all(current)
-        # 应该覆盖全部 6 支（未提供 current 的给 no-data）
-        assert set(results.keys()) == {"512400", "513120", "512070", "515880", "159755", "159865"}
+        # 应该覆盖全部锚点 ETF（未提供 current 的给 no-data）
+        core_etfs = {"512400", "513120", "512070", "515880", "159755", "159865"}
+        assert core_etfs.issubset(set(results.keys())), f"Missing core ETFs in results: {core_etfs - set(results.keys())}"
         assert results["515880"]["verdict"]["label"] == "偏高"
         assert results["159865"]["verdict"]["label"] == "合理"
         assert results["512400"]["confidence"] == "no-data"

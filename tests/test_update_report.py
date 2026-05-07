@@ -200,6 +200,7 @@ def test_update_html_data_returns_false_when_realtime_const_missing(tmp_path, mo
     assets_js_dir.mkdir(parents=True)
     monkeypatch.setattr(module, "ASSETS_JS_DIR", str(assets_js_dir))
     monkeypatch.setattr(module, "HTML_FILE", str(html_file))
+    monkeypatch.setattr(module, "generate_quant_baseline_payload", lambda: None)
 
     # 新契约：即使 realtimeData 常量缺失，也应返回 True（不阻断主流程）
     assert module.update_html_data() is True
@@ -250,6 +251,7 @@ def test_update_html_data_replaces_existing_realtime_const(tmp_path, monkeypatch
     assets_js_dir.mkdir(parents=True)
     monkeypatch.setattr(module, "ASSETS_JS_DIR", str(assets_js_dir))
     monkeypatch.setattr(module, "HTML_FILE", str(html_file))
+    monkeypatch.setattr(module, "generate_quant_baseline_payload", lambda: None)
 
     assert module.update_html_data() is True
 
@@ -313,6 +315,7 @@ def test_update_html_data_honors_explicit_html_target(tmp_path, monkeypatch, loa
     assets_js_dir.mkdir(parents=True)
     monkeypatch.setattr(module, "ASSETS_JS_DIR", str(assets_js_dir))
     monkeypatch.setattr(module, "HTML_FILE", str(source_html))
+    monkeypatch.setattr(module, "generate_quant_baseline_payload", lambda: None)
 
     assert module.update_html_data(html_file=str(target_html)) is True
 
@@ -389,6 +392,7 @@ def test_update_html_data_succeeds_without_inline_const(tmp_path, monkeypatch, l
     assets_js_dir.mkdir(parents=True)
     monkeypatch.setattr(module, "ASSETS_JS_DIR", str(assets_js_dir))
     monkeypatch.setattr(module, "HTML_FILE", str(html_file))
+    monkeypatch.setattr(module, "generate_quant_baseline_payload", lambda: None)
 
     # 主要断言：即使 HTML 里没有 const，也应该返回 True（不再 ERROR 退出）
     assert module.update_html_data() is True
@@ -441,6 +445,7 @@ def test_update_html_data_syncs_editorial_content_blocks(tmp_path, monkeypatch, 
     assets_js_dir.mkdir(parents=True)
     monkeypatch.setattr(module, "ASSETS_JS_DIR", str(assets_js_dir))
     monkeypatch.setattr(module, "HTML_FILE", str(html_file))
+    monkeypatch.setattr(module, "generate_quant_baseline_payload", lambda: None)
     monkeypatch.setattr(
         module,
         "load_editorial_content",
@@ -579,6 +584,7 @@ def test_main_publish_success_runs_cleanup_and_publishers(tmp_path, monkeypatch,
     monkeypatch.setattr(module, "HTML_FILE", str(source_html))
     monkeypatch.setattr(module, "run_kline_update", lambda: True)
     monkeypatch.setattr(module, "run_realtime_update", lambda: True)
+    monkeypatch.setattr(module, "run_editorial_update", lambda: True)
     monkeypatch.setattr(module, "update_html_data", fake_update_html_data)
     monkeypatch.setattr(module, "update_html_dates", fake_update_html_dates)
     monkeypatch.setattr(module, "verify_output_files", fake_verify_output_files)
@@ -593,6 +599,11 @@ def test_main_publish_success_runs_cleanup_and_publishers(tmp_path, monkeypatch,
         ),
     )
     monkeypatch.setitem(sys.modules, "health_check", fake_health_check)
+    monkeypatch.setitem(
+        sys.modules,
+        "valuation_fetcher",
+        SimpleNamespace(run_valuation_update=lambda html_file=None: True),
+    )
     monkeypatch.setitem(
         sys.modules,
         "notifier",
@@ -643,6 +654,7 @@ def test_main_restores_backup_when_html_integrity_fails(monkeypatch, load_module
 
     monkeypatch.setattr(module, "run_kline_update", lambda: True)
     monkeypatch.setattr(module, "run_realtime_update", lambda: True)
+    monkeypatch.setattr(module, "run_editorial_update", lambda: True)
     monkeypatch.setattr(module, "update_html_data", lambda html_file=None: True)
     monkeypatch.setattr(module, "update_html_dates", lambda html_file=None: True)
     monkeypatch.setattr(module, "verify_output_files", lambda html_file=None: True)
@@ -657,6 +669,11 @@ def test_main_restores_backup_when_html_integrity_fails(monkeypatch, load_module
             verify_html_integrity=lambda _path: {"passed": False},
             print_report=lambda _result, _path: None,
         ),
+    )
+    monkeypatch.setitem(
+        sys.modules,
+        "valuation_fetcher",
+        SimpleNamespace(run_valuation_update=lambda html_file=None: True),
     )
 
     assert module.main(publish=False) is False
@@ -737,6 +754,7 @@ def test_main_returns_false_when_update_html_data_fails(monkeypatch, load_module
 
     monkeypatch.setattr(module, "run_kline_update", lambda: True)
     monkeypatch.setattr(module, "run_realtime_update", lambda: True)
+    monkeypatch.setattr(module, "run_editorial_update", lambda: True)
     monkeypatch.setattr(module, "update_html_data", lambda html_file=None: False)
     monkeypatch.setitem(sys.modules, "transaction", SimpleNamespace(TransactionManager=FakeTx))
 
@@ -769,6 +787,7 @@ def test_main_continues_when_realtime_update_fails(monkeypatch, load_module):
 
     monkeypatch.setattr(module, "run_kline_update", lambda: True)
     monkeypatch.setattr(module, "run_realtime_update", lambda: False)
+    monkeypatch.setattr(module, "run_editorial_update", lambda: True)
     monkeypatch.setattr(module, "update_html_data", lambda html_file=None: True)
     monkeypatch.setattr(module, "update_html_dates", lambda html_file=None: True)
     monkeypatch.setattr(module, "verify_output_files", lambda html_file=None: True)
@@ -788,6 +807,11 @@ def test_main_continues_when_realtime_update_fails(monkeypatch, load_module):
         sys.modules,
         "health_check",
         SimpleNamespace(run_all_checks=lambda: [SimpleNamespace(status="PASS")]),
+    )
+    monkeypatch.setitem(
+        sys.modules,
+        "valuation_fetcher",
+        SimpleNamespace(run_valuation_update=lambda html_file=None: True),
     )
 
     assert module.main(publish=False) is True
