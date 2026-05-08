@@ -1,10 +1,10 @@
-# ETF Report 安全发布规程（本地私有）
+# ETF Report 安全发布规程（公开仓）
 
 ## 定位
 
 1. **唯一门禁**：发布前到底要做什么，只由本文定义。
 2. **单一事实源**：`PLAN.md` 与 `.codebuddy/rules/etf-report.mdc` 只能引用本文，不能再各自维护一套并列的发布前检查。
-3. **本地治理文档**：本文位于技能根目录 `RELEASE_RUNBOOK.md`，只服务本地治理，不进入公开仓。
+3. **公开仓治理文档**：本文位于技能根目录 `RELEASE_RUNBOOK.md`，随仓库公开。治理文件（`plans/`、`CONTRIBUTING.md` 等）已在公开仓中跟踪。
 
 ## 提交边界速查
 
@@ -12,8 +12,10 @@
 |------|----------|------------|------|
 | 公开稳定文档 | `README.md`、`SKILL.md`、`WORKFLOW.md`、`DESIGN.md`、`docs/AKSHARE_*`、`docs/DAILY_UPDATE_PARAMETERS.md`、`docs/ETF_REPLACEMENT_CHECKLIST.md`、`docs/HEALTH_CHECK_*` | ✅ 可以 | 对外用户可见，且内容稳定、可复用 |
 | 实现与公开模板 | `scripts/`、`tests/`、`requirements.txt`、`config/*.example.yaml`、`config/holdings.yaml`、根目录 `index.html` | ✅ 按需 | 属于实际功能、测试、公开模板或发布产物 |
-| 本地治理文档 | `CONTRIBUTING.md`、`PLAN.md`、`plans/`、`statusbar.config.md`、`RELEASE_RUNBOOK.md`、`AUDIT_RUNBOOK.md` | ❌ 不可 | 只服务本地协作、需求治理、状态网络和复盘，不属于公开技能面 |
-| 私有运行与敏感配置 | `config/config.yaml`、`config/secrets.yaml`、`data/`、`logs/`、`_working/`、`.backup/`、`outputs/` | ❌ 不可 | 含本地私有值、运行缓存、日志、临时输出或备份 |
+| 治理文档 | `CONTRIBUTING.md`、`PLAN.md`、`plans/`、`statusbar.config.md`、`RELEASE_RUNBOOK.md`、`AUDIT_RUNBOOK.md`、`runbooks/`、`research/` | ✅ 可以 | 公开仓策略：治理文件纳入版本控制，便于跨机器同步与协作追溯 |
+| 运行时配置 | `config/config.yaml` | ✅ 可以 | 已移除本地绝对路径，内容可公开；仅 `repo_root` 为空字符串 |
+| 敏感配置 | `config/secrets.yaml` | ❌ 不可 | 含 API 密钥等敏感信息，.gitignore 必须覆盖 |
+| 运行产物与缓存 | `data/`、`logs/`、`_working/`、`.backup/`、`outputs/` | ❌ 不可 | 运行缓存、日志、临时输出或备份，本地生成即可 |
 
 ### `docs/` 准入标准
 
@@ -26,7 +28,6 @@
 
 - 需求草案、协议草案、填写模板
 - postmortem / incident / 紧急事故复盘
-- 只给本地维护者看的规程（如发布门禁、审计流程）
 - 单个需求的集成笔记、一次性迁移说明、内部协作口径
 
 ### 文档归位规则
@@ -41,7 +42,7 @@
 
 在任何 Git 操作前，先确认这次发布是否具备资格：
 
-- [ ] `plans/Board.md` 的 `in_progress` 区为空
+- [ ] `plans/Board.md` 的 `in_progress` 区无活跃开发项（搁置项不阻塞）
 - [ ] `plans/Board.md` 的 `bugs` 区没有 `open/fixing` 状态的 `critical/major` Bug
 - [ ] 正常发布时，`plans/Board.md` 的 `done` 区有内容
 - [ ] 如果是"已发布后的补救治理"，先明确远端 / Pages 是否已经处于目标版本状态，再决定补救范围
@@ -66,19 +67,18 @@
 - [ ] 回读 `git diff --stat`
 - [ ] 排查本地绝对路径（如 `C:/Users/...`、`file:///...`）
 - [ ] 排查私有规则 / 本地协作协议引用（如 `~/.codebuddy/...`、只对本机成立的守卫说明）
-- [ ] 排查敏感信息（密钥、密码、token、secret）
+- [ ] 排查敏感信息（密钥、密码、token、secret）——尤其关注 `config/secrets.yaml` 是否误入暂存
 - [ ] 排查调试分支、一次性注释、临时样本、手工排查产物
 - [ ] 排查 `docs/` 是否混入草案、复盘、私有规程
 
-### Phase 3: 禁止跟踪文件核对
+### Phase 3: 敏感文件边界核对
 
-确认公开仓边界没有被破坏：
+确认公开仓中不存在敏感文件：
 
-- [ ] `.gitignore` 已覆盖 `PLAN.md`、`plans/`、`statusbar.config.md`、`CONTRIBUTING.md`、`RELEASE_RUNBOOK.md`、`AUDIT_RUNBOOK.md`、运行数据、日志、临时目录、本地私有配置
-- [ ] 运行 `git check-ignore -v PLAN.md plans/ statusbar.config.md CONTRIBUTING.md RELEASE_RUNBOOK.md AUDIT_RUNBOOK.md`
-- [ ] 运行 `git ls-files PLAN.md plans statusbar.config.md CONTRIBUTING.md RELEASE_RUNBOOK.md AUDIT_RUNBOOK.md config/config.yaml config/secrets.yaml`
-- [ ] 上面 `git ls-files` 对这些禁止提交对象应返回空结果
-- [ ] 若发现禁止跟踪文件已被 Git 跟踪，先修复 `.gitignore` 并执行 `git rm --cached` 清索引，再继续
+- [ ] `.gitignore` 已覆盖 `config/secrets.yaml`、运行数据、日志、临时目录
+- [ ] 运行 `git ls-files config/secrets.yaml`，应返回空结果
+- [ ] 若发现 `secrets.yaml` 已被跟踪，立即执行 `git rm --cached` + `.gitignore` 修复 + `git filter-branch` 清历史
+- [ ] 治理文件（`plans/`、`CONTRIBUTING.md` 等）已合法跟踪，无需排除
 
 ### Phase 4: 分段暂存与提交审查
 
@@ -106,7 +106,7 @@
 - [ ] 运行 `git fetch origin`
 - [ ] 运行 `git log origin/main..HEAD --oneline`
 - [ ] 运行 `git diff origin/main HEAD`
-- [ ] 确认没有混入无关提交、调试提交、禁止跟踪文件删除/恢复异常
+- [ ] 确认没有混入无关提交、调试提交、敏感文件异常
 - [ ] 确认 `docs/` 里只剩稳定公开补充文档
 - [ ] 明确本次走 **PR 路径** 还是 **快速直推路径**
 
@@ -145,7 +145,7 @@
 
 - 发布前的完整审计，以 `AUDIT_RUNBOOK.md` 为执行细则。
 - 固定周期的周审计由 CodeBuddy automation 触发，默认每周一上午执行一次 `python scripts/audit_project.py --full --report-only`。
-- 若审计发现公开边界被破坏，应先修复边界，再谈发布。
+- 若审计发现敏感文件边界被破坏（如 `secrets.yaml` 泄露），应先修复边界，再谈发布。
 
 ## 执行口径
 
