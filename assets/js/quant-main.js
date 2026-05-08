@@ -1,30 +1,26 @@
 /**
- * REQ-177 M3.1 v2: quant-main.js
- * 多模板量化回测可视化 - 模板切换 + 净值曲线click联动快照
+ * quant-main.js v4 — Tuner UI port
+ * Two-column layout: left (perf + kline replay), right (snapshot)
  *
- * 数据结构: window.__QUANT_RUNTIME__ = {
- *   templateMeta: { conservative: {label, description}, ... },
- *   templates: { conservative: {summary, navSeries, hs300Pct, drawdownSeries, signalHistory, ...}, ... },
- *   config: { conservative: {scoring, confidence, position, factors}, ... },
- *   etfNameMap: { "512400": "有色金属ETF", ... },
+ * Data: window.__QUANT_RUNTIME__ = {
+ *   templateMeta, templates, config, etfNameMap,
+ *   klineReplay: { code: { dates, close, volume, rsi } }
  * }
  */
 (function () {
   "use strict";
 
   var Q = window.__QUANT_RUNTIME__;
-  if (!Q) { console.warn("[quant-main] __QUANT_RUNTIME__ not found"); return; }
+  if (!Q || !Q.templates || Object.keys(Q.templates).length === 0) return;
 
   var LC = window.__etfChartLifecycle || { bindChart: function(){}, resizeAllCharts: function(){} };
 
-  // ── Colors ────────────────────────────────────────────────
   var C = {
     green: "#10b981", red: "#ef4444", blue: "#3b82f6",
     orange: "#f59e0b", cyan: "#06b6d4", purple: "#8b5cf6",
     gray: "#64748b", text: "#e0e0e0", muted: "#94a3b8",
     gridLine: "rgba(255,255,255,0.06)",
   };
-  var PALETTE = [C.blue, C.green, C.orange, C.red, C.cyan, C.purple, "#ec4899", "#a78bfa", "#34d399", "#fbbf24"];
 
   function baseAxis() {
     return { axisLine:{lineStyle:{color:C.gridLine}}, axisTick:{show:false}, axisLabel:{color:C.muted,fontSize:11}, splitLine:{lineStyle:{color:C.gridLine}} };
@@ -34,403 +30,616 @@
   }
 
   // ── State ─────────────────────────────────────────────────
-  var activeTemplate = "baseline";
-  var navChart = null;  // keep reference for click binding
+  var activeTemplate = "yr1";
+  var navChart = null, ddChart = null;
+  var klineFreq = "daily";
+  var klineReplayChart = null;
+  var currentKlineCode = null;
   var initialized = false;
+  var currentSigIdx = -1;
 
   // ── Public API ────────────────────────────────────────────
   window.__initQuantPanel = function () {
-    if (!initialized) {
-      initialized = true;
-      renderAll();
-    } else {
-      setTimeout(function(){ LC.resizeAllCharts(); }, 200);
-    }
+    if (!initialized) { initialized = true; renderAll(); }
+    else { setTimeout(function(){ LC.resizeAllCharts(); }, 200); }
   };
 
-  window.__switchQuantTemplate = function (tid) {
-    // 正式页面为纯展示模式，不支持模板切换
-    console.log('[quant-main] Template switching disabled in formal page');
+  window.switchQuantPeriod = function (tid) {
+    if (!Q.templates[tid]) return;
+    activeTemplate = tid;
+    currentKlineCode = null;
+    document.getElementById("seg-yr1").classList.toggle("active", tid === "yr1");
+    document.getElementById("seg-yr3").classList.toggle("active", tid === "yr3");
+    renderAll();
+  };
+
+  window.switchQuantKlineFreq = function (freq) {
+    klineFreq = freq;
+    document.getElementById("quant-kline-freq-daily").classList.toggle("active", freq === "daily");
+    document.getElementById("quant-kline-freq-weekly").classList.toggle("active", freq === "weekly");
+    var tpl = Q.templates[activeTemplate];
+    if (tpl) renderNavChart(tpl);
   };
 
   // ── Master render ─────────────────────────────────────────
   function renderAll() {
     var tpl = Q.templates[activeTemplate];
-    if (!tpl) {
-      console.warn('[quant-main] Template not found:', activeTemplate);
-      return;
-    }
-
-    renderTemplateDesc();
-    renderParams();
-    renderMetricCards(tpl);
+    if (!tpl) return;
+    renderParamTags();
+    renderMetrics(tpl);
     renderNavChart(tpl);
     renderDrawdownChart(tpl);
-    renderSnapshot(tpl, tpl.weeklySnapshots.length - 1);  // latest week
-    renderFreqBar(tpl);
-    renderLatestSignal(tpl);
-    renderRiskOrders(tpl);
-    renderFooter();
-
+    // Show snapshot section
+    var snapSec = document.getElementById("quant-snapshot-section");
+    if (snapSec) snapSec.style.display = "block";
+    // Render latest snapshot
+    var lastIdx = tpl.weeklySnapshots ? tpl.weeklySnapshots.length - 1 : -1;
+    renderSnapshot(tpl, lastIdx);
     setTimeout(function(){ LC.resizeAllCharts(); }, 300);
   }
 
-  // ── Template description ──────────────────────────────────
-  function renderTemplateDesc() {
-    var el = document.getElementById("quant-template-desc");
-    if (!el) return;
-    var meta = Q.templateMeta[activeTemplate];
-    el.textContent = meta ? meta.description : "";
+  // ── Parameter Tags ────────────────────────────────────────
+  function renderParamTags() {
+    var container = document.getElementById("quant-param-tags");
+    if (!container) return;
+    var cfg = (Q.config || {})[activeTemplate];
+    if (!cfg) { container.innerHTML = ''; return; }
+
+    var conf = cfg.confidence || {};
+    var pos = cfg.position || {};
+    var weights = (cfg.scoring || {}).weights || {};
+
+    var tags = [];
+    var w1 = Math.round((weights.ema_deviation || 0) * 100);
+    var w3 = Math.round((weights.volume_ratio || 0) * 100);
+    tags.push({l:"F1", v:w1+"%", c:w1>0?C.blue:C.gray});
+    tags.push({l:"F3", v:w3+"%", c:w3>0?C.green:C.gray});
+    tags.push({l:"MA", v:(conf.ma_trend_period||20)+"", c:C.cyan});
+    tags.push({l:"Bull", v:((conf.ma_bull_pos||1)*100).toFixed(0)+"%", c:C.green});
+    tags.push({l:"Bear", v:((conf.ma_bear_pos||0.4)*100).toFixed(0)+"%", c:C.orange});
+    if (conf.ma_direction_confirm) tags.push({l:"方向确认", v:"ON", c:C.purple});
+    tags.push({l:"调仓", v:pos.rebalance_freq==="daily"?"日频":"周频", c:C.muted});
+    tags.push({l:"持仓", v:(pos.max_holdings||6)+"支", c:C.muted});
+
+    var html = '';
+    for (var i = 0; i < tags.length; i++) {
+      var t = tags[i];
+      html += '<span class="qt-param-tag"><span style="color:'+C.muted+'">'+t.l+'</span><span style="color:'+t.c+';font-weight:600;">'+t.v+'</span></span>';
+    }
+    container.innerHTML = html;
   }
 
-  // ── Params ────────────────────────────────────────────────
-  function renderParams() {
-    // 正式页面为纯展示模式，参数卡片已在HTML中静态展示
-    // 此函数保留但不执行动态渲染
-    return;
-  }
-
-  // ── Metric Cards ──────────────────────────────────────────
-  function renderMetricCards(tpl) {
-    var s=tpl.summary;
-    // First row: 4 primary metrics
-    var map=[
-      {id:"quant-metric-total-return-value",v:s.totalReturn.toFixed(2)+"%",pos:s.totalReturn>=0},
-      {id:"quant-metric-annual-return-value",v:s.annualReturn.toFixed(2)+"%",pos:s.annualReturn>=0},
-      {id:"quant-metric-max-drawdown-value",v:s.maxDrawdown.toFixed(2)+"%",pos:false},
-      {id:"quant-metric-sharpe-value",v:s.sharpe.toFixed(2),pos:s.sharpe>=1},
+  // ── Metrics (8 cards) ────────────────────────────────────
+  function renderMetrics(tpl) {
+    var s = tpl.summary;
+    var map = [
+      {id:"m-annual",  v:s.annualReturn.toFixed(1)+"%", cls:s.annualReturn>=0?"green":"red"},
+      {id:"m-dd",      v:s.maxDrawdown.toFixed(1)+"%", cls:"red"},
+      {id:"m-sharpe",  v:s.sharpe.toFixed(2), cls:"blue"},
+      {id:"m-sortino", v:s.sortino.toFixed(2), cls:"blue"},
+      {id:"m-calmar",  v:s.calmar.toFixed(2), cls:"orange"},
+      {id:"m-wr",      v:s.winRate.toFixed(1)+"%", cls:s.winRate>=50?"green":""},
+      {id:"m-rb",      v:s.rebalanceCount+"次", cls:""},
+      {id:"m-comm",    v:(s.commissionPct||0).toFixed(2)+"%", cls:""},
     ];
-    for(var i=0;i<map.length;i++){
-      var el=document.getElementById(map[i].id);
-      if(el){el.textContent=map[i].v;el.style.color=map[i].pos?C.green:C.red;}
-    }
-    // Extended metrics (rendered below the 4 cards)
-    var ext=document.getElementById("quant-metric-extended");
-    if(ext){
-      ext.innerHTML=
-        '<span>Sortino <b style="color:'+C.text+'">'+s.sortino.toFixed(2)+'</b></span>'+
-        '<span>Calmar <b style="color:'+C.text+'">'+s.calmar.toFixed(2)+'</b></span>'+
-        '<span>日胜率 <b style="color:'+C.text+'">'+s.winRate.toFixed(1)+'%</b></span>'+
-        '<span>月胜率 <b style="color:'+C.text+'">'+s.monthlyWinRate.toFixed(1)+'%</b></span>'+
-        '<span>最佳月 <b style="color:'+C.green+'">+'+s.bestMonth.toFixed(1)+'%</b></span>'+
-        '<span>最差月 <b style="color:'+C.red+'">'+s.worstMonth.toFixed(1)+'%</b></span>'+
-        '<span>连涨 <b style="color:'+C.text+'">'+s.maxWinStreak+'日</b></span>'+
-        '<span>连跌 <b style="color:'+C.text+'">'+s.maxLossStreak+'日</b></span>';
+    for (var i = 0; i < map.length; i++) {
+      var el = document.getElementById(map[i].id);
+      if (el) { el.textContent = map[i].v; el.className = "value " + map[i].cls; }
     }
   }
 
-  // ── NAV Chart (with click → snapshot) ─────────────────────
+  // ── NAV Chart ────────────────────────────────────────────
   function renderNavChart(tpl) {
-    var dom=document.getElementById("quant-nav-chart");
-    if(!dom) return;
+    var dom = document.getElementById("quant-nav-chart");
+    if (!dom) return;
+    if (navChart) { navChart.dispose(); }
+    navChart = echarts.init(dom);
+    LC.bindChart(dom, navChart);
 
-    if(navChart){navChart.dispose();}
-    navChart=echarts.init(dom);
-    LC.bindChart(dom,navChart);
+    var dates, navPct;
+    if (klineFreq === "weekly") {
+      var res = resampleWeekly(tpl.navSeries.dates, tpl.navSeries.nav);
+      dates = res.dates; navPct = res.values;
+    } else {
+      dates = tpl.navSeries.dates;
+      navPct = tpl.navSeries.nav;
+    }
+    var benchPct = tpl.navSeries.hs300 || [];
+    var eqPct = tpl.navSeries.eqWeight || null;
+    var snapshots = tpl.weeklySnapshots || [];
 
-    var dates=tpl.navSeries.dates;
-    var navPct=tpl.navSeries.nav;
-    var benchPct=tpl.navSeries.hs300||(function(){var a=[];for(var i=0;i<dates.length;i++)a.push(100);return a;})();
-    var eqPct=tpl.navSeries.eqWeight||null;
+    // Regime switch markPoints
+    var switchMarkPts = [];
+    if (snapshots.length > 1) {
+      var dateLookup = {};
+      for (var di = 0; di < dates.length; di++) dateLookup[dates[di]] = di;
+      var prevRegime = snapshots[0].regime;
+      for (var si = 1; si < snapshots.length; si++) {
+        var cur = snapshots[si];
+        if (cur.regime && cur.regime !== prevRegime) {
+          var isToBear = cur.regime === "ma_below";
+          var idx = dateLookup[cur.date];
+          if (idx != null) {
+            switchMarkPts.push({
+              name: (isToBear ? "Bear " : "Bull ") + (cur.totalTarget * 100).toFixed(0) + "%",
+              coord: [cur.date, navPct[idx]],
+              symbol: "triangle", symbolRotate: isToBear ? 180 : 0, symbolSize: 12,
+              itemStyle: { color: isToBear ? C.red : C.green, borderColor: "#0f1419", borderWidth: 1 },
+              label: { show: false },
+            });
+          }
+          prevRegime = cur.regime;
+        }
+      }
+    }
+
+    var series = [
+      {
+        name: "策略净值", type: "line", data: navPct, showSymbol: false,
+        lineStyle: { color: C.blue, width: 3 },
+        areaStyle: { color: new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:"rgba(59,130,246,0.25)"},{offset:1,color:"rgba(59,130,246,0.02)"}]) },
+        itemStyle: { color: C.blue },
+        markPoint: switchMarkPts.length > 0 ? { data: switchMarkPts, animation: false } : undefined,
+      },
+      { name: "沪深300", type: "line", data: benchPct, showSymbol: false,
+        lineStyle: { color: C.orange, width: 1.5, type: "dashed" }, itemStyle: { color: C.orange } },
+      { name: "等权持有", type: "line", data: eqPct || [], showSymbol: false,
+        lineStyle: { color: C.purple, width: 1.5, type: "dotted" }, itemStyle: { color: C.purple } },
+    ];
 
     navChart.setOption({
-      tooltip:Object.assign(baseTooltip(),{trigger:"axis",axisPointer:{type:"line",lineStyle:{color:"rgba(255,255,255,0.6)",width:1}},formatter:function(params){
-        var d=params[0].axisValue;
-        var out='<div style="font-weight:600;margin-bottom:4px">'+d+'</div>';
-        for(var i=0;i<params.length;i++) out+='<div>'+params[i].marker+' '+params[i].seriesName+': '+params[i].value.toFixed(2)+'%</div>';
+      tooltip: Object.assign(baseTooltip(), {trigger:"axis", axisPointer:{type:"line",lineStyle:{color:"rgba(255,255,255,0.6)",width:1}}, formatter:function(params){
+        var d = params[0].axisValue;
+        var out = '<div style="font-weight:600;margin-bottom:4px">'+d+'</div>';
+        for (var i = 0; i < params.length; i++) {
+          if (params[i].value != null) out += '<div>'+params[i].marker+' '+params[i].seriesName+': '+params[i].value.toFixed(2)+'</div>';
+        }
         return out;
       }}),
-      legend:{data:["策略净值","沪深300","等权持有"],textStyle:{color:C.muted,fontSize:11},top:4,
-        formatter:function(name){if(name==="等权持有")return"等权持有(25支买入不动)";return name;}},
-      grid:{left:56,right:20,top:40,bottom:32},
-      xAxis:Object.assign(baseAxis(),{type:"category",data:dates,boundaryGap:false}),
-      yAxis:Object.assign(baseAxis(),{type:"value",name:"净值(%)",nameTextStyle:{color:C.muted,fontSize:11}}),
-      series:[
-        {name:"策略净值",type:"line",data:navPct,showSymbol:false,
-          lineStyle:{color:C.blue,width:3},
-          areaStyle:{color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:"rgba(59,130,246,0.25)"},{offset:1,color:"rgba(59,130,246,0.02)"}])},
-          itemStyle:{color:C.blue},
-        },
-        {name:"沪深300",type:"line",data:benchPct,showSymbol:false,
-          lineStyle:{color:C.orange,width:1.5,type:"dashed"},itemStyle:{color:C.orange}},
-        {name:"等权持有",type:"line",data:eqPct||[],showSymbol:false,
-          lineStyle:{color:C.purple,width:1.5,type:"dotted"},itemStyle:{color:C.purple}},
-      ],
-      dataZoom:[{type:"inside",start:0,end:100}],
+      legend: { data:["策略净值","沪深300","等权持有"], textStyle:{color:C.muted,fontSize:11}, top:4,
+        formatter: function(name){ if(name==="等权持有") return "等权持有(25支买入不动)"; return name; }
+      },
+      grid: { left:56, right:20, top:40, bottom:32 },
+      xAxis: Object.assign(baseAxis(), {type:"category", data:dates, boundaryGap:false}),
+      yAxis: Object.assign(baseAxis(), {type:"value", scale:true, name:"净值(%)", nameTextStyle:{color:C.muted,fontSize:11}}),
+      series: series,
+      dataZoom: [{type:"inside", start:0, end:100}],
     });
 
-    // Click anywhere on chart area → find nearest rebalance date and show snapshot
-    navChart.getZr().on("click",function(params){
-      var pointInPixel=[params.offsetX,params.offsetY];
-      if(!navChart.containPixel("grid",pointInPixel)) return;
-      var dataIdx=navChart.convertFromPixel({seriesIndex:0},pointInPixel)[0];
-      if(dataIdx==null||dataIdx<0||dataIdx>=dates.length) return;
-      var clickDate=dates[Math.round(dataIdx)];
-      // Find nearest signal at or before this date
-      var bestIdx=0;
-      for(var i=0;i<tpl.weeklySnapshots.length;i++){
-        if(tpl.weeklySnapshots[i].date<=clickDate) bestIdx=i;
+    // Click -> snapshot
+    navChart.getZr().on("click", function(params) {
+      var pointInPixel = [params.offsetX, params.offsetY];
+      if (!navChart.containPixel("grid", pointInPixel)) return;
+      var dataIdx = navChart.convertFromPixel({seriesIndex:0}, pointInPixel)[0];
+      if (dataIdx == null || dataIdx < 0 || dataIdx >= dates.length) return;
+      var clickDate = dates[Math.round(dataIdx)];
+      var bestIdx = 0;
+      for (var i = 0; i < snapshots.length; i++) {
+        if (snapshots[i].date <= clickDate) bestIdx = i;
       }
-      renderSnapshot(tpl,bestIdx);
+      renderSnapshot(tpl, bestIdx);
     });
+  }
+
+  function resampleWeekly(dates, values) {
+    if (!dates || !values) return { dates: dates || [], values: values || [] };
+    var wDates = [], wVals = [], curWeek = null;
+    for (var i = 0; i < dates.length; i++) {
+      var d = new Date(dates[i]);
+      var day = d.getDay() || 7;
+      var thu = new Date(d);
+      thu.setDate(d.getDate() + (4 - day));
+      var wk = thu.getFullYear() + "-" + String(thu.getMonth()+1).padStart(2,"0") + "-" + String(thu.getDate()).padStart(2,"0");
+      if (wk !== curWeek) {
+        if (curWeek !== null) { wDates.push(dates[i-1]); wVals.push(values[i-1]); }
+        curWeek = wk;
+      }
+    }
+    if (dates.length > 0) { wDates.push(dates[dates.length-1]); wVals.push(values[values.length-1]); }
+    return { dates: wDates, values: wVals };
   }
 
   // ── Drawdown Chart ────────────────────────────────────────
   function renderDrawdownChart(tpl) {
-    var dom=document.getElementById("quant-drawdown-chart");
-    if(!dom) return;
-    var chart=echarts.init(dom);
-    LC.bindChart(dom,chart);
+    var dom = document.getElementById("quant-drawdown-chart");
+    if (!dom) return;
+    if (ddChart) { ddChart.dispose(); }
+    ddChart = echarts.init(dom);
+    LC.bindChart(dom, ddChart);
 
-    chart.setOption({
-      tooltip:Object.assign(baseTooltip(),{trigger:"axis",formatter:function(p){return p[0].axisValue+'<br/>'+p[0].marker+' 回撤: '+p[0].value.toFixed(2)+'%';}}),
-      grid:{left:56,right:20,top:24,bottom:32},
-      xAxis:Object.assign(baseAxis(),{type:"category",data:tpl.drawdownSeries.dates,boundaryGap:false}),
-      yAxis:Object.assign(baseAxis(),{type:"value",name:"回撤(%)",nameTextStyle:{color:C.muted,fontSize:11}}),
-      series:[{type:"line",data:tpl.drawdownSeries.drawdown,showSymbol:false,
-        lineStyle:{color:C.red,width:1.5},
+    var snapshots = tpl.weeklySnapshots || [];
+
+    ddChart.setOption({
+      tooltip: Object.assign(baseTooltip(), {trigger:"axis", formatter:function(p){ return p[0].axisValue+'<br/>'+p[0].marker+' 回撤: '+p[0].value.toFixed(2)+'%'; }}),
+      grid: { left:56, right:20, top:8, bottom:8 },
+      xAxis: {type:"category", data:tpl.drawdownSeries.dates, boundaryGap:false, show:false},
+      yAxis: {type:"value", axisLabel:{color:C.muted,fontSize:10}, splitLine:{lineStyle:{color:C.gridLine}}, axisLine:{show:false}, axisTick:{show:false}},
+      series: [{
+        type:"line", data:tpl.drawdownSeries.drawdown, showSymbol:false,
+        lineStyle:{color:C.red, width:1.5},
         areaStyle:{color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:"rgba(239,68,68,0.3)"},{offset:1,color:"rgba(239,68,68,0.02)"}])},
-        itemStyle:{color:C.red}}],
-      dataZoom:[{type:"inside",start:0,end:100}],
+        itemStyle:{color:C.red},
+      }],
+      dataZoom:[{type:"inside", start:0, end:100}],
     });
+
+    // Connect nav + dd charts for shared dataZoom and axisPointer
+    if (navChart && ddChart) {
+      echarts.connect([navChart, ddChart]);
+    }
   }
 
-  // ── Snapshot (week drill-down) ────────────────────────────
+  // ── Update markLines on NAV + DD charts without full redraw ──
+  function updateMarkLines(dateStr) {
+    var mlData = [{ xAxis: dateStr, lineStyle:{color:C.red,width:1.5,type:'dashed'} }];
+    var mlOpt = {
+      silent: true, symbol: 'none', animation: false,
+      data: mlData,
+      label: { show: false },
+    };
+    if (navChart) {
+      navChart.setOption({ series: [{ markLine: mlOpt }] });
+    }
+    if (ddChart) {
+      ddChart.setOption({ series: [{ markLine: mlOpt }] });
+    }
+  }
+
+  // ── Snapshot ──────────────────────────────────────────────
   function renderSnapshot(tpl, sigIdx) {
-    var sig=tpl.weeklySnapshots[sigIdx];
-    if(!sig) return;
+    var snapshots = tpl.weeklySnapshots || [];
+    if (sigIdx < 0 || sigIdx >= snapshots.length) return;
+    currentSigIdx = sigIdx;
+    var sig = snapshots[sigIdx];
 
-    // Update subtitle
-    var sub=document.getElementById("quant-snapshot-subtitle");
-    if(sub) sub.textContent=sig.date+" · 第 "+(sig.index+1)+" 次调仓 · 平均信心 "+(sig.avgConfidence*100).toFixed(0)+"% · 总仓位 "+(sig.totalTarget*100).toFixed(0)+"%";
+    // Update markLine on NAV + DD charts (no full redraw)
+    updateMarkLines(sig.date);
 
-    // Ranking table
-    renderSnapshotRanking(sig);
-    // Position bar chart
-    renderSnapshotPositionChart(sig);
+    // Subtitle
+    var sub = document.getElementById("quant-snapshot-subtitle");
+    if (sub) sub.textContent = sig.date + " \u00b7 \u7b2c " + (sig.index+1) + " \u6b21\u8c03\u4ed3";
+
+    // Snapshot metrics
+    var holdings = (sig.top6 || []).length;
+    var totalPos = sig.totalTarget * 100;
+    var avgConf = sig.avgConfidence * 100;
+    var cash = Math.max(0, 100 - totalPos);
+
+    var el;
+    el = document.getElementById("snap-m-holdings"); if (el) { el.textContent = holdings + " \u652f"; el.style.color = C.blue; }
+    el = document.getElementById("snap-m-total-pos"); if (el) { el.textContent = totalPos.toFixed(0) + "%"; el.style.color = totalPos > 70 ? C.green : totalPos > 40 ? C.orange : C.red; }
+    el = document.getElementById("snap-m-avg-conf"); if (el) { el.textContent = avgConf.toFixed(0) + "%"; el.style.color = avgConf > 60 ? C.orange : C.gray; }
+    el = document.getElementById("snap-m-cash"); if (el) { el.textContent = cash.toFixed(0) + "%"; el.style.color = cash > 50 ? C.red : cash > 20 ? C.orange : C.gray; }
+
+    renderSnapshotTable(sig, tpl);
   }
 
-  function renderSnapshotRanking(sig) {
-    var container=document.getElementById("quant-snapshot-ranking");
-    if(!container) return;
+  function renderSnapshotTable(sig, tpl) {
+    var tbody = document.getElementById("quant-snapshot-body");
+    var footer = document.getElementById("quant-snapshot-footer");
+    if (!tbody) return;
 
-    var scores=sig.scores;
-    var sorted=Object.keys(scores).sort(function(a,b){return scores[b]-scores[a];});
-    var maxScore=scores[sorted[0]]||1;
+    var scores = sig.scores || {};
+    var positions = sig.positions || {};
+    var top6 = sig.top6 || [];
 
-    var html='<table style="width:100%;border-collapse:collapse;font-size:13px;"><thead><tr>'+
-      '<th style="text-align:left;padding:8px 10px;color:#94a3b8;border-bottom:1px solid rgba(59,130,246,0.15);font-size:11px;">#</th>'+
-      '<th style="text-align:left;padding:8px 10px;color:#94a3b8;border-bottom:1px solid rgba(59,130,246,0.15);font-size:11px;">ETF</th>'+
-      '<th style="text-align:left;padding:8px 10px;color:#94a3b8;border-bottom:1px solid rgba(59,130,246,0.15);font-size:11px;">综合分</th>'+
-      '<th style="text-align:left;padding:8px 10px;color:#94a3b8;border-bottom:1px solid rgba(59,130,246,0.15);font-size:11px;">仓位</th>'+
-      '<th style="text-align:left;padding:8px 10px;color:#94a3b8;border-bottom:1px solid rgba(59,130,246,0.15);font-size:11px;">状态</th>'+
-      '</tr></thead><tbody>';
+    var sorted = Object.keys(scores).sort(function(a,b){ return scores[b] - scores[a]; });
+    var maxScore = sorted.length > 0 ? scores[sorted[0]] : 1;
 
-    for(var i=0;i<sorted.length;i++){
-      var code=sorted[i];
-      var score=scores[code];
-      var pos=sig.positions[code]||0;
-      var inTop6=sig.top6.indexOf(code)>=0;
-      var name=Q.etfNameMap[code]||code;
-      var barW=Math.round(score/maxScore*100);
-      var badge=inTop6?'<span style="background:rgba(16,185,129,0.15);color:#10b981;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:600;">TOP6</span>':'';
+    var html = '';
+    var holdC = 0, outC = 0;
 
-      html+='<tr style="border-bottom:1px solid rgba(255,255,255,0.03);">'+
-        '<td style="padding:6px 10px;color:'+C.muted+'">'+( i+1)+'</td>'+
-        '<td style="padding:6px 10px;"><span style="color:'+C.blue+';font-weight:600;font-size:12px;">'+code+'</span> <span style="color:'+C.text+';font-size:12px;">'+name+'</span></td>'+
-        '<td style="padding:6px 10px;">'+score.toFixed(1)+
-          '<span style="width:60px;height:5px;background:rgba(255,255,255,0.06);border-radius:3px;display:inline-block;vertical-align:middle;margin-left:6px;">'+
-          '<span style="display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,#3b82f6,#10b981);width:'+barW+'%"></span></span></td>'+
-        '<td style="padding:6px 10px;color:'+(pos>0?C.green:C.muted)+';font-weight:600;font-size:12px;">'+(pos>0?(pos*100).toFixed(1)+'%':'-')+'</td>'+
-        '<td style="padding:6px 10px;">'+badge+'</td>'+
+    for (var i = 0; i < sorted.length; i++) {
+      var code = sorted[i];
+      var score = scores[code];
+      // positions are 0-100 range in payload, no *100 needed
+      var pos = positions[code] || 0;
+      var inTop6 = top6.indexOf(code) >= 0;
+      var name = Q.etfNameMap[code] || code;
+      var barW = Math.round(score / maxScore * 100);
+
+      var action = "HOLD";
+      var actionStyle = "color:#6b7280;";
+      if (pos > 0) {
+        holdC++;
+      } else {
+        action = "OUT"; outC++;
+      }
+
+      var topBadge = inTop6 ? '<span style="font-size:10px;margin-left:2px;">🔥</span>' : '';
+      var scoreBar = '<span style="display:inline-block;width:50px;height:5px;background:rgba(255,255,255,0.06);border-radius:3px;vertical-align:middle;margin-left:4px;">' +
+        '<span style="display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,#3b82f6,#10b981);width:'+barW+'%"></span></span>';
+      var posStr = pos > 0 ? '<span style="color:#10b981;font-weight:600;">'+pos.toFixed(1)+'%</span>' : '<span style="color:#4b5563;">-</span>';
+
+      html += '<tr class="qt-snap-row" data-code="'+code+'" style="'+(inTop6?'background:rgba(16,185,129,0.04);':'')+'cursor:pointer;">' +
+        '<td style="padding:8px 10px;"><span style="color:#60a5fa;font-weight:600;font-size:12px;">'+code+'</span> <span style="color:#e0e0e0;font-size:12px;">'+name+'</span>'+topBadge+'</td>' +
+        '<td style="text-align:center;padding:8px 6px;">'+score.toFixed(1)+scoreBar+'</td>' +
+        '<td style="text-align:center;padding:8px 6px;">'+posStr+'</td>' +
+        '<td style="text-align:center;padding:8px 6px;font-size:11px;'+actionStyle+'">'+action+'</td>' +
         '</tr>';
     }
-    html+='</tbody></table>';
-    container.innerHTML=html;
-  }
 
-  function renderSnapshotPositionChart(sig) {
-    var dom=document.getElementById("quant-snapshot-position-chart");
-    if(!dom) return;
-    var chart=echarts.init(dom);
-    LC.bindChart(dom,chart);
+    tbody.innerHTML = html;
+    if (footer) footer.textContent = "TOP6 \u6301\u4ed3 | \u5171 " + sorted.length + " \u652f ETF \u8bc4\u5206";
 
-    var positions=sig.positions;
-    var codes=Object.keys(positions).filter(function(c){return positions[c]>0;});
-    codes.sort(function(a,b){return positions[b]-positions[a];});
-
-    var names=[],values=[];
-    for(var i=0;i<codes.length;i++){
-      names.push(Q.etfNameMap[codes[i]]||codes[i]);
-      values.push(Math.round(positions[codes[i]]*1000)/10);
+    // Row click -> K-line replay
+    var rows = tbody.querySelectorAll('.qt-snap-row');
+    for (var r = 0; r < rows.length; r++) {
+      rows[r].onclick = function() {
+        var code = this.getAttribute('data-code');
+        onSnapshotRowClick(code, tpl);
+      };
     }
 
-    chart.setOption({
-      tooltip:Object.assign(baseTooltip(),{formatter:function(p){return p.name+': '+p.value+'%';}}),
-      grid:{left:110,right:32,top:8,bottom:24},
-      xAxis:Object.assign(baseAxis(),{type:"value",max:function(v){return Math.ceil(v.max/5)*5;},name:"%"}),
-      yAxis:Object.assign(baseAxis(),{type:"category",data:names.reverse(),axisLabel:{width:100,overflow:"truncate",color:C.text,fontSize:12}}),
-      series:[{type:"bar",data:values.reverse(),barWidth:16,
-        itemStyle:{color:new echarts.graphic.LinearGradient(0,0,1,0,[{offset:0,color:C.blue},{offset:1,color:C.green}]),borderRadius:[0,4,4,0]},
-        label:{show:true,position:"right",color:C.muted,fontSize:11,formatter:"{c}%"}}],
-    });
+    // Auto-select first-ranked ETF only if none selected yet
+    if (currentKlineCode) {
+      onSnapshotRowClick(currentKlineCode, tpl);
+    } else if (sorted.length > 0) {
+      onSnapshotRowClick(sorted[0], tpl);
+    }
   }
 
-  // ── Sector Pie ────────────────────────────────────────────
-  function renderSectorPie(tpl) {
-    var dom=document.getElementById("quant-sector-chart");
-    if(!dom) return;
-    var chart=echarts.init(dom);
-    LC.bindChart(dom,chart);
+  // ── K-line Replay (from tuner) ────────────────────────────
+  function onSnapshotRowClick(code, tpl) {
+    var sameEtf = (currentKlineCode === code);
+    currentKlineCode = code;
 
-    var sd=tpl.sectorDistribution;
-    if(!sd||sd.length===0) return;
-
-    var data=[];
-    for(var i=0;i<sd.length;i++){
-      data.push({value:sd[i].weight,name:sd[i].sector,itemStyle:{color:PALETTE[i%PALETTE.length]}});
+    // Highlight selected row
+    var rows = document.querySelectorAll('.qt-snap-row');
+    for (var i = 0; i < rows.length; i++) {
+      var r = rows[i];
+      if (r.getAttribute('data-code') === code) {
+        r.style.background = 'rgba(59,130,246,0.12)';
+        r.style.boxShadow = 'inset 3px 0 0 #3b82f6';
+      } else {
+        var rc = r.getAttribute('data-code');
+        var inTop6 = (tpl.weeklySnapshots[currentSigIdx].top6 || []).indexOf(rc) >= 0;
+        r.style.background = inTop6 ? 'rgba(16,185,129,0.04)' : '';
+        r.style.boxShadow = '';
+      }
     }
 
-    chart.setOption({
-      tooltip:Object.assign(baseTooltip(),{formatter:function(p){return p.name+': '+p.value.toFixed(1)+'%';}}),
-      series:[{type:"pie",radius:["36%","68%"],center:["50%","50%"],data:data,
-        label:{color:C.text,fontSize:12,formatter:"{b}\n{d}%"},
-        labelLine:{lineStyle:{color:C.gridLine}},
-        emphasis:{itemStyle:{shadowBlur:10,shadowColor:"rgba(0,0,0,0.4)"}},
-        itemStyle:{borderRadius:6,borderColor:"rgba(10,25,47,0.8)",borderWidth:2}}],
+    if (sameEtf && klineReplayChart) {
+      // Same ETF — just update the markLine, skip full re-render
+      updateKlineMarkLine(tpl);
+    } else {
+      renderKlineReplay(code, tpl);
+    }
+  }
+
+  function updateKlineMarkLine(tpl) {
+    if (!klineReplayChart) return;
+    var sig = tpl.weeklySnapshots[currentSigIdx];
+    var curDate = sig ? sig.date : null;
+    if (!curDate) return;
+    klineReplayChart.setOption({
+      series: [{
+        markLine: {
+          silent: true, symbol: 'none', animation: false,
+          data: [{ xAxis: curDate, lineStyle:{color:C.red,width:1.5,type:'dashed'} }],
+          label: { show: false },
+        },
+      }],
     });
   }
 
-  // ── Freq Bar ──────────────────────────────────────────────
-  function renderFreqBar(tpl) {
-    var dom=document.getElementById("quant-freq-chart");
-    if(!dom) return;
-    var chart=echarts.init(dom);
-    LC.bindChart(dom,chart);
+  function renderKlineReplay(code, tpl) {
+    var replayBlock = document.getElementById("quant-kline-replay-block");
+    if (!replayBlock) return;
 
-    var freq=tpl.rebalanceFreq;
-    if(!freq||freq.length===0) return;
-
-    var top=freq.slice(0,12);
-    var names=[],counts=[];
-    for(var i=top.length-1;i>=0;i--){names.push(top[i].name);counts.push(top[i].count);}
-
-    chart.setOption({
-      tooltip:Object.assign(baseTooltip(),{formatter:function(p){return p.name+': '+p.value+' 次';}}),
-      grid:{left:100,right:32,top:8,bottom:24},
-      xAxis:Object.assign(baseAxis(),{type:"value",name:"入选次数"}),
-      yAxis:Object.assign(baseAxis(),{type:"category",data:names}),
-      series:[{type:"bar",data:counts,barWidth:14,
-        itemStyle:{color:new echarts.graphic.LinearGradient(0,0,1,0,[{offset:0,color:C.blue},{offset:1,color:C.green}]),borderRadius:[0,4,4,0]},
-        label:{show:true,position:"right",color:C.muted,fontSize:11,formatter:"{c}"}}],
-    });
-  }
-
-  // ── Latest Signal (M4.2 position recommendation) ──────────
-  function renderLatestSignal(tpl) {
-    var container=document.getElementById("quant-latest-signal-table");
-    var subtitle=document.getElementById("quant-latest-signal-subtitle");
-    if(!container) return;
-
-    var sig=tpl.latestSignal;
-    if(!sig||!sig.holdings||sig.holdings.length===0){
-      container.innerHTML='<p style="color:#64748b">暂无最新信号数据</p>';
+    // Check if kline replay data exists
+    var klineData = (Q.klineReplay || {})[code];
+    if (!klineData || !klineData.dates || klineData.dates.length === 0) {
+      replayBlock.style.display = "none";
       return;
     }
 
-    if(subtitle) subtitle.textContent="数据截止: "+sig.date+" 收盘 · 平均信心: "+(sig.avgConfidence*100).toFixed(0)+"% · 目标总仓位: "+sig.totalTarget.toFixed(1)+"% · 现金: "+sig.cashTarget.toFixed(1)+"% · 最大持仓: "+sig.maxHoldings+"支";
+    replayBlock.style.display = "block";
 
-    var html='<table style="width:100%;border-collapse:collapse;font-size:13px;"><thead><tr>'+
-      '<th style="text-align:left;padding:10px 10px;color:#94a3b8;border-bottom:1px solid rgba(59,130,246,0.15);font-size:11px;">#</th>'+
-      '<th style="text-align:left;padding:10px 10px;color:#94a3b8;border-bottom:1px solid rgba(59,130,246,0.15);font-size:11px;">ETF</th>'+
-      '<th style="text-align:left;padding:10px 10px;color:#94a3b8;border-bottom:1px solid rgba(59,130,246,0.15);font-size:11px;">行业</th>'+
-      '<th style="text-align:center;padding:10px 10px;color:#94a3b8;border-bottom:1px solid rgba(59,130,246,0.15);font-size:11px;">综合分</th>'+
-      '<th style="text-align:center;padding:10px 10px;color:#94a3b8;border-bottom:1px solid rgba(59,130,246,0.15);font-size:11px;">信心度</th>'+
-      '<th style="text-align:center;padding:10px 10px;color:#94a3b8;border-bottom:1px solid rgba(59,130,246,0.15);font-size:11px;">目标仓位</th>'+
-      '<th style="text-align:center;padding:10px 10px;color:#94a3b8;border-bottom:1px solid rgba(59,130,246,0.15);font-size:11px;">现价</th>'+
-      '<th style="text-align:center;padding:10px 10px;color:#94a3b8;border-bottom:1px solid rgba(59,130,246,0.15);font-size:11px;">标记</th>'+
-      '</tr></thead><tbody>';
+    // Update title
+    var titleEl = document.getElementById("quant-kline-replay-title");
+    var name = Q.etfNameMap[code] || code;
+    var sig = tpl.weeklySnapshots[currentSigIdx];
+    if (titleEl) titleEl.innerHTML = '<span style="color:#60a5fa;">' + code + '</span> ' + name +
+      '  <span style="color:#6b7280;font-weight:normal;font-size:11px;">— 当前调仓 ' + (sig ? sig.date : '') + '</span>';
 
-    for(var i=0;i<sig.holdings.length;i++){
-      var h=sig.holdings[i];
-      var confPct=(h.confidence*100).toFixed(0);
-      var confColor=h.confidence>=0.8?C.green:h.confidence>=0.5?C.orange:C.muted;
-      var badges='';
-      if(h.bias) badges+='<span style="background:rgba(245,158,11,0.15);color:#f59e0b;padding:2px 6px;border-radius:4px;font-size:10px;margin-left:4px;">偏好</span>';
+    var dom = document.getElementById("quant-kline-replay-chart");
+    if (!dom) return;
+    if (klineReplayChart) klineReplayChart.dispose();
+    klineReplayChart = echarts.init(dom);
+    LC.bindChart(dom, klineReplayChart);
 
-      html+='<tr style="border-bottom:1px solid rgba(255,255,255,0.03);">'+
-        '<td style="padding:8px 10px;color:'+C.muted+'">'+(i+1)+'</td>'+
-        '<td style="padding:8px 10px;"><span style="color:'+C.blue+';font-weight:600;font-size:12px;">'+h.code+'</span> <span style="color:'+C.text+';font-size:12px;">'+h.name+'</span></td>'+
-        '<td style="padding:8px 10px;color:'+C.muted+';font-size:12px;">'+h.sector+'</td>'+
-        '<td style="padding:8px 10px;text-align:center;color:'+C.text+';font-weight:600;">'+h.score.toFixed(1)+'</td>'+
-        '<td style="padding:8px 10px;text-align:center;color:'+confColor+';font-weight:600;">'+confPct+'%</td>'+
-        '<td style="padding:8px 10px;text-align:center;color:'+C.green+';font-weight:700;font-size:14px;">'+h.position.toFixed(1)+'%</td>'+
-        '<td style="padding:8px 10px;text-align:center;color:'+C.text+';">'+h.price.toFixed(3)+'</td>'+
-        '<td style="padding:8px 10px;text-align:center;">'+badges+'</td>'+
-        '</tr>';
+    var prices = klineData;
+    var snapshots = tpl.weeklySnapshots || [];
+
+    // Build trades (buy/sell markers) from signal history
+    var trades = buildTrades(code, prices, snapshots);
+
+    // Build position mountain series
+    var posSeries = new Array(prices.dates.length).fill(0);
+    var sigPtr = 0;
+    var curPos = 0;
+    for (var i = 0; i < prices.dates.length; i++) {
+      var bd = prices.dates[i];
+      while (sigPtr < snapshots.length && snapshots[sigPtr].date <= bd) {
+        var p = (snapshots[sigPtr].positions || {})[code];
+        curPos = p != null ? p : 0;
+        sigPtr++;
+      }
+      posSeries[i] = curPos;
     }
-    html+='</tbody></table>';
-    container.innerHTML=html;
+
+    // Mark points for trades
+    var markPoints = [];
+    var barIdxToTrade = {};
+    var dateToIdx = {};
+    for (var i = 0; i < prices.dates.length; i++) dateToIdx[prices.dates[i]] = i;
+
+    for (var t = 0; t < trades.length; t++) {
+      var tr = trades[t];
+      barIdxToTrade[tr.barIdx] = tr;
+      var spec;
+      if (tr.action === 'new')        spec = {color:'#10b981', up:true, size:13};
+      else if (tr.action === 'adj_up') spec = {color:'#34d399', up:true, size:11};
+      else if (tr.action === 'adj_down') spec = {color:'#fca5a5', up:false, size:11};
+      else if (tr.action === 'out')   spec = {color:'#ef4444', up:false, size:13};
+      else                            spec = {color:'#6b7280', up:true, size:9};
+      markPoints.push({
+        name: tr.action.toUpperCase().replace('_',' ') + ' ' + tr.pos.toFixed(0) + '%',
+        coord: [prices.dates[tr.barIdx], prices.close[tr.barIdx]],
+        symbol: 'triangle',
+        symbolRotate: spec.up ? 0 : 180,
+        symbolSize: spec.size,
+        itemStyle: {color: spec.color, borderColor: '#0f1419', borderWidth: 1},
+        label: {show: false},
+      });
+    }
+
+    // Current date marker line
+    var curDate = sig ? sig.date : null;
+
+    // Tooltip formatter
+    var actionLabel = {new:'🟢 NEW (新建仓)', adj_up:'🟩 加仓', adj_down:'🟥 减仓', out:'🔴 OUT (清仓)'};
+    function fmtTooltip(params) {
+      if (!params || !params.length) return '';
+      var idx = params[0].dataIndex;
+      var dateStr = prices.dates[idx];
+      var price = prices.close[idx];
+      var rsi = prices.rsi ? prices.rsi[idx] : null;
+      var vol = prices.volume ? prices.volume[idx] : null;
+      var pos = posSeries[idx];
+      var html = '<div style="font-weight:600;margin-bottom:4px;color:#e0e0e0;">' + dateStr + '</div>';
+      html += '<div style="color:#94a3b8;font-size:11px;line-height:1.6;">';
+      html += '\u4ef7\u683c <b style="color:#e0e0e0">' + (price != null ? price.toFixed(3) : '-') + '</b><br/>';
+      html += '\u5f53\u524d\u6301\u4ed3 <b style="color:' + (pos > 0 ? '#10b981' : '#6b7280') + '">' + pos.toFixed(1) + '%</b><br/>';
+      if (rsi != null) html += 'RSI <b style="color:#f59e0b">' + rsi.toFixed(1) + '</b><br/>';
+      if (vol != null) html += '\u6210\u4ea4 <b style="color:#e0e0e0">' + (vol >= 1e8 ? (vol/1e8).toFixed(2)+' \u4ebf' : vol >= 1e4 ? (vol/1e4).toFixed(1)+' \u4e07' : vol.toFixed(0)) + '</b>';
+      html += '</div>';
+      var tr2 = barIdxToTrade[idx];
+      if (tr2) {
+        html += '<div style="margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,0.08);font-size:11px;">';
+        html += (actionLabel[tr2.action] || tr2.action.toUpperCase()) + ' \u2192 \u4ed3\u4f4d <b style="color:#10b981">' + tr2.pos.toFixed(1) + '%</b>';
+        html += '</div>';
+      }
+      return html;
+    }
+
+    klineReplayChart.setOption({
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: {type: 'cross'},
+        backgroundColor: 'rgba(10,25,47,0.95)',
+        borderColor: 'rgba(59,130,246,0.2)',
+        textStyle: {color: '#e0e0e0', fontSize: 11},
+        formatter: fmtTooltip,
+      },
+      axisPointer: {link: [{xAxisIndex: 'all'}]},
+      legend: {
+        data: [
+          {name: '\u4ef7\u683c', icon: 'rect'},
+          {name: '\u6301\u4ed3', icon: 'rect'},
+        ],
+        textStyle: {color: '#94a3b8', fontSize: 10},
+        top: 0, right: 8,
+      },
+      grid: [
+        {left: 50, right: 44, top: 28, bottom: 28},
+      ],
+      xAxis: [
+        {type:'category', data:prices.dates, boundaryGap:false, axisLine:{lineStyle:{color:'rgba(255,255,255,0.06)'}}, axisLabel:{color:'#6b7280',fontSize:9}, splitLine:{show:false}},
+      ],
+      yAxis: [
+        {scale:true, axisLabel:{color:'#6b7280',fontSize:9}, splitLine:{lineStyle:{color:'rgba(255,255,255,0.05)'}}},
+        {position:'right', min:0, max:100, splitNumber:2,
+          axisLabel:{color:'#10b981',fontSize:9, formatter:'{value}%'},
+          splitLine:{show:false},
+          axisLine:{show:true, lineStyle:{color:'rgba(255,255,255,0.06)'}},
+        },
+      ],
+      visualMap: {
+        show: false,
+        seriesIndex: 1,
+        pieces: [
+          {gte: 30, color: 'rgba(16,185,129,0.18)'},
+          {gte: 10, lt: 30, color: 'rgba(16,185,129,0.32)'},
+          {gt: 0, lt: 10, color: 'rgba(16,185,129,0.50)'},
+          {value: 0, color: 'rgba(255,255,255,0)'},
+        ],
+      },
+      dataZoom: [
+        {type:'inside', xAxisIndex:[0], start:0, end:100},
+      ],
+      series: [
+        {
+          name: '\u4ef7\u683c', type: 'line', data: prices.close, showSymbol: false,
+          color: '#94a3b8',
+          lineStyle: {color: '#94a3b8', width: 1.2},
+          areaStyle: {color: 'rgba(148,163,184,0.08)'},
+          markPoint: markPoints.length > 0 ? {data: markPoints, animation: false, z: 10} : undefined,
+          markLine: curDate ? {
+            silent: true, symbol: 'none',
+            data: [{xAxis: curDate, lineStyle:{color:'#ef4444',width:1.5,type:'dashed'}}],
+          label: {show: false},
+        } : undefined,
+      },
+      {
+        name: '\u6301\u4ed3', type: 'line',
+        yAxisIndex: 1,
+        color: '#10b981',
+        data: posSeries,
+        showSymbol: false,
+        step: 'end',
+        lineStyle: {color: 'rgba(16,185,129,0.55)', width: 1},
+        areaStyle: {color: 'rgba(16,185,129,0.18)'},
+        z: 1,
+      },
+    ],
+  });
+
+    // Click -> jump to snapshot
+    klineReplayChart.on('click', function(params) {
+      if (params.componentType === 'markPoint' && params.data) return;
+      // Click on blank area: find nearest snapshot date
+      if (params.dataIndex != null) {
+        var clickDate = prices.dates[params.dataIndex];
+        var bestIdx = 0;
+        for (var j = 0; j < snapshots.length; j++) {
+          if (snapshots[j].date <= clickDate) bestIdx = j;
+        }
+        renderSnapshot(tpl, bestIdx);
+      }
+    });
+
+    setTimeout(function(){ LC.resizeAllCharts(); }, 200);
   }
 
-  // ── Risk Orders (M4.2) ─────────────────────────────────────
-  function renderRiskOrders(tpl) {
-    var container=document.getElementById("quant-risk-orders-table");
-    var subtitle=document.getElementById("quant-risk-orders-subtitle");
-    if(!container) return;
-
-    var ro=tpl.riskOrders;
-    if(!ro||!ro.orders||ro.orders.length===0){
-      container.innerHTML='<p style="color:#64748b">暂无风控挂单数据</p>';
-      return;
+  function buildTrades(code, prices, snapshots) {
+    var dateToIdx = {};
+    for (var i = 0; i < prices.dates.length; i++) dateToIdx[prices.dates[i]] = i;
+    function findBarIdx(rbDate) {
+      if (dateToIdx[rbDate] != null) return dateToIdx[rbDate];
+      for (var k = 0; k < prices.dates.length; k++) {
+        if (prices.dates[k] >= rbDate) return k;
+      }
+      return prices.dates.length - 1;
     }
 
-    if(subtitle) subtitle.textContent="基于 "+ro.date+" 调仓信号 · Top-6 门槛分: "+ro.thresholdScore.toFixed(1)+" · 假设 RSI/量比不变，仅通过价格变动反推临界点";
-
-    var html='<table style="width:100%;border-collapse:collapse;font-size:13px;"><thead><tr>'+
-      '<th style="text-align:left;padding:10px 10px;color:#94a3b8;border-bottom:1px solid rgba(59,130,246,0.15);font-size:11px;">ETF</th>'+
-      '<th style="text-align:center;padding:10px 10px;color:#94a3b8;border-bottom:1px solid rgba(59,130,246,0.15);font-size:11px;">综合分</th>'+
-      '<th style="text-align:center;padding:10px 10px;color:#94a3b8;border-bottom:1px solid rgba(59,130,246,0.15);font-size:11px;">现价</th>'+
-      '<th style="text-align:center;padding:10px 10px;color:#94a3b8;border-bottom:1px solid rgba(59,130,246,0.15);font-size:11px;">EMA</th>'+
-      '<th style="text-align:center;padding:10px 10px;color:#94a3b8;border-bottom:1px solid rgba(59,130,246,0.15);font-size:11px;">仓位</th>'+
-      '<th style="text-align:center;padding:10px 10px;color:#ef4444;border-bottom:1px solid rgba(59,130,246,0.15);font-size:11px;">止损价</th>'+
-      '<th style="text-align:center;padding:10px 10px;color:#10b981;border-bottom:1px solid rgba(59,130,246,0.15);font-size:11px;">止盈价</th>'+
-      '<th style="text-align:center;padding:10px 10px;color:#3b82f6;border-bottom:1px solid rgba(59,130,246,0.15);font-size:11px;">买入价</th>'+
-      '<th style="text-align:center;padding:10px 10px;color:#94a3b8;border-bottom:1px solid rgba(59,130,246,0.15);font-size:11px;">状态</th>'+
-      '</tr></thead><tbody>';
-
-    for(var i=0;i<ro.orders.length;i++){
-      var o=ro.orders[i];
-      var badge=o.inTop6?
-        '<span style="background:rgba(16,185,129,0.15);color:#10b981;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:600;">持仓</span>':
-        '<span style="background:rgba(59,130,246,0.15);color:#3b82f6;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:600;">候补</span>';
-
-      var slCell=o.stopLoss?
-        '<span style="color:#ef4444;font-weight:600">'+o.stopLoss.toFixed(3)+'</span><br><span style="font-size:10px;color:#94a3b8">'+o.stopLossPct.toFixed(1)+'%</span>':'-';
-      var tpCell=o.takeProfit?
-        '<span style="color:#10b981;font-weight:600">'+o.takeProfit.toFixed(3)+'</span><br><span style="font-size:10px;color:#94a3b8">+'+o.takeProfitPct.toFixed(1)+'%</span>':'-';
-      var buyCell=o.buyPrice?
-        '<span style="color:#3b82f6;font-weight:600">'+o.buyPrice.toFixed(3)+'</span><br><span style="font-size:10px;color:#94a3b8">'+((o.buyPricePct>=0?'+':'')+o.buyPricePct.toFixed(1))+'%</span>':'-';
-
-      html+='<tr style="border-bottom:1px solid rgba(255,255,255,0.03);">'+
-        '<td style="padding:8px 10px;"><span style="color:'+C.blue+';font-weight:600;font-size:12px;">'+o.code+'</span> <span style="color:'+C.text+';font-size:12px;">'+o.name+'</span></td>'+
-        '<td style="padding:8px 10px;text-align:center;color:'+C.text+'">'+o.currentScore.toFixed(1)+'</td>'+
-        '<td style="padding:8px 10px;text-align:center;color:'+C.text+';font-weight:600">'+o.currentPrice.toFixed(3)+'</td>'+
-        '<td style="padding:8px 10px;text-align:center;color:'+C.muted+'">'+o.ema.toFixed(3)+'</td>'+
-        '<td style="padding:8px 10px;text-align:center;color:'+(o.position>0?C.green:C.muted)+';font-weight:600">'+(o.position>0?o.position.toFixed(1)+'%':'-')+'</td>'+
-        '<td style="padding:8px 10px;text-align:center">'+slCell+'</td>'+
-        '<td style="padding:8px 10px;text-align:center">'+tpCell+'</td>'+
-        '<td style="padding:8px 10px;text-align:center">'+buyCell+'</td>'+
-        '<td style="padding:8px 10px;text-align:center">'+badge+'</td>'+
-        '</tr>';
+    var trades = [];
+    var prevPos = 0;
+    for (var i = 0; i < snapshots.length; i++) {
+      var sig = snapshots[i];
+      var pos = (sig.positions || {})[code];
+      if (pos == null) continue;
+      var curPos = pos;
+      var refinedAction = '';
+      if (curPos > prevPos + 0.01)      refinedAction = prevPos === 0 ? 'new' : 'adj_up';
+      else if (curPos < prevPos - 0.01) refinedAction = curPos === 0 ? 'out' : 'adj_down';
+      if (refinedAction) {
+        var barIdx = findBarIdx(sig.date);
+        trades.push({barIdx: barIdx, pos: curPos, prevPos: prevPos, action: refinedAction, date: sig.date});
+      }
+      prevPos = curPos;
     }
-    html+='</tbody></table>';
-    container.innerHTML=html;
-  }
-
-  // ── Footer ────────────────────────────────────────────────
-  function renderFooter() {
-    var el=document.getElementById("quant-generated-at");
-    if(el&&Q.generatedAt) el.textContent=Q.generatedAt.replace("T"," ").substring(0,19);
+    return trades;
   }
 })();
