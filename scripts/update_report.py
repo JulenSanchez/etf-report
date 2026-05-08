@@ -181,6 +181,31 @@ def run_editorial_update():
     return True
 
 
+def run_quant_data_update():
+    """增量更新量化回测所需的 25 支 ETF 日线/周线 CSV 数据。
+    不因拉取失败阻断主流程，失败时量化板块使用上一版数据。
+    """
+    logger.info("Step 2.6: 增量更新量化回测数据（ETF 日线/周线 CSV）")
+    try:
+        import quant_data_fetcher
+        # 传空 argv 避免 argparse 读到 update_report.py 的参数
+        import sys
+        old_argv = sys.argv
+        sys.argv = ["quant_data_fetcher"]
+        try:
+            quant_data_fetcher.main()
+        finally:
+            sys.argv = old_argv
+        logger.info("量化数据增量更新完成")
+        return True
+    except ImportError:
+        logger.warn("quant_data_fetcher 模块未找到，跳过量化数据更新")
+        return False
+    except Exception as e:
+        logger.warn("量化数据增量更新失败，保留上一版 CSV", {"error": str(e)})
+        return False
+
+
 
 def _replace_text_in_html(html_content, marker, old_pattern, replacement):
     """在 HTML 原始文本中定位并替换文本内容
@@ -488,8 +513,8 @@ def generate_quant_baseline_payload():
         logger.warn("读取 quant_universe.yaml 失败，使用默认参数", {"error": str(e)})
         preset_params = {
             "w1": 40, "w2": 0, "w3": 60, "w4": 0, "bias": 0,
-            "conf_type": "ma_trend", "ma_trend_period": 20,
-            "ma_bull_pos": 1.0, "ma_bear_pos": 0.4, "ma_direction_confirm": True,
+            "conf_type": "ma_trend", "ma_trend_period": 26,
+            "ma_bull_pos": 1.0, "ma_bear_pos": 0.3, "ma_direction_confirm": True,
             "max_holdings": 6, "disc_step": 5, "rebalance_freq": "W-FRI", "score_band": 0,
             "ema_period": 16, "rsi_period": 14, "vol_window": 20,
             "f1_sensitivity": 8.0, "f3_sensitivity": 1.0, "f2_dead_zone": 1.5,
@@ -1778,6 +1803,10 @@ def main(publish: bool = False):
         # Step 2.5: 抓取 editorial（研究卡 + 宏观卡）— REQ-158
         # 不因抓取失败阻断主流程，失败时保留上一版 yaml
         run_editorial_update()
+
+        # Step 2.6: 增量更新量化回测数据（25 支 ETF 日线/周线 CSV）
+        # 不因拉取失败阻断主流程，失败时量化板块使用上一版数据
+        run_quant_data_update()
 
         # Step 3: 更新HTML中的数据
         if not update_html_data(html_file=working_html_file):
