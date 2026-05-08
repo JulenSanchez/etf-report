@@ -24,13 +24,6 @@ RULES = [
     # Project-level rules (essential for etf-report)
     ("etf-report",            "project", "ETF report skill guard (release, version, bug)"),
     ("statusbar-protocol",    "project", "Status bar display protocol"),
-
-    # User-level rules (recommended for best experience)
-    ("command-line-best-practices", "user", "CLI best practices (no python -c, temp scripts)"),
-    ("karpathy-guidelines",         "user", "Karpathy coding guidelines (think first, minimal changes)"),
-    ("local-file-open",             "user", "Open HTML with Edge, Markdown with Typora"),
-    ("dual-ide-rhythm",             "user", "CodeBuddy vs Claude Code workflow protocol"),
-    ("external-links",              "user", "URL routing (TAPD/iWiki/KM → MCP, others → WebFetch)"),
 ]
 
 
