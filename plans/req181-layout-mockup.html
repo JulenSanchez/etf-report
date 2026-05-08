@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>REQ-181 Layout Mockup - 3 Approaches</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, 'Segoe UI', sans-serif; background: #0f1419; color: #e0e0e0; }
+
+/* Tab switcher */
+.tab-bar { position: sticky; top: 0; z-index: 100; background: #1a2332; border-bottom: 1px solid #2a3a4a; padding: 12px 24px; display: flex; gap: 12px; }
+.tab-btn { padding: 8px 20px; border-radius: 6px; border: 1px solid #3a4a5a; background: transparent; color: #9ca3af; cursor: pointer; font-size: 14px; transition: all .2s; }
+.tab-btn.active { background: #2563eb; border-color: #2563eb; color: #fff; }
+.tab-btn:hover:not(.active) { border-color: #60a5fa; color: #60a5fa; }
+
+.panel { display: none; padding: 24px; }
+.panel.active { display: block; }
+
+/* Shared card styles */
+.card { background: #1a2332; border: 1px solid #2a3a4a; border-radius: 10px; }
+.card:hover { border-color: #3b82f6; }
+
+/* ============ APPROACH A: Dashboard Grid ============ */
+.a-header { text-align: center; padding: 20px 0; }
+.a-header h1 { font-size: 20px; color: #f0f0f0; }
+.a-header .subtitle { color: #6b7280; font-size: 13px; margin-top: 4px; }
+
+.a-recommend { margin: 16px 0 24px; padding: 16px; background: linear-gradient(135deg, #1e293b, #1a2332); border: 1px solid #334155; border-radius: 12px; }
+.a-recommend h3 { font-size: 14px; color: #fbbf24; margin-bottom: 12px; }
+.a-recommend .chips { display: flex; gap: 10px; flex-wrap: wrap; }
+.a-rec-chip { padding: 10px 16px; border-radius: 8px; background: #0f1419; border: 2px solid #22c55e; display: flex; flex-direction: column; gap: 4px; }
+.a-rec-chip .name { font-size: 13px; font-weight: 600; color: #f0f0f0; }
+.a-rec-chip .meta { font-size: 11px; color: #86efac; }
+
+.a-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+.a-etf-card { padding: 12px; cursor: pointer; transition: all .2s; position: relative; }
+.a-etf-card.highlighted { border-color: #22c55e; box-shadow: 0 0 12px rgba(34,197,94,.15); }
+.a-etf-card.highlighted::after { content: "TOP"; position: absolute; top: 6px; right: 6px; font-size: 9px; background: #22c55e; color: #000; padding: 1px 4px; border-radius: 3px; font-weight: 700; }
+.a-etf-card .name { font-size: 12px; font-weight: 600; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.a-etf-card .change { font-size: 11px; margin-bottom: 6px; }
+.a-etf-card .change.up { color: #10b981; }
+.a-etf-card .change.down { color: #ef4444; }
+.a-etf-card .bar-wrap { height: 4px; background: #2a3a4a; border-radius: 2px; position: relative; margin-bottom: 4px; }
+.a-etf-card .bar-fill { height: 100%; border-radius: 2px; position: absolute; left: 0; top: 0; }
+.a-etf-card .bar-dot { width: 6px; height: 6px; border-radius: 50%; background: #fff; position: absolute; top: -1px; transform: translateX(-50%); }
+.a-etf-card .verdict { font-size: 10px; color: #9ca3af; }
+.a-etf-card .score { font-size: 10px; color: #60a5fa; margin-top: 2px; }
+
+/* Sector grouping */
+.a-sector-label { grid-column: 1 / -1; font-size: 12px; color: #6b7280; padding: 8px 0 2px; border-top: 1px solid #1e293b; margin-top: 8px; }
+
+/* Detail expand (simplified) */
+.a-detail { margin-top: 20px; padding: 20px; display: none; }
+.a-detail.show { display: block; }
+.a-detail h3 { margin-bottom: 12px; }
+.a-detail .placeholder { height: 200px; background: #0f1419; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #4b5563; border: 1px dashed #2a3a4a; }
+
+/* ============ APPROACH B: Split Panel ============ */
+.b-layout { display: grid; grid-template-columns: 280px 1fr; height: calc(100vh - 80px); }
+.b-sidebar { border-right: 1px solid #2a3a4a; overflow-y: auto; padding: 12px; }
+.b-sidebar-item { padding: 10px 12px; border-radius: 8px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; transition: background .15s; }
+.b-sidebar-item:hover { background: #1e293b; }
+.b-sidebar-item.active { background: #1e3a5f; border: 1px solid #2563eb; }
+.b-sidebar-item.recommended { border-left: 3px solid #22c55e; }
+.b-sidebar-item .left { display: flex; flex-direction: column; gap: 2px; }
+.b-sidebar-item .name { font-size: 13px; font-weight: 500; }
+.b-sidebar-item .sub { font-size: 10px; color: #6b7280; }
+.b-sidebar-item .right { text-align: right; }
+.b-sidebar-item .pct { font-size: 11px; }
+.b-sidebar-item .verdict-sm { font-size: 10px; }
+
+.b-main { padding: 24px; overflow-y: auto; }
+.b-main h2 { margin-bottom: 16px; }
+.b-detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.b-detail-card { padding: 16px; min-height: 180px; }
+.b-detail-card h4 { font-size: 12px; color: #6b7280; margin-bottom: 12px; text-transform: uppercase; letter-spacing: .5px; }
+.b-detail-card .placeholder { height: 120px; background: #0f1419; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #4b5563; border: 1px dashed #2a3a4a; font-size: 12px; }
+
+/* ============ APPROACH C: Overview + Subpage ============ */
+.c-overview { max-width: 900px; margin: 0 auto; }
+.c-header { text-align: center; padding: 24px 0; }
+.c-header h1 { font-size: 18px; }
+.c-metrics-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+.c-metric-card { padding: 14px; text-align: center; }
+.c-metric-card .label { font-size: 11px; color: #6b7280; }
+.c-metric-card .value { font-size: 22px; font-weight: 700; margin-top: 4px; }
+
+.c-table { width: 100%; border-collapse: collapse; }
+.c-table th { text-align: left; padding: 8px 12px; font-size: 11px; color: #6b7280; border-bottom: 1px solid #2a3a4a; font-weight: 500; }
+.c-table td { padding: 10px 12px; font-size: 13px; border-bottom: 1px solid #1e293b; }
+.c-table tr:hover { background: #1e293b; }
+.c-table tr.hot { background: rgba(34,197,94,.05); }
+.c-table tr.hot td:first-child::before { content: "🔥 "; }
+.c-table .bar-mini { width: 60px; height: 4px; background: #2a3a4a; border-radius: 2px; display: inline-block; vertical-align: middle; position: relative; }
+.c-table .bar-mini .dot { position: absolute; width: 5px; height: 5px; border-radius: 50%; background: #fff; top: -0.5px; }
+.c-table .link { color: #60a5fa; text-decoration: none; font-size: 11px; }
+.c-table .link:hover { text-decoration: underline; }
+
+.verdict-green { color: #10b981; }
+.verdict-red { color: #ef4444; }
+.verdict-orange { color: #f59e0b; }
+.verdict-gray { color: #9ca3af; }
+</style>
+</head>
+<body>
+
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="switchTab('a')">A: Dashboard Grid</button>
+  <button class="tab-btn" onclick="switchTab('b')">B: Split Panel</button>
+  <button class="tab-btn" onclick="switchTab('c')">C: Overview Table</button>
+</div>
+
+<!-- ===================== APPROACH A ===================== -->
+<div id="panel-a" class="panel active">
+  <div class="a-header">
+    <h1>ETF Investment Report</h1>
+    <div class="subtitle">2026-04-28 | 25 ETFs | Quant Score Updated</div>
+  </div>
+
+  <div class="a-recommend">
+    <h3>🔥 Quant Top Picks (F1+F2+F3+F4)</h3>
+    <div class="chips">
+      <div class="a-rec-chip"><span class="name">512690 酒ETF</span><span class="meta">PE 0.2% 极度低估 | Score 78</span></div>
+      <div class="a-rec-chip"><span class="name">159928 消费ETF</span><span class="meta">PE 8.7% 极度低估 | Score 72</span></div>
+      <div class="a-rec-chip"><span class="name">159865 养殖ETF</span><span class="meta">PB 1.9% 极度低估 | Score 68</span></div>
+      <div class="a-rec-chip"><span class="name">512070 证券保险</span><span class="meta">PB 18.8% 极度低估 | Score 65</span></div>
+    </div>
+  </div>
+
+  <div class="a-grid">
+    <div class="a-sector-label">偏好标的</div>
+    <div class="a-etf-card card" onclick="showDetail('512400')">
+      <div class="name">512400 有色金属</div>
+      <div class="change up">+1.23%</div>
+      <div class="bar-wrap"><div class="bar-fill" style="width:80.7%;background:linear-gradient(90deg,#10b981,#ef4444)"></div><div class="bar-dot" style="left:80.7%"></div></div>
+      <div class="verdict verdict-red">🔴 80.7% 极度高估</div>
+      <div class="score">Score: 42</div>
+    </div>
+    <div class="a-etf-card card" onclick="showDetail('513120')">
+      <div class="name">513120 港创新药</div>
+      <div class="change down">-0.87%</div>
+      <div class="bar-wrap"><div class="bar-fill" style="width:53.8%;background:linear-gradient(90deg,#10b981,#ef4444)"></div><div class="bar-dot" style="left:53.8%"></div></div>
+      <div class="verdict verdict-gray">⚪ 53.8% 合理</div>
+      <div class="score">Score: 51</div>
+    </div>
+    <div class="a-etf-card card highlighted" onclick="showDetail('512070')">
+      <div class="name">512070 证券保险</div>
+      <div class="change up">+2.15%</div>
+      <div class="bar-wrap"><div class="bar-fill" style="width:18.8%;background:linear-gradient(90deg,#10b981,#ef4444)"></div><div class="bar-dot" style="left:18.8%"></div></div>
+      <div class="verdict verdict-green">🟢 18.8% 极度低估</div>
+      <div class="score">Score: 65</div>
+    </div>
+
+    <div class="a-sector-label">科技 / TMT</div>
+    <div class="a-etf-card card">
+      <div class="name">515880 通信设备</div>
+      <div class="change up">+0.56%</div>
+      <div class="bar-wrap"><div class="bar-fill" style="width:99.9%;background:linear-gradient(90deg,#10b981,#ef4444)"></div><div class="bar-dot" style="left:99.9%"></div></div>
+      <div class="verdict verdict-red">🔴 99.9% 极度高估</div>
+      <div class="score">Score: 28</div>
+    </div>
+    <div class="a-etf-card card">
+      <div class="name">588200 芯片</div>
+      <div class="change down">-1.02%</div>
+      <div class="bar-wrap"><div class="bar-fill" style="width:39.5%;background:linear-gradient(90deg,#10b981,#ef4444)"></div><div class="bar-dot" style="left:39.5%"></div></div>
+      <div class="verdict verdict-green">🟢 39.5% 低估</div>
+      <div class="score">Score: 55</div>
+    </div>
+    <div class="a-etf-card card">
+      <div class="name">512660 军工</div>
+      <div class="change up">+0.33%</div>
+      <div class="bar-wrap"><div class="bar-fill" style="width:61.3%;background:linear-gradient(90deg,#10b981,#ef4444)"></div><div class="bar-dot" style="left:61.3%"></div></div>
+      <div class="verdict verdict-orange">🟠 61.3% 偏高</div>
+      <div class="score">Score: 44</div>
+    </div>
+    <div class="a-etf-card card">
+      <div class="name">562500 机器人</div>
+      <div class="change up">+3.21%</div>
+      <div class="bar-wrap"><div class="bar-fill" style="width:74.4%;background:linear-gradient(90deg,#10b981,#ef4444)"></div><div class="bar-dot" style="left:74.4%"></div></div>
+      <div class="verdict verdict-orange">🟠 74.4% 偏高</div>
+      <div class="score">Score: 38</div>
+    </div>
+    <div class="a-etf-card card">
+      <div class="name">512980 传媒</div>
+      <div class="change down">-0.44%</div>
+      <div class="bar-wrap"><div class="bar-fill" style="width:45.6%;background:linear-gradient(90deg,#10b981,#ef4444)"></div><div class="bar-dot" style="left:45.6%"></div></div>
+      <div class="verdict verdict-gray">⚪ 45.6% 合理</div>
+      <div class="score">Score: 49</div>
+    </div>
+
+    <div class="a-sector-label">消费 / 周期</div>
+    <div class="a-etf-card card highlighted">
+      <div class="name">512690 酒ETF</div>
+      <div class="change down">-0.21%</div>
+      <div class="bar-wrap"><div class="bar-fill" style="width:0.2%;background:linear-gradient(90deg,#10b981,#ef4444)"></div><div class="bar-dot" style="left:0.2%"></div></div>
+      <div class="verdict verdict-green">🟢 0.2% 极度低估</div>
+      <div class="score">Score: 78</div>
+    </div>
+    <div class="a-etf-card card highlighted">
+      <div class="name">159928 消费</div>
+      <div class="change down">-0.55%</div>
+      <div class="bar-wrap"><div class="bar-fill" style="width:8.7%;background:linear-gradient(90deg,#10b981,#ef4444)"></div><div class="bar-dot" style="left:8.7%"></div></div>
+      <div class="verdict verdict-green">🟢 8.7% 极度低估</div>
+      <div class="score">Score: 72</div>
+    </div>
+    <div class="a-etf-card card highlighted">
+      <div class="name">159865 养殖</div>
+      <div class="change up">+1.80%</div>
+      <div class="bar-wrap"><div class="bar-fill" style="width:1.9%;background:linear-gradient(90deg,#10b981,#ef4444)"></div><div class="bar-dot" style="left:1.9%"></div></div>
+      <div class="verdict verdict-green">🟢 1.9% 极度低估</div>
+      <div class="score">Score: 68</div>
+    </div>
+    <div class="a-etf-card card">
+      <div class="name">512200 房地产</div>
+      <div class="change up">+0.67%</div>
+      <div class="bar-wrap"><div class="bar-fill" style="width:90.8%;background:linear-gradient(90deg,#10b981,#ef4444)"></div><div class="bar-dot" style="left:90.8%"></div></div>
+      <div class="verdict verdict-red">🔴 90.8% 极度高估</div>
+      <div class="score">Score: 31</div>
+    </div>
+    <div class="a-etf-card card">
+      <div class="name">515220 煤炭</div>
+      <div class="change up">+0.89%</div>
+      <div class="bar-wrap"><div class="bar-fill" style="width:48.5%;background:linear-gradient(90deg,#10b981,#ef4444)"></div><div class="bar-dot" style="left:48.5%"></div></div>
+      <div class="verdict verdict-gray">⚪ 48.5% 合理</div>
+      <div class="score">Score: 47</div>
+    </div>
+  </div>
+
+  <div class="a-detail card" id="detail-panel">
+    <h3 id="detail-title">Click any card to see detail</h3>
+    <div class="placeholder">K-line chart / valuation detail / holdings / capital flow would render here</div>
+  </div>
+</div>
+
+<!-- ===================== APPROACH B ===================== -->
+<div id="panel-b" class="panel">
+  <div class="b-layout">
+    <div class="b-sidebar">
+      <div class="b-sidebar-item recommended active">
+        <div class="left"><span class="name">512690 酒ETF</span><span class="sub">消费 | Score 78</span></div>
+        <div class="right"><span class="pct verdict-green">0.2%</span><br><span class="verdict-sm">🟢极低估</span></div>
+      </div>
+      <div class="b-sidebar-item recommended">
+        <div class="left"><span class="name">159928 消费ETF</span><span class="sub">消费 | Score 72</span></div>
+        <div class="right"><span class="pct verdict-green">8.7%</span><br><span class="verdict-sm">🟢极低估</span></div>
+      </div>
+      <div class="b-sidebar-item recommended">
+        <div class="left"><span class="name">159865 养殖ETF</span><span class="sub">周期 | Score 68</span></div>
+        <div class="right"><span class="pct verdict-green">1.9%</span><br><span class="verdict-sm">🟢极低估</span></div>
+      </div>
+      <div class="b-sidebar-item recommended">
+        <div class="left"><span class="name">512070 证券保险</span><span class="sub">金融 | Score 65</span></div>
+        <div class="right"><span class="pct verdict-green">18.8%</span><br><span class="verdict-sm">🟢极低估</span></div>
+      </div>
+      <div class="b-sidebar-item">
+        <div class="left"><span class="name">588200 芯片ETF</span><span class="sub">科技 | Score 55</span></div>
+        <div class="right"><span class="pct verdict-green">39.5%</span><br><span class="verdict-sm">🟢低估</span></div>
+      </div>
+      <div class="b-sidebar-item">
+        <div class="left"><span class="name">513120 港创新药</span><span class="sub">医药 | Score 51</span></div>
+        <div class="right"><span class="pct verdict-gray">53.8%</span><br><span class="verdict-sm">⚪合理</span></div>
+      </div>
+      <div class="b-sidebar-item">
+        <div class="left"><span class="name">560710 船舶ETF</span><span class="sub">制造 | Score 50</span></div>
+        <div class="right"><span class="pct verdict-gray">56.1%</span><br><span class="verdict-sm">⚪合理</span></div>
+      </div>
+      <div class="b-sidebar-item">
+        <div class="left"><span class="name">515220 煤炭ETF</span><span class="sub">资源 | Score 47</span></div>
+        <div class="right"><span class="pct verdict-gray">48.5%</span><br><span class="verdict-sm">⚪合理</span></div>
+      </div>
+      <div class="b-sidebar-item">
+        <div class="left"><span class="name">512660 军工ETF</span><span class="sub">军工 | Score 44</span></div>
+        <div class="right"><span class="pct verdict-orange">61.3%</span><br><span class="verdict-sm">🟠偏高</span></div>
+      </div>
+      <div class="b-sidebar-item">
+        <div class="left"><span class="name">512400 有色金属</span><span class="sub">资源 | Score 42</span></div>
+        <div class="right"><span class="pct verdict-red">80.7%</span><br><span class="verdict-sm">🔴极高估</span></div>
+      </div>
+      <div class="b-sidebar-item">
+        <div class="left"><span class="name">515880 通信设备</span><span class="sub">科技 | Score 28</span></div>
+        <div class="right"><span class="pct verdict-red">99.9%</span><br><span class="verdict-sm">🔴极高估</span></div>
+      </div>
+    </div>
+    <div class="b-main">
+      <h2>512690 酒ETF鹏华</h2>
+      <div style="color:#6b7280;font-size:12px;margin-bottom:16px;">中证酒指数 (399987) | PE-TTM 16.92 | 历史百分位 0.2% | 🟢 极度低估</div>
+      <div class="b-detail-grid">
+        <div class="b-detail-card card"><h4>K-Line (120D)</h4><div class="placeholder">ECharts K-line + MA + Volume</div></div>
+        <div class="b-detail-card card"><h4>Valuation History</h4><div class="placeholder">PE-TTM time series + percentile bands</div></div>
+        <div class="b-detail-card card"><h4>Holdings Top 10</h4><div class="placeholder">贵州茅台 15.2% / 五粮液 14.8% / ...</div></div>
+        <div class="b-detail-card card"><h4>Capital Flow</h4><div class="placeholder">主力资金 / 北向资金 / 融资余额</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== APPROACH C ===================== -->
+<div id="panel-c" class="panel">
+  <div class="c-overview">
+    <div class="c-header">
+      <h1>ETF Daily Report - 2026-04-28</h1>
+    </div>
+
+    <div class="c-metrics-row">
+      <div class="c-metric-card card"><div class="label">Low Valuation</div><div class="value verdict-green">6</div></div>
+      <div class="c-metric-card card"><div class="label">Fair</div><div class="value verdict-gray">11</div></div>
+      <div class="c-metric-card card"><div class="label">High Valuation</div><div class="value verdict-orange">4</div></div>
+      <div class="c-metric-card card"><div class="label">Extreme High</div><div class="value verdict-red">4</div></div>
+    </div>
+
+    <table class="c-table">
+      <thead>
+        <tr><th>ETF</th><th>Sector</th><th>Change</th><th>Valuation</th><th>Verdict</th><th>Score</th><th></th></tr>
+      </thead>
+      <tbody>
+        <tr class="hot"><td>512690 酒ETF</td><td>消费</td><td class="verdict-red">-0.21%</td><td><span class="bar-mini"><span class="dot" style="left:0.2%"></span></span> 0.2%</td><td class="verdict-green">🟢 极度低估</td><td><b>78</b></td><td><a class="link" href="#">Detail &rarr;</a></td></tr>
+        <tr class="hot"><td>159928 消费ETF</td><td>消费</td><td class="verdict-red">-0.55%</td><td><span class="bar-mini"><span class="dot" style="left:8.7%"></span></span> 8.7%</td><td class="verdict-green">🟢 极度低估</td><td><b>72</b></td><td><a class="link" href="#">Detail &rarr;</a></td></tr>
+        <tr class="hot"><td>159865 养殖ETF</td><td>周期</td><td class="verdict-green">+1.80%</td><td><span class="bar-mini"><span class="dot" style="left:1.9%"></span></span> 1.9%</td><td class="verdict-green">🟢 极度低估</td><td><b>68</b></td><td><a class="link" href="#">Detail &rarr;</a></td></tr>
+        <tr class="hot"><td>512070 证券保险</td><td>金融</td><td class="verdict-green">+2.15%</td><td><span class="bar-mini"><span class="dot" style="left:18.8%"></span></span> 18.8%</td><td class="verdict-green">🟢 极度低估</td><td><b>65</b></td><td><a class="link" href="#">Detail &rarr;</a></td></tr>
+        <tr><td>588200 芯片ETF</td><td>科技</td><td class="verdict-red">-1.02%</td><td><span class="bar-mini"><span class="dot" style="left:39.5%"></span></span> 39.5%</td><td class="verdict-green">🟢 低估</td><td>55</td><td><a class="link" href="#">Detail &rarr;</a></td></tr>
+        <tr><td>513120 港创新药</td><td>医药</td><td class="verdict-red">-0.87%</td><td><span class="bar-mini"><span class="dot" style="left:53.8%"></span></span> 53.8%</td><td class="verdict-gray">⚪ 合理</td><td>51</td><td><a class="link" href="#">Detail &rarr;</a></td></tr>
+        <tr><td>560710 船舶ETF</td><td>制造</td><td class="verdict-green">+0.45%</td><td><span class="bar-mini"><span class="dot" style="left:56.1%"></span></span> 56.1%</td><td class="verdict-gray">⚪ 合理</td><td>50</td><td><a class="link" href="#">Detail &rarr;</a></td></tr>
+        <tr><td>512980 传媒ETF</td><td>科技</td><td class="verdict-red">-0.44%</td><td><span class="bar-mini"><span class="dot" style="left:45.6%"></span></span> 45.6%</td><td class="verdict-gray">⚪ 合理</td><td>49</td><td><a class="link" href="#">Detail &rarr;</a></td></tr>
+        <tr><td>515220 煤炭ETF</td><td>资源</td><td class="verdict-green">+0.89%</td><td><span class="bar-mini"><span class="dot" style="left:48.5%"></span></span> 48.5%</td><td class="verdict-gray">⚪ 合理</td><td>47</td><td><a class="link" href="#">Detail &rarr;</a></td></tr>
+        <tr><td>512660 军工ETF</td><td>军工</td><td class="verdict-green">+0.33%</td><td><span class="bar-mini"><span class="dot" style="left:61.3%"></span></span> 61.3%</td><td class="verdict-orange">🟠 偏高</td><td>44</td><td><a class="link" href="#">Detail &rarr;</a></td></tr>
+        <tr><td>512400 有色金属</td><td>资源</td><td class="verdict-green">+1.23%</td><td><span class="bar-mini"><span class="dot" style="left:80.7%"></span></span> 80.7%</td><td class="verdict-red">🔴 极度高估</td><td>42</td><td><a class="link" href="#">Detail &rarr;</a></td></tr>
+        <tr><td>562500 机器人</td><td>科技</td><td class="verdict-green">+3.21%</td><td><span class="bar-mini"><span class="dot" style="left:74.4%"></span></span> 74.4%</td><td class="verdict-orange">🟠 偏高</td><td>38</td><td><a class="link" href="#">Detail &rarr;</a></td></tr>
+        <tr><td>512200 房地产</td><td>周期</td><td class="verdict-green">+0.67%</td><td><span class="bar-mini"><span class="dot" style="left:90.8%"></span></span> 90.8%</td><td class="verdict-red">🔴 极度高估</td><td>31</td><td><a class="link" href="#">Detail &rarr;</a></td></tr>
+        <tr><td>515880 通信设备</td><td>科技</td><td class="verdict-green">+0.56%</td><td><span class="bar-mini"><span class="dot" style="left:99.9%"></span></span> 99.9%</td><td class="verdict-red">🔴 极度高估</td><td>28</td><td><a class="link" href="#">Detail &rarr;</a></td></tr>
+      </tbody>
+    </table>
+    <div style="margin-top:12px;font-size:11px;color:#4b5563;">🔥 = Quant Top Pick | Sorted by composite score | Click "Detail" for full analysis</div>
+  </div>
+</div>
+
+<script>
+function switchTab(id) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+  event.target.classList.add('active');
+}
+function showDetail(code) {
+  const panel = document.getElementById('detail-panel');
+  panel.classList.add('show');
+  document.getElementById('detail-title').textContent = code + ' - Detail View';
+  panel.scrollIntoView({behavior:'smooth'});
+}
+</script>
+</body>
+</html>

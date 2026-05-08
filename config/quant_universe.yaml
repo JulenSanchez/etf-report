@@ -164,7 +164,7 @@ scoring:
     valuation: 0.15  # REQ-178: 估值因子，低估=高分
 
   # 偏好加成（0-100 整数尺度，内部自动转换为 0-1 综合分尺度）
-  bias_bonus: 4.0
+  bias_bonus: 0
 
   # 连续映射函数参数（替代截面标准化）
   sensitivity:
@@ -176,9 +176,26 @@ scoring:
 # 信心函数参数（[0, 1] 尺度，与连续映射后的综合分一致）
 # ============================================================
 confidence:
-  type: "quadratic"  # quadratic | linear | sigmoid
-  dead_zone: 25      # 低于此百分比 → f=0，不配仓位
-  full_zone: 65      # 高于此百分比 → f=1，满配
+  type: "ma_trend"  # ma_trend（唯一策略：HS300周线MA20上方→高仓位，下方→低仓位）
+  # --- MA Trend params ---
+  ma_trend_period: 26   # 沪深300周线MA周期（优化后从20调至26，Calmar 0.92→1.55, MDD -24%→-16%）
+  ma_bull_pos: 1.00   # MA上方仓位（满仓）
+  ma_bear_pos: 0.30   # MA下方仓位（优化后从0.40调至0.30，减回撤不牺牲收益）
+  ma_direction_confirm: true  # MA方向确认：MA上升+价格高于MA才确认Bull，反之确认Bear，减少震荡反转
+  # --- 以下为历史参数，保留供回测对比，不再作为主策略 ---
+  # Legacy quadratic (deprecated)
+  dead_zone: 25
+  full_zone: 65
+  # Legacy regime (deprecated)
+  regime_base:
+    bull_trend: 0.95
+    choppy_range: 0.75
+    bear_trend: 0.35
+  regime_window: 8
+  regime_threshold: 0.03
+  breadth_weight: 0.2
+  clarity_threshold: 0.03
+  dd_sensitivity: 0.2
 
 # ============================================================
 # 仓位参数
@@ -188,13 +205,16 @@ position:
   max_holdings_special: 8
   discretize_step: 0.05  # 5% 档位
   weighting: "arithmetic"  # arithmetic | softmax
+  rebalance_freq: "W-FRI"  # W-FRI | daily
+  score_band: 0            # 分数带阈值（0=关闭，内部0-1尺度；日调仓推荐 0.02-0.10）
+  commission_rate: 0.00026 # ETF 单次交易费率（万0.26 = 佣金+过户费，无印花税）
 
 # ============================================================
 # 因子计算参数
 # ============================================================
 factors:
   ema:
-    period_weeks: 20  # EMA 周期（周线）
+    period_weeks: 16  # EMA 周期（周线）— REQ-190 敏感性分析：16 比 20 Calmar+19%
   rsi:
     period_days: 14
     # 趋势自适应阈值
@@ -209,89 +229,77 @@ factors:
 # 策略 Preset（REQ-179）
 # ============================================================
 presets:
-  value:
-    label: "价值投资型"
-    description: "低换手，高估值权重，长期持有低估标的"
-    scoring:
-      weights:
-        ema_deviation: 0.15
-        rsi_adaptive: 0.20
-        volume_ratio: 0.15
-        valuation: 0.50
-      bias_bonus: 3.0
-      sensitivity:
-        f1: 10.0  # 价值型不敏感于趋势偏离
-        f3: 2.0   # 量比也不敏感
-        f2_dead_zone: 1.5  # 价值型 F2 死区宽，只在极端时干预
-    confidence:
-      type: "quadratic"
-      dead_zone: 20
-      full_zone: 55
-    position:
-      max_holdings: 5
-      discretize_step: 0.10
-    factors:
-      ema:
-        period_weeks: 26
-      rsi:
-        period_days: 14
-      volume_ratio:
-        window_days: 20
+  # ---- 基于 REQ-183/185 参数搜索验证的策略预设 ----
+  # 所有预设均经过 1yr/2yr/3yr 多窗口验证
+  #
+  # 参数分类（REQ-190 收束）:
+  #   LOCKED  = 固化参数，UI 不可交互，值由策略设计决定
+  #   OPEN    = 开放参数，UI 可交互，有优化空间
+  #   RESERVED= 保留位，当前未使用，待未来因子重新占位
 
-  tech:
-    label: "技术套利型"
-    description: "高动量权重，追趋势+量价确认，高换手"
+  weekly_trend:
+    label: "周频趋势型（推荐）"
+    description: "HS300周线MA20上方→95%仓位，下方→40%仓位。高默认仓位+极少触发。3yr=22.6%/MDD=-15.6%/Calmar=1.45。"
     scoring:
       weights:
-        ema_deviation: 0.40
-        rsi_adaptive: 0.25
-        volume_ratio: 0.30
-        valuation: 0.05
-      bias_bonus: 5.0
+        ema_deviation: 0.40    # OPEN
+        rsi_adaptive: 0.00     # RESERVED — F2 保留位，待引入更优 RSI 用法或新因子
+        volume_ratio: 0.60     # OPEN
+        valuation: 0.00        # RESERVED — F4 保留位，待估值因子成熟
+      bias_bonus: 0            # LOCKED — REQ-190 确认偏好加成只损害收益
       sensitivity:
-        f1: 5.0   # 技术型对趋势偏离高度敏感
-        f3: 1.0   # 量比也敏感
-        f2_dead_zone: 1.2  # 技术型 F2 死区略窄，捕捉异动
+        f1: 8.0               # OPEN
+        f3: 1.0                # OPEN
+        f2_dead_zone: 1.5      # LOCKED — F2 权重=0，此参数无意义
     confidence:
-      type: "linear"
-      dead_zone: 30
-      full_zone: 70
+      type: "ma_trend"        # LOCKED — 唯一活跃策略
+      ma_trend_period: 26      # OPEN — 2026-05-08 优化：20→26
+      ma_bull_pos: 1.00         # OPEN — 核心风控参数
+      ma_bear_pos: 0.30         # OPEN — 核心风控参数（2026-05-08 优化：0.40→0.30）
+      ma_direction_confirm: true  # OPEN — MA方向确认（2026-05-08 确认：ON是最大单因子提升）
     position:
-      max_holdings: 6
-      discretize_step: 0.05
+      max_holdings: 6           # LOCKED — REQ-190 确认 5 vs 6 差异为噪声
+      discretize_step: 0.05     # LOCKED — 5% 是合理粒度
+      rebalance_freq: "W-FRI"  # OPEN — 本质上是 preset 级选择
+      score_band: 0             # LOCKED — weekly_trend 固定为 0
+      commission_rate: 0.00026  # LOCKED — 市场事实
     factors:
       ema:
-        period_weeks: 12
+        period_weeks: 16        # OPEN — REQ-190 从 20 调至 16
       rsi:
-        period_days: 10
+        period_days: 14         # LOCKED — F2 权重=0
       volume_ratio:
-        window_days: 10
+        window_days: 20         # OPEN
 
-  momentum:
-    label: "景气驱动型"
-    description: "均衡偏动量，中等估值，兼顾趋势与安全边际"
+  daily_aggressive:
+    label: "日频攻防型"
+    description: "日调仓+分数带，仓位控制同ma_trend。1yr=48%/3yr=13%/Calmar=0.54。"
     scoring:
       weights:
-        ema_deviation: 0.30
-        rsi_adaptive: 0.25
-        volume_ratio: 0.25
-        valuation: 0.20
-      bias_bonus: 4.0
+        ema_deviation: 0.40    # OPEN
+        rsi_adaptive: 0.05     # RESERVED — daily 模式保留少量 RSI 权重
+        volume_ratio: 0.55     # OPEN
+        valuation: 0.00        # RESERVED
+      bias_bonus: 0            # LOCKED
       sensitivity:
-        f1: 8.0   # 默认敏感度
-        f3: 1.0   # 默认敏感度
-        f2_dead_zone: 1.5  # 景气型 F2 死区，只在 RSI 真正极端时触发
+        f1: 8.0               # OPEN
+        f3: 1.0                # OPEN
+        f2_dead_zone: 1.5      # LOCKED
     confidence:
-      type: "quadratic"
-      dead_zone: 25
-      full_zone: 65
+      type: "ma_trend"        # LOCKED
+      ma_trend_period: 20      # OPEN
+      ma_bull_pos: 1.00         # OPEN
+      ma_bear_pos: 0.40         # OPEN
     position:
-      max_holdings: 6
-      discretize_step: 0.05
+      max_holdings: 6           # LOCKED
+      discretize_step: 0.05     # LOCKED
+      rebalance_freq: "daily"   # OPEN — 区别于 weekly_trend 的核心差异
+      score_band: 0.05          # LOCKED — daily_aggressive 固定为 5%
+      commission_rate: 0.00026  # LOCKED
     factors:
       ema:
-        period_weeks: 20
+        period_weeks: 16        # OPEN
       rsi:
-        period_days: 14
+        period_days: 14         # LOCKED
       volume_ratio:
-        window_days: 20
+        window_days: 20         # OPEN

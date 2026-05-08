@@ -1,0 +1,58 @@
+# ETF 报告技能 — 归档
+
+> 看板总览见 Board.md
+
+## 版本发布记录
+
+| 版本 | 日期 | 包含需求 | 备注 |
+|------|------|---------|------|
+| v1.0.0 | 2026-04-01 | REQ-001~006 | 基础系统 |
+| v2.1.0 | 2026-04-07 | REQ-101~107 | Phase 1 完成：配置化、日志、健康检查 |
+| v2.2.0 | 2026-04-07 | REQ-110, REQ-111 | 懒加载 + 归档系统 |
+| v2.3.0 | 2026-04-11 | REQ-118 | 状态栏栈模型 + 人格切换 + 版本发布一条龙 |
+| v2.4.0 | 2026-04-17 | REQ-113, REQ-118, REQ-120, REQ-121, REQ-123, REQ-124, REQ-125, REQ-126, REQ-127, REQ-128, REQ-129, REQ-130, REQ-131, REQ-132, REQ-133, REQ-134, REQ-135, REQ-136 | 动态数据绑定与单轨渲染收口、份额变动与解释层日更、调试链路与目录卫生、发布仓模板化和公开导航收口 |
+| v2.5.0 | 2026-04-21 | REQ-138, REQ-137, REQ-139, REQ-140, REQ-141, REQ-142, REQ-143, REQ-144, REQ-145, REQ-147, REQ-146, REQ-157, REQ-158, REQ-160, REQ-164, REQ-168, REQ-148 | 调试工具链增强、CSS/JS 外链化、基准与解释层自动化升级、TOP5 归属列、K 线交互优化、成交额口径修正与首屏懒加载收口 |
+| v2.6.0 | 2026-04-29 | REQ-184 | 波动率因子(F5)探索与归零验证，策略基线锁定为(20,0,80,0,0)，量化面板改造为纯展示模式 |
+
+
+
+## bugs (已关闭 / 不修复)
+
+| ID | 标题 | 结论 | 严重度 | 发现日期 | 关闭日期 | 备注 |
+|----|------|------|--------|---------|---------|------|
+| BUG-001 | ETF 详情页卡片高度与业绩区间距异常 | closed | minor | 2026-04-13 | 2026-04-13 | 用户确认“很顺眼”；已统一双栏等高策略，并为“近期业绩表现”补充分组标题间距规范 |
+| BUG-002 | 515880 拆分后未复权K线失真 | closed | major | 2026-04-15 | 2026-04-15 | 已由 `REQ-124` 吸收为流程需求并完成：份额变动现改为 K 线生成阶段的数据清洗步骤，周线重建与归一化走势统一消费清洗后的日线数据 |
+| BUG-004 | ETF 详情页与K线在开盘时段误混入盘中实时口径 | closed | major | 2026-04-16 | 2026-04-16 | 用户要求报告主展示严格以页面“数据截止”对应的最后收盘日为准；已完成修复：`fix_ma_and_benchmark.py` 盘中自动剔除未收盘日线 bar，`update_report.py` / `index.html` 不再用 `realtimeData.etf_price` / `etf_change` 覆盖详情页收盘价与日涨跌，当前回归 `79 passed`，真实生成页 `159865` 已按 `2026-04-15` 收盘口径显示 |
+| BUG-005 | 提交后 `index.html` 被发布/更新流程覆盖 | closed | major | 2026-04-17 | 2026-04-17 | 已按发布前补救任务关闭：根因是发布仓配置漂移导致旧瘦仓强推覆盖正式仓；现已切回当前技能仓为发布源、停用旧 `pages_repo_root`、增加同 remote / 同分支保护，并已验证远端 `main` 与 Pages 恢复到 2026-04-17 报告 |
+| BUG-006 | 热区模式误标 K 线标题且漏标运行时收益节点 | closed | major | 2026-04-18 | 2026-04-18 | 根因一：`REQ-137` 使用 `[id^="kline-daily-"]` / `[id^="kline-weekly-"]` 这类前缀选择器，误把 `kline-*title-*` / `kline-*card-*` 也扫进热区；根因二：`renderDetailPanel()` 重绘业绩表时丢失 `performance-return-*` 细粒度 id，导致真实热数据漏标。现已收窄图表选择器到 `.kline-container-small`，并在运行时/构建时统一保留收益单元格 id，同时把技术信号描述文本纳入热区。 |
+| BUG-007 | 模糊搜索定位按钮点击无响应 | closed | major | 2026-04-18 | 2026-04-19 | 已完成收口：先修复搜索态事件绑定与旧版面板 DOM 混用导致的启动中断；本轮再补齐关闭聚焦面板即自动清除高亮的交互，使最终行为与 REQ-140 记录一致。 |
+| BUG-008 | 热区模式切换 ETF 后首次查看节点漏框 | closed | major | 2026-04-19 | 2026-04-19 | 根因是 ETF 面板运行时重绘时对 `daily-change-value-*` / `moving-average-status-*` / `tech-rating-value-*` / `recommendation-rating-value-*` 等热区节点直接覆写 `className`，把已有 `debug-hotspot-target` 一并抹掉；现已改为只切换业务态 class、保留调试类，同时保留渲染后热区重刷作为兜底。 |
+| BUG-009 | Alt 点击策略文本复制 id 失败 | closed | major | 2026-04-19 | 2026-04-19 | 根因是调试模式复制逻辑优先走 `navigator.clipboard.writeText()`，当浏览器在部分文本节点点击场景下拒绝授权时会直接抛错且没有 fallback；现已改为 Clipboard API 失败后自动回退到 `execCommand('copy')`，并补齐 selection 设置。 |
+| BUG-010 | GitHub Actions 测试在 `main(c615520)` 失败 | closed | major | 2026-04-20 | 2026-04-21 | 随 `v2.5.0` 发布收口：CI 已补齐 `PyYAML` 依赖安装，`.github/workflows/test.yml` 同步到当前仓。 |
+| BUG-011 | `update_report.py` 找不到 `klineData` 常量 | closed | minor | 2026-04-20 | 2026-04-21 | 随 `v2.5.0` 发布收口：HTML 内联 const 检查已降级为兼容路径，`runtime_payload.js` 成为唯一事实源。 |
+| BUG-012 | 两个测试断言未跟随 REQ-146 架构更新 | closed | minor | 2026-04-20 | 2026-04-21 | 随 `v2.5.0` 发布收口：测试断言已补齐新增 id，适配 JS/CSS 外链化后的结构。 |
+| BUG-013 | `fix_ma_and_benchmark.py` 残留 outputs/js/main.js 更新路径 | closed | minor | 2026-04-20 | 2026-04-21 | 随 `v2.5.0` 发布收口：旧 `outputs/js/main.js` 更新链路已移除，统一收束到 `runtime_payload.js`。 |
+| BUG-014 | `health_check.py` A4 文件大小阈值未跟随 JS/CSS 抽离 | closed | minor | 2026-04-20 | 2026-04-21 | 随 `v2.5.0` 发布收口：HTML 体积阈值已下调，并补充外链资源存在性守护。 |
+| BUG-015 | `health_check.py` D2 仍查 HTML 内联 const | closed | minor | 2026-04-20 | 2026-04-21 | 随 `v2.5.0` 发布收口：D2 已优先校验 `runtime_payload.js`，仅在兼容模式下回退内联 const。 |
+| BUG-016 | 手电筒独开时按 Alt 触发"复制失败"+误激活放大镜 | closed | major | 2026-04-21 | 2026-04-21 | 随 `v2.5.0` 发布收口：Alt+click 现只保留复制语义，不再把放大镜状态写回手电筒流程。 |
+| BUG-017 | 三档配置卡片 allocation-card-item / strategy 未接入日更链路 | closed | minor | 2026-04-21 | 2026-04-21 | 随 `v2.5.0` 发布收口：问题已在判词层面闭环，后续周更支线转入 `REQ-161`，本轮不再视作活跃缺陷。 |
+| BUG-018 | 日 K / 周 K 副图显示成交量而非成交额，tooltip 错位 | closed | minor | 2026-04-21 | 2026-04-21 | 随 `v2.5.0` 发布收口：主行情链已补入 `amount` 字段，副图与 tooltip 统一切换为成交额口径。 |
+| BUG-019 | 515880 通信设备 ETF 的 K 线基准、页面业绩基准、基金合同基准三者不一致 | closed | minor | 2026-04-21 | 2026-04-21 | 随 `v2.5.0` 发布收口：K 线基准与页面文案已统一改为创业板指。 |
+| BUG-020 | 文档暴露本地绝对路径与用户级规则引用 | closed | major | 2026-04-21 | 2026-04-21 | `README.md` 曾写入本机 `file:///c:/Users/...` 绝对路径，并引用用户级规则文件；`SKILL.md`、`CONTRIBUTING.md`、`plans/REQ-161.md` 也带有用户级规则路径。现已统一改写为仓库内自洽表述，并将 `PLAN.md` 加入 `.gitignore` 且从 Git 跟踪中移出。 |
+| BUG-021 | 发布前唯一门禁未收束到 `plans/private/GIT_WORKFLOW.md` | closed | major | 2026-04-21 | 2026-04-21 | 已完成治理收口：`.codebuddy/rules/etf-report.mdc` 与 `PLAN.md` 不再并列维护发布前检查，统一改为只引用 `plans/private/GIT_WORKFLOW.md`；该文档现已重写为发布前唯一门禁，并加入 `.gitignore` 且从 Git 跟踪中移出。 |
+
+
+
+
+
+
+
+
+
+
+## abandoned (已废弃)
+
+| ID | 标题 | 废弃日期 | 原因 |
+|----|------|---------|------|
+| REQ-109 | 资源优化（压缩 CSS/JS） | 2026-04-17 | 用户确认废弃：此前曾实现过一版压缩/单行化思路，结果导致 `index.html` 挂掉，后续修复继续恶化，最终只能在 GitHub 回退版本；当前不再继续沿此方向推进。 |
+

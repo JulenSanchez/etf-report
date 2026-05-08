@@ -14,6 +14,7 @@
 3. **数据存储层** — `etf_full_kline_data.json` + `etf_realtime_data.json` + `corporate_action_events.json`
 
 4. **报告生成层** — JavaScript 对象注入 HTML，100% 样式保证
+5. **量化回测层** — 25 支 ETF 轮动策略（F1-F5 五因子 + 信心函数 + 周度调仓），当前仅开发环境可用，正式页建设中。详见 `runbooks/QUANT_RUNBOOK.md`
 
 ## 核心设计原则
 
@@ -45,6 +46,9 @@ config_manager.py → logger.py → update_report.py (主控)
                                     ├─ fix_ma_and_benchmark.py → data_cleaning.py
                                     ├─ realtime_data_updater.py
                                     └─ health_check.py
+
+quant_factors.py → quant_backtest.py → quant_tuner.py (Flask 调参)
+                                   └→ quant_build_payload.py (静态 payload)
 ```
 
 

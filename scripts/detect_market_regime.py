@@ -47,7 +47,7 @@ def load_universe():
     return cfg["universe"]
 
 
-def compute_daily_ema_deviation(daily_df, ema_period=20):
+def compute_daily_ema_deviation(daily_df, ema_period=16):
     """对单支 ETF 日线算每日 EMA 偏离度 (close - EMA) / EMA * 100"""
     if daily_df is None or len(daily_df) < ema_period + 5:
         return None

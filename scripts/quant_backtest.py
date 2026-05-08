@@ -24,7 +24,7 @@ sys.path.insert(0, str(SKILL_DIR / "scripts"))
 from quant_factors import (
     compute_all_factors,
     map_f1, map_f2, map_f3, map_f4,
-    confidence_function,
+    confidence_function, regime_confidence, infer_regime_from_nav, dd_trigger_confidence, momentum_crash_confidence, ma_trend_confidence,
 )
 
 CONFIG_PATH = SKILL_DIR / "config" / "quant_universe.yaml"
@@ -53,10 +53,16 @@ def load_etf_data(code: str):
 
 
 def get_rebalance_dates(daily_dates: pd.DatetimeIndex, freq: str = "W-FRI"):
-    """获取调仓日期列表（每周五）"""
-    # 找出所有交易日中的周五（或最接近的最后交易日）
-    dates_series = pd.Series(daily_dates).sort_values().reset_index(drop=True)
+    """获取调仓日期列表
+
+    freq="W-FRI": 每周最后一个交易日（默认，兼容原有逻辑）
+    freq="daily": 每个交易日都是调仓日
+    """
+    if freq == "daily":
+        return daily_dates.sort_values()
+
     # 按周分组，取每周最后一个交易日
+    dates_series = pd.Series(daily_dates).sort_values().reset_index(drop=True)
     weekly_groups = dates_series.groupby(dates_series.dt.isocalendar().week.values +
                                           dates_series.dt.isocalendar().year.values * 100)
     rebalance_dates = weekly_groups.max().sort_values().values
@@ -64,16 +70,20 @@ def get_rebalance_dates(daily_dates: pd.DatetimeIndex, freq: str = "W-FRI"):
 
 
 def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
-                 initial_capital: float = 1000000.0):
+                 initial_capital: float = 1000000.0,
+                 rebalance_freq: str = None):
     """
     主回测函数
 
     逻辑：
-    1. 每个调仓日（周五收盘后）计算 25 支 ETF 三因子
+    1. 每个调仓日计算 25 支 ETF 三因子
     2. 截面标准化 + 合成综合分
     3. Top-6 选股 + 信心函数仓位分配
-    4. 下周一开盘按目标仓位调仓（简化：用周五收盘价成交）
+    4. 按目标仓位调仓（用调仓日收盘价成交）
     5. 持仓到下一个调仓日，按每日收盘价计算组合市值
+
+    rebalance_freq: "W-FRI"（每周最后一个交易日）或 "daily"（每个交易日）
+                   None 时读配置文件 position.rebalance_freq
     """
     cfg = load_config()
     universe = cfg["universe"]
@@ -86,10 +96,35 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
     bias_bonus = scoring_cfg["bias_bonus"]
     sensitivity = scoring_cfg.get("sensitivity", {})
     f1_sens = sensitivity.get("f1", 8.0)
+    # rebalance_freq: 参数优先，否则读配置
+    if rebalance_freq is None:
+        rebalance_freq = position_cfg.get("rebalance_freq", "W-FRI")
+    score_band = position_cfg.get("score_band", 0)
+    commission_rate = position_cfg.get("commission_rate", 0)
     f3_sens = sensitivity.get("f3", 1.0)
     f2_dz = sensitivity.get("f2_dead_zone", 1.0)
-    dead_zone = confidence_cfg["dead_zone"]
-    full_zone = confidence_cfg["full_zone"]
+    conf_type = confidence_cfg.get("type", "regime")
+    # dead_zone/full_zone 在 YAML 中为百分制(如 25/65)，需转为 [0,1]
+    dead_zone = confidence_cfg["dead_zone"] / 100.0
+    full_zone = confidence_cfg["full_zone"] / 100.0
+    dispersion_threshold = confidence_cfg.get("dispersion_threshold", 0.0)  # 0=关闭
+    breadth_power = confidence_cfg.get("breadth_power", 0.0)  # 0=关闭
+    regime_base_cfg = confidence_cfg.get("regime_base", {"bull_trend": 0.90, "choppy_range": 0.55, "bear_trend": 0.25})
+    regime_window = confidence_cfg.get("regime_window", 40)
+    regime_threshold = confidence_cfg.get("regime_threshold", 0.08)
+    breadth_weight = confidence_cfg.get("breadth_weight", 0.5)
+    clarity_threshold = confidence_cfg.get("clarity_threshold", 0.10)
+    dd_sensitivity = confidence_cfg.get("dd_sensitivity", 0.5)
+    dd_trigger_level = confidence_cfg.get("dd_trigger_level", -0.05)
+    dd_floor = confidence_cfg.get("dd_floor", 0.35)
+    crash_window = confidence_cfg.get("crash_window", 2)
+    crash_threshold = confidence_cfg.get("crash_threshold", -0.03)
+    recovery_threshold = confidence_cfg.get("recovery_threshold", -0.01)
+    crash_pos = confidence_cfg.get("crash_pos", 0.20)
+    recovery_pos = confidence_cfg.get("recovery_pos", 0.70)
+    recovery_dd_level = confidence_cfg.get("recovery_dd_level", -0.05)
+    ma_bull_pos = confidence_cfg.get("ma_bull_pos", 0.95)
+    ma_bear_pos = confidence_cfg.get("ma_bear_pos", 0.10)
     max_holdings = position_cfg["max_holdings"]
     step = position_cfg["discretize_step"]
 
@@ -121,6 +156,29 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
         except Exception as e:
             print(f"  [WARN] 加载市场状态失败: {e}")
 
+    # Load HS300 MA20 trend signal for ma_trend confidence
+    hs300_above_ma_map = {}
+    if conf_type == "ma_trend":
+        try:
+            import akshare as ak
+            hs = ak.stock_zh_index_daily(symbol="sh000300")
+            hs["date"] = pd.to_datetime(hs["date"])
+            hs = hs.sort_values("date").reset_index(drop=True)
+            hs["week"] = hs["date"].dt.isocalendar().year.astype(str) + "-" + hs["date"].dt.isocalendar().week.astype(str).str.zfill(2)
+            weekly = hs.groupby("week").last().reset_index()[["date", "close"]]
+            weekly["ma20"] = weekly["close"].rolling(20, min_periods=10).mean()
+            weekly["above"] = weekly["close"] >= weekly["ma20"]
+            for _, wr in weekly.iterrows():
+                if pd.isna(wr["ma20"]):
+                    continue
+                wk_start = wr["date"] - pd.Timedelta(days=6)
+                mask = (hs["date"] >= wk_start) & (hs["date"] <= wr["date"])
+                for _, dr in hs[mask].iterrows():
+                    hs300_above_ma_map[dr["date"].strftime("%Y-%m-%d")] = bool(wr["above"])
+            print(f"  HS300 MA20: {len(hs300_above_ma_map)} days loaded")
+        except Exception as e:
+            print(f"  [WARN] HS300 MA20 failed: {e}")
+
     # 确定回测日期范围
     # 用所有 ETF 的日线数据的交集确定公共日期范围
     all_dates = set()
@@ -144,28 +202,38 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
 
     print(f"  回测区间: {all_dates[0].strftime('%Y-%m-%d')} ~ {all_dates[-1].strftime('%Y-%m-%d')}")
     print(f"  交易日数: {len(all_dates)}")
+    print(f"  调仓频率: {rebalance_freq}")
 
     # 获取调仓日
-    rebalance_dates = get_rebalance_dates(all_dates)
+    rebalance_dates = get_rebalance_dates(all_dates, freq=rebalance_freq)
     rebalance_dates = rebalance_dates[(rebalance_dates >= start_dt) & (rebalance_dates <= end_dt)]
 
     # 需要至少 EMA 周期的预热期
     min_warmup_weeks = factor_cfg["ema"]["period_weeks"]
-    # 从第 min_warmup_weeks 个调仓日开始才有有效信号
-    if len(rebalance_dates) <= min_warmup_weeks:
-        print(f"[ERROR] 调仓日数({len(rebalance_dates)})不够预热({min_warmup_weeks}周)")
+    if rebalance_freq == "daily":
+        # 日频模式下，跳过等价周数 × 5 个交易日
+        warmup_skip = min_warmup_weeks * 5
+    else:
+        warmup_skip = min_warmup_weeks
+    # 从第 warmup_skip 个调仓日开始才有有效信号
+    if len(rebalance_dates) <= warmup_skip:
+        print(f"[ERROR] 调仓日数({len(rebalance_dates)})不够预热({warmup_skip})")
         return None
 
-    rebalance_dates = rebalance_dates[min_warmup_weeks:]
-    print(f"  有效调仓日: {len(rebalance_dates)}（跳过前 {min_warmup_weeks} 周预热）")
+    rebalance_dates = rebalance_dates[warmup_skip:]
+    print(f"  有效调仓日: {len(rebalance_dates)}（跳过前 {warmup_skip} 个预热）")
 
     # ============================================================
     # 回测主循环
     # ============================================================
     portfolio = {}  # {code: shares}
     cash = initial_capital
+    total_commission = 0.0
     nav_history = []  # [{date, nav, cash, holdings_value, positions: {...}}]
     signal_history = []  # 每次调仓的打分记录
+    nav_peak_nav = initial_capital  # running peak NAV for drawdown calc
+    regime = "choppy_range"  # will be updated each rebalance
+    nav_list_bt = []  # simple NAV list for regime inference
 
     print("\n开始回测...")
 
@@ -218,6 +286,7 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
 
         # F4 估值因子（regime-aware）
         rb_date_str = rb_date.strftime("%Y-%m-%d") if hasattr(rb_date, "strftime") else str(rb_date)[:10]
+        hs300_above_ma = hs300_above_ma_map.get(rb_date_str, True)  # default bull if no data
         market_regime = market_regimes.get(rb_date_str, "choppy_range")
 
         if w4 > 0 and "f4_valuation" in factors_df.columns:
@@ -232,8 +301,35 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
         # ------ 3. Top-6 选股 + 仓位 ------
         top_n = composite.nlargest(max_holdings)
 
+        # 分数带过滤：新标的替换被挤出持仓时，分数优势必须 > score_band
+        if score_band > 0 and portfolio:
+            # 理想 top_n 中已在持仓的 = 安全保留
+            held_in_topn = {c: top_n[c] for c in top_n.index if c in portfolio}
+            # 想入场的新标的
+            want_in = [c for c in top_n.index if c not in portfolio]
+            # 被挤出 top_n 的当前持仓
+            ousted = {c: composite[c] for c in portfolio if c not in top_n.index and c in composite.index}
+
+            if want_in and ousted:
+                # 每个新标的检查：是否比某个被挤出者高出 > score_band
+                allowed = [c for c in want_in
+                           if any(composite[c] - out_score > score_band
+                                  for out_score in ousted.values())]
+            else:
+                allowed = want_in  # 无 ousted 时全部放行
+
+            # 组合：安全保留 + 允许入场 + 未被替换的 ousted
+            merged = dict(held_in_topn)
+            for c in allowed:
+                merged[c] = top_n[c]
+            for c, s in ousted.items():
+                if c not in merged:
+                    merged[c] = s
+            top_n = pd.Series(merged).nlargest(max_holdings)
+
         # 信心函数
-        confidences = top_n.apply(lambda s: confidence_function(s, dead_zone, full_zone))
+        score_dispersion = top_n.std()
+        market_breadth = (composite > composite.median()).sum() / max(len(composite), 1)
 
         # 得分加权
         if top_n.sum() > 0:
@@ -241,9 +337,62 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
         else:
             relative_weights = pd.Series(0.0, index=top_n.index)
 
-        # 平均信心 → 总仓位水平
-        avg_conf = confidences.mean()
-        total_target = min(0.95, avg_conf * 1.2)  # 上限 95%
+        # Update NAV tracking for regime inference
+        holdings_value_bt = sum(portfolio.get(c, 0) * prices_today.get(c, 0) for c in portfolio)
+        current_nav_bt = cash + holdings_value_bt
+        nav_peak_nav = max(nav_peak_nav, current_nav_bt)
+        current_dd = (current_nav_bt - nav_peak_nav) / nav_peak_nav
+        nav_list_bt.append(current_nav_bt)
+
+        if conf_type == "regime":
+            # Market-state driven position sizing
+            regime = infer_regime_from_nav(nav_list_bt, regime_window, regime_threshold)
+            total_target = regime_confidence(
+                regime=regime,
+                breadth=market_breadth,
+                clarity=score_dispersion,
+                drawdown_pct=current_dd,
+                regime_base=regime_base_cfg,
+                breadth_weight=breadth_weight,
+                clarity_threshold=clarity_threshold,
+                dd_sensitivity=dd_sensitivity,
+            )
+        elif conf_type == "dd_trigger":
+            total_target = dd_trigger_confidence(
+                drawdown_pct=current_dd,
+                dd_trigger_level=dd_trigger_level,
+                dd_floor=dd_floor,
+            )
+            regime = "dd_trigger"
+        elif conf_type == "momentum_crash":
+            total_target = momentum_crash_confidence(
+                nav_history=nav_list_bt,
+                crash_window=crash_window,
+                crash_threshold=crash_threshold,
+                recovery_threshold=recovery_threshold,
+                full_pos=0.95,
+                crash_pos=crash_pos,
+                recovery_pos=recovery_pos,
+                recovery_dd_level=recovery_dd_level,
+            )
+            regime = "momentum_crash"
+        elif conf_type == "always_full":
+            total_target = 0.95
+            regime = "always_full"
+        elif conf_type == "ma_trend":
+            total_target = ma_trend_confidence(
+                hs300_above_ma=hs300_above_ma,
+                bull_pos=ma_bull_pos,
+                bear_pos=ma_bear_pos,
+            )
+            regime = "ma_above" if hs300_above_ma else "ma_below"
+        else:
+            # Legacy: score-based quadratic confidence
+            confidences = top_n.apply(lambda s: confidence_function(s, dead_zone, full_zone))
+            disp_factor = min(1.0, score_dispersion / dispersion_threshold) if dispersion_threshold > 0 else 1.0
+            breadth_factor = market_breadth ** breadth_power if breadth_power > 0 else 1.0
+            avg_conf = confidences.mean() * disp_factor * breadth_factor
+            total_target = min(0.95, avg_conf * 1.2)  # 上限 95%
 
         # 每支目标仓位
         target_positions = relative_weights * total_target
@@ -268,7 +417,9 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
                 # 全卖
                 if code in prices_today:
                     sell_value = portfolio[code] * prices_today[code]
-                    cash += sell_value
+                    commission = sell_value * commission_rate
+                    cash += sell_value - commission
+                    total_commission += commission
                 del portfolio[code]
 
         # 调整已有持仓 + 买入新持仓
@@ -282,21 +433,22 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
 
             if diff > 0:
                 # 买入
-                buy_shares = diff / prices_today[code]
-                if cash >= diff:
-                    portfolio[code] = portfolio.get(code, 0) + buy_shares
-                    cash -= diff
-                else:
-                    # 现金不足，买能买的
-                    buy_shares = cash / prices_today[code]
-                    portfolio[code] = portfolio.get(code, 0) + buy_shares
-                    cash = 0
+                buy_value = min(diff, cash)
+                commission = buy_value * commission_rate
+                net_buy = buy_value - commission
+                buy_shares = net_buy / prices_today[code]
+                portfolio[code] = portfolio.get(code, 0) + buy_shares
+                cash -= buy_value
+                total_commission += commission
             elif diff < -step * total_value:
                 # 卖出（超过一个档位才卖，避免微调）
                 sell_shares = -diff / prices_today[code]
                 sell_shares = min(sell_shares, portfolio.get(code, 0))
+                sell_value = sell_shares * prices_today[code]
+                commission = sell_value * commission_rate
                 portfolio[code] = portfolio.get(code, 0) - sell_shares
-                cash += sell_shares * prices_today[code]
+                cash += sell_value - commission
+                total_commission += commission
                 if portfolio[code] <= 0:
                     del portfolio[code]
 
@@ -435,6 +587,8 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
     print(f"  夏普比率:    {sharpe:.2f}")
     print(f"  最终 NAV:    {final_nav:,.0f} (初始 {initial_capital:,.0f})")
     print(f"  最终持仓数:  {nav_df['holdings'].iloc[-1]}")
+    if total_commission > 0:
+        print(f"  交易佣金:    {total_commission:,.0f} ({total_commission/initial_capital*100:.2f}% 本金)")
     print("=" * 60)
 
     return nav_df, signal_history

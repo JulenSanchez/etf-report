@@ -192,16 +192,16 @@ etfs:
     require_keywords: ["通信", "光模块", "光通信", "AI", "算力", "CPO", "中际旭创", "新易盛", "工业富联", "数据中心"]
     exclude_keywords: ["车展", "娱乐圈", "明星"]
 
-  "159566":
-    name: "储能电池ETF"
+  "159755":
+    name: "电池ETF广发"
     top_stocks:
       - symbol: "sz300750"
         stock_name: "宁德时代"
-      - symbol: "sz300274"
-        stock_name: "阳光电源"
+      - symbol: "sz002594"
+        stock_name: "比亚迪"
       - symbol: "sz300014"
         stock_name: "亿纬锂能"
-    require_keywords: ["电池", "锂电", "储能", "宁德", "阳光电源", "亿纬", "新能源", "动力电池", "锂", "电芯"]
+    require_keywords: ["电池", "锂电", "储能", "宁德", "比亚迪", "亿纬", "新能源", "动力电池", "锂", "电芯", "固态电池"]
     exclude_keywords: ["车展", "娱乐", "彩票"]
 
   "159865":

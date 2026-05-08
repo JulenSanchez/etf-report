@@ -37,13 +37,21 @@ etf-report/
 │   └── compliance_rules.yaml  ← 合规规则
 ├── scripts/                ← Python 主流程与辅助脚本（15 个）
 ├── tests/                  ← 回归测试（14 个）
-├── docs/                   ← 参考文档
-│   ├── AKSHARE_SCRIPTING_REFERENCE.md
+├── docs/                   ← 参考文档（扁平结构）
+│   ├── 01-数据源与工具生态.md
+│   ├── 02-外部数据合规入门.md
+│   ├── 03-A股行业分类体系对比.md
+│   ├── 04-ETF估值方法论.md
+│   ├── 05-量化估值因子入门.md
+│   ├── 06-技术分析简介.md
+│   ├── 07-quant-methodology.md
 │   ├── AKSHARE_CANDIDATE_INTERFACES.md
+│   ├── AKSHARE_SCRIPTING_REFERENCE.md
 │   ├── DAILY_UPDATE_PARAMETERS.md
 │   ├── ETF_REPLACEMENT_CHECKLIST.md
-│   ├── HEALTH_CHECK_KNOWN_ISSUES.md
-│   └── HEALTH_CHECK_USAGE.md
+│   ├── HEALTH_CHECK_USAGE.md
+│   └── HEALTH_CHECK_KNOWN_ISSUES.md
+├── research/               ← 量化调研归档（按 REQ ID 组织，含索引）
 ├── .github/workflows/      ← CI 配置
 ├── SKILL.md                ← AI 技能描述卡
 ├── README.md               ← 本文件
@@ -58,6 +66,12 @@ etf-report/
 |------|------|
 | `data/` | K 线数据、实时行情、运行时载荷 |
 | `logs/` | 每日结构化运行日志 |
+
+**持久化目录**（提交到 Git）：
+
+| 目录 | 内容 |
+|------|------|
+| `research/` | 量化调研归档（报告 + 实验数据），按 REQ ID 组织，索引见 `research/README.md` |
 
 ## 配置说明
 
@@ -98,9 +112,33 @@ python scripts/update_report.py --publish
 | [WORKFLOW.md](WORKFLOW.md) | 详细执行步骤、排障、验证 |
 | [DESIGN.md](DESIGN.md) | 架构设计与模块依赖 |
 | [SKILL.md](SKILL.md) | AI 技能描述与触发词 |
-| [docs/](docs/) | AKShare 参考、ETF 替换清单、健康检查说明 |
+| [docs/](docs/) | 文档（通识知识、运维手册、工具参考） |
 
 建议在交易日收盘后（15:00 之后）执行更新。
+
+## 开发工具
+
+### Quant Tuner（量化调参面板）
+
+本地 Flask 服务，提供可视化滑块调参 + 一键回测，用于调优量化策略参数。
+
+```bash
+python scripts/quant_tuner.py
+# → http://localhost:5179
+```
+
+**注意**：此工具必须通过 `http://localhost` 访问（需要后端计算），不走 `file://` 协议。
+
+| 特性 | 说明 |
+|------|------|
+| 协议 | `http://localhost:5179`（Flask 本地服务） |
+| 定位 | 开发调试工具，不纳入 `index.html` 静态页面 |
+| Git | 正常提交，属于项目 feature（`scripts/quant_tuner.py`） |
+| 数据 | 启动时一次性预加载 25 支 ETF 历史数据 + F4 估值分数，回测过程无网络请求 |
+| 可调参数 | 因子权重(F1-F4) / 偏好加成 / 信心函数(类型/死区/满配) / 仓位控制(持仓数/步长) / 因子周期(EMA/RSI/量比) |
+| 保存 | "保存参数"按钮直接写回 `config/quant_universe.yaml` |
+
+调参完成后：关闭 Flask → 执行 `python scripts/quant_build_payload.py` 重新生成正式 payload。
 
 ---
 

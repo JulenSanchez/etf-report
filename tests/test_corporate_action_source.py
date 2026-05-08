@@ -51,8 +51,8 @@ def test_detect_corporate_action_events_filters_window_and_deduplicates(monkeypa
                 "拆分折算": 2.0,
             },
             {
-                "基金代码": "159566",
-                "基金简称": "储能电池ETF",
+                "基金代码": "159755",
+                "基金简称": "电池ETF广发",
                 "拆分折算日": "2025-11-01",
                 "拆分类型": "份额折算",
                 "拆分折算": 0.5,
@@ -79,7 +79,7 @@ def test_detect_corporate_action_events_filters_window_and_deduplicates(monkeypa
     monkeypatch.setattr(module, "fetch_fund_split_rows", lambda year, detection_config=None: rows_by_year.get(year, []))
 
     payload = module.detect_corporate_action_events(
-        ["515880", "159566"],
+        ["515880", "159755"],
         date(2026, 1, 1),
         date(2026, 4, 15),
         {},

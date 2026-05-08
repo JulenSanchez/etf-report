@@ -213,10 +213,13 @@ class SecurityAudit:
         }
 
         findings = []
-        skipped_dirs = {'.git', '__pycache__', 'node_modules', '.pytest_cache', 'outputs', 'legacy'}
+        skipped_dirs = {'.git', '__pycache__', 'node_modules', '.pytest_cache', 'outputs', 'legacy', 'logs', '.codebuddy'}
         
         for file_path in self.root.rglob('*'):
             if file_path.is_dir() and file_path.name in skipped_dirs:
+                continue
+            # Skip files under skipped directories (e.g. logs/audit_*.json)
+            if any(part in skipped_dirs for part in file_path.parts):
                 continue
             if file_path.is_file() and file_path.suffix in ['.pyc', '.pyo', '.so']:
                 continue
@@ -358,6 +361,8 @@ class GitConfigAudit:
                 cwd=self.root,
                 capture_output=True,
                 text=True,
+                encoding='utf-8',
+                errors='replace',
                 timeout=5
             )
             output = result.stdout.strip()

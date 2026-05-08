@@ -386,64 +386,180 @@ def write_runtime_payload_file(kline_data, realtime_data):
     return payload_file
 
 
+def _build_kline_replay_data(etf_name_map, start_date, end_date):
+    """Build per-ETF price data for K-line replay chart, reading from quant CSVs."""
+    import pandas as pd
+    quant_dir = os.path.join(DATA_DIR, "quant")
+    if not os.path.isdir(quant_dir):
+        return {}
+
+    result = {}
+    for code in etf_name_map:
+        csv_path = os.path.join(quant_dir, f"{code}_daily.csv")
+        if not os.path.exists(csv_path):
+            continue
+        try:
+            df = pd.read_csv(csv_path, parse_dates=["date"])
+            if start_date:
+                df = df[df["date"] >= start_date]
+            if end_date:
+                df = df[df["date"] <= end_date]
+            if df.empty:
+                continue
+
+            dates = df["date"].dt.strftime("%Y-%m-%d").tolist()
+            close = df["close"].round(4).tolist()
+            volume = df["volume"].tolist() if "volume" in df.columns else []
+
+            # Compute RSI(14) if enough data
+            rsi = []
+            if "close" in df.columns and len(df) >= 15:
+                delta = df["close"].diff()
+                gain = delta.clip(lower=0)
+                loss = (-delta).clip(lower=0)
+                avg_gain = gain.rolling(14, min_periods=14).mean()
+                avg_loss = loss.rolling(14, min_periods=14).mean()
+                rs = avg_gain / avg_loss.replace(0, float("inf"))
+                rsi_vals = 100 - (100 / (1 + rs))
+                rsi_vals = rsi_vals.round(2).tolist()
+                # First 14 values are NaN, fill with null
+                rsi = [None] * min(14, len(rsi_vals)) + rsi_vals[14:]
+
+            result[code] = {
+                "dates": dates,
+                "close": close,
+                "volume": volume,
+                "rsi": rsi,
+            }
+        except Exception as e:
+            logger.warn(f"读取 {code} K线数据失败", {"error": str(e)})
+            continue
+
+    return result
+
+
 def generate_quant_baseline_payload():
-    """生成量化回测 baseline payload (20,0,80,0,0)，调用 tuner 真实回测接口。"""
+    """生成量化回测 payload（1yr + 3yr），从 YAML 读取策略参数，调用 tuner 真实回测接口。"""
     import urllib.request
     import urllib.error
+    import yaml
 
     os.makedirs(ASSETS_JS_DIR, exist_ok=True)
     payload_file = os.path.join(ASSETS_JS_DIR, "quant_payload.js")
 
-    # 调用 tuner server 获取真实回测数据
-    TUNER_URL = "http://localhost:5179/api/run"
-    params = {
-        "w1": 20, "w2": 0, "w3": 80, "w4": 0,
-        "bias": 0,
-        "conf_type": "quadratic",
-        "dead_zone": 25,
-        "full_zone": 65,
-        "max_holdings": 6,
-        "disc_step": 5,
-        "ema_period": 20,
-        "rsi_period": 14,
-        "vol_window": 20,
-        "f1_sensitivity": 8.0,
-        "f3_sensitivity": 1.0,
-        "f2_dead_zone": 1.5,
-        # 回测周期：默认1年
-        "start_date": None,  # tuner 会使用 data_max - 1year
-        "end_date": None     # tuner 会使用 data_max
-    }
-
-    backtest_data = None
+    # ── 从 YAML 读取 weekly_trend preset 参数 ─────────────────
+    QUANT_CONFIG = os.path.join(SKILL_DIR, "config", "quant_universe.yaml")
+    preset_params = {}
     try:
-        req = urllib.request.Request(
-            TUNER_URL,
-            data=json.dumps(params).encode('utf-8'),
-            headers={'Content-Type': 'application/json'},
-            method='POST'
-        )
-        with urllib.request.urlopen(req, timeout=120) as resp:
-            backtest_data = json.loads(resp.read().decode('utf-8'))
-        logger.info("成功从 tuner 获取真实回测数据")
+        with open(QUANT_CONFIG, "r", encoding="utf-8") as f:
+            qcfg = yaml.safe_load(f)
+        p = qcfg.get("presets", {}).get("weekly_trend", {})
+        scoring = p.get("scoring", {})
+        weights = scoring.get("weights", {})
+        sens = scoring.get("sensitivity", {})
+        conf = p.get("confidence", {})
+        pos = p.get("position", {})
+        factors = p.get("factors", {})
+
+        preset_params = {
+            "w1": int(weights.get("ema_deviation", 0.40) * 100),
+            "w2": int(weights.get("rsi_adaptive", 0) * 100),
+            "w3": int(weights.get("volume_ratio", 0.60) * 100),
+            "w4": int(weights.get("valuation", 0) * 100),
+            "bias": scoring.get("bias_bonus", 0),
+            "conf_type": conf.get("type", "ma_trend"),
+            "ma_trend_period": conf.get("ma_trend_period", 20),
+            "ma_bull_pos": conf.get("ma_bull_pos", 1.0),
+            "ma_bear_pos": conf.get("ma_bear_pos", 0.4),
+            "ma_direction_confirm": conf.get("ma_direction_confirm", False),
+            "max_holdings": pos.get("max_holdings", 6),
+            "disc_step": int(pos.get("discretize_step", 0.05) * 100),
+            "rebalance_freq": pos.get("rebalance_freq", "W-FRI"),
+            "score_band": int(pos.get("score_band", 0) * 100),
+            "ema_period": factors.get("ema", {}).get("period_weeks", 16),
+            "rsi_period": factors.get("rsi", {}).get("period_days", 14),
+            "vol_window": factors.get("volume_ratio", {}).get("window_days", 20),
+            "f1_sensitivity": sens.get("f1", 8.0),
+            "f3_sensitivity": sens.get("f3", 1.0),
+            "f2_dead_zone": sens.get("f2_dead_zone", 1.5),
+        }
+        logger.info("从 YAML 读取 weekly_trend preset 参数", {"params": {k: v for k, v in preset_params.items() if k != "start_date"}})
     except Exception as e:
-        logger.warning("无法连接 tuner server 获取真实回测数据，将使用模拟数据", {"error": str(e)})
-        logger.warning("请确保 quant_tuner.py 正在运行: python scripts/quant_tuner.py")
+        logger.warn("读取 quant_universe.yaml 失败，使用默认参数", {"error": str(e)})
+        preset_params = {
+            "w1": 40, "w2": 0, "w3": 60, "w4": 0, "bias": 0,
+            "conf_type": "ma_trend", "ma_trend_period": 20,
+            "ma_bull_pos": 1.0, "ma_bear_pos": 0.4, "ma_direction_confirm": True,
+            "max_holdings": 6, "disc_step": 5, "rebalance_freq": "W-FRI", "score_band": 0,
+            "ema_period": 16, "rsi_period": 14, "vol_window": 20,
+            "f1_sensitivity": 8.0, "f3_sensitivity": 1.0, "f2_dead_zone": 1.5,
+        }
 
-    if backtest_data and "error" not in backtest_data:
-        # 使用真实回测数据构建 payload
-        nav_dates = backtest_data.get("nav", {}).get("dates", [])
-        nav_pct = backtest_data.get("nav", {}).get("pct", [])
-        hs300_pct = backtest_data.get("hs300", [])
-        eq_weight_pct = backtest_data.get("eqWeight", [])
-        drawdown = backtest_data.get("drawdown", [])
-        summary = backtest_data.get("summary", {})
-        signal_history = backtest_data.get("signalHistory", [])
+    # ── 调用 tuner 运行 1yr + 3yr 回测 ─────────────────────
+    TUNER_URL = "http://localhost:5179/api/run"
 
-        # 构建 drawdownSeries
+    def run_backtest(label, start_date, end_date):
+        """Run a single backtest via tuner API. Returns raw response dict or None."""
+        params = dict(preset_params)
+        params["start_date"] = start_date
+        params["end_date"] = end_date
+        try:
+            req = urllib.request.Request(
+                TUNER_URL,
+                data=json.dumps(params).encode('utf-8'),
+                headers={'Content-Type': 'application/json'},
+                method='POST'
+            )
+            with urllib.request.urlopen(req, timeout=180) as resp:
+                data = json.loads(resp.read().decode('utf-8'))
+            if "error" in data:
+                logger.warn(f"tuner {label} 回测返回错误", {"error": data.get("error")})
+                return None
+            logger.info(f"成功从 tuner 获取 {label} 回测数据")
+            return data
+        except Exception as e:
+            logger.warn(f"tuner {label} 回测请求失败", {"error": str(e)})
+            return None
+
+    # Determine date ranges from quant CSV data
+    data_max_date = None
+    sample_csv = os.path.join(DATA_DIR, "quant", "512400_daily.csv")
+    if os.path.exists(sample_csv):
+        try:
+            import pandas as pd
+            df = pd.read_csv(sample_csv, usecols=["date"], parse_dates=["date"])
+            if not df.empty:
+                data_max_date = df["date"].max().strftime("%Y-%m-%d")
+        except Exception:
+            pass
+
+    if not data_max_date:
+        data_max_date = datetime.now().strftime("%Y-%m-%d")
+        logger.warn("无法确定数据截止日，使用当前日期", {"date": data_max_date})
+
+    from datetime import timedelta as _td
+    max_dt = datetime.strptime(data_max_date, "%Y-%m-%d")
+    yr1_start = (max_dt - _td(days=365)).strftime("%Y-%m-%d")
+    yr3_start = (max_dt - _td(days=1095)).strftime("%Y-%m-%d")
+
+    bt_1yr = run_backtest("1yr", yr1_start, data_max_date)
+    bt_3yr = run_backtest("3yr", yr3_start, data_max_date)
+
+    # ── 构建 payload ─────────────────────────────────────────
+    def build_template(bt_data):
+        """Build a single template dict from backtest raw data."""
+        if not bt_data:
+            return None
+        nav_dates = bt_data.get("nav", {}).get("dates", [])
+        nav_pct = bt_data.get("nav", {}).get("pct", [])
+        hs300_pct = bt_data.get("hs300", [])
+        eq_weight_pct = bt_data.get("eqWeight", [])
+        drawdown = bt_data.get("drawdown", [])
+        summary = bt_data.get("summary", {})
+        signal_history = bt_data.get("signalHistory", [])
+
         drawdown_series = {"dates": nav_dates, "drawdown": drawdown}
 
-        # 构建 weeklySnapshots（从 signalHistory 转换）
         weekly_snapshots = []
         for i, sig in enumerate(signal_history):
             weekly_snapshots.append({
@@ -453,118 +569,145 @@ def generate_quant_baseline_payload():
                 "top6": sig.get("topN", []),
                 "positions": sig.get("positions", {}),
                 "avgConfidence": sig.get("avgConfidence", 0) / 100.0,
-                "totalTarget": sig.get("totalPosition", 0) / 100.0
+                "totalTarget": sig.get("totalPosition", 0) / 100.0,
+                "regime": sig.get("regime", ""),
             })
 
-        # 计算月度收益
         monthly_returns = _compute_monthly_returns(nav_dates, nav_pct)
+        rebalance_freq = _compute_rebalance_freq(signal_history, bt_data.get("etfNameMap", {}))
+        latest_signal = _build_latest_signal(signal_history, bt_data.get("etfNameMap", {}), bt_data.get("etfSectorMap", {})) if signal_history else {}
+        sector_dist = _compute_sector_distribution(latest_signal, bt_data.get("etfSectorMap", {}))
 
-        # 构建 rebalanceFreq（从 signalHistory 统计）
-        rebalance_freq = _compute_rebalance_freq(signal_history, backtest_data.get("etfNameMap", {}))
+        # Compute monthly win rate
+        mr = monthly_returns
+        monthly_win_rate = round(sum(1 for m in mr if m.get("ret", 0) > 0) / len(mr) * 100, 1) if mr else 0
 
-        # 获取最新的信号作为 latestSignal
-        latest_signal = _build_latest_signal(signal_history, backtest_data.get("etfNameMap", {}), backtest_data.get("etfSectorMap", {})) if signal_history else {}
+        # Compute win/loss streaks from nav
+        max_win = max_loss = 0
+        cur_win = cur_loss = 0
+        for i in range(1, len(nav_pct)):
+            if nav_pct[i] > nav_pct[i-1]:
+                cur_win += 1; cur_loss = 0
+                max_win = max(max_win, cur_win)
+            elif nav_pct[i] < nav_pct[i-1]:
+                cur_loss += 1; cur_win = 0
+                max_loss = max(max_loss, cur_loss)
+            else:
+                cur_win = 0; cur_loss = 0
 
-        # 计算 sectorDistribution
-        sector_dist = _compute_sector_distribution(latest_signal, backtest_data.get("etfSectorMap", {}))
-
-        payload = {
-            "generatedAt": datetime.now().isoformat(),
-            "templateMeta": {
-                "baseline": {
-                    "label": "基准策略",
-                    "description": f"F1(EMA偏离,20%) + F3(方向性量比,80%)，F2/F4/F5归零。年化{summary.get('annualReturn', 0)}%/Sharpe{summary.get('sharpe', 0)}/MDD{summary.get('maxDrawdown', 0)}%"
-                }
+        return {
+            "summary": {
+                "totalReturn": summary.get("totalReturn", 0),
+                "annualReturn": summary.get("annualReturn", 0),
+                "maxDrawdown": summary.get("maxDrawdown", 0),
+                "sharpe": summary.get("sharpe", 0),
+                "sortino": summary.get("sortino", 0),
+                "calmar": summary.get("calmar", 0),
+                "winRate": summary.get("winRate", 0),
+                "monthlyWinRate": monthly_win_rate,
+                "bestMonth": max([m.get("ret", 0) for m in mr]) if mr else 0,
+                "worstMonth": min([m.get("ret", 0) for m in mr]) if mr else 0,
+                "maxWinStreak": max_win,
+                "maxLossStreak": max_loss,
+                "startDate": summary.get("startDate", ""),
+                "endDate": summary.get("endDate", ""),
+                "tradingDays": len(nav_dates),
+                "rebalanceCount": summary.get("rebalanceCount", len(signal_history)),
+                "commissionPct": summary.get("commissionPct", 0),
+                "initialCapital": 1000000.0,
+                "finalNav": 1000000.0 * (1 + summary.get("totalReturn", 0) / 100)
             },
-            "templates": {
-                "baseline": {
-                    "summary": {
-                        "totalReturn": summary.get("totalReturn", 0),
-                        "annualReturn": summary.get("annualReturn", 0),
-                        "maxDrawdown": summary.get("maxDrawdown", 0),
-                        "sharpe": summary.get("sharpe", 0),
-                        "sortino": summary.get("sortino", 0),
-                        "calmar": summary.get("calmar", 0),
-                        "winRate": summary.get("winRate", 0),
-                        "monthlyWinRate": 0,  # 需要从日数据计算
-                        "bestMonth": max([m.get("ret", 0) for m in monthly_returns]) if monthly_returns else 0,
-                        "worstMonth": min([m.get("ret", 0) for m in monthly_returns]) if monthly_returns else 0,
-                        "maxWinStreak": 0,  # 需要计算
-                        "maxLossStreak": 0,  # 需要计算
-                        "startDate": summary.get("startDate", ""),
-                        "endDate": summary.get("endDate", ""),
-                        "tradingDays": len(nav_dates),
-                        "rebalanceCount": len(signal_history),
-                        "initialCapital": 1000000.0,
-                        "finalNav": 1000000.0 * (1 + summary.get("totalReturn", 0) / 100)
-                    },
-                    "navSeries": {
-                        "dates": nav_dates,
-                        "nav": nav_pct,
-                        "hs300": hs300_pct,
-                        "eqWeight": eq_weight_pct
-                    },
-                    "drawdownSeries": drawdown_series,
-                    "monthlyReturns": monthly_returns,
-                    "weeklySnapshots": weekly_snapshots,
-                    "rebalanceFreq": rebalance_freq,
-                    "sectorDistribution": sector_dist,
-                    "riskOrders": latest_signal,  # 复用格式
-                    "latestSignal": latest_signal
-                }
+            "navSeries": {
+                "dates": nav_dates,
+                "nav": nav_pct,
+                "hs300": hs300_pct,
+                "eqWeight": eq_weight_pct
             },
-            "config": {
-                "baseline": {
-                    "scoring": {
-                        "weights": {"ema_deviation": 0.20, "rsi_adaptive": 0.0, "volume_ratio": 0.80, "valuation": 0.0, "volatility": 0.0},
-                        "bias_bonus": 0.0,
-                        "normalization": "continuous"
-                    },
-                    "confidence": {"type": "quadratic", "dead_zone": 25, "full_zone": 65},
-                    "position": {"max_holdings": 6, "discretize_step": 0.05},
-                    "factors": {
-                        "ema": {"period_weeks": 20},
-                        "rsi": {"period_days": 14, "dead_zone": 1.5},
-                        "volume_ratio": {"window_days": 20}
-                    }
-                }
-            },
-            "strategyInfo": {
-                "name": "基准策略 (20,0,80,0,0)",
-                "description": "F1(EMA偏离,20%) + F3(方向性量比,80%)，F2/F4/F5归零",
-                "rationale": "F3(方向性量比)是绝对主导因子，F1(EMA偏离)作为趋势确认辅助。F2/F4/F5在回测中均显示为拖累因子，已归零。",
-                "backtestWindow": f"{summary.get('startDate', '')} 至 {summary.get('endDate', '')}",
-                "keyMetrics": {
-                    "annualReturn": f"{summary.get('annualReturn', 0)}%",
-                    "sharpeRatio": f"{summary.get('sharpe', 0)}",
-                    "maxDrawdown": f"{summary.get('maxDrawdown', 0)}%",
-                    "calmarRatio": f"{summary.get('calmar', 0)}"
+            "drawdownSeries": drawdown_series,
+            "monthlyReturns": monthly_returns,
+            "weeklySnapshots": weekly_snapshots,
+            "rebalanceFreq": rebalance_freq,
+            "sectorDistribution": sector_dist,
+            "latestSignal": latest_signal
+        }
+
+    templates = {}
+    template_meta = {}
+
+    tpl_1yr = build_template(bt_1yr)
+    if tpl_1yr:
+        s = tpl_1yr["summary"]
+        templates["yr1"] = tpl_1yr
+        template_meta["yr1"] = {
+            "label": "1 年回测",
+            "description": f"{s['startDate']} ~ {s['endDate']} | 年化 {s['annualReturn']:.1f}% | Calmar {s['calmar']:.2f}"
+        }
+
+    tpl_3yr = build_template(bt_3yr)
+    if tpl_3yr:
+        s = tpl_3yr["summary"]
+        templates["yr3"] = tpl_3yr
+        template_meta["yr3"] = {
+            "label": "3 年回测",
+            "description": f"{s['startDate']} ~ {s['endDate']} | 年化 {s['annualReturn']:.1f}% | Calmar {s['calmar']:.2f}"
+        }
+
+    # Build config section from preset_params
+    config_section = {}
+    if tpl_1yr or tpl_3yr:
+        config_section["yr1"] = {
+            "scoring": {
+                "weights": {
+                    "ema_deviation": preset_params.get("w1", 40) / 100.0,
+                    "rsi_adaptive": preset_params.get("w2", 0) / 100.0,
+                    "volume_ratio": preset_params.get("w3", 60) / 100.0,
+                    "valuation": preset_params.get("w4", 0) / 100.0,
                 },
-                "factorDetails": {
-                    "F1": {"name": "EMA偏离度", "weight": 20, "desc": "周线价格相对20周EMA的偏离百分比，sigmoid映射到[0,1]"},
-                    "F2": {"name": "RSI自适应", "weight": 0, "desc": "双通道RSI异动检测（相对z-score + 绝对位置），死区1.5。当前归零"},
-                    "F3": {"name": "方向性量比", "weight": 80, "desc": "上涨日成交额均值/下跌日成交额均值，log+sigmoid映射"},
-                    "F4": {"name": "估值百分位", "weight": 0, "desc": "历史估值百分位，regime-aware调整。当前归零"},
-                    "F5": {"name": "波动率Z-score", "weight": 0, "desc": "20日波动率相对60日基线的Z-score，反向sigmoid。当前归零"}
-                }
+                "bias_bonus": float(preset_params.get("bias", 0)),
             },
-            "etfNameMap": backtest_data.get("etfNameMap", {})
+            "confidence": {
+                "type": preset_params.get("conf_type", "ma_trend"),
+                "ma_trend_period": preset_params.get("ma_trend_period", 20),
+                "ma_bull_pos": preset_params.get("ma_bull_pos", 1.0),
+                "ma_bear_pos": preset_params.get("ma_bear_pos", 0.4),
+                "ma_direction_confirm": preset_params.get("ma_direction_confirm", False),
+            },
+            "position": {
+                "max_holdings": preset_params.get("max_holdings", 6),
+                "discretize_step": preset_params.get("disc_step", 5) / 100.0,
+                "rebalance_freq": preset_params.get("rebalance_freq", "W-FRI"),
+            },
+            "factors": {
+                "ema": {"period_weeks": preset_params.get("ema_period", 16)},
+                "rsi": {"period_days": preset_params.get("rsi_period", 14)},
+                "volume_ratio": {"window_days": preset_params.get("vol_window", 20)},
+            }
         }
-    else:
-        # Fallback: Tuner 不可用时写空 payload（量化板块建设中，不展示假数据）
-        logger.warning("Tuner 不可用，量化回测板块暂不展示（建设中）")
-        payload = {
-            "generatedAt": datetime.now().isoformat(),
-            "templateMeta": {},
-            "templates": {},
-            "config": {},
-            "etfNameMap": {}
-        }
+        # yr3 config is the same params, just different time window
+        config_section["yr3"] = dict(config_section["yr1"])
 
-    content = '// Auto-generated by update_report.py\n// Baseline strategy: (20,0,80,0,0) - F1+F3 only\n// Generated: ' + datetime.now().isoformat() + '\nwindow.__QUANT_RUNTIME__ = ' + json.dumps(payload, ensure_ascii=False, indent=2) + ';\n'
+    etf_name_map = (bt_1yr or bt_3yr or {}).get("etfNameMap", {})
+
+    # ── Build kline replay data from CSV ─────────────────────
+    kline_replay = _build_kline_replay_data(etf_name_map, yr1_start, data_max_date)
+
+    payload = {
+        "generatedAt": datetime.now().isoformat(),
+        "templateMeta": template_meta,
+        "templates": templates,
+        "config": config_section,
+        "etfNameMap": etf_name_map,
+        "klineReplay": kline_replay,
+    }
+
+    content = '// Auto-generated by update_report.py\n// Strategy: weekly_trend (from quant_universe.yaml)\n// Generated: ' + datetime.now().isoformat() + '\nwindow.__QUANT_RUNTIME__ = ' + json.dumps(payload, ensure_ascii=False, indent=2) + ';\n'
     with open(payload_file, 'w', encoding='utf-8') as f:
         f.write(content)
-    logger.info("量化回测载荷已写入", {"file": payload_file, "source": "real" if backtest_data else "fallback"})
+    logger.info("量化回测载荷已写入", {
+        "file": payload_file,
+        "source": "real" if templates else "fallback",
+        "templates": list(templates.keys()),
+    })
     return payload_file
 
 

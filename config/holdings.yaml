@@ -240,62 +240,62 @@ holdings:
         ratio: 1.96
 
   # ============================================================
-  # ETF-5: 159566 储能电池ETF
+  # ETF-5: 159755 电池ETF广发
   # ============================================================
-  "159566":
-    name: "储能电池ETF"
+  "159755":
+    name: "电池ETF广发"
     market: "sz"
-    total_ratio: 59.12
+    total_ratio: 65.20
     components:
       - name: "宁德时代"
         code: "300750"
         market: "sz"
-        ratio: 9.29
-      
-      - name: "阳光电源"
-        code: "300274"
+        ratio: 14.59
+
+      - name: "比亚迪"
+        code: "002594"
         market: "sz"
-        ratio: 9.22
-      
+        ratio: 13.56
+
       - name: "亿纬锂能"
         code: "300014"
         market: "sz"
-        ratio: 9.06
-      
-      - name: "英维克"
-        code: "002837"
+        ratio: 6.65
+
+      - name: "三花智控"
+        code: "002050"
         market: "sz"
-        ratio: 7.68
-      
+        ratio: 6.42
+
+      - name: "华友钴业"
+        code: "603799"
+        market: "sh"
+        ratio: 5.76
+
+      - name: "赣锋锂业"
+        code: "002460"
+        market: "sz"
+        ratio: 4.35
+
       - name: "国轩高科"
         code: "002074"
         market: "sz"
-        ratio: 5.12
-      
-      - name: "麦格米特"
-        code: "002851"
+        ratio: 4.03
+
+      - name: "格林美"
+        code: "002340"
         market: "sz"
-        ratio: 4.49
-      
+        ratio: 3.53
+
+      - name: "先导智能"
+        code: "300450"
+        market: "sz"
+        ratio: 3.16
+
       - name: "欣旺达"
         code: "300207"
         market: "sz"
-        ratio: 4.30
-      
-      - name: "德业股份"
-        code: "605117"
-        market: "sh"
-        ratio: 3.87
-      
-      - name: "科达利"
-        code: "002850"
-        market: "sz"
-        ratio: 3.39
-      
-      - name: "金盘科技"
-        code: "688676"
-        market: "sh"
-        ratio: 2.70
+        ratio: 3.15
 
   # ============================================================
   # ETF-6: 159865 养殖ETF

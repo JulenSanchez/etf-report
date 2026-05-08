@@ -46,7 +46,7 @@ DEFAULT_HOLDINGS_YAML = SKILL_ROOT / "config" / "holdings.yaml"
 DEFAULT_STOCK_BPS_DIR = SKILL_ROOT / "data" / "stock_bps"
 DEFAULT_VALUATION_HISTORY_DIR = SKILL_ROOT / "data" / "valuation_history"
 
-SLEEP_BETWEEN_STOCKS = 1.0  # 秒，低频抓取，友好访问
+SLEEP_BETWEEN_STOCKS = 3.0  # 东财 datacenter API 反爬严格，3s 间隔
 
 
 # ============================================================
@@ -88,14 +88,25 @@ def fetch_stock_history(stock_code: str) -> Optional[List[Dict]]:
         logger.error("akshare 未安装，无法拉取", {"stock": stock_code})
         return None
 
-    try:
-        df = ak.stock_value_em(symbol=stock_code)
-    except Exception as exc:  # noqa: BLE001
-        logger.warn("stock_value_em 失败", {
-            "stock": stock_code,
-            "error": f"{type(exc).__name__}: {str(exc)[:120]}",
-        })
-        return None
+    max_retries = 3
+    for attempt in range(1, max_retries + 1):
+        try:
+            df = ak.stock_value_em(symbol=stock_code)
+            break  # success
+        except Exception as exc:  # noqa: BLE001
+            is_connection_error = "RemoteDisconnected" in str(exc) or "ConnectionAborted" in str(exc)
+            if is_connection_error and attempt < max_retries:
+                wait = 5.0 * attempt
+                logger.warn("stock_value_em connection refused, retrying", {
+                    "stock": stock_code, "attempt": attempt, "wait": wait,
+                })
+                time.sleep(wait)
+                continue
+            logger.warn("stock_value_em 失败", {
+                "stock": stock_code,
+                "error": f"{type(exc).__name__}: {str(exc)[:120]}",
+            })
+            return None
 
     if df is None or len(df) == 0:
         return None

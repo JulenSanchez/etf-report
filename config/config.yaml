@@ -1,0 +1,374 @@
+# ETF 报告系统配置文件 (REQ-107)
+# 
+# 说明：本文件是完整的配置模板
+# 为便于管理，成分股数据已单独分离到 holdings.yaml
+# 
+# 版本: 1.0
+# 最后更新: 2026-04-07
+
+# ============================================================
+# 1. ETF列表与基准指数配置
+# ============================================================
+# tracking_index 字段（REQ-171 新增 / REQ-170 回调修正）：
+#   基金合同规定的"跟踪标的指数"——ETF 的成分构建依据。
+#   展示位置：index.html 各子页面的估值水位 section 的 valuation-meta 区，
+#             作为"参考指数"出现（不在 fund-info 区独立占一行，避免冗余）。
+#   数据源：天天基金网 http://fundf10.eastmoney.com/jbgk_<code>.html 的"跟踪标的"字段
+#
+# performance_benchmark 字段（REQ-171 新增，暂作注释文档用）：
+#   基金合同规定的"业绩比较基准"原文。未在页面展示。保留字段便于未来溯源。
+#
+# benchmark 字段含义（REQ-157 修订）：
+#   "K 线图上的对比基准"，同时也是 index.html fund-info 区 "业绩基准" 字段的显示值。
+#   不是基金合同严格意义的业绩基准，而是展示用的宽基锚。
+#   选型原则：
+#     1) 不能用 ETF 自己跟踪的指数做 benchmark（走势高度重合，对比无意义）
+#     2) 同市场 + 宽基锚：A 股用沪深300，港股用恒生指数（无直连源则用 A 股 QDII 代理）
+#     3) 成长风格 ETF（如电池）用创业板指做相对强弱锚
+#
+# 三个字段语义区别：
+#   tracking_index        = ETF 跟谁（成分构建，出现在估值区）
+#   performance_benchmark = ETF 合同评估用谁（注释文档，暂不展示）
+#   benchmark             = 页面 K 线对比 + fund-info "业绩基准" 字段展示用谁（宽基锚）
+etfs:
+  - code: "512400"
+    name: "有色金属ETF"
+    market: "sh"
+    tracking_index:
+      name: "中证申万有色金属指数"
+      source: "天天基金 fundf10.eastmoney.com 2026-04-23"
+    performance_benchmark: "中证申万有色金属指数"
+    benchmark:
+      code: "sh000300"
+      name: "沪深300"
+
+  - code: "513120"
+    name: "港股创新药ETF"
+    market: "sh"
+    tracking_index:
+      name: "中证香港创新药港币指数"
+      source: "天天基金 fundf10.eastmoney.com 2026-04-23"
+    performance_benchmark: "中证香港创新药指数收益率(人民币计价)"
+    benchmark:
+      # 新浪 K 线 endpoint 不直连恒生指数（hkHSI/int_hangseng 均返回 null），
+      # 使用华夏恒生 ETF (sz159920) 作为恒生指数的 A 股代理：QDII 形式跟踪恒生指数，
+      # 每日收盘价反映恒生走势 + 汇率 + 溢价折价，用于趋势对比足够，legend 如实标注。
+      code: "sz159920"
+      name: "恒生指数(159920代理)"
+
+  - code: "512070"
+    name: "证券保险ETF"
+    market: "sh"
+    tracking_index:
+      name: "沪深300非银行金融指数"
+      source: "天天基金 fundf10.eastmoney.com 2026-04-23"
+    performance_benchmark: "沪深300非银行金融指数"
+    benchmark:
+      code: "sh000300"
+      name: "沪深300"
+
+  - code: "515880"
+    name: "通信设备ETF"
+    market: "sh"
+    tracking_index:
+      name: "中证全指通信设备指数"
+      source: "天天基金 fundf10.eastmoney.com 2026-04-23"
+    performance_benchmark: "中证全指通信设备指数收益率"
+    benchmark:
+      # 515880 的核心权重股"易中天"（散户对光模块三剑客的合称：
+      # 新易盛 300502 / 中际旭创 300308 / 天孚通信 300394，取名各一字）
+      # 都在创业板（均 300 开头），且都是创业板指 Top 20 权重股，
+      # 用创业板指做相对 α 对比更贴切（与 159755 电池ETF同理）。
+      code: "sz399006"
+      name: "创业板指"
+
+  - code: "159755"
+    name: "电池ETF广发"
+    market: "sz"
+    tracking_index:
+      name: "国证新能源车电池指数"
+      source: "天天基金 fundf10.eastmoney.com 2026-04-27"
+    performance_benchmark: "国证新能源车电池指数收益率"
+    benchmark:
+      # 电池/新能源赛道主要在创业板（宁德时代/比亚迪等），用创业板指做相对 α 对比更有意义
+      code: "sz399006"
+      name: "创业板指"
+
+  - code: "159865"
+    name: "养殖ETF"
+    market: "sz"
+    tracking_index:
+      name: "中证畜牧养殖指数"
+      source: "天天基金 fundf10.eastmoney.com 2026-04-23"
+    performance_benchmark: "中证畜牧养殖指数收益率"
+    benchmark:
+      code: "sh000300"
+      name: "沪深300"
+
+
+# ============================================================
+# 2. K线数据参数
+# ============================================================
+kline:
+  daily:
+    # 日线图表显示的天数
+    display_days: 60
+    # MA均线计算需要的预热数据天数（20日均线需要19天预热）
+    warmup_days: 19
+    # 实际从API获取的天数（不应手动修改）
+    fetch_days: 79
+  
+  weekly:
+    # 周线图表显示的周数
+    display_weeks: 52
+    # MA均线预热周数
+    warmup_weeks: 19
+    # 实际获取的周数
+    fetch_weeks: 71
+  
+  # K线尺度参数（新浪财经API）
+  scales:
+    daily: 240    # 日线
+    weekly: 1200  # 周线
+
+# ============================================================
+# 3. 数据清洗配置（份额变动 / 企业行动）
+# ============================================================
+data_cleaning:
+  corporate_action_events:
+    "515880":
+      - action: "share_split"
+        ex_date: "2026-02-03"
+        ratio: 3.0
+        note: "基金份额拆分（1拆3）；在数据生成阶段先清洗 2026-02-03 之前的历史价格与成交量，再派生周线/指标"
+
+
+# ============================================================
+# 4. API 配置 - 新浪财经
+# ============================================================
+api:
+
+  sina:
+    # K线数据接口
+    kline_endpoint: "https://money.finance.sina.com.cn/quotes_service/api/json_v2.php/CN_MarketData.getKLineData"
+    
+    # 实时行情接口
+    realtime_endpoint: "https://hq.sinajs.cn/list="
+    
+    # 网络参数
+    timeout: 10              # 请求超时时间（秒）
+    encoding: "gbk"          # 返回数据编码
+    user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+    referer: "https://finance.sina.com.cn/"
+    
+    # 请求间隔（避免频率过高）
+    request_delays:
+      kline_fetch: 0.2      # 每次K线请求间隔（秒）
+      realtime_fetch: 0.3   # 实时行情请求间隔（秒）
+
+    # 失败重试（避免偶发网络抖动直接清空图表）
+    retries: 3
+    retry_delay: 0.5
+
+
+# ============================================================
+# 4. 数据文件配置
+# ============================================================
+files:
+  # 目录配置（相对于skill根目录）
+  data_dir: "data"
+  outputs_dir: "outputs"              # 数据输出目录
+  outputs_js_dir: "outputs/js"
+  outputs_css_dir: "outputs/css"
+  logs_dir: "logs"
+  
+  # 数据文件
+  data_files:
+    kline: "etf_full_kline_data.json"         # K线数据
+    realtime: "etf_realtime_data.json"        # 实时行情数据
+    corporate_actions: "corporate_action_events.json"  # 主流程内嵌识别出的份额变动事件
+    fund_flow: "fund_flow_data.json"          # 预留字段，当前主流程不强制生成
+
+
+  
+  # 输出文件（index.html 在技能根目录，便于 GitHub 展示）
+  html_file: "index.html"             # 根目录的主报告文件
+  js_main: "main.js"
+  editorial_content_file: "editorial_content.yaml"  # 研究卡 / 宏观卡等解释层内容入口
+
+
+# ============================================================
+# 5. HTML 更新配置
+# ============================================================
+html_update:
+  # 数据定位标记（用于字符串查找和替换）
+  locators:
+    report_date_label: "报告日期:"
+    data_cutoff_label: "数据截止:"
+    generation_time_label: "生成时间:"
+    kline_const: "const klineData = "
+    realtime_const: "const realtimeData = "
+  
+  # 日期格式正则表达式
+  date_patterns:
+    report_date: '\d{4}年\d{2}月\d{2}日'  # 2026年03月17日
+    iso_date: '\d{4}-\d{2}-\d{2}'         # 2026-03-17
+  
+  # 日期格式模板
+  date_formats:
+    report_date_cn: "%Y年%m月%d日"  # 中文日期格式
+    iso_date: "%Y-%m-%d"            # ISO日期格式
+  
+  # 涨跌幅颜色配置
+  colors:
+    positive_change: "#10b981"  # 绿色（上涨）
+    negative_change: "#ef4444"  # 红色（下跌）
+    neutral_change: "#9ca3af"   # 灰色（平盘或无数据）
+
+# ============================================================
+# 6. 成分股持仓数据
+# ============================================================
+# 注意：成分股持仓数据非常庞大，已单独抽取到 holdings.yaml
+# 本文件仅做占位符，实际使用时从 holdings.yaml 加载
+holdings_file: "holdings.yaml"
+
+# ============================================================
+# 7. 系统检查配置
+# ============================================================
+system_check:
+  # 必需的Python脚本
+  required_scripts:
+    - "update_report.py"
+    - "fix_ma_and_benchmark.py"
+    - "realtime_data_updater.py"
+    - "transaction.py"
+    - "verify_html_integrity.py"
+  
+  # 必需的数据文件（当前主流程）
+  required_data_files:
+    - "etf_full_kline_data.json"
+    - "etf_realtime_data.json"
+
+  
+  # ETF代码（用于完整性检查）
+  etf_codes:
+    - "512400"
+    - "513120"
+    - "512070"
+    - "515880"
+    - "159755"
+    - "159865"
+
+
+# ============================================================
+# 8. 日志配置
+# ============================================================
+logging:
+  # 日志级别 (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+  level: "INFO"
+  # 日志格式
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  # 日志目录
+  log_dir: "logs"
+  # 单个日志文件大小限制（字节）
+  max_file_size: 10485760  # 10MB
+  # 保留备份日志数量
+  backup_count: 5
+  # 日志文件名前缀
+  filename_prefix: "etf_report"
+
+# ============================================================
+# 9. 更新流程控制
+# ============================================================
+update_workflow:
+  # 步骤1：K线数据更新
+  step_kline_update:
+    enabled: true
+    description: "获取K线数据并计算均线"
+  
+  # 步骤2：实时行情更新
+  step_realtime_update:
+    enabled: true
+    description: "获取实时行情数据（ETF涨跌幅+成分股涨跌幅）"
+    fail_continue: true  # 失败是否继续下一步
+  
+  # 步骤3：HTML数据更新
+  step_html_data_update:
+    enabled: true
+    description: "更新HTML中的K线数据和实时行情数据"
+  
+  # 步骤4：日期信息更新
+  step_html_date_update:
+    enabled: true
+    description: "更新报告日期、数据截止、生成时间"
+  
+  # 步骤5：HTML完整性验证
+  step_html_integrity_check:
+    enabled: true
+    description: "验证HTML结构和数据完整性"
+    fail_rollback: true  # 失败是否回滚
+  
+  # 步骤6：输出文件验证
+  step_output_verification:
+    enabled: true
+    description: "验证所有输出文件是否存在"
+
+# ============================================================
+# 10. 事务管理配置 (REQ-103)
+# ============================================================
+transaction:
+  # 备份位置（相对于skill根目录）
+  backup_dir: ".backup"
+  # 备份保留数量
+  max_backups: 5
+  # 备份时间戳格式
+  timestamp_format: "%Y%m%d_%H%M%S"
+
+# ============================================================
+# 11. 发布配置（--publish 模式）
+# ============================================================
+publish:
+  # 企微 Webhook 通知
+  wecom:
+    enabled: true
+    # webhook_url 已迁移至 config/secrets.yaml（不会被提交到 git）
+    # 若 secrets.yaml 中无配置，此处可作为备用
+    mention_all: false
+
+  # GitHub Pages 部署
+  github:
+    enabled: true
+    # 当前 etf-report 正式源码仓目录（GitHub Pages 直接服务该仓 main 分支）
+    # 空=自动回退到当前技能仓（由 deployer._resolve_source_repo_root 处理）
+    repo_root: ""
+    # 源码推送分支
+    branch: "main"
+    # 要提交的文件（相对于 repo_root，即 etf-report 根目录）
+    # 注意：data/ 在 .gitignore 中，不会提交到源码仓库
+    # 注意：assets/js/ 下所有 JS 文件都是页面运行时依赖，必须一起提交，
+    #       否则 GitHub Pages 会加载旧版代码导致渲染异常（BUG: 2026-05-08 quant-main.js 过期）
+    commit_files:
+      - "index.html"
+      - "assets/js/runtime_payload.js"
+      - "assets/js/quant_payload.js"
+      - "assets/js/quant-main.js"
+      - "assets/js/report-main.js"
+      - "assets/js/chart-lifecycle.js"
+      - "assets/js/debug-toolbar.js"
+    # commit 消息模板（{date} 会被替换为当天日期）
+    commit_message: "data: ETF daily report update - {date}"
+    # 若 GitHub Pages 直接服务当前源码仓分支，请留空，不要再指向同 remote 的瘦 Pages 仓
+    pages_repo_root: ""
+    pages_branch: "main"
+
+
+# ============================================================
+# 13. 用户提示与文档
+# ============================================================
+messages:
+
+  update_timing: "建议在交易日收盘后(15:00之后)执行更新"
+  data_source: "K线/实时行情：新浪财经API"
+  ma_warmup_note: "MA均线从第一天即有完整数据(已预热)"
+  realtime_data_note: "ETF主展示按数据截止日收盘价口径，成分股涨跌幅仍来自实时数据"
+

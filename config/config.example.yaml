@@ -44,9 +44,9 @@ etfs:
       code: "sh000300"
       name: "沪深300"
   
-  # ETF-5: 储能电池ETF
-  - code: "159566"
-    name: "储能电池ETF"
+  # ETF-5: 电池ETF广发
+  - code: "159755"
+    name: "电池ETF广发"
     market: "sz"
     benchmark:
       code: "sh000300"
@@ -200,7 +200,7 @@ system_check:
     - "513120"
     - "512070"
     - "515880"
-    - "159566"
+    - "159755"
     - "159865"
 
 
@@ -296,8 +296,12 @@ publish:
     repo_root: "."
     branch: "main"
     # 当前模板只提交页面主文件；如需纳入更多文件，可在本地配置中扩展
+    # 注意：assets/js/runtime_payload.js 和 quant_payload.js 是页面数据源，
+    #       必须一起提交，否则 GitHub Pages 会加载旧版数据
     commit_files:
       - "index.html"
+      - "assets/js/runtime_payload.js"
+      - "assets/js/quant_payload.js"
     commit_message: "data: ETF daily report update - {date}"
     # 只有在“独立 Pages 仓库”与正式源码仓不是同一个 remote / branch 时才填写
     # 如果 GitHub Pages 直接服务当前源码仓分支，请保持为空

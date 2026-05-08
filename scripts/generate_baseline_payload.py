@@ -15,7 +15,7 @@ def main():
     params = {
         'w1': 20, 'w2': 0, 'w3': 80, 'w4': 0, 'w5': 0, 'bias': 0,
         'conf_type': 'quadratic', 'dead_zone': 25, 'full_zone': 65,
-        'max_holdings': 6, 'disc_step': 5, 'ema_period': 20, 'rsi_period': 14,
+        'max_holdings': 6, 'disc_step': 5, 'ema_period': 16, 'rsi_period': 14,
         'vol_window': 20, 'f1_sensitivity': 8.0, 'f3_sensitivity': 1.0, 'f2_dead_zone': 1.5,
         'start_date': '2024-04-29', 'end_date': '2026-04-24'
     }

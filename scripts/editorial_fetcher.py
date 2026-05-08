@@ -10,7 +10,7 @@ REQ-158 Step C：editorial 抓取核心
 用法：
     # CLI（手动）：
     python scripts/editorial_fetcher.py               # 抓全部（6 只 ETF + 3 张宏观卡）
-    python scripts/editorial_fetcher.py --etf 159566  # 只抓单只 ETF
+    python scripts/editorial_fetcher.py --etf 159755  # 只抓单只 ETF
     python scripts/editorial_fetcher.py --dry-run     # 不写文件，只打印结果
 
     # 模块调用（供 update_report.py Step 3 使用）：
@@ -661,7 +661,7 @@ def main():
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
 
     parser = argparse.ArgumentParser(description="REQ-158 editorial 抓取器")
-    parser.add_argument("--etf", help="只抓指定 ETF，如 159566")
+    parser.add_argument("--etf", help="只抓指定 ETF，如 159755")
     parser.add_argument("--macro", help="只抓指定宏观卡，如 domestic-policy-card")
     parser.add_argument("--dry-run", action="store_true",
                         help="不写 editorial_content.yaml，只打印结果")

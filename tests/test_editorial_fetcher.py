@@ -214,7 +214,7 @@ def test_fetch_for_etf_end_to_end(tmp_path, monkeypatch, load_module):
     fetcher_cfg = {"per_stock_top_n": 40, "per_etf_kept_n": 6, "inter_request_delay": 0,
                    "request_timeout": 10}
 
-    final, stats = module.fetch_for_etf("159566", cfg, headers={}, rules=rules,
+    final, stats = module.fetch_for_etf("159755", cfg, headers={}, rules=rules,
                                         fetcher_cfg=fetcher_cfg)
 
     # raw 共 5 条，exclude 掉 1 条娱乐圈 → topic 4 条

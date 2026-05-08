@@ -366,7 +366,7 @@ def main():
                     "conf_type": "quadratic",
                     "dead_zone": 25, "full_zone": 65,
                     "max_holdings": 6, "disc_step": 5,
-                    "ema_period": 20, "rsi_period": 14, "vol_window": 20,
+                    "ema_period": 16, "rsi_period": 14, "vol_window": 20,
                     "f1_sensitivity": 8.0, "f3_sensitivity": 1.0, "f2_dead_zone": 1.0,
                     "start_date": start_date, "end_date": end_date,
                 }

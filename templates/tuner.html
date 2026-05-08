@@ -17,7 +17,7 @@ h2 { font-size: 16px; color: #f0f0f0; margin-bottom: 12px; }
 
 .slider-group { margin-bottom: 6px; }
 .slider-label { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 1px; }
-.slider-label .name { color: #94a3b8; }
+.slider-label .name { color: #e0e0e0; }
 .slider-label .val { color: #60a5fa; font-weight: 600; min-width: 44px; text-align: right; font-family: monospace; }
 input[type=range] { width: 100%; height: 5px; -webkit-appearance: none; background: #2a3a4a; border-radius: 3px; outline: none; }
 input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: #3b82f6; cursor: pointer; }
@@ -58,15 +58,15 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
 .view-switch button.active { background: #2563eb; color: #fff; }
 .view-switch button:hover:not(.active) { background: #1e293b; }
 
-/* Confidence chart */
-#conf-chart { width: 100%; height: 140px; margin-top: 6px; border: 1px solid #1e293b; border-radius: 6px; }
-
 /* Right panel views */
 .right-view { display: none; }
 .right-view.active { display: block; }
 
 /* Params guide */
 .guide-block { background: #1a2332; border: 1px solid #2a3a4a; border-radius: 8px; margin-bottom: 10px; overflow: hidden; }
+.guide-grid { display: flex; gap: 10px; }
+.guide-col { flex: 1; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.guide-col .guide-block { margin-bottom: 0; }
 .guide-block-header { display: flex; align-items: center; padding: 10px 14px; cursor: pointer; user-select: none; gap: 10px; }
 .guide-block-header:hover { background: #1e293b; }
 .guide-block-header .g-icon { font-size: 16px; width: 20px; text-align: center; flex-shrink: 0; }
@@ -77,7 +77,7 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
 .guide-block-body { display: none; padding: 0 14px 14px; }
 .guide-block.open .guide-block-body { display: block; }
 .guide-block-body p { font-size: 13.5px; color: #b0bec5; line-height: 1.75; margin-bottom: 6px; }
-.guide-block-body .tag { display: inline-block; background: #1e293b; color: #60a5fa; padding: 1px 6px; border-radius: 3px; font-size: 11px; font-family: monospace; }
+.guide-block-body .tag { display: inline-block; background: #1e293b; color: #60a5fa; padding: 1px 6px; border-radius: 3px; font-size: 13.5px; font-family: monospace; }
 .guide-block-body .tag-val { color: #10b981; }
 .guide-block-body .tag-warn { color: #f59e0b; }
 .guide-block-body .tag-danger { color: #ef4444; }
@@ -92,10 +92,14 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
 
 /* Results */
 .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; }
-.metric-card { background: #1a2332; border: 1px solid #2a3a4a; border-radius: 8px; padding: 10px; text-align: center; }
-.metric-card .label { font-size: 10px; color: #6b7280; text-transform: uppercase; }
+.metric-card { background: #1a2332; border: 1px solid #2a3a4a; border-radius: 8px; padding: 10px; text-align: center; position: relative; }
+.metric-card .label { font-size: 10px; color: #6b7280; text-transform: uppercase; display: inline-flex; align-items: center; gap: 3px; }
 .metric-card .value { font-size: 18px; font-weight: 700; margin-top: 2px; }
+.param-hl { color: #fbbf24; font-weight: 600; }
 .green { color: #10b981; } .red { color: #ef4444; } .blue { color: #3b82f6; } .orange { color: #f59e0b; }
+.tip-icon { display: inline-block; width: 12px; height: 12px; line-height: 12px; font-size: 9px; border-radius: 50%; background: #2a3a4a; color: #6b7280; text-align: center; cursor: help; font-style: normal; }
+.tip-icon:hover .tip-text { display: block; }
+.tip-text { display: none; position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(100% + 6px); background: #1e293b; border: 1px solid #3b4a5a; border-radius: 6px; padding: 8px 10px; font-size: 11px; color: #c0c8d4; text-transform: none; line-height: 1.5; white-space: normal; min-width: 180px; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,.4); }
 
 #nav-chart { width: 100%; height: 300px; }
 #dd-chart { width: 100%; height: 120px; margin-top: 8px; }
@@ -107,13 +111,19 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
 
 .placeholder-msg { text-align: center; color: #4b5563; margin-top: 100px; font-size: 14px; }
 
-/* Strategy preset cards - compact row */
-.preset-row { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
-.preset-card { flex: 1; min-width: 90px; background: #1a2332; border: 1px solid #2a3a4a; border-radius: 6px; padding: 8px 10px; cursor: pointer; transition: border-color 0.2s, background 0.2s; text-align: center; }
+/* Strategy preset cards - 2 per row grid */
+.preset-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 14px; }
+.preset-card { background: #1a2332; border: 1px solid #2a3a4a; border-radius: 6px; padding: 8px 10px; cursor: pointer; transition: border-color 0.2s, background 0.2s; text-align: center; }
 .preset-card:hover { border-color: #3b82f6; }
 .preset-card.active { border-color: #3b82f6; background: #1e293b; }
-.preset-card h4 { font-size: 11px; color: #f0f0f0; margin-bottom: 2px; white-space: nowrap; }
-.preset-card .pw { font-size: 9px; color: #60a5fa; font-family: monospace; }
+.preset-card h4 { font-size: 11px; color: #f0f0f0; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.preset-card .pw { font-size: 11px; color: #60a5fa; font-family: monospace; }
+
+/* Locked parameter row — same layout as slider-group but no slider */
+.param-locked { display: flex; align-items: center; gap: 6px; font-size: 12px; padding: 4px 0 2px; margin-bottom: 6px; }
+.param-locked .pk { color: #e0e0e0; flex: 1; }
+.param-locked .pt { display: inline-flex; align-items: center; font-size: 11px; color: #6b7280; vertical-align: middle; line-height: 1; transform: translateY(-2px); }
+.param-locked .pv { color: #4b5563; font-family: monospace; font-weight: 600; min-width: 36px; text-align: right; }
 </style>
 </head>
 <body>
@@ -121,129 +131,144 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
 <div class="panel-left" id="tuner-panel-left">
   <h2 id="tuner-title">Quant Tuner</h2>
 
-  <!-- Preset cards (inline, always visible) -->
-  <div class="section-head">策略 Preset</div>
-  <div class="preset-row" id="preset-cards">
-    <!-- Dynamically rendered from /api/presets -->
-  </div>
+  <!-- Preset cards -->
+  <section id="tuner-sec-presets" aria-label="策略Preset">
+    <div class="section-head">策略 Preset</div>
+    <div class="preset-row" id="preset-cards">
+      <!-- Dynamically rendered from /api/presets -->
+    </div>
+  </section>
+
   <!-- Factor weights -->
-    <div class="section-head" id="tuner-section-weights">因子权重</div>
-    <div class="slider-group">
-      <div class="slider-label"><span class="name">F1 EMA 偏离度</span><span class="val" id="v-w1">20%</span></div>
-      <input type="range" id="w1" min="0" max="100" step="5" value="20" oninput="syncWeights()">
+  <section id="tuner-sec-weights" aria-label="因子权重">
+    <div class="section-head">因子权重</div>
+    <div class="slider-group" id="param-w1" aria-label="F1权重">
+      <div class="slider-label"><span class="name">F1 EMA 偏离度</span><span class="val" id="v-w1">40%</span></div>
+      <input type="range" id="w1" min="0" max="100" step="5" value="40" oninput="syncWeights()" aria-label="F1 EMA偏离度权重">
     </div>
-    <div class="slider-group">
-      <div class="slider-label"><span class="name">F2 RSI 自适应</span><span class="val" id="v-w2">0%</span></div>
-      <input type="range" id="w2" min="0" max="100" step="5" value="0" oninput="syncWeights()">
+    <div class="param-locked" id="param-w2" aria-label="F2权重">
+      <span class="pk">F2 RSI 自适应 <span class="pt">🔒</span></span>
+      <span class="pv">0%</span>
     </div>
-    <div class="slider-group">
-      <div class="slider-label"><span class="name">F3 方向性量比</span><span class="val" id="v-w3">80%</span></div>
-      <input type="range" id="w3" min="0" max="100" step="5" value="80" oninput="syncWeights()">
+    <div class="slider-group" id="param-w3" aria-label="F3权重">
+      <div class="slider-label"><span class="name">F3 方向性量比</span><span class="val" id="v-w3">60%</span></div>
+      <input type="range" id="w3" min="0" max="100" step="5" value="60" oninput="syncWeights()" aria-label="F3方向性量比权重">
     </div>
-    <div class="slider-group">
-      <div class="slider-label"><span class="name">F4 估值因子</span><span class="val" id="v-w4">0%</span></div>
-      <input type="range" id="w4" min="0" max="100" step="5" value="0" oninput="syncWeights()">
+    <div class="param-locked" id="param-w4" aria-label="F4权重">
+      <span class="pk">F4 估值因子 <span class="pt">🔒</span></span>
+      <span class="pv">0%</span>
     </div>
     <div class="weight-total">合计: <span id="v-total" style="color:#10b981;font-weight:600">100%</span></div>
-
-    <div class="slider-group" style="margin-top:8px;">
-      <div class="slider-label"><span class="name">偏好加成</span><span class="val" id="v-bias">0.0 分</span></div>
-      <input type="range" id="bias" min="0" max="12" step="1" value="0" oninput="$id('v-bias').textContent=this.value+'.0 分'">
-    </div>
+  </section>
 
     <!-- Sensitivity params -->
-    <div class="section-head" id="tuner-section-sensitivity">映射灵敏度</div>
-    <div class="slider-group">
+  <section id="tuner-sec-sensitivity" aria-label="映射灵敏度">
+    <div class="section-head">映射灵敏度</div>
+    <div class="slider-group" id="param-f1s" aria-label="F1 sigmoid">
       <div class="slider-label"><span class="name">F1 sigmoid 尺度</span><span class="val" id="v-f1s">8.0</span></div>
-      <input type="range" id="f1_sensitivity" min="3" max="15" step="0.5" value="8" oninput="$id('v-f1s').textContent=parseFloat(this.value).toFixed(1)">
+      <input type="range" id="f1_sensitivity" min="3" max="15" step="0.5" value="8" oninput="$id('v-f1s').textContent=parseFloat(this.value).toFixed(1)" aria-label="F1 sigmoid尺度">
     </div>
-    <div class="slider-group">
-      <div class="slider-label"><span class="name">F2 死区半宽</span><span class="val" id="v-f2dz">1.0</span></div>
-      <input type="range" id="f2_dead_zone" min="0.3" max="2.0" step="0.1" value="1.0" oninput="onF2DeadZoneChange(this.value)">
+    <div class="param-locked" id="param-f2dz" aria-label="F2死区">
+      <span class="pk">F2 死区半宽 <span class="pt">🔒</span></span>
+      <span class="pv">1.5</span>
     </div>
-    <div class="slider-group">
+    <div class="slider-group" id="param-f3s" aria-label="F3指数尺度">
       <div class="slider-label"><span class="name">F3 指数尺度</span><span class="val" id="v-f3s">1.0</span></div>
-      <input type="range" id="f3_sensitivity" min="0.5" max="3.0" step="0.1" value="1.0" oninput="$id('v-f3s').textContent=parseFloat(this.value).toFixed(1)">
+      <input type="range" id="f3_sensitivity" min="0.5" max="3.0" step="0.1" value="1.0" oninput="$id('v-f3s').textContent=parseFloat(this.value).toFixed(1)" aria-label="F3指数尺度">
     </div>
+  </section>
 
-    <!-- Confidence function -->
-    <div class="section-head" id="tuner-section-confidence">信心函数</div>
-    <div class="slider-group">
-      <div class="slider-label"><span class="name">函数类型</span><span class="val" id="v-conf-type">quadratic</span></div>
-      <div class="btn-row" id="conf-type-group">
-        <button class="active" onclick="setConfType('quadratic')">quadratic</button>
-        <button onclick="setConfType('linear')">linear</button>
-        <button onclick="setConfType('sigmoid')">sigmoid</button>
+    <!-- Confidence / Position control -->
+  <section id="tuner-sec-confidence" aria-label="仓位控制">
+    <div class="section-head">仓位控制</div>
+    <div class="param-locked" id="param-conf-type" aria-label="策略模式">
+      <span class="pk">策略模式 <span class="pt">🔒</span></span>
+      <span class="pv">MA趋势</span>
+    </div>
+    <div id="ma-trend-params">
+      <div class="slider-group" id="param-ma-period" aria-label="MA趋势周期">
+        <div class="slider-label"><span class="name">MA趋势周期</span><span class="val" id="v-ma-period">20 周</span></div>
+        <input type="range" id="ma_trend_period" min="8" max="40" step="2" value="20" oninput="$id('v-ma-period').textContent=this.value+' 周'" aria-label="MA趋势周期">
+      </div>
+      <div class="slider-group" id="param-ma-bull" aria-label="MA上方仓位">
+        <div class="slider-label"><span class="name">MA上方仓位 (bull)</span><span class="val" id="v-ma-bull">100%</span></div>
+        <input type="range" id="ma_bull_pos" min="0.0" max="1.0" step="0.05" value="1.00" oninput="$id('v-ma-bull').textContent=Math.round(this.value*100)+'%'; validateBullBear()" aria-label="MA上方仓位">
+      </div>
+      <div class="slider-group" id="param-ma-bear" aria-label="MA下方仓位">
+        <div class="slider-label"><span class="name">MA下方仓位 (bear)</span><span class="val" id="v-ma-bear">40%</span></div>
+        <input type="range" id="ma_bear_pos" min="0.0" max="1.0" step="0.05" value="0.40" oninput="$id('v-ma-bear').textContent=Math.round(this.value*100)+'%'; validateBullBear()" aria-label="MA下方仓位">
+      </div>
+      <div class="slider-group" id="param-ma-dir" aria-label="MA方向确认">
+        <div class="slider-label"><span class="name">MA方向确认</span><span class="val" id="v-ma-dir">关闭</span></div>
+        <div class="btn-row" id="ma-dir-group">
+          <button onclick="setMaDirConfirm(false)" class="active" id="ma-dir-off">关闭</button>
+          <button onclick="setMaDirConfirm(true)" id="ma-dir-on">开启</button>
+        </div>
       </div>
     </div>
-    <div class="slider-group">
-      <div class="slider-label"><span class="name">死区阈值 (dead_zone)</span><span class="val" id="v-dz">&lt; 25 分</span></div>
-      <input type="range" id="dead_zone" min="10" max="50" step="5" value="25" oninput="$id('v-dz').textContent='< '+this.value+' 分'; drawConfChart()">
-    </div>
-    <div class="slider-group">
-      <div class="slider-label"><span class="name">满配阈值 (full_zone)</span><span class="val" id="v-fz">>= 65 分</span></div>
-      <input type="range" id="full_zone" min="40" max="90" step="5" value="65" oninput="$id('v-fz').textContent='>= '+this.value+' 分'; drawConfChart()">
-    </div>
-    <div id="conf-chart"></div>
+  </section>
 
-    <!-- Position control -->
-    <div class="section-head" id="tuner-section-position">仓位控制</div>
-    <div class="slider-group">
-      <div class="slider-label"><span class="name">最大持仓</span><span class="val" id="v-mh">6 支</span></div>
-      <div class="btn-row" id="mh-group">
-        <button onclick="setMH(3)">3</button><button onclick="setMH(4)">4</button><button onclick="setMH(5)">5</button>
-        <button class="active" onclick="setMH(6)">6</button><button onclick="setMH(7)">7</button><button onclick="setMH(8)">8</button>
-      </div>
+    <!-- Position allocation -->
+  <section id="tuner-sec-position" aria-label="仓位分配">
+    <div class="section-head">仓位分配</div>
+    <div class="param-locked" id="param-max-holdings" aria-label="最大持仓">
+      <span class="pk">最大持仓 <span class="pt">🔒</span></span>
+      <span class="pv">6 支</span>
     </div>
-    <div class="slider-group">
-      <div class="slider-label"><span class="name">离散化步长</span><span class="val" id="v-disc">5%</span></div>
-      <div class="btn-row" id="disc-group">
-        <button onclick="setDisc(5)" class="active">5%</button>
-        <button onclick="setDisc(10)">10%</button>
-        <button onclick="setDisc(15)">15%</button>
-      </div>
+    <div class="param-locked" id="param-disc-step" aria-label="离散化步长">
+      <span class="pk">离散化步长 <span class="pt">🔒</span></span>
+      <span class="pv">5%</span>
     </div>
-    <div class="slider-group">
+    <div class="slider-group" id="param-rebalance" aria-label="调仓频率">
       <div class="slider-label"><span class="name">调仓频率</span><span class="val" id="v-freq">周调仓</span></div>
       <div class="btn-row" id="freq-group">
         <button onclick="setFreq('W-FRI')" class="active">周调仓</button>
         <button onclick="setFreq('daily')">日调仓</button>
       </div>
     </div>
-    <div class="slider-group">
-      <div class="slider-label"><span class="name">分数带</span><span class="val" id="v-band">0%</span></div>
-      <input type="range" id="score_band" min="0" max="10" step="0.5" value="0" oninput="$id('v-band').textContent=this.value+'%'">
+    <div class="param-locked" id="param-score-band" aria-label="分数带">
+      <span class="pk">分数带 <span class="pt">🔒</span></span>
+      <span class="pv">0%</span>
     </div>
+  </section>
 
     <!-- Factor params -->
-    <div class="section-head" id="tuner-section-factors">因子参数</div>
-    <div class="slider-group">
-      <div class="slider-label"><span class="name">EMA 周期</span><span class="val" id="v-ema">20 周</span></div>
-      <input type="range" id="ema_period" min="8" max="40" step="2" value="20" oninput="$id('v-ema').textContent=this.value+' 周'">
+  <section id="tuner-sec-factors" aria-label="因子参数">
+    <div class="section-head">因子参数</div>
+    <div class="slider-group" id="param-ema" aria-label="EMA周期">
+      <div class="slider-label"><span class="name">EMA 周期</span><span class="val" id="v-ema">16 周</span></div>
+      <input type="range" id="ema_period" min="8" max="40" step="2" value="16" oninput="$id('v-ema').textContent=this.value+' 周'" aria-label="EMA周期">
     </div>
-    <div class="slider-group">
-      <div class="slider-label"><span class="name">RSI 周期</span><span class="val" id="v-rsi">14 日</span></div>
-      <input type="range" id="rsi_period" min="6" max="28" step="2" value="14" oninput="$id('v-rsi').textContent=this.value+' 日'">
+    <div class="param-locked" id="param-rsi" aria-label="RSI周期">
+      <span class="pk">RSI 周期 <span class="pt">🔒</span></span>
+      <span class="pv">14 日</span>
     </div>
-    <div class="slider-group">
+    <div class="slider-group" id="param-vol" aria-label="量比窗口">
       <div class="slider-label"><span class="name">量比窗口</span><span class="val" id="v-vol">20 日</span></div>
-      <input type="range" id="vol_window" min="5" max="40" step="5" value="20" oninput="$id('v-vol').textContent=this.value+' 日'">
+      <input type="range" id="vol_window" min="5" max="40" step="5" value="20" oninput="$id('v-vol').textContent=this.value+' 日'" aria-label="量比窗口">
     </div>
+  </section>
 
-    <div class="section-head" id="tuner-section-period">回测周期</div>
+  <section id="tuner-sec-period" aria-label="回测周期">
+    <div class="section-head">回测周期</div>
+    <div class="btn-row" style="margin-bottom:4px;" id="period-span-btns">
+      <button class="active" onclick="setPeriodSpan(3)" id="span-btn-3">3 年</button>
+      <button onclick="setPeriodSpan(6)" id="span-btn-6">6 年</button>
+    </div>
     <div class="dual-range-wrap">
       <div class="dual-range-track"></div>
       <div class="dual-range-fill" id="period-fill"></div>
-      <input type="range" id="start_date_slider" min="0" max="1095" step="1" value="730" oninput="onPeriodSliderChange(event)">
-      <input type="range" id="end_date_slider"   min="0" max="1095" step="1" value="1095" oninput="onPeriodSliderChange(event)">
+      <input type="range" id="start_date_slider" min="0" max="1095" step="1" value="730" oninput="onPeriodSliderChange(event)" aria-label="回测起始日期">
+      <input type="range" id="end_date_slider"   min="0" max="1095" step="1" value="1095" oninput="onPeriodSliderChange(event)" aria-label="回测结束日期">
     </div>
     <div class="dual-range-labels">
       <span class="val" id="v-start-date">--</span>
       <span style="color:#6b7280;font-size:10px;">跨度 <span id="v-period-span">--</span></span>
       <span class="val" id="v-end-date">--</span>
     </div>
+  </section>
 
-    <div class="actions">
+    <div class="actions" id="tuner-sec-actions" aria-label="操作按钮">
       <button class="btn-run" id="btn-run" onclick="runBacktest()">运行回测</button>
       <button class="btn-save" onclick="saveYAML()">保存参数</button>
     </div>
@@ -261,8 +286,11 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
   <!-- ========== Guide View ========== -->
   <div id="right-view-guide" class="right-view active">
 
-    <!-- Pipeline overview -->
-    <div class="guide-block open" id="guide-pipeline">
+    <div class="guide-grid">
+    <div class="guide-col">
+
+    <!-- Pipeline overview (compact) -->
+    <div class="guide-block" id="guide-pipeline" aria-label="全流程总览">
       <div class="guide-block-header" onclick="toggleGuide('guide-pipeline')">
         <span class="g-icon">&#128736;</span>
         <span class="g-title">全流程总览</span>
@@ -272,28 +300,27 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
       <div class="guide-block-body">
         <p>每个调仓日（每周五），对 25 支 ETF 执行以下流水线：</p>
         <p><b>Phase 1: 因子计算</b>（每支 ETF 独立）</p>
-        <p>1. F1 = 周线EMA偏离度（原始值，如 +5.2%）</p>
-        <p>2. F2 = RSI 偏离 z-score（最近 20 日 RSI 自身均值的标准化偏离）</p>
-        <p>3. F3 = 方向性量比（原始值，如 1.8）</p>
-        <p>4. F4 = 估值因子（已映射为 0-100 分）</p>
+        <p>1. F1 = 周线EMA偏离度（原始值，如 +5.2%）— 权重 <span class="param-hl">F1 EMA 偏离度</span></p>
+        <p>2. F2 = RSI 偏离 z-score（最近 20 日 RSI 自身均值的标准化偏离）— 权重 <span class="param-hl">F2 RSI 自适应</span></p>
+        <p>3. F3 = 方向性量比（原始值，如 1.8）— 权重 <span class="param-hl">F3 方向性量比</span></p>
+        <p>4. F4 = 估值因子（已映射为 0-100 分）— 权重 <span class="param-hl">F4 估值因子</span></p>
         <p><b>Phase 2: 连续映射</b>（每支 ETF 独立，不做截面排名）</p>
-        <p>5. F1 → <span class="tag">sigmoid(ema_dev / f1_sensitivity)</span> → [0, 1]</p>
-        <p>6. F2 → <span class="tag">死区 |z|&lt;1.0 → 0.5；外 → 0.5 ± 0.5(1−exp(−|z|−1))</span> → [0, 1]</p>
-        <p>7. F3 → <span class="tag">sigmoid(log(ratio) / f3_sensitivity)</span> → [0, 1]</p>
+        <p>5. F1 → <span class="tag">sigmoid(F1<sub>raw</sub> / <span class="param-hl">F1 sigmoid 尺度</span>)</span> → [0, 1]</p>
+        <p>6. F2 → <span class="tag">死区 |z|&lt;<span class="param-hl">F2 死区半宽</span> → 0.5；外 → 0.5 ± 0.5(1−exp(−|z|−dz))</span> → [0, 1]</p>
+        <p>7. F3 → <span class="tag">sigmoid(log(ratio) / <span class="param-hl">F3 指数尺度</span>)</span> → [0, 1]</p>
         <p>8. F4 → <span class="tag">val_score / 100</span> → [0, 1]（不再做"排名的排名"）</p>
         <p><b>Phase 3: 加权合成</b></p>
-        <p>9. 综合分 = <span class="tag">mapped_f1 &times; w1 + mapped_f2 &times; w2 + mapped_f3 &times; w3 + mapped_f4 &times; w4 + bias(如有)</span>，值域 [0, 1]</p>
+        <p>9. 综合分 = <span class="tag">F<sub>1</sub> &times; w1 + F<sub>2</sub> &times; w2 + F<sub>3</sub> &times; w3 + F<sub>4</sub> &times; w4 + <span class="param-hl">偏好加成</span>(如有)</span>，值域 [0, 1]</p>
         <p><b>Phase 4: 仓位分配</b></p>
         <p>10. 取综合分 Top-N 支 ETF</p>
-        <p>11. 信心函数: composite &lt; dead_zone% → 0, &ge; full_zone% → 1, 中间 quadratic</p>
-        <p>12. 总仓位上限 = <span class="tag">min(95%, avg_confidence &times; 1.2)</span></p>
-        <p>13. 目标仓位 = 相对权重 &times; 总仓位上限，按 step 离散化</p>
-        <p><b>关键差异（vs 截面标准化）</b>：连续映射保留因子的绝对水平和极端性。牛市时所有因子都高 → 综合分普遍高 → 信心高 → 重仓；熊市时所有因子都低 → 综合分低 → 信心低 → 多留现金。截面标准化则无论牛熊，综合分均值恒为 ~52%，信心函数无法识别市场状态。</p>
+        <p>11. <span class="param-hl">仓位控制</span>: 沪深300周线在<span class="param-hl">MA趋势周期</span>均线上方 → <span class="param-hl">MA上方仓位</span>，下方 → <span class="param-hl">MA下方仓位</span>（二值信号，非综合分驱动）</p>
+        <p>12. <span class="tag">pos<sub>i</sub> = w<sub>i</sub> &times; total_pos</span>，按 <span class="param-hl">离散化步长</span> 离散化</p>
+        <p><b>关键差异（vs 截面标准化）</b>：连续映射保留因子的绝对水平和极端性。牛市时所有因子都高 → 综合分普遍高 → 仓位由MA信号决定为满仓；熊市时所有因子都低 → 综合分低 → 且MA信号转bear → 自动降仓。仓位控制由市场趋势驱动（MA20），而非自身NAV回撤驱动，避免频繁误触发导致踏空。</p>
       </div>
     </div>
 
     <!-- F1 -->
-    <div class="guide-block" id="guide-f1">
+    <div class="guide-block" id="guide-f1" aria-label="F1周线EMA偏离度">
       <div class="guide-block-header" onclick="toggleGuide('guide-f1')">
         <span class="g-icon">&#128200;</span>
         <span class="g-title">F1 周线 EMA 偏离度</span>
@@ -303,15 +330,19 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
       <div class="guide-block-body">
         <p><b>Step 1: 计算 EMA</b></p>
         <p>取周线收盘价序列，用指数移动平均公式计算：</p>
-        <p><span class="tag">EMA_t = close_t &times; &alpha; + EMA_{t-1} &times; (1-&alpha;)</span>，其中 &alpha; = 2/(span+1)，span = <span class="tag">ema_period</span>（默认20周）</p>
+        <p><span class="tag">EMA<sub>t</sub> = close<sub>t</sub> &times; &alpha; + EMA<sub>t-1</sub> &times; (1-&alpha;)</span>，其中 &alpha; = 2/(span+1)，span = <span class="param-hl">EMA 周期</span>（默认20周）</p>
         <p><b>Step 2: 算偏离度</b></p>
-        <p><span class="tag">F1_raw = (最新周收盘价 - EMA值) / EMA值 &times; 100</span></p>
+        <p><span class="tag">F1<sub>raw</sub> = (close<sub>t</sub> - EMA<sub>t</sub>) / EMA<sub>t</sub> &times; 100</span></p>
         <p>结果为百分比，如 +5.2%（价格在均线上方5.2%）或 -3.8%（下方3.8%）</p>
         <p><b>Step 3: sigmoid 连续映射</b></p>
-        <p><span class="tag">mapped_f1 = 1 / (1 + exp(-ema_dev / f1_sensitivity))</span></p>
-        <p>特性：ema_dev=0 → 0.5（中性），+sensitivity → ~0.73，-sensitivity → ~0.27，极端值自然饱和。</p>
-        <p><span class="tag">f1_sensitivity</span>：控制"多偏离算极端"。小值(3-5)更敏感——小幅偏离就拉开差距；大值(10-15)更迟钝——需要大偏离才有区分度。默认8，即±8%偏离对应~0.27/0.73。</p>
-        <p>与截面标准化的核心区别：sigmoid 保留绝对偏离水平。全市场-10%时mapped_f1≈0.13（低分），全市场+10%时≈0.87（高分），信心函数可以识别牛熊。</p>
+        <p><span class="tag">F<sub>1</sub> = 1 / (1 + exp(-F1<sub>raw</sub> / f1_sensitivity))</span></p>
+        <p>特性：F1<sub>raw</sub>=0 → 0.5（中性），+sensitivity → ~0.73，-sensitivity → ~0.27，极端值自然饱和。</p>
+        <p><span class="param-hl">F1 sigmoid 尺度</span>：控制"多偏离算极端"。小值(3-5)更敏感——小幅偏离就拉开差距；大值(10-15)更迟钝——需要大偏离才有区分度。默认8，即±8%偏离对应~0.27/0.73。</p>
+        <p>下图展示不同灵敏度下 F1<sub>raw</sub> → F<sub>1</sub> 的映射曲线：</p>
+        <div style="max-width:520px;margin:6px 0 10px;">
+          <div id="f1-curve" style="width:100%;aspect-ratio:16/9;background:#0f1419;border:1px solid #1e293b;border-radius:6px;"></div>
+        </div>
+        <p>与截面标准化的核心区别：sigmoid 保留绝对偏离水平。全市场-10%时F<sub>1</sub>≈0.13（低分），全市场+10%时≈0.87（高分），仓位控制可以识别牛熊。</p>
         <p style="margin-top:6px;color:#6b7280;font-size:12px;">策略视角：</p>
         <div class="guide-strategy-row">
           <span class="guide-strategy-chip chip-value">价值型：低权重(15%)+迟钝尺度(10)，忽略短期趋势</span>
@@ -322,7 +353,7 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
     </div>
 
     <!-- F2 -->
-    <div class="guide-block" id="guide-f2">
+    <div class="guide-block" id="guide-f2" aria-label="F2 RSI异动检测">
       <div class="guide-block-header" onclick="toggleGuide('guide-f2')">
         <span class="g-icon">&#127919;</span>
         <span class="g-title">F2 RSI 异动检测</span>
@@ -340,12 +371,12 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
         <p><b>Step 1: 计算 RSI 序列</b></p>
         <p>取日线收盘价，标准 RSI 算法：</p>
         <p><span class="tag">RS = avg_gain / avg_loss</span>，<span class="tag">RSI = 100 - 100/(1+RS)</span></p>
-        <p>用 EMA 平滑（&alpha; = 1/period），<span class="tag">rsi_period</span> 默认 14 日。得到 RSI 序列（每日一个值）。</p>
+        <p>用 EMA 平滑（&alpha; = 1/period），<span class="param-hl">RSI 周期</span> 默认 14 日。得到 RSI 序列（每日一个值）。</p>
 
         <p><b>Step 2: 计算 RSI 偏离 z-score</b></p>
-        <p>取最近 <span class="tag">rsi_window = 20</span> 日的 RSI 子序列，算自身基线：</p>
+        <p>取最近 20 日的 RSI 子序列，算自身基线：</p>
         <p><span class="tag">μ = mean(RSI[-20:])</span>，<span class="tag">σ = std(RSI[-20:])</span></p>
-        <p>定义 z-score：<span class="tag">z = (current_RSI − μ) / max(σ, 5)</span></p>
+        <p>定义 z-score：<span class="tag">z = (RSI<sub>t</sub> − μ) / max(σ, 5)</span></p>
         <p>说明：</p>
         <ul>
           <li>z 表示"今天 RSI 偏离自己最近 20 日均值多少个标准差"</li>
@@ -357,14 +388,14 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
         <p><b>Step 3: 死区 + 饱和映射</b></p>
         <p>把 z 映射到 [0, 1] 的 F2 分数：</p>
         <ul>
-          <li><span class="tag">|z| &lt; dead_zone</span>（默认 1.0） → 输出 <b>0.5</b>（中性，不投票）</li>
+          <li><span class="tag">|z| &lt; dead_zone</span>（<span class="param-hl">F2 死区半宽</span> 默认 1.5） → 输出 <b>0.5</b>（中性，不投票）</li>
           <li><span class="tag tag-val">z &lt;&lt; -dead_zone</span> → 趋向 <b>1.0</b>（博反弹高分）</li>
           <li><span class="tag tag-danger">z &gt;&gt; +dead_zone</span> → 趋向 <b>0.0</b>（逃顶低分）</li>
         </ul>
         <p>具体公式：</p>
         <p><span class="tag">overshoot = |z| - dead_zone</span></p>
         <p><span class="tag">magnitude = 1 - exp(-overshoot)</span>（饱和函数）</p>
-        <p><span class="tag">F2 = 0.5 ± 0.5 &times; magnitude</span>（z&lt;0 取 +；z&gt;0 取 −）</p>
+        <p><span class="tag">F<sub>2</sub> = 0.5 ± 0.5 &times; magnitude</span>（z&lt;0 取 +；z&gt;0 取 −）</p>
         <p>下图为映射函数的可视化（左：博反弹端 / 右：逃顶端）：</p>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:6px 0 10px;">
           <div id="f2-curve-bull" style="width:100%;height:160px;background:#0f1419;border:1px solid #1e293b;border-radius:6px;"></div>
@@ -384,7 +415,7 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
     </div>
 
     <!-- F3 -->
-    <div class="guide-block" id="guide-f3">
+    <div class="guide-block" id="guide-f3" aria-label="F3方向性量比">
       <div class="guide-block-header" onclick="toggleGuide('guide-f3')">
         <span class="g-icon">&#128228;</span>
         <span class="g-title">F3 方向性量比</span>
@@ -393,28 +424,32 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
       </div>
       <div class="guide-block-body">
         <p><b>Step 1: 取窗口数据</b></p>
-        <p>取最近 <span class="tag">vol_window</span> 日（默认20）的日线，计算每日涨跌 change = pct_change(close)</p>
+        <p>取最近 <span class="param-hl">量比窗口</span> 日（默认20）的日线，计算每日涨跌 change = pct_change(close)</p>
         <p><b>Step 2: 按涨跌分组</b></p>
         <p>上涨日 = change &gt; 0 的交易日，下跌日 = change &lt; 0 的交易日</p>
         <p><b>Step 3: 算方向性量比</b></p>
         <p>优先用成交额（amount 列），无则退回成交量（volume 列）：</p>
-        <p><span class="tag">F3_raw = mean(上涨日成交额) / mean(下跌日成交额)</span></p>
+        <p><span class="tag">F3<sub>raw</sub> = mean(amount<sub>up</sub>) / mean(amount<sub>down</sub>)</span></p>
         <p>边界：全涨无跌 → 封顶 3.0（强势上限），全跌无涨 → 返回 0（极弱），无跌日且有涨 → 3.0</p>
         <p><b>Step 4: 连续映射（log + sigmoid）</b></p>
-        <p>新版采用 log + sigmoid 替代旧的纯指数饱和，让高位（ratio &gt; 5）不再锁死，能继续拉伸：</p>
-        <p><span class="tag">log_r = log(ratio)</span>（对 ratio &lt; 1 取对称负 log）</p>
-        <p><span class="tag">mapped_f3 = sigmoid(log_r / f3_sensitivity)</span></p>
+        <p>新版采用 log + sigmoid 替代旧的纯指数饱和，让高位（F3<sub>raw</sub> &gt; 5）不再锁死，能继续拉伸：</p>
+        <p><span class="tag">log_r = log(F3<sub>raw</sub>)</span>（对 F3<sub>raw</sub> &lt; 1 取对称负 log）</p>
+        <p><span class="tag">F<sub>3</sub> = sigmoid(log_r / f3_sensitivity)</span></p>
         <p>对照样本（f3_sensitivity = 1.0）：</p>
         <ul>
-          <li>ratio = 0.5 → 0.34（量缩，下跌日成交比上涨日大）</li>
-          <li>ratio = 1.0 → 0.50（持平，中性）</li>
-          <li>ratio = 2.0 → 0.66（温和放量）</li>
-          <li>ratio = 5.0 → 0.83（爆量，<b>仍能继续拉伸</b>）</li>
-          <li>ratio = 10.0 → 0.91（极端爆量，区别于一般放量）</li>
+          <li>F3<sub>raw</sub> = 0.5 → 0.34（量缩，下跌日成交比上涨日大）</li>
+          <li>F3<sub>raw</sub> = 1.0 → 0.50（持平，中性）</li>
+          <li>F3<sub>raw</sub> = 2.0 → 0.66（温和放量）</li>
+          <li>F3<sub>raw</sub> = 5.0 → 0.83（爆量，<b>仍能继续拉伸</b>）</li>
+          <li>F3<sub>raw</sub> = 10.0 → 0.91（极端爆量，区别于一般放量）</li>
         </ul>
-        <p>核心改进：旧版 ratio &gt; 4 后基本饱和锁死，"温和放量"和"爆量"拉不开差距；新版让真正异动的标的能涌现出来。</p>
-        <p><span class="tag">vol_window</span>：短窗口(5-10日)捕捉短期放量异动，长窗口(20-40日)看中期资金趋势。</p>
-        <p><span class="tag">f3_sensitivity</span>：默认 1.0；越小越敏感（高位拉得更陡），越大越平滑。</p>
+        <p>核心改进：旧版 F3<sub>raw</sub> &gt; 4 后基本饱和锁死，"温和放量"和"爆量"拉不开差距；新版让真正异动的标的能涌现出来。</p>
+        <p><span class="param-hl">量比窗口</span>：短窗口(5-10日)捕捉短期放量异动，长窗口(20-40日)看中期资金趋势。</p>
+        <p><span class="param-hl">F3 指数尺度</span>：默认 1.0；越小越敏感（高位拉得更陡），越大越平滑。</p>
+        <p>下图展示不同灵敏度下 F3<sub>raw</sub> → F<sub>3</sub> 的映射曲线：</p>
+        <div style="max-width:520px;margin:6px 0 10px;">
+          <div id="f3-curve" style="width:100%;aspect-ratio:16/9;background:#0f1419;border:1px solid #1e293b;border-radius:6px;"></div>
+        </div>
         <p style="margin-top:6px;color:#6b7280;font-size:12px;">策略视角：</p>
         <div class="guide-strategy-row">
           <span class="guide-strategy-chip chip-value">价值型：低权重(15%)，量能非核心</span>
@@ -424,8 +459,11 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
       </div>
     </div>
 
+    </div><!-- /guide-col-left -->
+    <div class="guide-col">
+
     <!-- F4 -->
-    <div class="guide-block" id="guide-f4">
+    <div class="guide-block" id="guide-f4" aria-label="F4估值因子">
       <div class="guide-block-header" onclick="toggleGuide('guide-f4')">
         <span class="g-icon">&#128176;</span>
         <span class="g-title">F4 估值因子</span>
@@ -438,12 +476,12 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
         <p><b>Step 2: 算历史百分位</b></p>
         <p><span class="tag">百分位 = 历史数据中 &le; 当前值的占比 &times; 100</span></p>
         <p><b>Step 3: 逆向映射</b></p>
-        <p><span class="tag">F4_raw = 100 - 百分位</span>。越低估 → 百分位越低 → 分数越高</p>
-        <p>举例：有色 PE=25，历史 3000 日中 300 个 &le;25 → 百分位 10% → F4_raw = 90</p>
+        <p><span class="tag">F4<sub>raw</sub> = 100 - 百分位</span>。越低估 → 百分位越低 → 分数越高</p>
+        <p>举例：有色 PE=25，历史 3000 日中 300 个 &le;25 → 百分位 10% → F4<sub>raw</sub> = 90</p>
         <p><b>Step 4: 连续映射（替代截面标准化）</b></p>
-        <p>F4_raw 已是 0-100（100 - 历史百分位），直接归一化到 [0, 1]：</p>
-        <p><span class="tag">mapped_f4 = F4_raw / 100</span> → [0, 1]</p>
-        <p>不再做"排名的排名"（历史百分位 → 截面排名 = 双重排名）。全市场一起低估（熊市底部）→ F4_raw 普遍高（80+）→ 综合分普遍高 → 信心函数配重仓。这才是连续映射的核心价值：保留绝对水平，让信心函数识别市场状态。</p>
+        <p>F4<sub>raw</sub> 已是 0-100（100 - 历史百分位），直接归一化到 [0, 1]：</p>
+        <p><span class="tag">F<sub>4</sub> = F4<sub>raw</sub> / 100</span> → [0, 1]</p>
+        <p>不再做"排名的排名"（历史百分位 → 截面排名 = 双重排名）。全市场一起低估（熊市底部）→ F4<sub>raw</sub> 普遍高（80+）→ 综合分普遍高 → MA趋势仓位控制给高仓位。这才是连续映射的核心价值：保留绝对水平，让仓位控制识别市场状态。</p>
         <p>每日更新一次（非实时），波动慢。数据源：csindex 历史PE/PB + X6 东方财富BPS反推。</p>
         <p style="margin-top:6px;color:#6b7280;font-size:12px;">策略视角：</p>
         <div class="guide-strategy-row">
@@ -455,7 +493,7 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
     </div>
 
     <!-- Composite -->
-    <div class="guide-block" id="guide-composite">
+    <div class="guide-block" id="guide-composite" aria-label="综合分合成">
       <div class="guide-block-header" onclick="toggleGuide('guide-composite')">
         <span class="g-icon">&#10133;</span>
         <span class="g-title">综合分合成</span>
@@ -465,47 +503,44 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
       <div class="guide-block-body">
         <p><b>加权求和（连续映射版）</b></p>
         <p>四个因子各自经过连续映射后，加权求和：</p>
-        <p><span class="tag">综合分 = mapped_f1 &times; w1 + mapped_f2 &times; w2 + mapped_f3 &times; w3 + mapped_f4 &times; w4</span></p>
-        <p>其中 w1+w2+w3+w4 = 1，各 mapped_fi &isin; [0, 1]，所以基础综合分 &isin; [0, 1]（显示时 &times; 100 为百分比）。</p>
-        <p><b>偏好加成（bias）</b></p>
-        <p>对标记 bias 的 ETF（有色/创新药/非银），综合分额外加 <span class="tag">bias/100</span>（默认 0.04）：</p>
-        <p><span class="tag">综合分 += bias/100</span>（仅对 bias 标的）</p>
-        <p>加成在连续映射之后叠加。高 bias → 该 ETF 综合分更高 → 更容易进 Top-N、获得更高仓位。</p>
-        <p>bias=0 = 纯客观，bias=3-5 = 适度偏好，bias=8+ = 重度倾斜（几乎一定进持仓）。</p>
+        <p><span class="tag">综合分 = F<sub>1</sub> &times; <span class="param-hl">F1 EMA 偏离度</span>权重 + F<sub>3</sub> &times; <span class="param-hl">F3 方向性量比</span>权重</span></p>
+        <p>当前策略仅使用 F1+F3 两个因子（权重之和 = 100%），F2 RSI 自适应和 F4 估值因子保留位（reserved），待未来引入更优因子实现。</p>
+        <p>其中四项权重之和 = 1，各 F<sub>i</sub> &isin; [0, 1]，所以基础综合分 &isin; [0, 1]（显示时 &times; 100 为百分比）。</p>
+        <p><b>偏好加成（已锁定 = 0）</b></p>
+        <p>REQ-190 敏感性分析证实：偏好加成只损害策略表现，已锁定为 0。未来如需风格偏移可重新启用。</p>
       </div>
     </div>
 
     <!-- Confidence -->
-    <div class="guide-block" id="guide-conf">
+    <div class="guide-block" id="guide-conf" aria-label="仓位控制">
       <div class="guide-block-header" onclick="toggleGuide('guide-conf')">
         <span class="g-icon">&#128208;</span>
-        <span class="g-title">信心函数</span>
+        <span class="g-title">仓位控制</span>
         <span class="g-tag" style="color:#60a5fa;">conf</span>
         <span class="g-chevron">&#9654;</span>
       </div>
       <div class="guide-block-body">
-        <p>将综合分（[0, 1]）映射为信心系数 [0, 1]，控制"敢配多少仓"。</p>
-        <p><b>计算公式（当前仅 quadratic 实际生效）</b></p>
-        <p>设 <span class="tag">t = (综合分 - dead_zone%) / (full_zone% - dead_zone%)</span>（内部 [0, 1] 尺度）</p>
+        <p>将市场趋势信号直接映射为总仓位比例，控制"整体配多少仓"。</p>
+        <p><b>当前策略：<span class="param-hl">MA趋势</span></b></p>
+        <p>极简二值信号：每期检查沪深300周线收盘价是否在自身<span class="param-hl">MA趋势周期</span>均线上方。</p>
         <ul>
-          <li>综合分 &lt; <span class="tag">dead_zone%</span> → 信心 = 0（零仓位）</li>
-          <li>综合分 &ge; <span class="tag">full_zone%</span> → 信心 = 1（满配）</li>
-          <li>中间区域：<span class="tag">信心 = t&sup2;</span>（quadratic，当前唯一实现）</li>
+          <li>沪深300 在周线MA <b>上方</b> → 总仓位 = <span class="param-hl">MA上方仓位</span>（默认100%，满仓）</li>
+          <li>沪深300 在周线MA <b>下方</b> → 总仓位 = <span class="param-hl">MA下方仓位</span>（默认40%，降仓防守）</li>
         </ul>
-        <p><b>quadratic 的效果</b>：t=0.3 → 信心=0.09，t=0.5 → 信心=0.25，t=0.8 → 信心=0.64。前期慢后期快 → 保守型，多数分数只给低仓位，只有高分才重仓。</p>
-        <p><b>间距调节（显示尺度 0-100%）</b>：dead_zone% 与 full_zone% 的间距 = 过渡带宽度。窄间距(如 30%-55%) → 几乎开关型，宽间距(如 15%-85%) → 渐进型。</p>
-        <p style="color:#f59e0b;font-size:12px;">注意：前端图表支持 linear / sigmoid 形状预览，但回测引擎当前只实现了 quadratic。linear/sigmoid 选择不影响回测结果。</p>
-        <p style="margin-top:6px;color:#6b7280;font-size:12px;">策略视角：</p>
-        <div class="guide-strategy-row">
-          <span class="guide-strategy-chip chip-value">价值型：宽带(20%-55%), 确信才重仓</span>
-          <span class="guide-strategy-chip chip-tech">技术型：窄带(30%-70%), 跟随信号</span>
-          <span class="guide-strategy-chip chip-momentum">景气型：中带(25%-65%), 均衡</span>
-        </div>
+        <p><b>设计理念：高默认仓位 + 极少触发的保护层</b></p>
+        <p>回测发现：熊市满仓（不降仓） vs 转现金的收益率差距并不大，说明只要选股本身有抗跌能力，不需要频繁调仓躲避。因此仓位控制的核心不是"精准逃顶"，而是"极少误触发 + 关键时刻提供保护"。</p>
+        <ul>
+          <li>默认满仓（MA上方100%），让选股策略充分运作</li>
+          <li>仅当MA20翻空时才降仓到40%，避免频繁操作导致踏空</li>
+          <li>信号频率：约每年切换1-2次，极低频</li>
+        </ul>
+        <p><b>为什么不用NAV驱动（旧方案已移除）</b></p>
+        <p>旧方案（regime / momentum_crash / quadratic）基于自身NAV回撤判断市场状态，问题在于：ETF组合的NAV波动与大盘并非同步，NAV回撤时可能大盘已企稳，NAV上涨时可能大盘已在崩盘。MA20是市场级信号，直接反映趋势，更可靠且不易误触发。</p>
       </div>
     </div>
 
     <!-- Position -->
-    <div class="guide-block" id="guide-pos">
+    <div class="guide-block" id="guide-pos" aria-label="仓位分配">
       <div class="guide-block-header" onclick="toggleGuide('guide-pos')">
         <span class="g-icon">&#9878;</span>
         <span class="g-title">仓位分配</span>
@@ -514,28 +549,29 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
       </div>
       <div class="guide-block-body">
         <p><b>Step 1: Top-N 选股</b></p>
-        <p>取综合分最高的 <span class="tag">max_holdings</span> 支 ETF（默认6支）。</p>
+        <p>取综合分最高的 <span class="param-hl">最大持仓</span> 支 ETF（默认6支）。</p>
         <p><b>Step 2: 相对权重</b></p>
-        <p><span class="tag">相对权重_i = 综合分_i / Top-N 综合分之和</span></p>
+        <p><span class="tag">w<sub>i</sub> = score<sub>i</sub> / &sum;score<sub>j</sub></span></p>
         <p>综合分越高 → 相对权重越大 → 仓位越重。</p>
-        <p><b>Step 3: 总仓位上限</b></p>
-        <p>计算 Top-N 的平均信心系数 <span class="tag">avg_conf = mean(信心函数(综合分_i))</span></p>
-        <p><span class="tag">总仓位上限 = min(0.95, avg_conf &times; 1.2)</span></p>
-        <p>牛市时信心高 → 上限接近95%，熊市信心低 → 上限降低。乘以1.2是放大系数（避免仓位永远偏低），封顶95%留5%现金。</p>
-        <p><b>Step 4: 分配仓位</b></p>
-        <p><span class="tag">目标仓位_i = 相对权重_i &times; 总仓位上限</span></p>
-        <p><b>Step 5: 离散化</b></p>
-        <p><span class="tag">目标仓位_i = round(目标仓位_i / step) &times; step</span></p>
-        <p>step = <span class="tag">discretize_step</span>：5% → 精细调仓，10% → 中等省手续费，15% → 粗放少交易。</p>
+        <p><b>Step 3: 总仓位</b></p>
+        <p>由 <span class="param-hl">仓位控制</span> 策略决定：</p>
+        <p>MA趋势模式下，沪深300在MA上方 → 总仓位 = <span class="param-hl">MA上方仓位</span>（默认100%），下方 → 总仓位 = <span class="param-hl">MA下方仓位</span>（默认40%）。MA均线周期由<span class="param-hl">MA趋势周期</span>决定（默认20周）。</p>
+        <p><span class="tag">pos<sub>i</sub> = w<sub>i</sub> &times; total_pos</span></p>
+        <p><b>Step 4: 离散化</b></p>
+        <p><span class="tag">pos<sub>i</sub> = round(pos<sub>i</sub> / step) &times; step</span></p>
+        <p>step = <span class="param-hl">离散化步长</span>：5% → 精细调仓，10% → 中等省手续费，15% → 粗放少交易。</p>
         <p>例：目标仓位 0.128，step=0.05 → round(0.128/0.05)&times;0.05 = round(2.56)&times;0.05 = 3&times;0.05 = 0.15（15%）</p>
         <p style="margin-top:6px;color:#6b7280;font-size:12px;">策略视角：</p>
         <div class="guide-strategy-row">
-          <span class="guide-strategy-chip chip-value">价值型：5支/10%步长/低bias(3), 少动</span>
-          <span class="guide-strategy-chip chip-tech">技术型：6支/5%步长/高bias(5), 灵活</span>
-          <span class="guide-strategy-chip chip-momentum">景气型：6支/5%步长/中bias(4), 均衡</span>
+          <span class="guide-strategy-chip chip-value">价值型：5支/10%步长, 少动</span>
+          <span class="guide-strategy-chip chip-tech">技术型：6支/5%步长, 灵活</span>
+          <span class="guide-strategy-chip chip-momentum">景气型：6支/5%步长, 均衡</span>
         </div>
       </div>
     </div>
+
+    </div><!-- /guide-col-right -->
+    </div><!-- /guide-grid -->
 
   </div>
 
@@ -555,19 +591,18 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
             <div id="tuner-perf-subtitle" style="font-size:12px;color:#94a3b8;margin-bottom:12px;">净值曲线 / 回撤 / 单 ETF 走势 · 三图共享缩放 · 点击切换调仓节点</div>
             <div id="tuner-perf-block" style="background:#1a2332;border:1px solid #2a3a4a;border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:8px;">
               <div class="metrics" id="tuner-metrics" style="margin-bottom:0;">
-                <div class="metric-card"><div class="label">年化收益</div><div class="value green" id="m-annual">-</div></div>
-                <div class="metric-card"><div class="label">最大回撤</div><div class="value red" id="m-dd">-</div></div>
-                <div class="metric-card"><div class="label">Sharpe</div><div class="value blue" id="m-sharpe">-</div></div>
-                <div class="metric-card"><div class="label">Sortino</div><div class="value blue" id="m-sortino">-</div></div>
-                <div class="metric-card"><div class="label">Calmar</div><div class="value orange" id="m-calmar">-</div></div>
-                <div class="metric-card"><div class="label">日胜率</div><div class="value" id="m-wr">-</div></div>
-                <div class="metric-card"><div class="label">总收益</div><div class="value green" id="m-total">-</div></div>
-                <div class="metric-card"><div class="label">换仓/调仓</div><div class="value" id="m-rb">-</div></div>
-                <div class="metric-card"><div class="label">交易佣金</div><div class="value" id="m-comm">-</div></div>
+                <div class="metric-card" id="metric-annual" aria-label="年化收益"><div class="label">年化收益</div><div class="value green" id="m-annual">-</div></div>
+                <div class="metric-card" id="metric-dd" aria-label="最大回撤"><div class="label">最大回撤</div><div class="value red" id="m-dd">-</div></div>
+                <div class="metric-card" id="metric-sharpe" aria-label="Sharpe"><div class="label">Sharpe<i class="tip-icon">?<span class="tip-text">风险调整收益指标 = (年化收益 - 无风险利率) / 收益率标准差。>1 为优，>2 为极优</span></i></div><div class="value blue" id="m-sharpe">-</div></div>
+                <div class="metric-card" id="metric-sortino" aria-label="Sortino"><div class="label">Sortino<i class="tip-icon">?<span class="tip-text">下行风险调整收益 = (年化收益 - 无风险利率) / 下行标准差。只惩罚亏损波动，比 Sharpe 更宽容上涨波动</span></i></div><div class="value blue" id="m-sortino">-</div></div>
+                <div class="metric-card" id="metric-calmar" aria-label="Calmar"><div class="label">Calmar<i class="tip-icon">?<span class="tip-text">回撤调整收益 = 年化收益 / 最大回撤绝对值。衡量每承受1单位最大亏损能换回多少收益，>1 为优</span></i></div><div class="value orange" id="m-calmar">-</div></div>
+                <div class="metric-card" id="metric-winrate" aria-label="日胜率"><div class="label">日胜率</div><div class="value" id="m-wr">-</div></div>
+                <div class="metric-card" id="metric-rebalance" aria-label="换仓调仓次数"><div class="label">换仓/调仓</div><div class="value" id="m-rb">-</div></div>
+                <div class="metric-card" id="metric-commission" aria-label="交易佣金"><div class="label">交易佣金</div><div class="value" id="m-comm">-</div></div>
               </div>
 
               <!-- 净值 + 回撤区: 左标题 + 右 freq Tab -->
-              <div id="tuner-nav-section">
+              <div id="tuner-nav-section" aria-label="净值与回撤图">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
                   <div id="nav-title" style="font-size:12px;color:#94a3b8;font-weight:600;">💼 策略净值 vs 基准 · 红线 = 当前选中日期</div>
                   <div id="kline-freq-tabs" style="display:flex;gap:2px;">
@@ -580,7 +615,7 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
               </div>
 
               <!-- 单 ETF K 线/回放区 -->
-              <div id="tuner-snapshot-kline-block" style="border-top:1px solid #2a3a4a;padding-top:8px;">
+              <div id="tuner-snapshot-kline-block" style="border-top:1px solid #2a3a4a;padding-top:8px;" aria-label="单ETF K线回放">
                 <div id="kline-title" style="font-size:12px;color:#94a3b8;font-weight:600;margin-bottom:4px;">点击右侧表格行查看 ETF 走势 + 买卖点</div>
                 <div id="kline-replay" style="width:100%;height:380px;"></div>
               </div>
@@ -594,7 +629,7 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
           <div id="tuner-snapshot-subtitle" style="font-size:12px;color:#94a3b8;margin-bottom:12px;">点击左侧 NAV 切换调仓 · 点击表格行查看 K 线 / 回放</div>
 
           <!-- 顶部指标行 -->
-          <div id="tuner-snapshot-metrics" style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px;">
+          <div id="tuner-snapshot-metrics" style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px;" aria-label="调仓快照指标">
             <div id="snap-metric-holdings" style="background:#1a2332;border:1px solid #2a3a4a;border-radius:6px;padding:8px;text-align:center;">
               <div style="font-size:10px;color:#6b7280;">持仓</div>
               <div id="snap-m-holdings" style="font-size:17px;font-weight:700;color:#3b82f6;margin-top:2px;">-</div>
@@ -640,8 +675,8 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
 
 <script>
 var $id = id => document.getElementById(id);
-var maxHoldings = 6, discStep = 5, confType = 'quadratic', rebalanceFreq = 'W-FRI';
-var navChart = null, ddChart = null, confChartInst = null;
+var maxHoldings = 6, discStep = 5, confType = 'ma_trend', rebalanceFreq = 'W-FRI';
+var navChart = null, ddChart = null;
 var lastResult = null;
 var lastBacktestData = null;  // last full backtest response for redraws
 var navDates = [];  // current nav-chart x-axis dates (post-resample)
@@ -659,6 +694,12 @@ function toggleGuide(id) {
   // Lazy-init the F2 curve charts on first open (chart can't init in display:none)
   if (id === 'guide-f2' && el.classList.contains('open') && (!f2BullChart || !f2BearChart)) {
     setTimeout(renderF2GuideCharts, 50);
+  }
+  if (id === 'guide-f1' && el.classList.contains('open') && !f1Chart) {
+    setTimeout(renderF1GuideChart, 50);
+  }
+  if (id === 'guide-f3' && el.classList.contains('open') && !f3Chart) {
+    setTimeout(renderF3GuideChart, 50);
   }
 }
 
@@ -736,7 +777,7 @@ function _buildF2Curve(domId, title, color, areaColor, zoneColor, zRange, deadZo
 function renderF2GuideCharts() {
   if (f2BullChart) { f2BullChart.dispose(); f2BullChart = null; }
   if (f2BearChart) { f2BearChart.dispose(); f2BearChart = null; }
-  var deadZone = parseFloat($id('f2_dead_zone') ? $id('f2_dead_zone').value : 1.0) || 1.0;
+  var deadZone = parseFloat($id('f2_dead_zone') ? $id('f2_dead_zone').value : 1.5) || 1.5;
   // 左：博反弹端 z ∈ [-3, 0]，绿色
   f2BullChart = _buildF2Curve('f2-curve-bull', '🟢 博反弹端 (z<0)',
     '#10b981', 'rgba(16,185,129,0.18)', 'rgba(255,255,255,0.04)',
@@ -747,11 +788,130 @@ function renderF2GuideCharts() {
     [0, 3], deadZone);
 }
 
+/* ====== F1 F1_raw → F1 sigmoid 映射可视化 ====== */
+var f1Chart = null;
+
+function renderF1GuideChart() {
+  if (f1Chart) { f1Chart.dispose(); f1Chart = null; }
+  var dom = $id('f1-curve');
+  if (!dom) return;
+  f1Chart = echarts.init(dom);
+  var sensitivities = [
+    { s: 4, color: '#f472b6', label: 's=4 (敏感)' },
+    { s: 8, color: '#60a5fa', label: 's=8 (默认)' },
+    { s: 12, color: '#a78bfa', label: 's=12 (迟钝)' },
+  ];
+  var devPoints = [];
+  for (var d = -20; d <= 20.001; d += 0.5) devPoints.push(+d.toFixed(1));
+  var series = sensitivities.map(function(cfg) {
+    var data = devPoints.map(function(d) {
+      return +((1 / (1 + Math.exp(-d / cfg.s))) * 100).toFixed(2);
+    });
+    return {
+      type: 'line', name: cfg.label, data: data, showSymbol: false,
+      lineStyle: { color: cfg.color, width: 2 },
+      itemStyle: { color: cfg.color },
+    };
+  });
+  f1Chart.setOption({
+    backgroundColor: 'transparent',
+    title: { show: false },
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: { type: 'cross' },
+      backgroundColor: 'rgba(10,25,47,0.95)',
+      borderColor: 'rgba(59,130,246,0.2)',
+      textStyle: { color: '#e0e0e0', fontSize: 11 },
+      formatter: function(params) {
+        var s = 'F1_raw = ' + params[0].axisValue + '%';
+        params.forEach(function(p) { s += '<br/><span style="color:' + p.color + '">' + p.seriesName + '</span> = <b>' + (p.value / 100).toFixed(3) + '</b>'; });
+        return s;
+      },
+    },
+    legend: { data: sensitivities.map(function(c) { return c.label; }), top: 20, right: 6, textStyle: { color: '#9ca3af', fontSize: 9 }, itemWidth: 14, itemHeight: 8 },
+    grid: { left: 40, right: 12, top: 50, bottom: 36 },
+    xAxis: {
+      type: 'category', data: devPoints.map(function(d) { return '' + d; }),
+      axisLabel: { color: '#6b7280', fontSize: 9, interval: Math.floor(devPoints.length / 8) },
+      axisLine: { lineStyle: { color: '#2a3a4a' } },
+      splitLine: { show: false },
+      name: 'F1_raw (%)', nameTextStyle: { color: '#6b7280', fontSize: 9 }, nameLocation: 'middle', nameGap: 18,
+    },
+    yAxis: {
+      type: 'value', min: 0, max: 100,
+      axisLabel: { color: '#6b7280', fontSize: 9, formatter: function(v) { return (v / 100).toFixed(1); } },
+      splitLine: { lineStyle: { color: 'rgba(255,255,255,0.05)' } },
+      name: 'F1', nameTextStyle: { color: '#6b7280', fontSize: 9 },
+    },
+    series: series,
+  });
+  return f1Chart;
+}
+
+/* ====== F3 F3_raw → F3 (log+sigmoid) 映射可视化 ====== */
+var f3Chart = null;
+
+function renderF3GuideChart() {
+  if (f3Chart) { f3Chart.dispose(); f3Chart = null; }
+  var dom = $id('f3-curve');
+  if (!dom) return;
+  f3Chart = echarts.init(dom);
+  var sensitivities = [
+    { s: 0.5, color: '#f472b6', label: 's=0.5 (敏感)' },
+    { s: 1.0, color: '#10b981', label: 's=1.0 (默认)' },
+    { s: 2.0, color: '#a78bfa', label: 's=2.0 (迟钝)' },
+  ];
+  var ratioPoints = [];
+  for (var r = 0.1; r <= 10.001; r += 0.1) ratioPoints.push(+r.toFixed(1));
+  var series = sensitivities.map(function(cfg) {
+    var data = ratioPoints.map(function(r) {
+      var logR = r >= 1 ? Math.log(r) : -Math.log(1 / r);
+      return +((1 / (1 + Math.exp(-logR / cfg.s))) * 100).toFixed(2);
+    });
+    return {
+      type: 'line', name: cfg.label, data: data, showSymbol: false,
+      lineStyle: { color: cfg.color, width: 2 },
+      itemStyle: { color: cfg.color },
+    };
+  });
+  f3Chart.setOption({
+    backgroundColor: 'transparent',
+    title: { show: false },
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: { type: 'cross' },
+      backgroundColor: 'rgba(10,25,47,0.95)',
+      borderColor: 'rgba(16,185,129,0.2)',
+      textStyle: { color: '#e0e0e0', fontSize: 11 },
+      formatter: function(params) {
+        var s = 'F3_raw = ' + params[0].axisValue;
+        params.forEach(function(p) { s += '<br/><span style="color:' + p.color + '">' + p.seriesName + '</span> = <b>' + (p.value / 100).toFixed(3) + '</b>'; });
+        return s;
+      },
+    },
+    legend: { data: sensitivities.map(function(c) { return c.label; }), top: 20, right: 6, textStyle: { color: '#9ca3af', fontSize: 9 }, itemWidth: 14, itemHeight: 8 },
+    grid: { left: 40, right: 12, top: 50, bottom: 36 },
+    xAxis: {
+      type: 'category', data: ratioPoints.map(function(r) { return '' + r; }),
+      axisLabel: { color: '#6b7280', fontSize: 9, interval: Math.floor(ratioPoints.length / 8) },
+      axisLine: { lineStyle: { color: '#2a3a4a' } },
+      splitLine: { show: false },
+      name: 'F3_raw', nameTextStyle: { color: '#6b7280', fontSize: 9 }, nameLocation: 'middle', nameGap: 18,
+    },
+    yAxis: {
+      type: 'value', min: 0, max: 100,
+      axisLabel: { color: '#6b7280', fontSize: 9, formatter: function(v) { return (v / 100).toFixed(1); } },
+      splitLine: { lineStyle: { color: 'rgba(255,255,255,0.05)' } },
+      name: 'F3', nameTextStyle: { color: '#6b7280', fontSize: 9 },
+    },
+    series: series,
+  });
+  return f3Chart;
+}
+
 // Slider input handler: update label + redraw curves if guide-f2 is open
 function onF2DeadZoneChange(val) {
-  var v = parseFloat(val);
-  $id('v-f2dz').textContent = v.toFixed(1);
-  // 仅当 guide-f2 已展开时才重画（避免在隐藏 dom 上 init）
+  // f2_dead_zone is now 🔒; kept for backward compat if setParams receives it
   var guide = $id('guide-f2');
   if (guide && guide.classList.contains('open')) {
     renderF2GuideCharts();
@@ -788,27 +948,81 @@ function setFreq(f) {
 }
 function setConfType(t) {
   confType = t;
-  $id('v-conf-type').textContent = t;
-  document.querySelectorAll('#conf-type-group button').forEach(b => b.classList.toggle('active', b.textContent === t));
-  drawConfChart();
+  // Only ma_trend is supported now; legacy strategies removed from UI
+}
+var maDirConfirm = false;
+function setMaDirConfirm(v) {
+  maDirConfirm = v;
+  $id('v-ma-dir').textContent = v ? '开启' : '关闭';
+  $id('ma-dir-off').classList.toggle('active', !v);
+  $id('ma-dir-on').classList.toggle('active', v);
+}
+
+function validateBullBear() {
+  var bull = parseFloat($id('ma_bull_pos').value);
+  var bear = parseFloat($id('ma_bear_pos').value);
+  var btn = $id('btn-run');
+  var invalid = bull <= bear;
+  btn.disabled = invalid;
+  btn.style.opacity = invalid ? '0.4' : '1';
+  btn.style.cursor = invalid ? 'not-allowed' : 'pointer';
+  // Show warning on bear label
+  var bearLabel = $id('v-ma-bear');
+  if (invalid) {
+    bearLabel.style.color = '#ef4444';
+    bearLabel.title = 'Bear仓位不能 >= Bull仓位';
+  } else {
+    bearLabel.style.color = '';
+    bearLabel.title = '';
+  }
 }
 
 function syncWeights() {
-  ['w1','w2','w3','w4'].forEach(id => $id('v-'+id).textContent = $id(id).value + '%');
-  var total = ['w1','w2','w3','w4'].reduce((s,id) => s + parseInt($id(id).value), 0);
+  $id('v-w1').textContent = $id('w1').value + '%';
+  $id('v-w3').textContent = $id('w3').value + '%';
+  var total = parseInt($id('w1').value) + parseInt($id('w3').value);
   var te = $id('v-total');
   te.textContent = total + '%';
   te.style.color = total === 100 ? '#10b981' : '#ef4444';
 }
 
 /* ====== Period sliders ====== */
-// Convert slider value (0..1095, days from "3 years ago") to YYYY-MM-DD
+var PERIOD_SPAN = 3;  // years; 3 or 6
+
+function periodMaxDays() { return PERIOD_SPAN * 365; }
+
+function setPeriodSpan(years) {
+  if (years === PERIOD_SPAN) return;
+  // Save current dates before switching
+  var oldStart = getDateFromSlider(parseInt($id('start_date_slider').value));
+  var oldEnd = getDateFromSlider(parseInt($id('end_date_slider').value));
+  PERIOD_SPAN = years;
+  var MAX = periodMaxDays();
+  // Update button states
+  $id('span-btn-3').classList.toggle('active', years === 3);
+  $id('span-btn-6').classList.toggle('active', years === 6);
+  // Update slider max
+  $id('start_date_slider').max = MAX;
+  $id('end_date_slider').max = MAX;
+  // Clamp dates to new range and set slider values
+  var now = new Date(); now.setHours(0,0,0,0);
+  var minDate = new Date(now); minDate.setDate(minDate.getDate() - MAX);
+  var startD = new Date(oldStart); var endD = new Date(oldEnd);
+  if (startD < minDate) startD = new Date(minDate);
+  if (endD < minDate) endD = new Date(minDate);
+  $id('start_date_slider').value = getSliderFromDate(startD.toISOString().slice(0,10));
+  $id('end_date_slider').value = getSliderFromDate(endD.toISOString().slice(0,10));
+  onPeriodSliderChange(null);
+}
+
+// Convert slider value (0..MAX, days from "SPAN years ago") to YYYY-MM-DD
 function getDateFromSlider(val) {
   var n = parseInt(val);
-  if (isNaN(n)) n = 1095;
+  var MAX = periodMaxDays();
+  if (isNaN(n)) n = MAX;
   var origin = new Date();
   origin.setHours(0, 0, 0, 0);
-  origin.setDate(origin.getDate() - (1095 - n));
+  origin.setDate(origin.getDate() - (MAX - n));
   var y = origin.getFullYear();
   var m = String(origin.getMonth() + 1).padStart(2, '0');
   var d = String(origin.getDate()).padStart(2, '0');
@@ -820,7 +1034,7 @@ function onPeriodSliderChange(evt) {
   var endSlider = $id('end_date_slider');
   var s = parseInt(startSlider.value);
   var e = parseInt(endSlider.value);
-  var MAX = 1095;
+  var MAX = periodMaxDays();
   // Enforce start ≤ end - 30 (at least 30 days)
   if (s > e - 30) {
     var fromEnd = evt && evt.target === endSlider;
@@ -857,46 +1071,48 @@ function onPeriodSliderChange(evt) {
 
 function getParams() {
   return {
-    w1: parseInt($id('w1').value), w2: parseInt($id('w2').value),
-    w3: parseInt($id('w3').value), w4: parseInt($id('w4').value),
-    bias: parseFloat($id('bias').value),
-    conf_type: confType,
-    dead_zone: parseInt($id('dead_zone').value),
-    full_zone: parseInt($id('full_zone').value),
-    max_holdings: maxHoldings,
-    disc_step: discStep,
+    // Active parameters (from UI controls)
+    w1: parseInt($id('w1').value),
+    w2: 0,  // 🔒: RSI reserved for future factor
+    w3: parseInt($id('w3').value),
+    w4: 0,  // 🔒: valuation reserved for future factor
+    bias: 0,  // 🔒: REQ-190 confirmed bias only hurts performance
+    conf_type: 'ma_trend',  // 🔒: only active strategy
+    ma_trend_period: parseInt($id('ma_trend_period').value),
+    ma_bull_pos: parseFloat($id('ma_bull_pos').value),
+    ma_bear_pos: parseFloat($id('ma_bear_pos').value),
+    ma_direction_confirm: maDirConfirm,
+    max_holdings: 6,  // 🔒
+    disc_step: 5,  // 🔒
     ema_period: parseInt($id('ema_period').value),
-    rsi_period: parseInt($id('rsi_period').value),
+    rsi_period: 14,  // 🔒: w2=0, factor inactive
     vol_window: parseInt($id('vol_window').value),
     f1_sensitivity: parseFloat($id('f1_sensitivity').value),
     f3_sensitivity: parseFloat($id('f3_sensitivity').value),
-    f2_dead_zone: parseFloat($id('f2_dead_zone').value),
+    f2_dead_zone: 1.5,  // 🔒: w2=0, factor inactive
     rebalance_freq: rebalanceFreq,
-    score_band: parseFloat($id('score_band').value),
+    score_band: 0,  // 🔒: weekly_trend=0, daily_aggressive=0.05
     start_date: getDateFromSlider($id('start_date_slider').value),
     end_date: getDateFromSlider($id('end_date_slider').value),
   };
 }
 
 function setParams(p) {
-  $id('w1').value = p.w1; $id('w2').value = p.w2;
-  $id('w3').value = p.w3; $id('w4').value = p.w4;
+  // Active parameters — set UI controls
+  if (p.w1 != null) { $id('w1').value = p.w1; }
+  if (p.w3 != null) { $id('w3').value = p.w3; }
   syncWeights();
-  $id('bias').value = p.bias; $id('v-bias').textContent = p.bias + '.0 分';
-  if (p.conf_type) setConfType(p.conf_type);
-  if (p.dead_zone != null) { $id('dead_zone').value = p.dead_zone; $id('v-dz').textContent = '< ' + p.dead_zone + ' 分'; }
-  if (p.full_zone != null) { $id('full_zone').value = p.full_zone; $id('v-fz').textContent = '>= ' + p.full_zone + ' 分'; }
-  if (p.max_holdings) setMH(p.max_holdings);
-  if (p.disc_step) setDisc(p.disc_step);
-  if (p.ema_period) { $id('ema_period').value = p.ema_period; $id('v-ema').textContent = p.ema_period + ' 周'; }
-  if (p.rsi_period) { $id('rsi_period').value = p.rsi_period; $id('v-rsi').textContent = p.rsi_period + ' 日'; }
-  if (p.vol_window) { $id('vol_window').value = p.vol_window; $id('v-vol').textContent = p.vol_window + ' 日'; }
+  if (p.ma_trend_period != null) { $id('ma_trend_period').value = p.ma_trend_period; $id('v-ma-period').textContent = p.ma_trend_period + ' 周'; }
+  if (p.ma_bull_pos != null) { $id('ma_bull_pos').value = p.ma_bull_pos; $id('v-ma-bull').textContent = Math.round(p.ma_bull_pos * 100) + '%'; }
+  if (p.ma_bear_pos != null) { $id('ma_bear_pos').value = p.ma_bear_pos; $id('v-ma-bear').textContent = Math.round(p.ma_bear_pos * 100) + '%'; }
+  if (p.ma_direction_confirm != null) { setMaDirConfirm(!!p.ma_direction_confirm); }
+  if (p.ema_period != null) { $id('ema_period').value = p.ema_period; $id('v-ema').textContent = p.ema_period + ' 周'; }
+  if (p.vol_window != null) { $id('vol_window').value = p.vol_window; $id('v-vol').textContent = p.vol_window + ' 日'; }
   if (p.f1_sensitivity != null) { $id('f1_sensitivity').value = p.f1_sensitivity; $id('v-f1s').textContent = parseFloat(p.f1_sensitivity).toFixed(1); }
   if (p.f3_sensitivity != null) { $id('f3_sensitivity').value = p.f3_sensitivity; $id('v-f3s').textContent = parseFloat(p.f3_sensitivity).toFixed(1); }
-  if (p.f2_dead_zone != null) { $id('f2_dead_zone').value = p.f2_dead_zone; onF2DeadZoneChange(p.f2_dead_zone); }
   if (p.rebalance_freq) setFreq(p.rebalance_freq);
-  if (p.score_band != null) { $id('score_band').value = p.score_band; $id('v-band').textContent = p.score_band + '%'; }
-  drawConfChart();
+  // Note: 🔒 params (w2, w4, bias, f2_dead_zone, rsi_period, max_holdings,
+  // disc_step, score_band, conf_type) are hardcoded in getParams(), not set from UI
 }
 
 /* ====== Confidence function chart ====== */
@@ -904,43 +1120,13 @@ function confVal(type, score, dz, fz) {
   if (score < dz) return 0;
   if (score >= fz) return 1;
   var t = (score - dz) / (fz - dz);
-  if (type === 'linear') return t;
-  if (type === 'sigmoid') return 1 / (1 + Math.exp(-12 * (t - 0.5)));
-  return t * t; // quadratic
+  if (type === 'quadratic') return t * t;
+  return t; // linear fallback
 }
 
 function drawConfChart() {
-  var dz = parseInt($id('dead_zone').value);
-  var fz = parseInt($id('full_zone').value);
-  var xData = [];
-  for (var i = 0; i <= 100; i += 2) xData.push(i);
-
-  var series = [];
-  var types = ['quadratic', 'linear', 'sigmoid'];
-  var colors = {quadratic: '#3b82f6', linear: '#10b981', sigmoid: '#f59e0b'};
-
-  types.forEach(function(t) {
-    var yData = xData.map(function(x) { return Math.round(confVal(t, x, dz, fz) * 100) / 100; });
-    series.push({
-      name: t, type: 'line', data: yData, showSymbol: false, smooth: true,
-      lineStyle: { width: t === confType ? 3 : 1, color: colors[t], type: t === confType ? 'solid' : 'dashed' },
-    });
-  });
-
-  if (!confChartInst) confChartInst = echarts.init($id('conf-chart'));
-  confChartInst.setOption({
-    backgroundColor: 'transparent',
-    tooltip: { trigger: 'axis', formatter: function(ps) {
-      var s = ps[0].axisValue + ' 分<br>';
-      ps.forEach(function(p) { s += p.seriesName + ': ' + (p.value*100).toFixed(0) + '%<br>'; });
-      return s;
-    }},
-    legend: { data: types, textStyle: { color: '#9ca3af', fontSize: 10 }, top: 2, itemWidth: 14, itemHeight: 8 },
-    grid: { left: 36, right: 12, top: 26, bottom: 20 },
-    xAxis: { type: 'category', data: xData, axisLabel: { fontSize: 9, color: '#6b7280', interval: 19 }, axisLine: { lineStyle: { color: '#2a3a4a' } } },
-    yAxis: { type: 'value', min: 0, max: 1, axisLabel: { fontSize: 9, color: '#6b7280', formatter: function(v){return (v*100)+'%';} }, splitLine: { lineStyle: { color: 'rgba(255,255,255,0.04)' } } },
-    series: series,
-  }, true);
+  // ma_trend mode: no confidence curve to draw (binary signal)
+  // Chart element kept for potential future visualization
 }
 
 /* ====== Strategy presets ====== */
@@ -964,8 +1150,7 @@ function renderPresetCards() {
     card.className = 'preset-card';
     card.id = 'preset-' + key;
     card.onclick = function() { applyPreset(key); };
-    var pwHtml = 'F1:' + p.w1 + ' F2:' + p.w2 + ' F3:' + p.w3 + ' F4:' + p.w4;
-    card.innerHTML = '<h4>' + p.label + '</h4><span class="pw">' + pwHtml + '</span>';
+    card.innerHTML = '<h4>' + p.label + '</h4>';
     container.appendChild(card);
   });
 }
@@ -980,6 +1165,7 @@ function applyPreset(name) {
 /* ====== Backtest ====== */
 async function runBacktest() {
   var btn = $id('btn-run'), status = $id('status');
+  if (btn.disabled) return;  // guard: invalid params
   btn.disabled = true; btn.textContent = '回测中...';
   status.textContent = '正在计算，请稍候...';
   try {
@@ -1004,7 +1190,6 @@ function renderResults(data) {
   $id('m-sortino').textContent = s.sortino.toFixed(2);
   $id('m-calmar').textContent = s.calmar.toFixed(2);
   $id('m-wr').textContent = s.winRate + '%';
-  $id('m-total').textContent = (s.totalReturn>0?'+':'') + s.totalReturn + '%';
   $id('m-rb').textContent = s.rebalanceCount + '/' + s.rebalanceDays;
   $id('m-comm').textContent = (s.commissionPct || 0) + '%';
 
@@ -1084,9 +1269,46 @@ function renderNavChart(data) {
 
   var curDate = currentSelectedDate;
 
+  // Build regime switch markPoints on the NAV curve
+  var switchMarkPts = [];
+  if (tunerSignalHistory && tunerSignalHistory.length > 1) {
+    // Build date->index lookup for fast matching
+    var dateLookup = {};
+    for (var di = 0; di < dates.length; di++) dateLookup[dates[di]] = di;
+    var prevRegime = tunerSignalHistory[0].regime;
+    for (var si = 1; si < tunerSignalHistory.length; si++) {
+      var cur = tunerSignalHistory[si];
+      if (cur.regime && cur.regime !== prevRegime) {
+        var isToBear = cur.regime === 'ma_below';
+        var idx = dateLookup[cur.date];
+        if (idx != null) {
+          switchMarkPts.push({
+            name: (isToBear ? 'Bear ' : 'Bull ') + cur.totalPosition.toFixed(0) + '%',
+            coord: [cur.date, navPct[idx]],
+            symbol: 'triangle',
+            symbolRotate: isToBear ? 180 : 0,
+            symbolSize: 12,
+            itemStyle: {
+              color: isToBear ? '#ef4444' : '#22c55e',
+              borderColor: '#0f1419',
+              borderWidth: 1,
+            },
+            label: { show: false },
+          });
+        }
+        prevRegime = cur.regime;
+      }
+    }
+  }
+
   var series = [{
     name:'策略净值', type:'line', data:navPct, showSymbol:false,
     color:'#3b82f6', lineStyle:{width:2, color:'#3b82f6'},
+    markPoint: switchMarkPts.length ? {
+      data: switchMarkPts,
+      animation: false,
+      z: 10,
+    } : undefined,
     markLine: curDate ? {
       silent: true, symbol: 'none',
       data: [{ xAxis: curDate, lineStyle:{color:'#ef4444',width:1.5,type:'dashed'} }],
@@ -1100,7 +1322,7 @@ function renderNavChart(data) {
     backgroundColor:'transparent',
     tooltip:{trigger:'axis', axisPointer:{type:'cross'}, backgroundColor:'rgba(10,25,47,0.95)', borderColor:'rgba(59,130,246,0.2)', textStyle:{color:'#e0e0e0',fontSize:11}},
     axisPointer: { link: [{xAxisIndex:'all'}] },
-    legend:{data:series.map(s=>s.name), textStyle:{color:'#9ca3af', fontSize:11}, top:0},
+    legend:{data:series.filter(s=>!s.name.startsWith('_')).map(s=>s.name), textStyle:{color:'#9ca3af', fontSize:11}, top:0},
     grid:{left:50, right:20, top:30, bottom:30},
     xAxis:{type:'category', data:dates, axisLabel:{fontSize:10, color:'#6b7280'}, axisLine:{lineStyle:{color:'#2a3a4a'}}},
     yAxis:{type:'value', scale:true, axisLabel:{fontSize:10, color:'#6b7280', formatter:'{value}%'}, splitLine:{lineStyle:{color:'rgba(255,255,255,0.06)'}}},
@@ -1364,7 +1586,7 @@ async function loadTradeReplay(code) {
   if (!tunerSignalHistory.length) return;
   var startDate = tunerSignalHistory[0].date;
   var endDate = tunerSignalHistory[tunerSignalHistory.length - 1].date;
-  var rsiPeriod = parseInt($id('rsi_period').value) || 14;
+  var rsiPeriod = 14;  // 🔒
 
   try {
     var resp = await fetch('/api/etf_prices?code=' + code + '&start=' + startDate + '&end=' + endDate + '&rsi_period=' + rsiPeriod + '&freq=' + klineFreq);
@@ -1698,7 +1920,8 @@ function getSliderFromDate(dateStr) {
   var now = new Date();
   now.setHours(0, 0, 0, 0);
   var diff = Math.round((now - target) / 86400000);
-  return 1095 - diff;
+  var MAX = periodMaxDays();
+  return MAX - diff;
 }
 
 function applyUrlParams() {
@@ -1721,10 +1944,12 @@ function applyUrlParams() {
 
   if (p.start_date) {
     var sv = getSliderFromDate(p.start_date);
+    if (sv < 0) { setPeriodSpan(6); sv = getSliderFromDate(p.start_date); }
     $id('start_date_slider').value = sv;
   }
   if (p.end_date) {
     var ev = getSliderFromDate(p.end_date);
+    if (ev < 0) { setPeriodSpan(6); ev = getSliderFromDate(p.end_date); }
     $id('end_date_slider').value = ev;
   }
   onPeriodSliderChange();
@@ -1733,9 +1958,14 @@ function applyUrlParams() {
 
 /* ====== Init ====== */
 window.addEventListener('load', async function() {
+  setConfType(confType);  // sync panel visibility with default confType
   drawConfChart();
+  validateBullBear();  // initial bull/bear validation
   onPeriodSliderChange();  // initialize date labels
   await loadPresets();
+  // Auto-apply weekly_trend preset so the initial backtest uses its params
+  var defaultPreset = PRESETS['weekly_trend'] ? 'weekly_trend' : Object.keys(PRESETS)[0];
+  if (defaultPreset) applyPreset(defaultPreset);
   var fromUrl = applyUrlParams();
   switchRightView('results');
   if (fromUrl) {
@@ -1748,7 +1978,6 @@ window.addEventListener('load', async function() {
 window.addEventListener('resize', () => {
   navChart && navChart.resize();
   ddChart && ddChart.resize();
-  confChartInst && confChartInst.resize();
   klineReplayChart && klineReplayChart.resize();
   f2BullChart && f2BullChart.resize();
   f2BearChart && f2BearChart.resize();

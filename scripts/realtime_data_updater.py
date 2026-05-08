@@ -110,9 +110,26 @@ def fetch_realtime_quote_sina(symbols):
         "Referer": "https://finance.sina.com.cn/"
     }
     
+    max_retries = 2
+    for attempt in range(1, max_retries + 1):
+        try:
+            with logger.audit_api_call("GET", url):
+                response = requests.get(url, headers=headers, timeout=API_TIMEOUT)
+            break  # success
+        except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+            if attempt < max_retries:
+                logger.warn("realtime quote fetch failed, retrying", {
+                    "attempt": attempt, "error": str(e)[:80],
+                })
+                time.sleep(2.0)
+                continue
+            logger.error("获取实时行情失败", {"error": str(e)})
+            return {}
+        except Exception as e:
+            logger.error("获取实时行情失败", {"error": str(e)})
+            return {}
+
     try:
-        with logger.audit_api_call("GET", url):
-            response = requests.get(url, headers=headers, timeout=API_TIMEOUT)
         response.encoding = 'gbk'
         
         results = {}

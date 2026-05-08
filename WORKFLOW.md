@@ -60,6 +60,8 @@ python scripts/update_report.py --publish
 | 健康检查出现 FAIL | 查看具体失败项；若只有少量 WARN，通常仍不影响报告生成 |
 | 发布失败 | 先检查本地 `config/config.yaml` 的 `publish` 配置，再检查 `config/secrets.yaml`、SSH：`ssh -T git@github.com` |
 | MA50 为 null | 正常，前 50 天预热期不够 |
+| 量化回测板块显示"建设中" | 正常，量化功能当前仅开发环境可用，详见 `runbooks/QUANT_RUNBOOK.md` |
+| 量化调试（开发环境） | `python scripts/quant_tuner.py` → http://localhost:5179，详见 `runbooks/QUANT_RUNBOOK.md` |
 
 
 

@@ -22,39 +22,3 @@ _update_report*.txt
 _detail_mismatch*.txt
 index.html.bak*
 
-# ========= 本地私有配置 =========
-.env
-.env.local
-config/config.yaml
-config/secrets.yaml
-config/*.local.yaml
-
-
-# ========= 调试资源（仅开发用） =========
-assets/css/debug.css
-assets/js/debug-toolbar.js
-
-# ========= 本地治理 / 开发过程文件 =========
-CONTRIBUTING.md
-PLAN.md
-plans/
-statusbar.config.md
-RELEASE_RUNBOOK.md
-AUDIT_RUNBOOK.md
-QUANT_RUNBOOK.md
-.codebuddy/
-
-# ========= 开发者内部文档 =========
-docs/INTEGRATION_GUIDE.md
-
-# ========= IDE / 编辑器临时文件 =========
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# ========= 系统文件 =========
-.DS_Store
-Thumbs.db
-

@@ -75,10 +75,16 @@ logger.info("配置已加载", {
 
 MARKET_CLOSE_HOUR = 15
 MARKET_CLOSE_MINUTE = 0
+COOL_OFF_MINUTES = 60  # only allow closed data >= close_time + cool_off
 
 
 def should_drop_incomplete_daily_bar(trade_day_str, now=None):
-    """若最新日线是今天且尚未收盘，则视为盘中未完成 bar。"""
+    """若最新日线是今天且距收盘不足 COOL_OFF_MINUTES 分钟，则视为未确认数据。
+
+    规则：收盘后 60 分钟内（默认 15:00-16:00）不使用当天数据。
+    原因：15:00 收盘时 API 返回的当日 K 线可能尚未完成结算，
+    成交量/成交额等字段可能不完整，等到 16:00 后更可靠。
+    """
     try:
         trade_day = datetime.strptime(trade_day_str, "%Y-%m-%d").date()
     except (TypeError, ValueError):
@@ -94,7 +100,8 @@ def should_drop_incomplete_daily_bar(trade_day_str, now=None):
         second=0,
         microsecond=0,
     )
-    return current < market_close
+    # 收盘前 → 一定丢弃; 收盘后但不足冷却期 → 也丢弃
+    return current < market_close + timedelta(minutes=COOL_OFF_MINUTES)
 
 
 
