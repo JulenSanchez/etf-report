@@ -22,3 +22,6 @@ _update_report*.txt
 _detail_mismatch*.txt
 index.html.bak*
 
+# ========= 敏感配置（公开仓不可提交） =========
+config/secrets.yaml
+
