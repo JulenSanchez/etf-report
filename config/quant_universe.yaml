@@ -176,7 +176,7 @@ scoring:
 # 信心函数参数（[0, 1] 尺度，与连续映射后的综合分一致）
 # ============================================================
 confidence:
-  type: "ma_trend"  # ma_trend（唯一策略：HS300周线MA20上方→高仓位，下方→低仓位）
+  type: "ma_trend"  # ma_trend（唯一策略：HS300周线MA上方→高仓位，下方→低仓位）
   # --- MA Trend params ---
   ma_trend_period: 26   # 沪深300周线MA周期（优化后从20调至26，Calmar 0.92→1.55, MDD -24%→-16%）
   ma_bull_pos: 1.00   # MA上方仓位（满仓）
@@ -206,7 +206,8 @@ position:
   discretize_step: 0.05  # 5% 档位
   weighting: "arithmetic"  # arithmetic | softmax
   rebalance_freq: "W-FRI"  # W-FRI | daily
-  score_band: 0            # 分数带阈值（0=关闭，内部0-1尺度；日调仓推荐 0.02-0.10）
+  execution_timing: "same_close"  # same_close | next_open；next_open用于2026-07-06前实盘过渡
+  score_band: 0            # 分数带阈值（0=关闭，内部0-1尺度；推荐范围 0.02-0.10）
   commission_rate: 0.00026 # ETF 单次交易费率（万0.26 = 佣金+过户费，无印花税）
 
 # ============================================================
@@ -239,13 +240,14 @@ presets:
 
   weekly_trend:
     label: "周频趋势型（推荐）"
-    description: "HS300周线MA20上方→95%仓位，下方→40%仓位。高默认仓位+极少触发。3yr=22.6%/MDD=-15.6%/Calmar=1.45。"
+    description: "HS300周线MA趋势仓位控制+方向确认，无F6。总收益+113.7%/年化+25.5%/MDD-14.6%/Calmar=1.75/Sharpe=1.29（2023-01-01~2026-05-08）。实际换仓141次/155次调仓，稳定低换手。"
     scoring:
       weights:
         ema_deviation: 0.40    # OPEN
         rsi_adaptive: 0.00     # RESERVED — F2 保留位，待引入更优 RSI 用法或新因子
         volume_ratio: 0.60     # OPEN
         valuation: 0.00        # RESERVED — F4 保留位，待估值因子成熟
+        exhaustion_penalty: 0.00  # OPEN — F6惩罚权重，0=关闭，weekly_trend默认关闭
       bias_bonus: 0            # LOCKED — REQ-190 确认偏好加成只损害收益
       sensitivity:
         f1: 8.0               # OPEN
@@ -261,7 +263,8 @@ presets:
       max_holdings: 6           # LOCKED — REQ-190 确认 5 vs 6 差异为噪声
       discretize_step: 0.05     # LOCKED — 5% 是合理粒度
       rebalance_freq: "W-FRI"  # OPEN — 本质上是 preset 级选择
-      score_band: 0             # LOCKED — weekly_trend 固定为 0
+      execution_timing: "same_close"  # OPEN — 研究口径；2026-07-06后可评估为实盘收盘价口径
+      score_band: 0             # OPEN — 默认关闭；可开启以减少无效换仓（推荐范围 0.02-0.05）
       commission_rate: 0.00026  # LOCKED — 市场事实
     factors:
       ema:
@@ -270,16 +273,20 @@ presets:
         period_days: 14         # LOCKED — F2 权重=0
       volume_ratio:
         window_days: 20         # OPEN
+      f6_rsi_thresh: 80         # OPEN — RSI触发门槛
+      f6_drop_thresh: 0.025     # OPEN — 跌幅门槛
+      f6_base_penalty: 0.15     # OPEN — 触发当日惩罚强度
 
   daily_aggressive:
     label: "日频攻防型"
-    description: "日调仓+分数带，仓位控制同ma_trend。1yr=48%/3yr=13%/Calmar=0.54。"
+    description: "日调仓+分数带+F6加法惩罚。MA26/bear30%/方向确认/score_band5%。总收益+183.5%/年化+36.6%/MDD-13.2%/Calmar=2.78/Sharpe=1.73/佣金2.01%（2023-01-01~2026-05-08）。"
     scoring:
       weights:
         ema_deviation: 0.40    # OPEN
         rsi_adaptive: 0.05     # RESERVED — daily 模式保留少量 RSI 权重
-        volume_ratio: 0.55     # OPEN
+        volume_ratio: 0.50     # OPEN
         valuation: 0.00        # RESERVED
+        exhaustion_penalty: 0.05  # OPEN — F6惩罚权重，daily_aggressive默认5%
       bias_bonus: 0            # LOCKED
       sensitivity:
         f1: 8.0               # OPEN
@@ -287,14 +294,16 @@ presets:
         f2_dead_zone: 1.5      # LOCKED
     confidence:
       type: "ma_trend"        # LOCKED
-      ma_trend_period: 20      # OPEN
+      ma_trend_period: 26      # OPEN -- optimized 20 -> 26
       ma_bull_pos: 1.00         # OPEN
-      ma_bear_pos: 0.40         # OPEN
+      ma_bear_pos: 0.30         # OPEN -- optimized 0.40 -> 0.30
+      ma_direction_confirm: true  # OPEN -- optimized
     position:
       max_holdings: 6           # LOCKED
       discretize_step: 0.05     # LOCKED
       rebalance_freq: "daily"   # OPEN — 区别于 weekly_trend 的核心差异
-      score_band: 0.05          # LOCKED — daily_aggressive 固定为 5%
+      execution_timing: "same_close"  # OPEN — next_open用于2026-07-06前实盘过渡
+      score_band: 0.05          # OPEN — daily_aggressive 推荐5%，可调范围0-20%
       commission_rate: 0.00026  # LOCKED
     factors:
       ema:
@@ -303,3 +312,6 @@ presets:
         period_days: 14         # LOCKED
       volume_ratio:
         window_days: 20         # OPEN
+      f6_rsi_thresh: 80         # OPEN — RSI触发门槛，推荐80
+      f6_drop_thresh: 0.025     # OPEN — 跌幅门槛，推荐2.5%
+      f6_base_penalty: 0.15     # OPEN — 触发当日惩罚强度，推荐0.15

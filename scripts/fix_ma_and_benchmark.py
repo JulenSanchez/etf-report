@@ -75,7 +75,7 @@ logger.info("配置已加载", {
 
 MARKET_CLOSE_HOUR = 15
 MARKET_CLOSE_MINUTE = 0
-COOL_OFF_MINUTES = 60  # only allow closed data >= close_time + cool_off
+COOL_OFF_MINUTES = 10  # only allow closed data >= close_time + cool_off (REQ-195: 15:10 即可拉取，为盘后交易预留时间)
 
 
 def should_drop_incomplete_daily_bar(trade_day_str, now=None):

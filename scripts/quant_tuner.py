@@ -14,15 +14,18 @@ import gc
 import io
 import json
 import math
+import re
 import socket
 import subprocess
 import sys
 import time
 from copy import deepcopy
+from datetime import datetime
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import requests
 import yaml
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
@@ -47,6 +50,12 @@ CACHE = {
     "eq_weight_pct": None,
     "hs300_above_ma": {},  # {period: {date_str: bool}}
     "hs300_weekly_df": None,
+    # Intraday cache: {code: {date, open, close, high, low, volume, amount}}
+    # Single entry per code, always overwritten with latest.
+    # Only populated during trading hours; cleared after CSV is updated with confirmed close.
+    # Never written to CSV — keeps CSV pure (confirmed close data only).
+    "intraday_cache": {},
+    "intraday_date": None,  # date string the cache is for
 }
 
 
@@ -171,6 +180,300 @@ def preload():
     _load_market_regimes()
 
     print("Preload complete.\n")
+
+
+# ============================================================
+# Data refresh: intraday cache + post-market CSV update
+# ============================================================
+
+SINA_URL = "https://hq.sinajs.cn/list="
+SINA_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+    "Referer": "https://finance.sina.com.cn/",
+}
+
+# A-share trading schedule (minutes from midnight)
+MORNING_OPEN = 570    # 9:30
+MORNING_CLOSE = 690   # 11:30
+AFTERNOON_OPEN = 780  # 13:00
+AFTERNOON_CLOSE = 900 # 15:00
+TOTAL_TRADING_MINUTES = 240  # 4 hours
+COOL_OFF_TIME = 910   # 15:10 — confirmed data available after this
+
+
+def _trading_elapsed_minutes(now=None):
+    """How many trading minutes have elapsed today. 0 before open, 240 after close."""
+    n = now or datetime.now()
+    minutes = n.hour * 60 + n.minute
+    if minutes <= MORNING_OPEN:
+        return 0
+    if minutes <= MORNING_CLOSE:
+        return minutes - MORNING_OPEN
+    if minutes <= AFTERNOON_OPEN:
+        return MORNING_CLOSE - MORNING_OPEN
+    if minutes <= AFTERNOON_CLOSE:
+        return (MORNING_CLOSE - MORNING_OPEN) + (minutes - AFTERNOON_OPEN)
+    return TOTAL_TRADING_MINUTES
+
+
+def _is_post_market(now=None):
+    """True after 15:10 — confirmed close data is available from Tencent API."""
+    n = now or datetime.now()
+    return n.hour * 60 + n.minute >= COOL_OFF_TIME
+
+
+def _is_trading_day(dt=None):
+    d = dt or datetime.now()
+    return d.weekday() < 5
+
+
+def _fetch_sina_realtime(cfg):
+    """Fetch real-time quotes for all ETFs from Sina API. One HTTP request, ~2s.
+    Returns dict: {code: {name, open, prev_close, price, high, low, volume, amount}}
+    """
+    symbols = []
+    code_list = []
+    for etf in cfg["universe"]:
+        code = etf["code"]
+        m = etf.get("market", "sz")
+        symbols.append(f"{m}{code}")
+        code_list.append(code)
+
+    url = f"{SINA_URL}{','.join(symbols)}"
+    try:
+        resp = requests.get(url, headers=SINA_HEADERS, timeout=10)
+        resp.encoding = "gbk"
+    except Exception as e:
+        print(f"  [Sina] API failed: {e}")
+        return {}
+
+    results = {}
+    lines = resp.text.strip().split("\n")
+    for i, line in enumerate(lines):
+        if "=" not in line:
+            continue
+        match = re.search(r'"([^"]*)"', line)
+        if not match:
+            continue
+        data = match.group(1).split(",")
+        if len(data) < 10:
+            continue
+        code = code_list[i] if i < len(code_list) else None
+        if not code:
+            continue
+        try:
+            results[code] = {
+                "name": data[0],
+                "open": float(data[1]) if data[1] else 0,
+                "prev_close": float(data[2]) if data[2] else 0,
+                "price": float(data[3]) if data[3] else 0,
+                "high": float(data[4]) if data[4] else 0,
+                "low": float(data[5]) if data[5] else 0,
+                "volume": int(float(data[8])) if data[8] else 0,
+                "amount": float(data[9]) if data[9] else 0,
+            }
+        except (ValueError, IndexError):
+            continue
+    return results
+
+
+def _estimate_eod_volume(current_volume, now=None):
+    """Estimate end-of-day volume from intraday volume using time proportion."""
+    elapsed = _trading_elapsed_minutes(now)
+    if elapsed <= 0 or elapsed >= TOTAL_TRADING_MINUTES:
+        return current_volume
+    return int(current_volume / (elapsed / TOTAL_TRADING_MINUTES))
+
+
+def _run_incremental_fetch(cfg):
+    """Run quant_data_fetcher incrementally for all ETFs. Updates CSV files on disk.
+    Returns (ok_count, fail_count).
+    """
+    from quant_data_fetcher import update_single
+    import time as _time
+    ok, fail = 0, 0
+    for etf in cfg["universe"]:
+        try:
+            update_single(etf, full=False)
+            ok += 1
+            _time.sleep(1.0)  # 1s between ETFs (faster than default 3s)
+        except Exception as e:
+            print(f"  [Fetch] {etf['code']} failed: {e}")
+            fail += 1
+    return ok, fail
+
+
+def _reload_csv_to_cache(cfg):
+    """Reload all CSV data from disk into CACHE (after fetcher has updated them)."""
+    for etf in cfg["universe"]:
+        code = etf["code"]
+        daily, weekly = load_etf_data(code)
+        if daily is not None:
+            CACHE["all_daily"][code] = daily
+            CACHE["all_weekly"][code] = weekly
+
+
+def refresh_data():
+    """Main refresh entry point. Called by /api/refresh_data.
+
+    Two paths depending on time of day:
+    - Post-market (>=15:10): Run quant_data_fetcher to get confirmed close data → update CSV → reload CACHE → clear intraday cache
+    - Pre-market / Intraday (<15:10): Fetch Sina real-time prices → write intraday cache (not CSV)
+
+    Intraday cache is a single flat dict, always overwritten.
+    Computation code merges cache into daily_df on-the-fly (see _get_daily_with_cache).
+    """
+    now = datetime.now()
+    today_str = now.strftime("%Y-%m-%d")
+    cfg = CACHE.get("cfg") or load_config()
+    time_label = now.strftime("%H:%M")
+
+    if _is_post_market(now):
+        # === Post-market: get confirmed close data ===
+        print(f"  [Refresh] Post-market — running incremental fetch...")
+        ok, fail = _run_incremental_fetch(cfg)
+        _reload_csv_to_cache(cfg)
+
+        # Clear intraday cache — CSV now has confirmed data
+        CACHE["intraday_cache"] = {}
+        CACHE["intraday_date"] = None
+
+        # Rebuild benchmarks with new data
+        _precompute_benchmarks()
+        _precompute_valuation_scores()
+        _load_market_regimes()
+
+        msg = f"{time_label} | CSV updated | {ok} OK, {fail} fail"
+        print(f"  [Refresh] {msg}")
+
+        return {
+            "status": "confirmed",
+            "message": msg,
+            "fetchOk": ok,
+            "fetchFail": fail,
+            "date": today_str,
+            "time": time_label,
+        }
+
+    else:
+        # === Intraday: fetch real-time prices into cache ===
+        if not _is_trading_day(now):
+            return {"status": "skip", "message": f"{time_label} | Non-trading day", "date": today_str, "time": time_label}
+
+        rt_prices = _fetch_sina_realtime(cfg)
+        if not rt_prices:
+            return {"status": "error", "message": f"{time_label} | Sina API failed", "date": today_str, "time": time_label}
+
+        updated = 0
+        for etf in cfg["universe"]:
+            code = etf["code"]
+            rt = rt_prices.get(code)
+            if not rt or rt["price"] <= 0:
+                continue
+
+            vol = rt["volume"]
+            amt = rt["amount"]
+            # Estimate EOD volume for more accurate F3
+            if vol > 0:
+                vol = _estimate_eod_volume(vol, now)
+                if amt > 0:
+                    amt = _estimate_eod_volume(int(amt), now)
+
+            CACHE["intraday_cache"][code] = {
+                "date": today_str,
+                "open": rt["open"],
+                "close": rt["price"],
+                "high": rt["high"],
+                "low": rt["low"],
+                "volume": vol,
+                "amount": amt,
+            }
+            updated += 1
+
+        CACHE["intraday_date"] = today_str
+        vol_note = " (vol est. EOD)" if _trading_elapsed_minutes(now) < TOTAL_TRADING_MINUTES else ""
+        msg = f"{time_label} | Intraday | {updated} ETFs{vol_note}"
+        print(f"  [Refresh] {msg}")
+
+        return {
+            "status": "intraday",
+            "message": msg,
+            "count": updated,
+            "date": today_str,
+            "time": time_label,
+        }
+
+
+def _get_daily_with_cache(code):
+    """Get daily DataFrame for an ETF, with intraday cache appended if available.
+    Does NOT modify CACHE["all_daily"] — returns a new DataFrame.
+    If cache exists and its date is newer than CSV's last date, appends one row.
+    If cache date equals CSV's last date, replaces the last row.
+    """
+    daily_df = CACHE["all_daily"].get(code)
+    if daily_df is None:
+        return None
+
+    cached = CACHE["intraday_cache"].get(code)
+    if not cached:
+        return daily_df
+
+    cache_date = cached["date"]
+    last_date = daily_df["date"].iloc[-1]
+    last_str = last_date.strftime("%Y-%m-%d") if hasattr(last_date, "strftime") else str(last_date)[:10]
+
+    df = daily_df.copy()
+
+    if last_str == cache_date:
+        # Replace last row with cache data
+        df.at[df.index[-1], "open"] = cached["open"]
+        df.at[df.index[-1], "close"] = cached["close"]
+        df.at[df.index[-1], "high"] = cached["high"]
+        df.at[df.index[-1], "low"] = cached["low"]
+        if "volume" in df.columns:
+            df.at[df.index[-1], "volume"] = cached["volume"]
+        if "amount" in df.columns:
+            df.at[df.index[-1], "amount"] = cached["amount"]
+    elif last_str < cache_date:
+        # Append new row
+        new_row = pd.DataFrame([{
+            "date": pd.Timestamp(cache_date),
+            "open": cached["open"],
+            "close": cached["close"],
+            "high": cached["high"],
+            "low": cached["low"],
+            "volume": cached["volume"],
+            "amount": cached["amount"],
+        }])
+        df = pd.concat([df, new_row], ignore_index=True)
+
+    return df
+
+
+def _get_weekly_with_cache(code):
+    """Get weekly DataFrame for an ETF, rebuilt from _get_daily_with_cache if cache exists."""
+    if code not in CACHE["intraday_cache"]:
+        return CACHE["all_weekly"].get(code)
+
+    daily_df = _get_daily_with_cache(code)
+    if daily_df is None or len(daily_df) == 0:
+        return CACHE["all_weekly"].get(code)
+
+    df = daily_df.copy()
+    df["date"] = pd.to_datetime(df["date"])
+    df = df.sort_values("date").reset_index(drop=True)
+    df["week"] = (df["date"].dt.isocalendar().year.astype(str) + "-"
+                  + df["date"].dt.isocalendar().week.astype(str).str.zfill(2))
+    weekly = df.groupby("week").agg(
+        date=("date", "last"),
+        open=("open", "first"),
+        close=("close", "last"),
+        high=("high", "max"),
+        low=("low", "min"),
+        volume=("volume", "sum"),
+        amount=("amount", "sum"),
+    ).reset_index(drop=True)
+    return weekly
 
 
 def _precompute_benchmarks():
@@ -385,6 +688,24 @@ def _load_market_regimes():
         CACHE["market_regimes"] = {}
 
 
+def get_execution_date(signal_date, all_dates, timing):
+    """Return trade execution date for a signal date."""
+    if timing == "next_open":
+        future_dates = all_dates[all_dates > signal_date]
+        return future_dates[0] if len(future_dates) else None
+    return signal_date
+
+
+def get_price_on_date(all_daily, code, date, field="close"):
+    df = all_daily.get(code)
+    if df is None:
+        return None
+    row = df[df["date"] == date]
+    if len(row) == 0 or field not in row.columns:
+        return None
+    return float(row[field].iloc[0])
+
+
 # ============================================================
 # Core: run backtest with custom params (using preloaded data)
 # ============================================================
@@ -396,13 +717,14 @@ def run_tuner_backtest(params):
     # Override from params
     cfg["scoring"]["weights"] = {
         "ema_deviation": params["w1"] / 100.0,
-        "rsi_adaptive": params["w2"] / 100.0,
+        "rsi_adaptive": params.get("w2", 0) / 100.0,
         "volume_ratio": params["w3"] / 100.0,
-        "valuation": params["w4"] / 100.0,
+        "valuation": params.get("w4", 0) / 100.0,
         "volatility": params.get("w5", 0) / 100.0,
         "residual_momentum": params.get("w1r", 0) / 100.0,
+        "exhaustion_penalty": params.get("w6", 0) / 100.0,
     }
-    cfg["scoring"]["bias_bonus"] = params["bias"]
+    cfg["scoring"]["bias_bonus"] = params.get("bias", 0)
     cfg["confidence"]["type"] = params.get("conf_type", "regime")
     # Legacy quadratic params (kept for backward compat)
     cfg["confidence"]["dead_zone"] = params.get("dead_zone", 10) / 100.0
@@ -431,13 +753,14 @@ def run_tuner_backtest(params):
     cfg["confidence"]["recovery_pos"] = params.get("recovery_pos", 0.70)
     cfg["confidence"]["recovery_dd_level"] = params.get("recovery_dd_level", -0.05)
     # ma_trend params
-    cfg["confidence"]["ma_bull_pos"] = params.get("ma_bull_pos", 0.95)
-    cfg["confidence"]["ma_bear_pos"] = params.get("ma_bear_pos", 0.10)
-    cfg["confidence"]["ma_trend_period"] = int(params.get("ma_trend_period", 20))
-    cfg["confidence"]["ma_direction_confirm"] = bool(params.get("ma_direction_confirm", False))
+    cfg["confidence"]["ma_bull_pos"] = params.get("ma_bull_pos", 1.00)
+    cfg["confidence"]["ma_bear_pos"] = params.get("ma_bear_pos", 0.30)
+    cfg["confidence"]["ma_trend_period"] = int(params.get("ma_trend_period", 26))
+    cfg["confidence"]["ma_direction_confirm"] = bool(params.get("ma_direction_confirm", True))
     cfg["position"]["max_holdings"] = params["max_holdings"]
     cfg["position"]["discretize_step"] = params.get("disc_step", 5) / 100.0
     cfg["position"]["rebalance_freq"] = params.get("rebalance_freq", "W-FRI")
+    cfg["position"]["execution_timing"] = params.get("execution_timing", "same_close")
     cfg["position"]["score_band"] = params.get("score_band", 0) / 100.0
     cfg["factors"]["ema"]["period_weeks"] = params.get("ema_period", 20)
     cfg["factors"]["rsi"]["period_days"] = params.get("rsi_period", 14)
@@ -453,6 +776,9 @@ def run_tuner_backtest(params):
         "reg_window": params.get("residual_reg_window", 12),
         "mom_window": params.get("residual_mom_window", 12),
     }
+    cfg["factors"]["f6_rsi_thresh"] = params.get("f6_rsi_thresh", 80)
+    cfg["factors"]["f6_drop_thresh"] = params.get("f6_drop_thresh", 2.5) / 100.0
+    cfg["factors"]["f6_base_penalty"] = params.get("f6_base_penalty", 0.15)
 
     weights = cfg["scoring"]["weights"]
     bias_bonus = cfg["scoring"]["bias_bonus"]
@@ -479,23 +805,38 @@ def run_tuner_backtest(params):
     crash_pos = cfg["confidence"].get("crash_pos", 0.20)
     recovery_pos = cfg["confidence"].get("recovery_pos", 0.70)
     recovery_dd_level = cfg["confidence"].get("recovery_dd_level", -0.05)
-    ma_bull_pos = cfg["confidence"].get("ma_bull_pos", 0.95)
-    ma_bear_pos = cfg["confidence"].get("ma_bear_pos", 0.10)
-    ma_trend_period = cfg["confidence"].get("ma_trend_period", 20)
-    ma_direction_confirm = cfg["confidence"].get("ma_direction_confirm", False)
+    ma_bull_pos = cfg["confidence"].get("ma_bull_pos", 1.00)
+    ma_bear_pos = cfg["confidence"].get("ma_bear_pos", 0.30)
+    ma_trend_period = cfg["confidence"].get("ma_trend_period", 26)
+    ma_direction_confirm = cfg["confidence"].get("ma_direction_confirm", True)
     max_holdings = cfg["position"]["max_holdings"]
     step = cfg["position"]["discretize_step"]
     factor_cfg = cfg["factors"]
+    f6_rsi_thresh = factor_cfg.get("f6_rsi_thresh", 80.0)
+    f6_drop_thresh = factor_cfg.get("f6_drop_thresh", 0.025)
+    f6_base_penalty = factor_cfg.get("f6_base_penalty", 0.15)
 
     # bias_bonus 从 UI 的 0-12 整数尺度映射到 0-1 的综合分尺度
     bias_map = {e["code"]: bias_bonus / 100.0 for e in cfg["universe"] if e.get("bias")}
 
     rebalance_freq = cfg["position"].get("rebalance_freq", "W-FRI")
+    execution_timing = cfg["position"].get("execution_timing", "same_close")
+    if execution_timing not in ("same_close", "next_open"):
+        execution_timing = "same_close"
     score_band = cfg["position"].get("score_band", 0)
     commission_rate = cfg["position"].get("commission_rate", 0)
 
     all_daily = CACHE["all_daily"]
     all_weekly = CACHE["all_weekly"]
+
+    # Merge intraday cache into working copies for backtest computation
+    # Cache data is NOT written to CSV — it's only used in-memory
+    if CACHE["intraday_cache"]:
+        all_daily = {}
+        all_weekly = {}
+        for code in CACHE["all_daily"]:
+            all_daily[code] = _get_daily_with_cache(code)
+            all_weekly[code] = _get_weekly_with_cache(code)
 
     # Date range: user-controlled start/end with hidden warmup
     # User sees results from start_date; system runs backtest from start_date - warmup
@@ -510,6 +851,10 @@ def run_tuner_backtest(params):
     # Determine effective user range
     data_min = all_dates_full.min()
     data_max = all_dates_full.max()
+    # Always allow backtest up to today (even if CSV hasn't been updated yet)
+    today_ts = pd.Timestamp(datetime.now().strftime("%Y-%m-%d"))
+    if today_ts > data_max:
+        data_max = today_ts
     try:
         user_start = pd.Timestamp(user_start_str) if user_start_str else (data_max - pd.DateOffset(years=1))
     except Exception:
@@ -549,6 +894,11 @@ def run_tuner_backtest(params):
     hs300_weekly_full = CACHE.get("hs300_weekly")
 
     for rb_date in rebalance_dates:
+        execution_date = get_execution_date(rb_date, all_dates, execution_timing)
+        if execution_date is None:
+            continue
+        execution_price_field = "open" if execution_timing == "next_open" else "close"
+
         factors_data = {}
         prices_today = {}
 
@@ -574,13 +924,19 @@ def run_tuner_backtest(params):
                 hs300_weekly=hs300_w_slice,
                 residual_reg_window=residual_reg_window,
                 residual_mom_window=residual_mom_window,
+                f6_rsi_thresh=f6_rsi_thresh,
+                f6_drop_thresh=f6_drop_thresh,
+                f6_base_penalty=f6_base_penalty,
             )
             # Allow NaN in f1_residual_mom (fallback to 0 weight)
             if any(np.isnan(v) for k, v in factors.items() if k != "f1_residual_mom"):
                 continue
 
+            exec_price = get_price_on_date(all_daily, code, execution_date, execution_price_field)
+            if exec_price is None:
+                continue
             factors_data[code] = factors
-            prices_today[code] = float(daily_slice["close"].iloc[-1])
+            prices_today[code] = exec_price
 
         if len(factors_data) < max_holdings:
             continue
@@ -603,6 +959,7 @@ def run_tuner_backtest(params):
         w4 = weights.get("valuation", 0.15)
         w5 = weights.get("volatility", 0.0)
         w1r = weights.get("residual_momentum", 0.0)
+        w6 = weights.get("exhaustion_penalty", 0.0)
 
         composite = mapped_f1 * w1 + mapped_f2 * w2 + mapped_f3 * w3
 
@@ -637,6 +994,10 @@ def run_tuner_backtest(params):
         for code, bonus in bias_map.items():
             if code in composite.index:
                 composite[code] += bonus
+
+        if w6 > 0 and "f6_exhaustion_penalty" in factors_df.columns:
+            f6_score = factors_df["f6_exhaustion_penalty"] - 1.0
+            composite = composite + f6_score * w6
 
         top_n = composite.nlargest(max_holdings)
 
@@ -848,9 +1209,12 @@ def run_tuner_backtest(params):
         last_targets_dict = target_positions.to_dict()
 
         # Only record post-warmup rebalances in user-visible signal_history
-        if rb_date >= user_start:
+        if execution_date >= user_start:
             signal_history.append({
-                "date": rb_date,
+                "date": execution_date,
+                "signal_date": rb_date,
+                "execution_date": execution_date,
+                "execution_timing": execution_timing,
                 "scores": composite.to_dict(),
                 "top_n": list(top_n.index),
                 "positions": target_positions.to_dict(),
@@ -895,16 +1259,18 @@ def run_tuner_backtest(params):
 
             target_codes = set(sig["positions"].keys())
 
+            trade_field = "open" if sig.get("execution_timing") == "next_open" else "close"
+
             for code in list(portfolio2.keys()):
                 if code not in target_codes or sig["positions"].get(code, 0) == 0:
-                    p = prices_now.get(code, last_price.get(code, 0))
+                    p = get_price_on_date(all_daily, code, date, trade_field) or prices_now.get(code, last_price.get(code, 0))
                     if p > 0:
                         sell_val = portfolio2[code] * p
                         cash2 += sell_val - sell_val * commission_rate
                     portfolio2.pop(code, None)
 
             for code in target_codes:
-                p = prices_now.get(code, last_price.get(code, 0))
+                p = get_price_on_date(all_daily, code, date, trade_field) or prices_now.get(code, last_price.get(code, 0))
                 tgt = tv * sig["positions"][code]
                 cur = portfolio2.get(code, 0) * p
                 diff = tgt - cur
@@ -1025,6 +1391,7 @@ def run_tuner_backtest(params):
             "elapsed": round(elapsed, 1),
             "startDate": user_start.strftime("%Y-%m-%d"),
             "endDate": user_end.strftime("%Y-%m-%d"),
+            "executionTiming": execution_timing,
         },
         "nav": {
             "dates": nav_date_strs,
@@ -1039,6 +1406,9 @@ def run_tuner_backtest(params):
         "signalHistory": [
             {
                 "date": s["date"].strftime("%Y-%m-%d"),
+                "signalDate": s.get("signal_date", s["date"]).strftime("%Y-%m-%d"),
+                "executionDate": s.get("execution_date", s["date"]).strftime("%Y-%m-%d"),
+                "executionTiming": s.get("execution_timing", execution_timing),
                 "scores": {k: round(v * 100, 1) for k, v in s["scores"].items()},
                 "topN": s["top_n"],
                 "positions": {k: round(v * 100, 1) for k, v in s["positions"].items()},
@@ -1139,9 +1509,10 @@ def api_presets():
             "crash_pos": pc.get("crash_pos", global_conf.get("crash_pos", 0.20)),
             "recovery_pos": pc.get("recovery_pos", global_conf.get("recovery_pos", 0.70)),
             "recovery_dd_level": pc.get("recovery_dd_level", global_conf.get("recovery_dd_level", -0.05)),
-            "ma_bull_pos": pc.get("ma_bull_pos", global_conf.get("ma_bull_pos", 0.95)),
-            "ma_bear_pos": pc.get("ma_bear_pos", global_conf.get("ma_bear_pos", 0.10)),
-            "ma_trend_period": pc.get("ma_trend_period", global_conf.get("ma_trend_period", 20)),
+            "ma_bull_pos": pc.get("ma_bull_pos", global_conf.get("ma_bull_pos", 1.00)),
+            "ma_bear_pos": pc.get("ma_bear_pos", global_conf.get("ma_bear_pos", 0.30)),
+            "ma_trend_period": pc.get("ma_trend_period", global_conf.get("ma_trend_period", 26)),
+            "ma_direction_confirm": pc.get("ma_direction_confirm", global_conf.get("ma_direction_confirm", True)),
             "max_holdings": p_data.get("position", {}).get("max_holdings", 6),
             "disc_step": int(p_data.get("position", {}).get("discretize_step", 0.05) * 100),
             "ema_period": p_data.get("factors", {}).get("ema", {}).get("period_weeks", 20),
@@ -1151,7 +1522,12 @@ def api_presets():
             "f3_sensitivity": p_data.get("scoring", {}).get("sensitivity", {}).get("f3", 1.0),
             "f2_dead_zone": p_data.get("scoring", {}).get("sensitivity", {}).get("f2_dead_zone", 1.5),
             "rebalance_freq": p_data.get("position", {}).get("rebalance_freq", "W-FRI"),
+            "execution_timing": p_data.get("position", {}).get("execution_timing", "same_close"),
             "score_band": int(p_data.get("position", {}).get("score_band", 0) * 100),
+            "w6": int(p_data.get("scoring", {}).get("weights", {}).get("exhaustion_penalty", 0) * 100),
+            "f6_rsi_thresh": p_data.get("factors", {}).get("f6_rsi_thresh", 80),
+            "f6_drop_thresh": p_data.get("factors", {}).get("f6_drop_thresh", 0.025) * 100,
+            "f6_base_penalty": p_data.get("factors", {}).get("f6_base_penalty", 0.15),
         }
     return jsonify(result)
 
@@ -1163,11 +1539,12 @@ def api_save():
         cfg = load_config()
         cfg["scoring"]["weights"] = {
             "ema_deviation": params["w1"] / 100.0,
-            "rsi_adaptive": params["w2"] / 100.0,
+            "rsi_adaptive": params.get("w2", 0) / 100.0,
             "volume_ratio": params["w3"] / 100.0,
-            "valuation": params["w4"] / 100.0,
+            "valuation": params.get("w4", 0) / 100.0,
+            "exhaustion_penalty": params.get("w6", 0) / 100.0,
         }
-        cfg["scoring"]["bias_bonus"] = float(params["bias"])
+        cfg["scoring"]["bias_bonus"] = float(params.get("bias", 0))
         cfg["confidence"]["type"] = params.get("conf_type", "quadratic")
         cfg["confidence"]["dead_zone"] = int(params["dead_zone"])
         cfg["confidence"]["full_zone"] = int(params["full_zone"])
@@ -1182,8 +1559,13 @@ def api_save():
             "f2_dead_zone": float(params.get("f2_dead_zone", 1.5)),
         }
         cfg["confidence"]["ma_bull_pos"] = float(params.get("ma_bull_pos", 1.0))
-        cfg["confidence"]["ma_bear_pos"] = float(params.get("ma_bear_pos", 0.4))
-        cfg["confidence"]["ma_trend_period"] = int(params.get("ma_trend_period", 20))
+        cfg["confidence"]["ma_bear_pos"] = float(params.get("ma_bear_pos", 0.3))
+        cfg["confidence"]["ma_trend_period"] = int(params.get("ma_trend_period", 26))
+        cfg["position"]["execution_timing"] = params.get("execution_timing", "same_close")
+        cfg["position"]["score_band"] = int(params.get("score_band", 0)) / 100.0
+        cfg["factors"]["f6_rsi_thresh"] = float(params.get("f6_rsi_thresh", 80))
+        cfg["factors"]["f6_drop_thresh"] = float(params.get("f6_drop_thresh", 2.5)) / 100.0
+        cfg["factors"]["f6_base_penalty"] = float(params.get("f6_base_penalty", 0.15))
 
         with CONFIG_PATH.open("w", encoding="utf-8") as f:
             yaml.dump(cfg, f, allow_unicode=True, default_flow_style=False, sort_keys=False)
@@ -1266,6 +1648,38 @@ def api_kline():
         "weekly": weekly_data,
         "rsiPeriod": rsi_period,
         "emaPeriod": ema_period,
+    })
+
+
+@app.route("/api/refresh_data", methods=["POST"])
+def api_refresh_data():
+    """Fetch latest data: intraday cache (pre-market) or confirmed CSV update (post-market)."""
+    result = refresh_data()
+    return jsonify(result)
+
+
+@app.route("/api/data_status")
+def api_data_status():
+    """Return current data freshness: latest CSV date, intraday cache status."""
+    all_daily = CACHE.get("all_daily", {})
+    ic = CACHE.get("intraday_cache", {})
+    ic_date = CACHE.get("intraday_date")
+
+    csv_latest = ""
+    for df in all_daily.values():
+        if len(df) > 0:
+            d = df["date"].iloc[-1]
+            ds = d.strftime("%Y-%m-%d") if hasattr(d, "strftime") else str(d)[:10]
+            if ds > csv_latest:
+                csv_latest = ds
+
+    today = datetime.now().strftime("%Y-%m-%d")
+    return jsonify({
+        "csvLatestDate": csv_latest,
+        "todayDate": today,
+        "intradayCacheDate": ic_date,
+        "intradayCacheCount": len(ic),
+        "isPostMarket": _is_post_market(),
     })
 
 
@@ -1379,6 +1793,8 @@ if __name__ == "__main__":
                          help="自动检测并更新数据（冷启动或增量），然后启动 Tuner")
     _parser.add_argument("--full", action="store_true",
                          help="配合 --auto 使用，全量重新拉取数据")
+    _parser.add_argument("--no-browser", action="store_true",
+                         help="启动服务但不自动打开浏览器，供外部启动器统一控制")
     _args = _parser.parse_args()
 
     if is_port_in_use(TUNER_PORT):
@@ -1454,5 +1870,6 @@ if __name__ == "__main__":
     print("Ctrl+C to stop")
     print("=" * 50)
 
-    try_open_browser(f"http://localhost:{TUNER_PORT}")
+    if not _args.no_browser:
+        try_open_browser(f"http://localhost:{TUNER_PORT}")
     app.run(host="127.0.0.1", port=TUNER_PORT, debug=False, threaded=True)

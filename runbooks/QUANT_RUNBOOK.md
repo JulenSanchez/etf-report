@@ -6,6 +6,53 @@
 
 ---
 
+## 执行摘要（快速索引）
+
+> 本文 706 行。先读此摘要，按需跳到对应章节。
+
+### 核心架构（30秒版）
+
+```
+数据层：data/quant/*.csv（25支ETF日/周线）←← quant_data_fetcher.py 拉取
+         │
+         ▼
+计算核心：quant_factors.py → quant_backtest.py
+         │                  │
+         ▼                  ▼
+  工坊管线                橱窗管线（建设中）
+  quant_tuner.py          quant_build_payload.py
+  Flask :5179             → data/quant_payload.js
+  交互调参                  → index.html 量化板块
+```
+
+**关键约定**：
+- 最快启动：`python scripts/quant_tuner.py --auto` → http://localhost:5179
+- 长时间回测：必须独立进程（`nohup` 或 `Start-Process`），不能用 AI 会话后台任务
+- batch 模式：每次 ≤5 combo，靠 checkpoint 断点续传
+
+### 章节速查
+
+| 你想做的事 | 去哪里 |
+|-----------|-------|
+| 了解整体架构 / 数据流向 | §1 系统架构 |
+| 找某个脚本/配置/数据文件 | §2 文件索引 |
+| 数据拉取 / 冷启动 / 增量更新 / 被封处理 | §3 数据管线详解 |
+| 启动 Tuner / 参数面板说明 / URL 深链接 | §4 Tuner 使用规程 |
+| 参数优化方法 / 搜索策略 / 多窗口验证 / 当前最优结论 | §5 策略调优工作流 |
+| 从零搭建环境 | §6 从零搭建量化环境 |
+| 某个设计决策的来龙去脉 | §7 设计决策 ADR |
+| 报错 / 异常现象排查 | §8 排查指南 |
+| 哪些数据需要手动更新 | §9 一次性数据盘点 |
+
+### 当前最优参数（截至 2026-04-30）
+
+| 预设 | 参数 | 3yr Calmar | 适用 |
+|------|------|-----------|------|
+| `weekly_trend`（推荐） | w1=40,w3=60,W-FRI | 1.60 ✅ | 全市场首选 |
+| `daily_aggressive` | w1=40,w2=5,w3=55,daily,sb=5% | 0.77 ❌ | 仅牛市 |
+
+---
+
 ## 定位
 
 1. **唯一事实源**：量子系统的架构、数据管线、工具使用规程，只由本文定义。
@@ -127,7 +174,7 @@ python scripts/quant_data_fetcher.py --full        # 全量重新拉取
 python scripts/quant_data_fetcher.py --code 512400 # 只更新一支
 ```
 
-数据源：akshare `fund_etf_hist_sina`。输出到 `data/quant/{code}_daily.csv` + `_weekly.csv`。
+数据源：腾讯财经 fqkline API（前复权）。输出到 `data/quant/{code}_daily.csv` + `_weekly.csv`。
 
 **冷启动**：首次运行时 CSV 不存在，`quant_data_fetcher.py` 自动全量拉取 25 支 ETF 的历史数据（~3-5 分钟）。
 
@@ -207,43 +254,29 @@ python scripts/quant_build_payload.py
 
 ### 3.6 数据源运维与排障
 
-#### 当前数据源：东方财富 push2his API
+> 数据源全景追踪见 `docs/01-数据源与工具生态.md` §9。
 
-`quant_data_fetcher.py` 直接调用东方财富 K 线 API（非 akshare 中间层），参数 `fqt=1` 指定前复权。
+#### 当前数据源：腾讯财经 fqkline API
 
-#### secid 前缀规则（重要）
+`quant_data_fetcher.py` 调用腾讯财经前复权 K 线 API，参数格式 `?param={code},{period},,,{count},qfq`。
 
-东财 API 的 `secid` 参数格式为 `{prefix}.{code}`，**前缀不等于 sh/sz 的简单映射**：
-
-| 代码开头 | 东财 secid 前缀 | 说明 |
-|---------|----------------|------|
-| 51xxxx | **1** | 多数在沪市交易，但部分在深市交易（如 512690 酒ETF），东财统一用 1 |
-| 56xxxx | **1** | 沪市 |
-| 58xxxx | **1** | 沪市（科创板 ETF） |
-| 15xxxx | **0** | 深市 |
-
-**YAML 配置中 `market` 字段的实际含义**：在当前配置中，51xxxx 全部标记为 `market: sh`（映射到 prefix=1），15xxxx 标记为 `market: sz`（映射到 prefix=0）。这个映射碰巧是对的，但 **market 字段不反映真实交易所归属**，而是"东财 secid 用哪个前缀"的代理标记。
-
-**验证方法**：如果某个 ETF 拉不到数据（返回空 klines），尝试把 secid 前缀从 0 换成 1（或反过来）：
-```
-# 原始请求（可能返回 data=null）
-https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=0.512690&...
-# 正确请求
-https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=1.512690&...
-```
+**已知限制**：
+- 单次最多 ~800 条（约 3 年日线），`--full` 模式下拉取的是最近 800 条
+- 无 `amount` 字段，用 `close * volume * 100` 估算
+- 不支持服务端日期范围过滤，增量更新通过客户端裁剪实现
+- 沪市 ETF 返回 key 为 `qfqday`（非 `day`），脚本已自动适配
 
 #### API 被封 / 限流
 
 **症状**：
-- HTTP 200 但 `data: null`（参数错误，非封禁）
-- HTTP 403 / 503 / 连接被拒（真正被封）
-- akshare 的 `fund_etf_hist_sina` 接口返回空 DataFrame（新浪源被封，与东财 API 无关）
+- HTTP 200 但 `code: 1, msg: "param error"`（参数格式错误）
+- HTTP 403 / 503 / 连接被拒（IP 被封）
 
 **反爬对策**（已在代码中实现）：
-- 自定义 UA + Referer（模拟浏览器）
-- `start_date` 参数让服务端过滤（减少传输量，也减少请求频率嫌疑）
+- 自定义 UA + Referer（模拟腾讯自选股浏览器访问）
 - 每次请求间隔 3 秒
 - 最多重试 3 次，指数退避
+- 优先增量模式，减少请求量
 
 #### 收盘冷却期规则
 
@@ -254,7 +287,7 @@ https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=1.512690&...
 | 管线 | 文件 | 门控函数 | 数据源 |
 |------|------|---------|--------|
 | 主报告 K 线 | `fix_ma_and_benchmark.py` | `should_drop_incomplete_daily_bar()` | Sina |
-| 量化回测 K 线 | `quant_data_fetcher.py` | `_latest_allowed_date()` | 东财 |
+| 量化回测 K 线 | `quant_data_fetcher.py` | `_latest_allowed_date()` | 腾讯财经 |
 
 **行为**：
 - 当前时间 < 16:00 → 当天数据不拉取/不使用，回退到上一交易日
@@ -264,9 +297,9 @@ https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=1.512690&...
 **配置**：两条管线共享相同的常量（`MARKET_CLOSE_HOUR=15, COOL_OFF_MINUTES=60`），如需调整冷却时长改对应文件的常量即可。
 
 **被封后的应对**：
-1. 确认是哪个源被封：东财直接 API vs akshare/sina 中间层
-2. 东财 API 被封：等 24-48 小时通常自动解封；减少请求频率
-3. akshare/sina 被封：不影响当前管线（已改用东财直接 API），但 akshare 的其他接口可能受牵连
+1. 确认是哪个源被封：腾讯 fqkline vs 新浪 getKLineData vs AKShare 上游
+2. 腾讯 API 被封：换 IP（通常 24-48h 解封）；减少请求频率
+3. 新浪/AKShare 被封：不影响量化管线（已改用腾讯），但 fix_ma_and_benchmark.py 和 realtime_data_updater.py 可能受影响
 4. 全量重拉（`--full`）比增量更新更容易触发限流，尽量用增量模式
 
 #### 数据源切换历史
@@ -275,7 +308,7 @@ https://push2his.eastmoney.com/api/qt/stock/kline/get?secid=1.512690&...
 |------|--------|---------|
 | 2026-04 以前 | akshare `fund_etf_hist_sina`（新浪源） | 初始实现 |
 | 2026-04-28 | 东财 push2his API（前复权） | REQ-185: 新浪源不复权，改为东财前复权 |
-| 2026-05-07 | akshare sina 源被封 | 返回空数据；东财直接 API 仍正常 |
+| 2026-05-07 | 腾讯 fqkline API（前复权） | 东财 API IP 被封；腾讯验证可用 |
 
 ---
 

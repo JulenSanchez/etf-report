@@ -28,9 +28,23 @@ TEMPLATES_PATH = SKILL_DIR / "config" / "quant_templates.yaml"
 OUTPUT_PATH = SKILL_DIR / "assets" / "js" / "quant_payload.js"
 
 
-def load_config():
+def load_config(preset: str = "weekly_trend"):
+    """加载配置，并用指定 preset 覆盖顶层 scoring/confidence/position/factors。"""
     with CONFIG_PATH.open("r", encoding="utf-8") as f:
-        return yaml.safe_load(f)
+        cfg = yaml.safe_load(f)
+
+    if preset:
+        p = cfg.get("presets", {}).get(preset)
+        if p is None:
+            raise ValueError(f"Preset '{preset}' not found in quant_universe.yaml")
+        for block in ("scoring", "confidence", "position", "factors"):
+            if block in p:
+                cfg[block].update(p[block])
+        for key in ("weights", "bias_bonus", "sensitivity"):
+            if key in p.get("scoring", {}):
+                cfg["scoring"][key] = p["scoring"][key]
+
+    return cfg
 
 
 def load_templates():

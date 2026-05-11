@@ -48,6 +48,13 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
 .btn-run:disabled { background: #374151; color: #6b7280; cursor: not-allowed; }
 .btn-save { padding: 10px 16px; background: transparent; border: 1px solid #22c55e; color: #22c55e; border-radius: 8px; font-size: 13px; cursor: pointer; white-space: nowrap; }
 .btn-save:hover { background: rgba(34,197,94,.1); }
+.btn-refresh { padding: 10px 16px; background: transparent; border: 1px solid #f59e0b; color: #f59e0b; border-radius: 8px; font-size: 13px; cursor: pointer; white-space: nowrap; }
+.btn-refresh:hover { background: rgba(245,158,11,.1); }
+.btn-refresh:disabled { border-color: #374151; color: #6b7280; cursor: not-allowed; }
+.data-badge { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 10px; font-weight: 600; margin-left: 6px; }
+.data-badge.confirmed { background: #065f46; color: #34d399; }
+.data-badge.intraday { background: #713f12; color: #fbbf24; }
+.data-badge.stale { background: #7f1d1d; color: #fca5a5; }
 
 .status { font-size: 11px; color: #6b7280; margin-top: 6px; min-height: 14px; }
 .weight-total { font-size: 11px; margin-top: 2px; }
@@ -124,6 +131,15 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
 .param-locked .pk { color: #e0e0e0; flex: 1; }
 .param-locked .pt { display: inline-flex; align-items: center; font-size: 11px; color: #6b7280; vertical-align: middle; line-height: 1; transform: translateY(-2px); }
 .param-locked .pv { color: #4b5563; font-family: monospace; font-weight: 600; min-width: 36px; text-align: right; }
+
+/* Factor sub-params — indented, muted, visually subordinate */
+.factor-sub { margin-left: 12px; padding-left: 10px; border-left: 2px solid #1e3a52; margin-bottom: 4px; }
+.factor-sub .slider-label .name { color: #6b7280; font-size: 11px; }
+.factor-sub .slider-label .val { color: #4b7aaa; font-size: 11px; }
+.factor-sub input[type=range] { background: #1e2d3d; }
+.factor-sub .param-locked { margin-bottom: 2px; }
+.factor-sub .param-locked .pk { color: #4b5563; font-size: 11px; }
+.factor-sub .param-locked .pv { color: #374151; }
 </style>
 </head>
 <body>
@@ -139,43 +155,101 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
     </div>
   </section>
 
-  <!-- Factor weights -->
-  <section id="tuner-sec-weights" aria-label="因子权重">
-    <div class="section-head">因子权重</div>
+  <!-- Factor weights + sub-params (merged) -->
+  <section id="tuner-sec-factors" aria-label="因子配置">
+    <div class="section-head">因子配置</div>
+
+    <!-- F1 -->
     <div class="slider-group" id="param-w1" aria-label="F1权重">
       <div class="slider-label"><span class="name">F1 EMA 偏离度</span><span class="val" id="v-w1">40%</span></div>
       <input type="range" id="w1" min="0" max="100" step="5" value="40" oninput="syncWeights()" aria-label="F1 EMA偏离度权重">
     </div>
+    <div class="factor-sub">
+      <div class="slider-group" id="param-ema" aria-label="EMA周期">
+        <div class="slider-label"><span class="name">EMA 周期</span><span class="val" id="v-ema">16 周</span></div>
+        <input type="range" id="ema_period" min="8" max="40" step="2" value="16" oninput="$id('v-ema').textContent=this.value+' 周'" aria-label="EMA周期">
+      </div>
+      <div class="slider-group" id="param-f1s" aria-label="F1 sigmoid">
+        <div class="slider-label"><span class="name">sigmoid 尺度</span><span class="val" id="v-f1s">8.0</span></div>
+        <input type="range" id="f1_sensitivity" min="3" max="15" step="0.5" value="8" oninput="$id('v-f1s').textContent=parseFloat(this.value).toFixed(1)" aria-label="F1 sigmoid尺度">
+      </div>
+    </div>
+
+    <!-- F2 -->
     <div class="param-locked" id="param-w2" aria-label="F2权重">
       <span class="pk">F2 RSI 自适应 <span class="pt">🔒</span></span>
-      <span class="pv">0%</span>
+      <span class="pv" id="pv-w2">0%</span>
     </div>
+    <div class="factor-sub">
+      <div class="param-locked" id="param-rsi" aria-label="RSI周期">
+        <span class="pk">RSI 周期 <span class="pt">🔒</span></span>
+        <span class="pv">14 日</span>
+      </div>
+      <div class="param-locked" id="param-f2dz" aria-label="F2死区">
+        <span class="pk">死区半宽 <span class="pt">🔒</span></span>
+        <span class="pv">1.5</span>
+      </div>
+    </div>
+
+    <!-- F3 -->
     <div class="slider-group" id="param-w3" aria-label="F3权重">
       <div class="slider-label"><span class="name">F3 方向性量比</span><span class="val" id="v-w3">60%</span></div>
       <input type="range" id="w3" min="0" max="100" step="5" value="60" oninput="syncWeights()" aria-label="F3方向性量比权重">
     </div>
+    <div class="factor-sub">
+      <div class="slider-group" id="param-vol" aria-label="量比窗口">
+        <div class="slider-label"><span class="name">量比窗口</span><span class="val" id="v-vol">20 日</span></div>
+        <input type="range" id="vol_window" min="5" max="40" step="5" value="20" oninput="$id('v-vol').textContent=this.value+' 日'" aria-label="量比窗口">
+      </div>
+      <div class="slider-group" id="param-f3s" aria-label="F3指数尺度">
+        <div class="slider-label"><span class="name">指数尺度</span><span class="val" id="v-f3s">1.0</span></div>
+        <input type="range" id="f3_sensitivity" min="0.5" max="3.0" step="0.1" value="1.0" oninput="$id('v-f3s').textContent=parseFloat(this.value).toFixed(1)" aria-label="F3指数尺度">
+      </div>
+    </div>
+
+    <!-- F4 -->
     <div class="param-locked" id="param-w4" aria-label="F4权重">
       <span class="pk">F4 估值因子 <span class="pt">🔒</span></span>
       <span class="pv">0%</span>
     </div>
-    <div class="weight-total">合计: <span id="v-total" style="color:#10b981;font-weight:600">100%</span></div>
-  </section>
+    <div class="factor-sub">
+      <div class="param-locked" style="opacity:0.45;">
+        <span class="pk" style="font-style:italic;">估值数据源接入后开放</span>
+      </div>
+    </div>
 
-    <!-- Sensitivity params -->
-  <section id="tuner-sec-sensitivity" aria-label="映射灵敏度">
-    <div class="section-head">映射灵敏度</div>
-    <div class="slider-group" id="param-f1s" aria-label="F1 sigmoid">
-      <div class="slider-label"><span class="name">F1 sigmoid 尺度</span><span class="val" id="v-f1s">8.0</span></div>
-      <input type="range" id="f1_sensitivity" min="3" max="15" step="0.5" value="8" oninput="$id('v-f1s').textContent=parseFloat(this.value).toFixed(1)" aria-label="F1 sigmoid尺度">
+    <!-- F5 -->
+    <div class="param-locked" id="param-w5" aria-label="F5权重">
+      <span class="pk">F5 残差动量 <span class="pt">🔒</span></span>
+      <span class="pv">0%</span>
     </div>
-    <div class="param-locked" id="param-f2dz" aria-label="F2死区">
-      <span class="pk">F2 死区半宽 <span class="pt">🔒</span></span>
-      <span class="pv">1.5</span>
+    <div class="factor-sub">
+      <div class="param-locked" style="opacity:0.45;">
+        <span class="pk" style="font-style:italic;">因子稳定性验证后开放</span>
+      </div>
     </div>
-    <div class="slider-group" id="param-f3s" aria-label="F3指数尺度">
-      <div class="slider-label"><span class="name">F3 指数尺度</span><span class="val" id="v-f3s">1.0</span></div>
-      <input type="range" id="f3_sensitivity" min="0.5" max="3.0" step="0.1" value="1.0" oninput="$id('v-f3s').textContent=parseFloat(this.value).toFixed(1)" aria-label="F3指数尺度">
+
+    <!-- F6 -->
+    <div class="slider-group" id="param-w6" aria-label="F6权重">
+      <div class="slider-label"><span class="name">F6 动能衰竭惩罚</span><span class="val" id="v-w6">0%</span></div>
+      <input type="range" id="w6" min="0" max="30" step="5" value="0" oninput="syncWeights()" aria-label="F6动能衰竭惩罚权重">
     </div>
+    <div class="factor-sub">
+      <div class="slider-group" id="param-f6-rsi">
+        <div class="slider-label"><span class="name">RSI 触发门槛</span><span class="val" id="v-f6-rsi">80</span></div>
+        <input type="range" id="f6_rsi_thresh" min="70" max="95" step="1" value="80" oninput="$id('v-f6-rsi').textContent=this.value" aria-label="F6 RSI触发门槛">
+      </div>
+      <div class="slider-group" id="param-f6-drop">
+        <div class="slider-label"><span class="name">跌幅门槛</span><span class="val" id="v-f6-drop">2.5%</span></div>
+        <input type="range" id="f6_drop_thresh" min="1" max="5" step="0.5" value="2.5" oninput="$id('v-f6-drop').textContent=parseFloat(this.value).toFixed(1)+'%'" aria-label="F6跌幅门槛">
+      </div>
+      <div class="slider-group" id="param-f6-penalty">
+        <div class="slider-label"><span class="name">惩罚强度</span><span class="val" id="v-f6-penalty">0.15</span></div>
+        <input type="range" id="f6_base_penalty" min="0.05" max="0.50" step="0.05" value="0.15" oninput="$id('v-f6-penalty').textContent=parseFloat(this.value).toFixed(2)" aria-label="F6惩罚强度">
+      </div>
+    </div>
+
+    <div class="weight-total" style="margin-top:8px;">合计: <span id="v-total" style="color:#10b981;font-weight:600">100%</span></div>
   </section>
 
     <!-- Confidence / Position control -->
@@ -185,24 +259,24 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
       <span class="pk">策略模式 <span class="pt">🔒</span></span>
       <span class="pv">MA趋势</span>
     </div>
-    <div id="ma-trend-params">
+    <div id="ma-trend-params" class="factor-sub">
       <div class="slider-group" id="param-ma-period" aria-label="MA趋势周期">
-        <div class="slider-label"><span class="name">MA趋势周期</span><span class="val" id="v-ma-period">20 周</span></div>
-        <input type="range" id="ma_trend_period" min="8" max="40" step="2" value="20" oninput="$id('v-ma-period').textContent=this.value+' 周'" aria-label="MA趋势周期">
+        <div class="slider-label"><span class="name">趋势周期</span><span class="val" id="v-ma-period">26 周</span></div>
+        <input type="range" id="ma_trend_period" min="8" max="40" step="2" value="26" oninput="$id('v-ma-period').textContent=this.value+' 周'" aria-label="MA趋势周期">
       </div>
       <div class="slider-group" id="param-ma-bull" aria-label="MA上方仓位">
-        <div class="slider-label"><span class="name">MA上方仓位 (bull)</span><span class="val" id="v-ma-bull">100%</span></div>
+        <div class="slider-label"><span class="name">上方仓位 (bull)</span><span class="val" id="v-ma-bull">100%</span></div>
         <input type="range" id="ma_bull_pos" min="0.0" max="1.0" step="0.05" value="1.00" oninput="$id('v-ma-bull').textContent=Math.round(this.value*100)+'%'; validateBullBear()" aria-label="MA上方仓位">
       </div>
       <div class="slider-group" id="param-ma-bear" aria-label="MA下方仓位">
-        <div class="slider-label"><span class="name">MA下方仓位 (bear)</span><span class="val" id="v-ma-bear">40%</span></div>
-        <input type="range" id="ma_bear_pos" min="0.0" max="1.0" step="0.05" value="0.40" oninput="$id('v-ma-bear').textContent=Math.round(this.value*100)+'%'; validateBullBear()" aria-label="MA下方仓位">
+        <div class="slider-label"><span class="name">下方仓位 (bear)</span><span class="val" id="v-ma-bear">30%</span></div>
+        <input type="range" id="ma_bear_pos" min="0.0" max="1.0" step="0.05" value="0.30" oninput="$id('v-ma-bear').textContent=Math.round(this.value*100)+'%'; validateBullBear()" aria-label="MA下方仓位">
       </div>
       <div class="slider-group" id="param-ma-dir" aria-label="MA方向确认">
-        <div class="slider-label"><span class="name">MA方向确认</span><span class="val" id="v-ma-dir">关闭</span></div>
+        <div class="slider-label"><span class="name">方向确认</span><span class="val" id="v-ma-dir">开启</span></div>
         <div class="btn-row" id="ma-dir-group">
-          <button onclick="setMaDirConfirm(false)" class="active" id="ma-dir-off">关闭</button>
-          <button onclick="setMaDirConfirm(true)" id="ma-dir-on">开启</button>
+          <button onclick="setMaDirConfirm(false)" id="ma-dir-off">关闭</button>
+          <button onclick="setMaDirConfirm(true)" class="active" id="ma-dir-on">开启</button>
         </div>
       </div>
     </div>
@@ -226,26 +300,18 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
         <button onclick="setFreq('daily')">日调仓</button>
       </div>
     </div>
-    <div class="param-locked" id="param-score-band" aria-label="分数带">
-      <span class="pk">分数带 <span class="pt">🔒</span></span>
-      <span class="pv">0%</span>
-    </div>
-  </section>
-
-    <!-- Factor params -->
-  <section id="tuner-sec-factors" aria-label="因子参数">
-    <div class="section-head">因子参数</div>
-    <div class="slider-group" id="param-ema" aria-label="EMA周期">
-      <div class="slider-label"><span class="name">EMA 周期</span><span class="val" id="v-ema">16 周</span></div>
-      <input type="range" id="ema_period" min="8" max="40" step="2" value="16" oninput="$id('v-ema').textContent=this.value+' 周'" aria-label="EMA周期">
-    </div>
-    <div class="param-locked" id="param-rsi" aria-label="RSI周期">
-      <span class="pk">RSI 周期 <span class="pt">🔒</span></span>
-      <span class="pv">14 日</span>
-    </div>
-    <div class="slider-group" id="param-vol" aria-label="量比窗口">
-      <div class="slider-label"><span class="name">量比窗口</span><span class="val" id="v-vol">20 日</span></div>
-      <input type="range" id="vol_window" min="5" max="40" step="5" value="20" oninput="$id('v-vol').textContent=this.value+' 日'" aria-label="量比窗口">
+    <div class="factor-sub">
+      <div class="slider-group" id="param-execution" aria-label="成交口径">
+        <div class="slider-label"><span class="name">成交口径</span><span class="val" id="v-exec">收盘成交</span></div>
+        <div class="btn-row" id="exec-group">
+          <button onclick="setExecutionTiming('same_close')" class="active">收盘成交</button>
+          <button onclick="setExecutionTiming('next_open')">次日开盘</button>
+        </div>
+      </div>
+      <div class="slider-group" id="param-score-band" aria-label="分数带">
+        <div class="slider-label"><span class="name">分数带</span><span class="val" id="v-score-band">0%</span></div>
+        <input type="range" id="score_band" min="0" max="20" step="1" value="0" oninput="$id('v-score-band').textContent=this.value+'%'" aria-label="分数带">
+      </div>
     </div>
   </section>
 
@@ -270,9 +336,11 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
 
     <div class="actions" id="tuner-sec-actions" aria-label="操作按钮">
       <button class="btn-run" id="btn-run" onclick="runBacktest()">运行回测</button>
+      <button class="btn-refresh" id="btn-refresh" onclick="refreshData()">刷新数据</button>
       <button class="btn-save" onclick="saveYAML()">保存参数</button>
     </div>
     <div class="status" id="status"></div>
+    <div class="status" id="data-status" style="min-height:0"></div>
 </div>
 
 <div class="panel-right" id="tuner-panel-right">
@@ -675,7 +743,7 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
 
 <script>
 var $id = id => document.getElementById(id);
-var maxHoldings = 6, discStep = 5, confType = 'ma_trend', rebalanceFreq = 'W-FRI';
+var maxHoldings = 6, discStep = 5, confType = 'ma_trend', rebalanceFreq = 'W-FRI', executionTiming = 'same_close';
 var navChart = null, ddChart = null;
 var lastResult = null;
 var lastBacktestData = null;  // last full backtest response for redraws
@@ -946,11 +1014,20 @@ function setFreq(f) {
     b.classList.toggle('active', bv === f);
   });
 }
+function setExecutionTiming(t) {
+  executionTiming = t;
+  var label = t === 'next_open' ? '次日开盘' : '收盘成交';
+  $id('v-exec').textContent = label;
+  document.querySelectorAll('#exec-group button').forEach(b => {
+    var bv = b.getAttribute('onclick').match(/'([^']+)'/)[1];
+    b.classList.toggle('active', bv === t);
+  });
+}
 function setConfType(t) {
   confType = t;
   // Only ma_trend is supported now; legacy strategies removed from UI
 }
-var maDirConfirm = false;
+var maDirConfirm = true;
 function setMaDirConfirm(v) {
   maDirConfirm = v;
   $id('v-ma-dir').textContent = v ? '开启' : '关闭';
@@ -980,7 +1057,10 @@ function validateBullBear() {
 function syncWeights() {
   $id('v-w1').textContent = $id('w1').value + '%';
   $id('v-w3').textContent = $id('w3').value + '%';
-  var total = parseInt($id('w1').value) + parseInt($id('w3').value);
+  $id('v-w6').textContent = $id('w6').value + '%';
+  var w2el = $id('pv-w2');
+  var w2 = w2el ? (parseInt(w2el.textContent) || 0) : 0;
+  var total = parseInt($id('w1').value) + w2 + parseInt($id('w3').value) + parseInt($id('w6').value);
   var te = $id('v-total');
   te.textContent = total + '%';
   te.style.color = total === 100 ? '#10b981' : '#ef4444';
@@ -1076,6 +1156,7 @@ function getParams() {
     w2: 0,  // 🔒: RSI reserved for future factor
     w3: parseInt($id('w3').value),
     w4: 0,  // 🔒: valuation reserved for future factor
+    w6: parseInt($id('w6').value),
     bias: 0,  // 🔒: REQ-190 confirmed bias only hurts performance
     conf_type: 'ma_trend',  // 🔒: only active strategy
     ma_trend_period: parseInt($id('ma_trend_period').value),
@@ -1091,7 +1172,11 @@ function getParams() {
     f3_sensitivity: parseFloat($id('f3_sensitivity').value),
     f2_dead_zone: 1.5,  // 🔒: w2=0, factor inactive
     rebalance_freq: rebalanceFreq,
-    score_band: 0,  // 🔒: weekly_trend=0, daily_aggressive=0.05
+    execution_timing: executionTiming,
+    score_band: parseInt($id('score_band').value),  // 0-20，单位%
+    f6_rsi_thresh: parseInt($id('f6_rsi_thresh').value),
+    f6_drop_thresh: parseFloat($id('f6_drop_thresh').value),
+    f6_base_penalty: parseFloat($id('f6_base_penalty').value),
     start_date: getDateFromSlider($id('start_date_slider').value),
     end_date: getDateFromSlider($id('end_date_slider').value),
   };
@@ -1101,6 +1186,8 @@ function setParams(p) {
   // Active parameters — set UI controls
   if (p.w1 != null) { $id('w1').value = p.w1; }
   if (p.w3 != null) { $id('w3').value = p.w3; }
+  if (p.w6 != null) { $id('w6').value = p.w6; }
+  if (p.w2 != null) { var w2el = $id('pv-w2'); if (w2el) w2el.textContent = p.w2 + '%'; }
   syncWeights();
   if (p.ma_trend_period != null) { $id('ma_trend_period').value = p.ma_trend_period; $id('v-ma-period').textContent = p.ma_trend_period + ' 周'; }
   if (p.ma_bull_pos != null) { $id('ma_bull_pos').value = p.ma_bull_pos; $id('v-ma-bull').textContent = Math.round(p.ma_bull_pos * 100) + '%'; }
@@ -1108,11 +1195,16 @@ function setParams(p) {
   if (p.ma_direction_confirm != null) { setMaDirConfirm(!!p.ma_direction_confirm); }
   if (p.ema_period != null) { $id('ema_period').value = p.ema_period; $id('v-ema').textContent = p.ema_period + ' 周'; }
   if (p.vol_window != null) { $id('vol_window').value = p.vol_window; $id('v-vol').textContent = p.vol_window + ' 日'; }
+  if (p.execution_timing != null) { setExecutionTiming(p.execution_timing); }
   if (p.f1_sensitivity != null) { $id('f1_sensitivity').value = p.f1_sensitivity; $id('v-f1s').textContent = parseFloat(p.f1_sensitivity).toFixed(1); }
   if (p.f3_sensitivity != null) { $id('f3_sensitivity').value = p.f3_sensitivity; $id('v-f3s').textContent = parseFloat(p.f3_sensitivity).toFixed(1); }
+  if (p.score_band != null) { $id('score_band').value = p.score_band; $id('v-score-band').textContent = p.score_band + '%'; }
+  if (p.f6_rsi_thresh != null)  { $id('f6_rsi_thresh').value = p.f6_rsi_thresh; $id('v-f6-rsi').textContent = p.f6_rsi_thresh; }
+  if (p.f6_drop_thresh != null) { $id('f6_drop_thresh').value = p.f6_drop_thresh; $id('v-f6-drop').textContent = parseFloat(p.f6_drop_thresh).toFixed(1)+'%'; }
+  if (p.f6_base_penalty != null){ $id('f6_base_penalty').value = p.f6_base_penalty; $id('v-f6-penalty').textContent = parseFloat(p.f6_base_penalty).toFixed(2); }
   if (p.rebalance_freq) setFreq(p.rebalance_freq);
   // Note: 🔒 params (w2, w4, bias, f2_dead_zone, rsi_period, max_holdings,
-  // disc_step, score_band, conf_type) are hardcoded in getParams(), not set from UI
+  // disc_step, conf_type) are hardcoded in getParams(), not set from UI
 }
 
 /* ====== Confidence function chart ====== */
@@ -1160,6 +1252,24 @@ function applyPreset(name) {
   var card = $id('preset-' + name);
   if (card) card.classList.add('active');
   if (PRESETS[name]) setParams(PRESETS[name]);
+}
+
+/* ====== Refresh Data ====== */
+async function refreshData() {
+  var btn = $id('btn-refresh'), status = $id('data-status');
+  if (btn.disabled) return;
+  btn.disabled = true; btn.textContent = '拉取中...';
+  status.textContent = '正在获取最新数据...';
+  try {
+    var resp = await fetch('/api/refresh_data', { method:'POST' });
+    var data = await resp.json();
+    var badge = '';
+    if (data.status === 'confirmed') badge = '<span class="data-badge confirmed">confirmed</span>';
+    else if (data.status === 'intraday') badge = '<span class="data-badge intraday">intraday</span>';
+    else if (data.status === 'error') badge = '<span class="data-badge stale">error</span>';
+    status.innerHTML = (data.message || 'done') + ' ' + badge;
+  } catch(e) { status.innerHTML = '请求失败: ' + e.message + ' <span class="data-badge stale">error</span>'; }
+  finally { btn.disabled = false; btn.textContent = '刷新数据'; }
 }
 
 /* ====== Backtest ====== */
@@ -1406,7 +1516,12 @@ function renderTunerSnapshot(idx) {
 
   // Subtitle
   var sub = $id('tuner-snapshot-subtitle');
-  if (sub) sub.textContent = sig.date + ' · 第 ' + (idx + 1) + '/' + tunerSignalHistory.length + ' 次调仓';
+  if (sub) {
+    var dateText = sig.signalDate && sig.executionDate && sig.signalDate !== sig.executionDate
+      ? sig.signalDate + ' 信号 → ' + sig.executionDate + ' 执行'
+      : sig.date;
+    sub.textContent = dateText + ' · 第 ' + (idx + 1) + '/' + tunerSignalHistory.length + ' 次调仓';
+  }
 
   // Top metrics
   var holdingsCount = sig.topN ? sig.topN.length : 0;
@@ -1926,14 +2041,14 @@ function getSliderFromDate(dateStr) {
 
 function applyUrlParams() {
   var qs = new URLSearchParams(location.search);
-  if (!qs.has('w1') && !qs.has('rebalance_freq') && !qs.has('start_date')) return false;
+  if (!qs.has('w1') && !qs.has('rebalance_freq') && !qs.has('execution_timing') && !qs.has('start_date')) return false;
 
   var defaults = getParams();
   var p = {};
   Object.keys(defaults).forEach(function(key) {
     if (!qs.has(key)) return;
     var raw = qs.get(key);
-    if (key === 'start_date' || key === 'end_date' || key === 'rebalance_freq' || key === 'conf_type') {
+    if (key === 'start_date' || key === 'end_date' || key === 'rebalance_freq' || key === 'execution_timing' || key === 'conf_type') {
       p[key] = raw;
     } else {
       p[key] = parseFloat(raw);

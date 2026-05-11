@@ -8,6 +8,12 @@ provider:
 
 # 需求管理守卫 — ETF 报告技能
 
+> ⛔ **P0 硬约束（任何情况下不得绕过）**
+> - **Claude 侧禁止一切发布动作**：`--publish`、`git push`、企微通知、deployer.py 均不可执行
+> - 发布必须在 **CodeBuddy 侧**完成；Claude 侧只做本地开发与预览
+> - 违反此约束将导致未验证版本直推生产、企微群污染、日更节奏错乱
+> - 详见 `~/.codebuddy/rules/dual-ide-rhythm.md` §2
+
 ## 激活条件
 
 1. 用户提到/编辑的文件路径匹配：`c:/Users/julentan/CodeBuddy/StockMarket/.codebuddy/skills/etf-report/`
@@ -125,17 +131,42 @@ provider:
 3. 若已进入持续跟踪，应补号登记后再继续
 4. 不要在版本治理未完成的情况下直接宣称"发布完成"
 
+### 典型发布场景示例
+
+```
+用户："发布"
+
+AI：[版本发布守卫启动]
+    ① 端点判定：当前为 CodeBuddy 侧 ✅，允许发布。
+
+    Phase 0 资格判定：
+    - Board.md done 区有 REQ-007「添加成分股涨跌幅列」✅
+    - bugs 区无 open/fixing 的 critical/major Bug ✅
+    → 具备发布资格，进入 Phase 1。
+
+    Phase 1 本地验证：
+    - 运行 python scripts/update_report.py → 正常生成 index.html ✅
+    - 审计 python scripts/audit_project.py --full --report-only → 无异常 ✅
+    → 进入 Phase 2。
+
+    [Phase 2~7 依次执行…]
+
+    Phase 8 发布后复核：
+    - git log -1：「feat: 成分股涨跌幅列 v1.3.0」✅
+    - Pages 已更新，企微通知已发送 ✅
+    → 版本治理收尾：Archive.md 新增 v1.3.0 记录，Board.md done 区已清空。
+    → v1.3.0 发布完成。
+```
+
 ## 出口守卫
 
-对话结束前检查：
+对话结束前**验收**（只检查"是否已完成"，具体操作步骤见 `runbooks/RELEASE_RUNBOOK.md` Phase 5）：
 
 1. `Board.md` / `Backlog.md` / `Archive.md` 是否需要更新？
 2. ID 计数器是否需要递增？
 3. 本轮是否出现了**已实质推进但尚未编号**的新需求 / 新 Bug？若有，先补登记再结束
 4. 版本信息是否需要更新？
-5. 若本轮发生了**发布 / 补救发布 / 远端恢复 / Pages 生效**，则必须额外检查：
-   - `Board.md done` 是否已清空
-   - `Archive.md` 是否已新增版本发布记录
-   - 活跃 `major/critical` Bug 是否已关闭、转状态或给出阻塞说明
-   - `Board.md` 的版本号、发布日期、开发中需求是否已更新
+5. 若本轮发生了**发布 / 补救发布 / 远端恢复 / Pages 生效**，验收 `RELEASE_RUNBOOK.md` Phase 5 是否已全部完成：
+   - Phase 5 版本治理收尾是否执行完毕？（Archive.md、Board.md done 清空、Bug 关闭、版本号）
+   - 如未完成，跳转到 `runbooks/RELEASE_RUNBOOK.md` Phase 5 逐项执行，不在此重复定义步骤
 6. 若已经发生实际发布，但治理收尾还没补齐，则**不要结束对话**；应先补齐，或明确告诉用户当前仍缺哪一步

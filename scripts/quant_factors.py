@@ -205,15 +205,95 @@ def factor_residual_momentum(weekly_df: pd.DataFrame,
     return float(residual_mom)
 
 
+def factor_exhaustion_penalty(daily_df: pd.DataFrame,
+                              rsi_period: int = 14,
+                              rsi_thresh: float = 80.0,
+                              drop_thresh: float = 0.025,
+                              vol_thresh: float = 1.5,
+                              vol_window: int = 20,
+                              decay_days: int = 3,
+                              base_penalty: float = 0.15) -> float:
+    """
+    F6：动能衰竭惩罚因子（Momentum Exhaustion Penalty）
+
+    逻辑：前一日RSI高位（≥rsi_thresh），当日出现放量下跌（跌幅≥drop_thresh
+    且量比≥vol_thresh），认为动能衰竭，返回惩罚乘数 [0, 1]。
+    1.0 = 无惩罚，0.0 = 最大惩罚。
+
+    衰减：触发后惩罚按 decay_days 线性衰减恢复（防止单日假信号永久打压）。
+    取最近 decay_days 内最强的一次惩罚后的剩余强度。
+
+    返回：penalty_multiplier ∈ [0.0, 1.0]
+      乘以综合分后得到惩罚后分数：score_penalized = score * penalty_multiplier
+    """
+    if daily_df is None or len(daily_df) < rsi_period + vol_window + 2:
+        return 1.0
+
+    df = daily_df.copy()
+    df = df.sort_values("date").reset_index(drop=True)
+
+    # RSI
+    delta = df["close"].diff()
+    gain  = delta.clip(lower=0).rolling(rsi_period, min_periods=1).mean()
+    loss  = (-delta.clip(upper=0)).rolling(rsi_period, min_periods=1).mean()
+    rs    = gain / loss.replace(0, np.nan)
+    rsi   = 100 - 100 / (1 + rs)
+
+    # 量比
+    vol_ma   = df["volume"].rolling(vol_window, min_periods=5).mean()
+    vol_ratio = df["volume"] / vol_ma
+
+    # 日涨跌
+    ret = df["close"].pct_change()
+
+    # 前日RSI
+    rsi_prev = rsi.shift(1)
+
+    # 触发条件
+    triggered = (
+        (rsi_prev >= rsi_thresh) &
+        (ret <= -drop_thresh) &
+        (vol_ratio >= vol_thresh)
+    )
+
+    # 只看最近 decay_days 日内是否触发（含今日）
+    n = len(df)
+    window_start = max(0, n - decay_days)
+    recent_triggers = triggered.iloc[window_start:]
+
+    if not recent_triggers.any():
+        return 1.0
+
+    # 最近触发距今的天数（0=今日触发，1=昨日触发…）
+    last_trigger_offset = None
+    for i in range(decay_days):
+        idx = n - 1 - i
+        if idx >= 0 and triggered.iloc[idx]:
+            last_trigger_offset = i
+            break
+
+    if last_trigger_offset is None:
+        return 1.0
+
+    # 惩罚强度：触发当日=base_penalty（最强），线性恢复到1.0
+    # offset=0 → base_penalty, offset=decay_days-1 → ~0.8
+    recovery = base_penalty + (1.0 - base_penalty) * (last_trigger_offset / decay_days)
+    return float(min(1.0, recovery))
+
+
 def compute_all_factors(daily_df: pd.DataFrame, weekly_df: pd.DataFrame,
                         ema_period: int = 20, rsi_period: int = 14,
                         vol_window: int = 20,
                         hs300_weekly: pd.DataFrame = None,
                         residual_reg_window: int = 12,
-                        residual_mom_window: int = 12) -> dict:
+                        residual_mom_window: int = 12,
+                        f6_rsi_thresh: float = 80.0,
+                        f6_drop_thresh: float = 0.025,
+                        f6_base_penalty: float = 0.15) -> dict:
     """
-    计算一支 ETF 的全部因子 (F1-F5 + 残差动量)
-    返回 dict: {f1_ema_dev, f2_rsi_adaptive, f3_volume_ratio, f5_volatility_z, f1_residual_mom}
+    计算一支 ETF 的全部因子 (F1-F5 + 残差动量 + F6惩罚乘数)
+    返回 dict: {f1_ema_dev, f2_rsi_adaptive, f3_volume_ratio, f5_volatility_z,
+                f1_residual_mom, f6_exhaustion_penalty}
     """
     f1 = factor_ema_deviation(weekly_df, ema_period)
     f2 = factor_rsi_adaptive(daily_df, rsi_period, weekly_df, ema_period)
@@ -222,12 +302,18 @@ def compute_all_factors(daily_df: pd.DataFrame, weekly_df: pd.DataFrame,
     f1r = factor_residual_momentum(weekly_df, hs300_weekly,
                                    reg_window=residual_reg_window,
                                    mom_window=residual_mom_window)
+    f6 = factor_exhaustion_penalty(daily_df, rsi_period=rsi_period,
+                                   vol_window=vol_window,
+                                   rsi_thresh=f6_rsi_thresh,
+                                   drop_thresh=f6_drop_thresh,
+                                   base_penalty=f6_base_penalty)
     return {
         "f1_ema_dev": f1,
         "f2_rsi_adaptive": f2,
         "f3_volume_ratio": f3,
         "f5_volatility_z": f5,
         "f1_residual_mom": f1r,
+        "f6_exhaustion_penalty": f6,
     }
 
 

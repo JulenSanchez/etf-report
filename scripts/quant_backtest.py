@@ -32,9 +32,27 @@ DATA_DIR = SKILL_DIR / "data" / "quant"
 OUTPUT_DIR = SKILL_DIR / "data" / "quant_results"
 
 
-def load_config():
+def load_config(preset: str = "weekly_trend"):
+    """加载配置，并用指定 preset 覆盖顶层 scoring/confidence/position/factors。
+    preset=None 时保留顶层原始值（仅用于调试）。
+    """
     with CONFIG_PATH.open("r", encoding="utf-8") as f:
-        return yaml.safe_load(f)
+        cfg = yaml.safe_load(f)
+
+    if preset:
+        p = cfg.get("presets", {}).get(preset)
+        if p is None:
+            raise ValueError(f"Preset '{preset}' not found in quant_universe.yaml")
+        # 用 preset 的四个子块覆盖顶层，缺失子块保留顶层原值
+        for block in ("scoring", "confidence", "position", "factors"):
+            if block in p:
+                cfg[block].update(p[block])
+        # scoring 本身的 weights/bias_bonus/sensitivity 直接挂在 preset.scoring 下
+        for key in ("weights", "bias_bonus", "sensitivity"):
+            if key in p.get("scoring", {}):
+                cfg["scoring"][key] = p["scoring"][key]
+
+    return cfg
 
 
 def load_etf_data(code: str):
@@ -69,9 +87,29 @@ def get_rebalance_dates(daily_dates: pd.DatetimeIndex, freq: str = "W-FRI"):
     return pd.DatetimeIndex(rebalance_dates)
 
 
+def get_execution_date(signal_date: pd.Timestamp, all_dates: pd.DatetimeIndex, timing: str) -> pd.Timestamp | None:
+    """Return trade execution date for a signal date."""
+    if timing == "next_open":
+        future_dates = all_dates[all_dates > signal_date]
+        return future_dates[0] if len(future_dates) else None
+    return signal_date
+
+
+def get_price_on_date(all_daily: dict, code: str, date: pd.Timestamp, field: str = "close") -> float | None:
+    df = all_daily.get(code)
+    if df is None:
+        return None
+    row = df[df["date"] == date]
+    if len(row) == 0 or field not in row.columns:
+        return None
+    return float(row[field].iloc[0])
+
+
 def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
                  initial_capital: float = 1000000.0,
-                 rebalance_freq: str = None):
+                 rebalance_freq: str = None,
+                 preset: str = "weekly_trend",
+                 execution_timing: str = None):
     """
     主回测函数
 
@@ -85,7 +123,7 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
     rebalance_freq: "W-FRI"（每周最后一个交易日）或 "daily"（每个交易日）
                    None 时读配置文件 position.rebalance_freq
     """
-    cfg = load_config()
+    cfg = load_config(preset=preset)
     universe = cfg["universe"]
     scoring_cfg = cfg["scoring"]
     confidence_cfg = cfg["confidence"]
@@ -100,6 +138,10 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
     if rebalance_freq is None:
         rebalance_freq = position_cfg.get("rebalance_freq", "W-FRI")
     score_band = position_cfg.get("score_band", 0)
+    if execution_timing is None:
+        execution_timing = position_cfg.get("execution_timing", "same_close")
+    if execution_timing not in ("same_close", "next_open"):
+        execution_timing = "same_close"
     commission_rate = position_cfg.get("commission_rate", 0)
     f3_sens = sensitivity.get("f3", 1.0)
     f2_dz = sensitivity.get("f2_dead_zone", 1.0)
@@ -127,6 +169,9 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
     ma_bear_pos = confidence_cfg.get("ma_bear_pos", 0.10)
     max_holdings = position_cfg["max_holdings"]
     step = position_cfg["discretize_step"]
+    f6_rsi_thresh   = factor_cfg.get("f6_rsi_thresh", 80.0)
+    f6_drop_thresh  = factor_cfg.get("f6_drop_thresh", 0.025)
+    f6_base_penalty = factor_cfg.get("f6_base_penalty", 0.15)
 
     # 构建偏好 map（0-1 尺度）
     bias_map = {e["code"]: bias_bonus / 100.0 for e in universe if e.get("bias")}
@@ -238,6 +283,11 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
     print("\n开始回测...")
 
     for rb_idx, rb_date in enumerate(rebalance_dates):
+        execution_date = get_execution_date(rb_date, all_dates, execution_timing)
+        if execution_date is None:
+            continue
+        execution_price_field = "open" if execution_timing == "next_open" else "close"
+
         # ------ 1. 计算当日三因子 ------
         factors_data = {}
         prices_today = {}
@@ -258,13 +308,22 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
                 ema_period=factor_cfg["ema"]["period_weeks"],
                 rsi_period=factor_cfg["rsi"]["period_days"],
                 vol_window=factor_cfg["volume_ratio"]["window_days"],
+                f6_rsi_thresh=f6_rsi_thresh,
+                f6_drop_thresh=f6_drop_thresh,
+                f6_base_penalty=f6_base_penalty,
             )
 
-            if any(np.isnan(v) for v in factors.values()):
+            # f1_residual_mom 权重=0，hs300_weekly未传时为NaN属正常，跳过此字段
+            # f6_exhaustion_penalty 是乘数非因子，不参与NaN过滤
+            SKIP_NAN_KEYS = {"f1_residual_mom", "f6_exhaustion_penalty"}
+            if any(np.isnan(v) for k, v in factors.items() if k not in SKIP_NAN_KEYS):
                 continue
 
+            exec_price = get_price_on_date(all_daily, code, execution_date, execution_price_field)
+            if exec_price is None:
+                continue
             factors_data[code] = factors
-            prices_today[code] = float(daily_slice["close"].iloc[-1])
+            prices_today[code] = exec_price
 
         if len(factors_data) < max_holdings:
             # 可用 ETF 不够，跳过本次调仓
@@ -281,6 +340,7 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
         w2 = weights.get("rsi_adaptive", 0.30)
         w3 = weights.get("volume_ratio", 0.35)
         w4 = weights.get("valuation", 0.15)
+        w6 = weights.get("exhaustion_penalty", 0.0)
 
         composite = mapped_f1 * w1 + mapped_f2 * w2 + mapped_f3 * w3
 
@@ -297,6 +357,11 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
         for code, bonus in bias_map.items():
             if code in composite.index:
                 composite[code] += bonus
+
+        # F6 动能衰竭惩罚（加法因子：f6_penalty-1 ∈ [-0.85, 0]，w6=0时无效）
+        if w6 > 0 and "f6_exhaustion_penalty" in factors_df.columns:
+            f6_score = factors_df["f6_exhaustion_penalty"] - 1.0
+            composite = composite + f6_score * w6
 
         # ------ 3. Top-6 选股 + 仓位 ------
         top_n = composite.nlargest(max_holdings)
@@ -328,6 +393,7 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
             top_n = pd.Series(merged).nlargest(max_holdings)
 
         # 信心函数
+        avg_conf = 0.0  # 默认值，legacy分支会覆盖
         score_dispersion = top_n.std()
         market_breadth = (composite > composite.median()).sum() / max(len(composite), 1)
 
@@ -452,9 +518,12 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
                 if portfolio[code] <= 0:
                     del portfolio[code]
 
-        # 记录信号
+        # 记录信号；date 保持为实际执行日，signal_date 保留信号生成日
         signal_history.append({
-            "date": rb_date,
+            "date": execution_date,
+            "signal_date": rb_date,
+            "execution_date": execution_date,
+            "execution_timing": execution_timing,
             "scores": composite.to_dict(),
             "top6": list(top_n.index),
             "positions": target_positions.to_dict(),
@@ -489,13 +558,13 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
             target_positions = sig["positions"]
             target_codes = set(target_positions.keys())
 
-            # 获取当日价格
+            # 获取成交价格：same_close 用收盘价，next_open 用执行日开盘价
+            trade_field = "open" if sig.get("execution_timing") == "next_open" else "close"
             prices = {}
             for code in all_daily:
-                df = all_daily[code]
-                row = df[df["date"] == date]
-                if len(row) > 0:
-                    prices[code] = float(row["close"].iloc[0])
+                p = get_price_on_date(all_daily, code, date, trade_field)
+                if p is not None:
+                    prices[code] = p
 
             # 当前总值
             hv = sum(portfolio2.get(c, 0) * prices.get(c, 0) for c in portfolio2)
@@ -598,10 +667,12 @@ def main():
     parser = argparse.ArgumentParser(description="REQ-177 M2.1: 量化回测引擎")
     parser.add_argument("--start", type=str, default="2023-01-01", help="回测起始日期")
     parser.add_argument("--end", type=str, default=None, help="回测结束日期")
+    parser.add_argument("--execution-timing", choices=["same_close", "next_open"], default=None,
+                        help="成交口径：same_close=信号日收盘成交，next_open=下一交易日开盘成交")
     parser.add_argument("--output", type=str, default=None, help="输出净值 CSV 路径")
     args = parser.parse_args()
 
-    nav_df, signals = run_backtest(start_date=args.start, end_date=args.end)
+    nav_df, signals = run_backtest(start_date=args.start, end_date=args.end, execution_timing=args.execution_timing)
 
     if nav_df is not None and args.output:
         output_path = Path(args.output)
