@@ -16,7 +16,7 @@ provider:
 
 ## 激活条件
 
-1. 用户提到/编辑的文件路径匹配：`c:/Users/julentan/CodeBuddy/StockMarket/.codebuddy/skills/etf-report/`
+1. 用户提到/编辑的文件路径匹配：`etf-report/`（skill 根目录）
 2. 用户对话包含触发词：`etf-report, etf 报告, 投资报告, etf 技能`
 
 ## 入口守卫

@@ -39,10 +39,11 @@
 | 数据拉取 / 冷启动 / 增量更新 / 被封处理 | §3 数据管线详解 |
 | 启动 Tuner / 参数面板说明 / URL 深链接 | §4 Tuner 使用规程 |
 | 参数优化方法 / 搜索策略 / 多窗口验证 / 当前最优结论 | §5 策略调优工作流 |
-| 从零搭建环境 | §6 从零搭建量化环境 |
-| 某个设计决策的来龙去脉 | §7 设计决策 ADR |
-| 报错 / 异常现象排查 | §8 排查指南 |
-| 哪些数据需要手动更新 | §9 一次性数据盘点 |
+| **跑回测 / 复用已有回测基础设施 / 分析回测结果** | **§6 回测基础设施与复用指南** |
+| 从零搭建环境 | §7 从零搭建量化环境 |
+| 某个设计决策的来龙去脉 | §8 设计决策 ADR |
+| 报错 / 异常现象排查 | §9 排查指南 |
+| 哪些数据需要手动更新 | §10 一次性数据盘点 |
 
 ### 当前最优参数（截至 2026-04-30）
 
@@ -198,8 +199,8 @@ python scripts/quant_tuner.py --auto # 自动更新数据后启动
 
 ```powershell
 Start-Process -FilePath "python" `
-  -ArgumentList "C:\Users\julentan\CodeBuddy\StockMarket\.codebuddy\skills\etf-report\scripts\quant_tuner.py" `
-  -WorkingDirectory "C:\Users\julentan\CodeBuddy\StockMarket\.codebuddy\skills\etf-report"
+  -ArgumentList "scripts\quant_tuner.py" `
+  -WorkingDirectory "$PWD"
 ```
 
 > 注意：不要用 AI 会话的后台 Bash 进程启动 Tuner——会话断开进程即终止。也不要用 `cmd.exe /c start`，在 Git Bash 环境下不稳定。
@@ -210,7 +211,7 @@ API 端点：
 |------|------|------|
 | `/` | GET | 供给 tuner.html |
 | `/api/run` | POST | 提交参数 → 运行回测 → 返回 JSON |
-| `/api/presets` | GET | 返回 3 个策略预设参数 |
+| `/api/presets` | GET | 返回 3 个策略预设参数 + `_universe_options`（全部 ETF 列表，含 code/name/sector/bias） |
 | `/api/save` | POST | 将当前参数写回 quant_universe.yaml |
 | `/api/kline` | GET | 返回单支 ETF 日线+周线 K 线（含 RSI/EMA） |
 | `/api/etf_prices` | GET | 返回 ETF 价格序列（日期范围查询） |
@@ -342,6 +343,7 @@ python scripts/quant_tuner.py
 | | f3_sensitivity | 0.1-5.0 | 1.0 | F3 sigmoid 灵敏度 |
 | | f2_dead_zone | 0-5 | 1.5 | F2 双通道死区 |
 | 时间窗口 | start_date / end_date | 日期滑块 | 近1年 | 回测起止日期 |
+| 标的池 | universe | 逗号分隔 ETF code | 空（=全部） | 限定回测参与标的，空或缺失=使用全部 ETF；至少需 max_holdings 支有数据 |
 
 ### 4.3 URL 参数深链接
 
@@ -349,6 +351,12 @@ Tuner 页面支持通过 URL query string 预填参数并自动运行回测：
 
 ```
 http://localhost:5179/?w1=40&w2=0&w3=60&dead_zone=48&full_zone=65&rebalance_freq=daily&score_band=5&start_date=2024-02-01&end_date=2024-09-30&autorun=1
+```
+
+**标的池深链接示例**（仅回测 6 支 ETF）：
+
+```
+http://localhost:5179/?universe=512400,515880,512070,513120,512660,512690
 ```
 
 **支持的全部参数**：
@@ -367,6 +375,7 @@ http://localhost:5179/?w1=40&w2=0&w3=60&dead_zone=48&full_zone=65&rebalance_freq
 | `rebalance_freq` | string | W-FRI / daily |
 | `score_band` | float | 分数带（%） |
 | `start_date` `end_date` | string | YYYY-MM-DD |
+| `universe` | string | 逗号分隔 ETF code，空=全部 |
 | `autorun` | string | 1=自动运行（默认），0=只填参数不运行 |
 
 **自适应机制**：URL 参数字段名直接取自 `getParams()` 的 key 集合。新增参数时只需更新 `getParams()` + `setParams()`，URL 自动支持，无需额外注册。新增 string 类型参数需在 `applyUrlParams()` 的字符串判断列表中添加 key。
@@ -643,7 +652,105 @@ for mp, bull, bear, dc in combos:
 
 ---
 
-## 6. 从零搭建量化环境
+## 6. 回测基础设施与复用指南
+
+> **核心原则**：需要跑回测或分析回测结果时，**先复用已有基础设施，不要从零写脚本**。
+
+### 6.1 两套回测引擎（不要搞混）
+
+| 引擎 | 入口脚本 | 核心函数 | 依赖 | signal_history 丰富度 |
+|------|---------|---------|------|---------------------|
+| **quant_backtest** | `scripts/quant_backtest.py` | `run_backtest(start, end, preset, universe_filter=None)` | 无 Flask | 基础（scores, top6, positions, total_target） |
+| **quant_tuner** | `scripts/quant_tuner.py` | `run_tuner_backtest(params)` | Flask 进程 | 丰富（+detail, regime, avg_confidence） |
+
+**选择逻辑**：
+
+```
+需要跑回测？
+  ├─ 涉及 preset（weekly_trend / daily_aggressive）？
+  │    ├─ 是 → 用 run_scenarios.py（自动缓存、可并行）
+  │    └─ 否 → 需要 Tuner 的交互式参数？
+  │              ├─ 是 → 启动 Tuner 进程，调 /api/run
+  │              └─ 否 → 用 quant_backtest.py
+  └─ 只需分析已有回测结果？
+       └─ 用 run_scenarios.load_result() 加载缓存
+```
+
+### 6.2 可复用的运行器
+
+#### run_scenarios.py — preset 级回测运行器
+
+```bash
+# CLI：跑默认2个preset，结果自动缓存
+python scripts/run_scenarios.py
+
+# 指定preset和时间范围
+python scripts/run_scenarios.py --presets weekly_trend daily_aggressive --start 2022-01-01 --end 2024-12-31
+
+# 强制重跑（忽略缓存）
+python scripts/run_scenarios.py --force
+
+# 串行模式（调试用）
+python scripts/run_scenarios.py --no-parallel
+```
+
+**Python API**（在分析脚本中加载已跑好的结果）：
+
+```python
+from run_scenarios import load_result
+
+nav_df, signal_history = load_result("weekly_trend", "2022-01-01", "2024-12-31")
+# nav_df: DataFrame with columns [date, nav]
+# signal_history: list of dicts, 每个调仓日的信号记录
+```
+
+缓存位置：`outputs/cache/{preset}__{start}__{end}.pkl`，命中则直接返回不重跑。
+
+#### quant_backtest.py — 单次独立回测
+
+```bash
+python scripts/quant_backtest.py                     # 默认 weekly_trend, 2023-01-01 起
+python scripts/quant_backtest.py --start 2022-01-01 --end 2024-12-31 --preset daily_aggressive
+python scripts/quant_backtest.py --output results.csv  # 输出 NAV CSV
+```
+
+### 6.3 信号格式差异与推断
+
+`quant_backtest` 的 signal_history 不含 `regime` 和 `detail` 字段。需要 regime 时从 `total_target` 推断：
+
+| total_target | regime | 含义 |
+|-------------|--------|------|
+| ≥ 0.9 | `ma_above` | 牛市（HS300 在周线 MA 上方） |
+| ≤ 0.4 | `ma_below` | 熊市（HS300 在周线 MA 下方） |
+| 0.4-0.9 | `mid` | 过渡态（当前配置不会出现） |
+
+示例：
+
+```python
+def infer_regime(total_target):
+    if total_target >= 0.9:
+        return "ma_above"
+    elif total_target <= 0.4:
+        return "ma_below"
+    else:
+        return "mid"
+
+regimes = [infer_regime(s["total_target"]) for s in signal_history]
+```
+
+### 6.4 常见分析场景速查
+
+| 我想做的事 | 怎么做 |
+|-----------|-------|
+| 跑两个 preset 对比收益/MDD | `python run_scenarios.py --presets weekly_trend daily_aggressive` |
+| 分析某 preset 的 regime 切换 | `load_result()` → 遍历 signal_history，按 `total_target` 推断 regime |
+| 分析 ETF 换仓频率 | `load_result()` → 比较 `positions` dict 的变化 |
+| 跑自定义参数（非 preset） | 启动 Tuner → `/api/run` POST；或直接调 `quant_backtest.run_backtest()` |
+| 多时间窗口验证 | 循环调 `load_result(preset, start, end)`，分别计算指标 |
+
+---
+
+## 7. 从零搭建量化环境
 
 ### 一键启动（推荐）
 
@@ -681,7 +788,7 @@ pip install -r requirements.txt   # pandas, numpy, akshare, flask, pyyaml
 
 ---
 
-## 7. 设计决策 (ADR)
+## 8. 设计决策 (ADR)
 
 ### ADR-1: 为什么 Tuner 用 Flask localhost
 
@@ -718,9 +825,11 @@ F2（RSI 自适应变换）采用双通道架构：z-score 通道（相对历史
 
 2026-04-30 实现：Tuner 页面支持 URL query string 预填参数并自动运行。参数字段名取自 `getParams()` 的 key 集合，新增参数自动可用。设计理由：AI 辅助调参时，构造 URL 比手动调滑块高效得多；用户也可通过 URL 分享策略配置。
 
+2026-05-12 扩展：新增 `universe` 参数支持标的池深链接，格式为逗号分隔 ETF code，空或缺失=全部 ETF。
+
 ---
 
-## 8. 排查指南
+## 9. 排查指南
 
 | 现象 | 可能原因 | 排查 |
 |------|---------|------|
@@ -735,7 +844,7 @@ F2（RSI 自适应变换）采用双通道架构：z-score 通道（相对历史
 
 ---
 
-## 9. 一次性数据盘点
+## 10. 一次性数据盘点
 
 量化回测依赖的"预计算/一次性数据"，与正式页共享部分数据源：
 

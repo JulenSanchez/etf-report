@@ -2,18 +2,51 @@
 
 自动分析与生成 6 支 ETF 的投资分析报告。
 
-![Version](https://img.shields.io/badge/version-v2.5.1-blue)
+![Version](https://img.shields.io/badge/version-v3.1.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 **在线报告**：[查看最新报告](https://julensanchez.github.io/etf-report/)
 
 ## 快速开始
 
+### 1. 环境准备
+
+需要 Python 3.10+。推荐使用虚拟环境：
+
 ```bash
 git clone https://github.com/JulenSanchez/etf-report.git
 cd etf-report
+python -m venv .venv
+# Windows:
+.venv\Scripts\activate
+# macOS/Linux:
+source .venv/bin/activate
 pip install -r requirements.txt
+```
+
+**依赖清单**（7 个第三方包）：
+
+| 包名 | pip 安装名 | 用途 |
+|------|-----------|------|
+| numpy | `numpy` | 数值计算（因子打分、回测） |
+| pandas | `pandas` | 数据处理（K线、回测引擎） |
+| PyYAML | `pyyaml` | YAML 配置读写 |
+| requests | `requests` | HTTP 请求（腾讯K线API、数据拉取） |
+| Flask | `flask` | Tuner 本地 Web 服务 |
+| BeautifulSoup4 | `beautifulsoup4` | HTML 解析（编辑源抓取） |
+| AKShare | `akshare` | 金融数据接口（沪深300日线、ETF分红、指数估值等） |
+
+> 注意：`pyyaml` 的 import 名是 `yaml`，`beautifulsoup4` 的 import 名是 `bs4`。
+
+### 2. 运行
+
+```bash
+# 生成报告
 python scripts/update_report.py
+
+# 启动 Tuner（量化回测调试工具）
+python scripts/quant_tuner.py
+# 浏览器打开 http://localhost:5179
 ```
 
 clone 后无需额外配置即可运行——默认读取 `config/config.example.yaml`。
@@ -135,7 +168,7 @@ python scripts/quant_tuner.py
 | 定位 | 开发调试工具，不纳入 `index.html` 静态页面 |
 | Git | 正常提交，属于项目 feature（`scripts/quant_tuner.py`） |
 | 数据 | 启动时一次性预加载 25 支 ETF 历史数据 + F4 估值分数，回测过程无网络请求 |
-| 可调参数 | 因子权重(F1-F4) / 偏好加成 / 信心函数(类型/死区/满配) / 仓位控制(持仓数/步长) / 因子周期(EMA/RSI/量比) |
+| 可调参数 | 因子权重(F1-F4) / 偏好加成 / 信心函数(类型/死区/满配) / 仓位控制(持仓数/步长) / 因子周期(EMA/RSI/量比) / 标的池筛选 |
 | 保存 | "保存参数"按钮直接写回 `config/quant_universe.yaml` |
 
 调参完成后：关闭 Flask → 执行 `python scripts/quant_build_payload.py` 重新生成正式 payload。

@@ -267,7 +267,7 @@ def build_hs300_benchmark(nav_df):
 
 def build_equal_weight_benchmark(nav_df, all_daily_data):
     """
-    Compute equal-weight buy-and-hold benchmark for all 25 ETFs.
+    Compute equal-weight buy-and-hold benchmark for all ETFs.
     Normalized to 100% at first valid date.
     """
     nav_dates = nav_df["date"].tolist()

@@ -1,5 +1,5 @@
 """
-REQ-177 M0.2: 25 支 ETF 历史 K 线数据拉取
+REQ-177 M0.2: 27 支 ETF 历史 K 线数据拉取
 用途：为三因子打分系统提供日线 + 周线历史数据
 
 输出：data/quant/{code}_daily.csv  (日线: date, open, close, high, low, volume, amount)
@@ -29,22 +29,65 @@ MARKET_CLOSE_HOUR = 15
 MARKET_CLOSE_MIN = 0
 COOL_OFF_MINUTES = 10  # only allow data >= close_time + cool_off (REQ-195: 15:10 即可拉取，为盘后交易预留时间)
 
+# Trading calendar (loaded from data/quant/trading_days_YYYY.txt)
+_TRADING_DAYS_FETCHER = set()
+_TD_LIST_FETCHER = []
+
+
+def _load_trading_calendar_fetcher():
+    """Load trading day calendar for the current year (+ adjacent years)."""
+    global _TRADING_DAYS_FETCHER, _TD_LIST_FETCHER
+    _TRADING_DAYS_FETCHER = set()
+    _TD_LIST_FETCHER = []
+    data_dir = Path(__file__).resolve().parent.parent / "data" / "quant"
+    for year in [datetime.now().year - 1, datetime.now().year, datetime.now().year + 1]:
+        p = data_dir / f"trading_days_{year}.txt"
+        if p.exists():
+            with open(p) as f:
+                for line in f:
+                    ds = line.strip()
+                    if ds:
+                        _TRADING_DAYS_FETCHER.add(ds)
+    _TD_LIST_FETCHER = sorted(_TRADING_DAYS_FETCHER)
+
+
+def _last_trading_day_fetcher(before=None) -> str:
+    """Return the most recent trading day on or before `before` as YYYY-MM-DD."""
+    d = before or datetime.now()
+    if _TD_LIST_FETCHER:
+        ds = d.strftime("%Y-%m-%d")
+        lo, hi = 0, len(_TD_LIST_FETCHER) - 1
+        while lo <= hi:
+            mid = (lo + hi) // 2
+            if _TD_LIST_FETCHER[mid] <= ds:
+                lo = mid + 1
+            else:
+                hi = mid - 1
+        if hi >= 0:
+            return _TD_LIST_FETCHER[hi]
+    # Fallback: simple weekday
+    d2 = d
+    for _ in range(7):
+        if d2.weekday() < 5:
+            return d2.strftime("%Y-%m-%d")
+        d2 -= timedelta(days=1)
+    return d.strftime("%Y-%m-%d")
+
 
 def _latest_allowed_date() -> str:
     """Return the latest date (YYYY-MM-DD) for which closed K-line data is safe to fetch.
 
-    Rule: only include a date if the market has been closed for at least
-    COOL_OFF_MINUTES (default 60) minutes.  So for a 15:00 close, data
-    becomes available at 16:00 on the same day; before 16:00 the latest
-    allowed date is the previous trading day.
+    After 15:10 on a trading day, today's close is available.
+    Before 15:10 (or on a non-trading day), the latest allowed date is
+    the last trading day.
     """
     now = datetime.now()
     close_time = now.replace(hour=MARKET_CLOSE_HOUR, minute=MARKET_CLOSE_MIN,
                              second=0, microsecond=0)
     if now >= close_time + timedelta(minutes=COOL_OFF_MINUTES):
-        return now.strftime("%Y-%m-%d")
+        return _last_trading_day_fetcher(now)
     else:
-        return (now - timedelta(days=1)).strftime("%Y-%m-%d")
+        return _last_trading_day_fetcher(now - timedelta(minutes=1))
 
 SKILL_DIR = Path(__file__).resolve().parent.parent
 CONFIG_PATH = SKILL_DIR / "config" / "quant_universe.yaml"
@@ -336,6 +379,7 @@ def update_single(etf: dict, full: bool = False):
 
 
 def main():
+    _load_trading_calendar_fetcher()
     parser = argparse.ArgumentParser(description="ETF K-line data fetcher (Tencent Finance qfq)")
     parser.add_argument("--code", type=str, default=None, help="Only update specified ETF")
     parser.add_argument("--full", action="store_true", help="Full re-fetch (default: incremental)")

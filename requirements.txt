@@ -1,8 +1,12 @@
-# 运行主流程必需依赖
-requests>=2.31,<3
+# 核心依赖（update_report.py 主流程 + Tuner）
+numpy>=1.24,<3
+pandas>=2.0,<3
 PyYAML>=6.0,<7
+requests>=2.31,<3
+Flask>=3.0,<4
+beautifulsoup4>=4.12,<5
 akshare>=1.14,<2
 
-# 测试与回归验证
+# 测试
 pytest>=8.0,<9
 pytest-cov>=5.0,<6

@@ -137,7 +137,7 @@ python scripts/audit_project.py --git-config
 
 - **名称**：`每周审计 etf-report`
 - **频率**：每周一 09:00
-- **工作目录**：`c:/Users/julentan/CodeBuddy/StockMarket/.codebuddy/skills/etf-report`
+- **工作目录**：`etf-report/`（skill 根目录）
 - **执行内容**：运行 `python scripts/audit_project.py --full --report-only`，总结结构、敏感信息、文档一致性和 Git 边界结果
 
 ### 自动化输出要求

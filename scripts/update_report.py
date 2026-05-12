@@ -182,7 +182,7 @@ def run_editorial_update():
 
 
 def run_quant_data_update():
-    """增量更新量化回测所需的 25 支 ETF 日线/周线 CSV 数据。
+    """增量更新量化回测所需的 27 支 ETF 日线/周线 CSV 数据。
     不因拉取失败阻断主流程，失败时量化板块使用上一版数据。
     """
     logger.info("Step 2.6: 增量更新量化回测数据（ETF 日线/周线 CSV）")
@@ -1804,7 +1804,7 @@ def main(publish: bool = False):
         # 不因抓取失败阻断主流程，失败时保留上一版 yaml
         run_editorial_update()
 
-        # Step 2.6: 增量更新量化回测数据（25 支 ETF 日线/周线 CSV）
+        # Step 2.6: 增量更新量化回测数据（27 支 ETF 日线/周线 CSV）
         # 不因拉取失败阻断主流程，失败时量化板块使用上一版数据
         run_quant_data_update()
 

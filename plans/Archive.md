@@ -14,6 +14,7 @@
 | v2.5.0 | 2026-04-21 | REQ-138, REQ-137, REQ-139, REQ-140, REQ-141, REQ-142, REQ-143, REQ-144, REQ-145, REQ-147, REQ-146, REQ-157, REQ-158, REQ-160, REQ-164, REQ-168, REQ-148 | 调试工具链增强、CSS/JS 外链化、基准与解释层自动化升级、TOP5 归属列、K 线交互优化、成交额口径修正与首屏懒加载收口 |
 | v2.6.0 | 2026-04-29 | REQ-184 | 波动率因子(F5)探索与归零验证，策略基线锁定为(20,0,80,0,0)，量化面板改造为纯展示模式 |
 | v3.0.0 | 2026-05-08 | REQ-173, REQ-183, REQ-185, REQ-186, REQ-187, REQ-189, REQ-190, REQ-192, REQ-193 | 量化回测大版本：策略参数优化(MA26/B30/DirON Calmar 1.55)、量化正式页UI改造(2:1布局+K线replay+markLine)、日调仓+佣金模拟、残差动量/后视镜因子归零验证、开发环境便携化(BatchFiles+rules bundle+repo公开) |
+| v3.1.0 | 2026-05-12 | REQ-195, REQ-197, REQ-191 | next_open实盘成交口径、标的池筛选(universe filter + chip picker UI + URL深链接)、纳指ETF(159941)+黄金ETF(518880)新增(sector=另类,25→27支)、依赖文档完善、绝对路径清理 |
 
 
 
@@ -41,6 +42,7 @@
 | BUG-019 | 515880 通信设备 ETF 的 K 线基准、页面业绩基准、基金合同基准三者不一致 | closed | minor | 2026-04-21 | 2026-04-21 | 随 `v2.5.0` 发布收口：K 线基准与页面文案已统一改为创业板指。 |
 | BUG-020 | 文档暴露本地绝对路径与用户级规则引用 | closed | major | 2026-04-21 | 2026-04-21 | `README.md` 曾写入本机 `file:///c:/Users/...` 绝对路径，并引用用户级规则文件；`SKILL.md`、`CONTRIBUTING.md`、`plans/REQ-161.md` 也带有用户级规则路径。现已统一改写为仓库内自洽表述，并将 `PLAN.md` 加入 `.gitignore` 且从 Git 跟踪中移出。 |
 | BUG-021 | 发布前唯一门禁未收束到 `plans/private/GIT_WORKFLOW.md` | closed | major | 2026-04-21 | 2026-04-21 | 已完成治理收口：`.codebuddy/rules/etf-report.mdc` 与 `PLAN.md` 不再并列维护发布前检查，统一改为只引用 `plans/private/GIT_WORKFLOW.md`；该文档现已重写为发布前唯一门禁，并加入 `.gitignore` 且从 Git 跟踪中移出。 |
+| BUG-024 | FetchData 后 Tuner 回测/K线仍停在 2026-05-08 | closed | medium | 2026-05-11 | 2026-05-12 | FetchData 依赖腾讯 weekly K线，周内未生成当周周线；已改为由本地 daily 重建 weekly。v3.1.0 修复。 |
 
 
 

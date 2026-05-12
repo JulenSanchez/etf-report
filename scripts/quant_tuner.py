@@ -20,7 +20,7 @@ import subprocess
 import sys
 import time
 from copy import deepcopy
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import numpy as np
@@ -147,6 +147,8 @@ def preload():
     cfg = load_config()
     CACHE["cfg"] = cfg
 
+    _load_trading_calendar()
+
     events_by_code = _load_corporate_action_events()
 
     for etf in cfg["universe"]:
@@ -200,6 +202,65 @@ AFTERNOON_CLOSE = 900 # 15:00
 TOTAL_TRADING_MINUTES = 240  # 4 hours
 COOL_OFF_TIME = 910   # 15:10 — confirmed data available after this
 
+# Trading calendar (loaded from data/quant/trading_days_YYYY.txt)
+_TRADING_DAYS = set()   # set of "YYYY-MM-DD" strings
+_TD_LIST = []           # sorted list for binary search
+
+
+def _load_trading_calendar():
+    """Load trading day calendar for the current year (+ prev year for fallback)."""
+    global _TRADING_DAYS, _TD_LIST
+    _TRADING_DAYS = set()
+    _TD_LIST = []
+    data_dir = Path(__file__).resolve().parent.parent / "data" / "quant"
+    for year in [datetime.now().year - 1, datetime.now().year, datetime.now().year + 1]:
+        p = data_dir / f"trading_days_{year}.txt"
+        if p.exists():
+            with open(p) as f:
+                for line in f:
+                    ds = line.strip()
+                    if ds:
+                        _TRADING_DAYS.add(ds)
+    _TD_LIST = sorted(_TRADING_DAYS)
+    if _TD_LIST:
+        print(f"  [Calendar] Loaded {len(_TRADING_DAYS)} trading days ({_TD_LIST[0]} ~ {_TD_LIST[-1]})")
+
+
+def _is_trading_day(dt=None):
+    """Check if a date is a trading day (calendar-aware, not just weekday)."""
+    d = dt or datetime.now()
+    ds = d.strftime("%Y-%m-%d")
+    if _TRADING_DAYS:
+        return ds in _TRADING_DAYS
+    # Fallback: simple weekday check if no calendar loaded
+    return d.weekday() < 5
+
+
+def _last_trading_day(before=None):
+    """Return the most recent trading day on or before `before` as YYYY-MM-DD string.
+    If no calendar loaded, falls back to simple weekday logic.
+    """
+    d = before or datetime.now()
+    if _TD_LIST:
+        ds = d.strftime("%Y-%m-%d")
+        # Binary search: largest element <= ds
+        lo, hi = 0, len(_TD_LIST) - 1
+        while lo <= hi:
+            mid = (lo + hi) // 2
+            if _TD_LIST[mid] <= ds:
+                lo = mid + 1
+            else:
+                hi = mid - 1
+        if hi >= 0:
+            return _TD_LIST[hi]
+    # Fallback: walk backwards to find a weekday
+    d2 = d
+    for _ in range(7):
+        if d2.weekday() < 5:
+            return d2.strftime("%Y-%m-%d")
+        d2 -= timedelta(days=1)
+    return d.strftime("%Y-%m-%d")
+
 
 def _trading_elapsed_minutes(now=None):
     """How many trading minutes have elapsed today. 0 before open, 240 after close."""
@@ -221,10 +282,6 @@ def _is_post_market(now=None):
     n = now or datetime.now()
     return n.hour * 60 + n.minute >= COOL_OFF_TIME
 
-
-def _is_trading_day(dt=None):
-    d = dt or datetime.now()
-    return d.weekday() < 5
 
 
 def _fetch_sina_realtime(cfg):
@@ -277,12 +334,63 @@ def _fetch_sina_realtime(cfg):
     return results
 
 
+# A-share intraday volume profile template (30-min slots, 8 slots for 4h session)
+# Source: composite of A-share market studies — typical cumulative % at slot boundary.
+# W-shape: heavy open, morning fade, lunch dip, afternoon trough, close peak.
+# Slot:  9:30-10:00  10:00-10:30  10:30-11:00  11:00-11:30  13:00-13:30  13:30-14:00  14:00-14:30  14:30-15:00
+_INTRADAY_SLOT_PCT = [0.28, 0.12, 0.08, 0.06, 0.10, 0.07, 0.09, 0.20]
+# Cumulative profile: _INTRADAY_CUM[t] = sum of slots 0..t inclusive
+_INTRADAY_CUM = []
+_cum = 0.0
+for _p in _INTRADAY_SLOT_PCT:
+    _cum += _p
+    _INTRADAY_CUM.append(_cum)
+# _INTRADAY_CUM = [0.28, 0.40, 0.48, 0.54, 0.64, 0.71, 0.80, 1.00]
+
+
+def _intraday_cumulative_pct(now=None):
+    """Return the estimated cumulative volume fraction (0..1) at the current time.
+
+    Interpolates linearly within the current 30-min slot using the profile template.
+    """
+    n = now or datetime.now()
+    minutes = n.hour * 60 + n.minute + n.second / 60.0
+
+    if minutes <= MORNING_OPEN:
+        return 0.0
+    if minutes >= AFTERNOON_CLOSE:
+        return 1.0
+
+    # Map current time to a slot index + fractional offset
+    if minutes <= MORNING_CLOSE:
+        # Morning session: 9:30 - 11:30 → slots 0-3
+        elapsed = minutes - MORNING_OPEN
+    elif minutes <= AFTERNOON_OPEN:
+        # Lunch break — use morning close cumulative
+        return _INTRADAY_CUM[3]
+    else:
+        # Afternoon session: 13:00 - 15:00 → slots 4-7
+        elapsed = (MORNING_CLOSE - MORNING_OPEN) + (minutes - AFTERNOON_OPEN)
+
+    slot = min(int(elapsed / 30), 7)
+    frac = (elapsed - slot * 30) / 30.0
+
+    prev_cum = _INTRADAY_CUM[slot - 1] if slot > 0 else 0.0
+    curr_cum = _INTRADAY_CUM[slot]
+    return prev_cum + (curr_cum - prev_cum) * frac
+
+
 def _estimate_eod_volume(current_volume, now=None):
-    """Estimate end-of-day volume from intraday volume using time proportion."""
-    elapsed = _trading_elapsed_minutes(now)
-    if elapsed <= 0 or elapsed >= TOTAL_TRADING_MINUTES:
+    """Estimate end-of-day volume from intraday volume using A-share profile template.
+
+    Uses historical intraday volume distribution (W-shape) instead of naive linear
+    proportion. The template captures the typical open peak, lunch dip, and close
+    surge that linear extrapolation misses.
+    """
+    cum_pct = _intraday_cumulative_pct(now)
+    if cum_pct <= 0.001 or cum_pct >= 0.999:
         return current_volume
-    return int(current_volume / (elapsed / TOTAL_TRADING_MINUTES))
+    return int(current_volume / cum_pct)
 
 
 def _run_incremental_fetch(cfg):
@@ -316,9 +424,10 @@ def _reload_csv_to_cache(cfg):
 def refresh_data():
     """Main refresh entry point. Called by /api/refresh_data.
 
-    Two paths depending on time of day:
-    - Post-market (>=15:10): Run quant_data_fetcher to get confirmed close data → update CSV → reload CACHE → clear intraday cache
-    - Pre-market / Intraday (<15:10): Fetch Sina real-time prices → write intraday cache (not CSV)
+    Both paths first fill historical gaps via incremental CSV fetch.
+    Then:
+    - Post-market (>=15:10): confirmed close data is already in CSV → clear intraday cache
+    - Pre-market / Intraday (<15:10): fetch Sina real-time prices → write intraday cache
 
     Intraday cache is a single flat dict, always overwritten.
     Computation code merges cache into daily_df on-the-fly (see _get_daily_with_cache).
@@ -328,23 +437,23 @@ def refresh_data():
     cfg = CACHE.get("cfg") or load_config()
     time_label = now.strftime("%H:%M")
 
-    if _is_post_market(now):
-        # === Post-market: get confirmed close data ===
-        print(f"  [Refresh] Post-market — running incremental fetch...")
-        ok, fail = _run_incremental_fetch(cfg)
-        _reload_csv_to_cache(cfg)
+    # === Both paths: fill historical gaps first ===
+    print(f"  [Refresh] Filling historical gaps — running incremental fetch...")
+    ok, fail = _run_incremental_fetch(cfg)
+    _reload_csv_to_cache(cfg)
+    _precompute_benchmarks()
+    _precompute_valuation_scores()
+    _load_market_regimes()
+    gap_msg = f"CSV gap-fill | {ok} OK, {fail} fail"
 
-        # Clear intraday cache — CSV now has confirmed data
+    if _is_post_market(now):
+        # === Post-market: confirmed close data is now in CSV ===
+        # Clear intraday cache — CSV has the authoritative data
         CACHE["intraday_cache"] = {}
         CACHE["intraday_date"] = None
 
-        # Rebuild benchmarks with new data
-        _precompute_benchmarks()
-        _precompute_valuation_scores()
-        _load_market_regimes()
-
-        msg = f"{time_label} | CSV updated | {ok} OK, {fail} fail"
-        print(f"  [Refresh] {msg}")
+        msg = f"{time_label} | {gap_msg}"
+        print(f"  [Refresh] Post-market — {msg}")
 
         return {
             "status": "confirmed",
@@ -356,13 +465,26 @@ def refresh_data():
         }
 
     else:
-        # === Intraday: fetch real-time prices into cache ===
+        # === Pre-market / Intraday / Non-trading day ===
         if not _is_trading_day(now):
-            return {"status": "skip", "message": f"{time_label} | Non-trading day", "date": today_str, "time": time_label}
+            # Non-trading day: gap-fill already brought CSV up to last trading day.
+            # No intraday data to fetch — just report confirmed status.
+            ltd = _last_trading_day(now)
+            msg = f"{time_label} | Non-trading day | CSV up to {ltd} | {gap_msg}"
+            print(f"  [Refresh] {msg}")
+            return {
+                "status": "confirmed",
+                "message": msg,
+                "fetchOk": ok,
+                "fetchFail": fail,
+                "date": ltd,
+                "time": time_label,
+            }
 
+        # Trading day but before 15:10 — fetch real-time prices into intraday cache
         rt_prices = _fetch_sina_realtime(cfg)
         if not rt_prices:
-            return {"status": "error", "message": f"{time_label} | Sina API failed", "date": today_str, "time": time_label}
+            return {"status": "error", "message": f"{time_label} | Sina API failed | {gap_msg}", "date": today_str, "time": time_label}
 
         updated = 0
         for etf in cfg["universe"]:
@@ -392,7 +514,7 @@ def refresh_data():
 
         CACHE["intraday_date"] = today_str
         vol_note = " (vol est. EOD)" if _trading_elapsed_minutes(now) < TOTAL_TRADING_MINUTES else ""
-        msg = f"{time_label} | Intraday | {updated} ETFs{vol_note}"
+        msg = f"{time_label} | Intraday | {updated} ETFs{vol_note} | {gap_msg}"
         print(f"  [Refresh] {msg}")
 
         return {
@@ -837,6 +959,19 @@ def run_tuner_backtest(params):
         for code in CACHE["all_daily"]:
             all_daily[code] = _get_daily_with_cache(code)
             all_weekly[code] = _get_weekly_with_cache(code)
+
+    # Universe filter: limit backtest to selected ETFs
+    universe_str = params.get("universe", "")
+    if universe_str:
+        selected_codes = set(universe_str.split(","))
+        cfg["universe"] = [e for e in cfg["universe"] if e["code"] in selected_codes]
+        all_daily = {k: v for k, v in all_daily.items() if k in selected_codes}
+        all_weekly = {k: v for k, v in all_weekly.items() if k in selected_codes}
+
+    # Validate: need at least max_holdings ETFs with data
+    available = len(all_daily)
+    if available < max_holdings:
+        return {"error": f"Only {available} ETFs with data, need at least {max_holdings}"}
 
     # Date range: user-controlled start/end with hidden warmup
     # User sees results from start_date; system runs backtest from start_date - warmup
@@ -1529,6 +1664,12 @@ def api_presets():
             "f6_drop_thresh": p_data.get("factors", {}).get("f6_drop_thresh", 0.025) * 100,
             "f6_base_penalty": p_data.get("factors", {}).get("f6_base_penalty", 0.15),
         }
+    # Add universe options for the front-end selector
+    result["_universe_options"] = [
+        {"code": e["code"], "name": e.get("name", e["code"]),
+         "sector": e.get("sector", ""), "bias": bool(e.get("bias", False))}
+        for e in cfg.get("universe", [])
+    ]
     return jsonify(result)
 
 

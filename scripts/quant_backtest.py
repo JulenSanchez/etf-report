@@ -109,12 +109,13 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
                  initial_capital: float = 1000000.0,
                  rebalance_freq: str = None,
                  preset: str = "weekly_trend",
-                 execution_timing: str = None):
+                 execution_timing: str = None,
+                 universe_filter: list = None):
     """
     主回测函数
 
     逻辑：
-    1. 每个调仓日计算 25 支 ETF 三因子
+    1. 每个调仓日计算选中的 ETF 三因子
     2. 截面标准化 + 合成综合分
     3. Top-6 选股 + 信心函数仓位分配
     4. 按目标仓位调仓（用调仓日收盘价成交）
@@ -122,8 +123,12 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
 
     rebalance_freq: "W-FRI"（每周最后一个交易日）或 "daily"（每个交易日）
                    None 时读配置文件 position.rebalance_freq
+    universe_filter: 可选的 ETF code 列表，None 表示使用配置中的全部 ETF
     """
     cfg = load_config(preset=preset)
+    if universe_filter:
+        allowed = set(universe_filter)
+        cfg["universe"] = [e for e in cfg["universe"] if e["code"] in allowed]
     universe = cfg["universe"]
     scoring_cfg = cfg["scoring"]
     confidence_cfg = cfg["confidence"]
