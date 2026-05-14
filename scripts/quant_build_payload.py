@@ -21,7 +21,7 @@ sys.stdout.reconfigure(encoding="utf-8")
 SKILL_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(SKILL_DIR / "scripts"))
 
-from quant_backtest import run_backtest
+from quant_backtest import run_backtest, count_actual_rebalances
 from benchmark_data import load_hs300_daily_cached, build_hs300_pct
 
 CONFIG_PATH = SKILL_DIR / "config" / "quant_universe.yaml"
@@ -89,7 +89,7 @@ def compute_drawdown(nav_series):
     return [round(float(v), 2) for v in dd]
 
 
-def compute_summary(nav_df, signal_count):
+def compute_summary(nav_df, signal_history):
     initial = nav_df["nav"].iloc[0]
     final = nav_df["nav"].iloc[-1]
     total_return = (final / initial - 1) * 100
@@ -174,7 +174,8 @@ def compute_summary(nav_df, signal_count):
         "startDate": nav_df["date"].iloc[0].strftime("%Y-%m-%d"),
         "endDate": nav_df["date"].iloc[-1].strftime("%Y-%m-%d"),
         "tradingDays": len(nav_df),
-        "rebalanceCount": signal_count,
+        "rebalanceCount": count_actual_rebalances(signal_history),
+        "rebalanceDays": len(signal_history),
         "initialCapital": float(initial),
         "finalNav": round(float(final), 0),
     }
@@ -638,7 +639,7 @@ def build_risk_orders(signal_history, all_daily_data, base_cfg, etf_map):
 def build_template_payload(nav_df, signal_history, etf_map, hs300_pct, eq_weight_pct, risk_orders, latest_signal):
     """Build one template's payload dict."""
     return {
-        "summary": compute_summary(nav_df, len(signal_history)),
+        "summary": compute_summary(nav_df, signal_history),
         "navSeries": {
             "dates": [d.strftime("%Y-%m-%d") for d in nav_df["date"]],
             "navPct": [round(float(v), 2) for v in nav_df["nav_pct"]],
@@ -694,7 +695,7 @@ def main():
         results[tid] = (nav_df, signal_history)
         if first_nav_df is None:
             first_nav_df = nav_df
-        s = compute_summary(nav_df, len(signal_history))
+        s = compute_summary(nav_df, signal_history)
         print(f"  Return: {s['totalReturn']:+.2f}% | Annual: {s['annualReturn']:+.2f}% | "
               f"MaxDD: {s['maxDrawdown']:.2f}% | Sharpe: {s['sharpe']:.2f}")
 

@@ -202,7 +202,7 @@ factors:
     window_days: 20
 presets:
   weekly_trend:
-    label: 周频趋势型（推荐）
+    label: 周频趋势型
     description: HS300周线MA趋势仓位控制+方向确认，无F6。总收益+113.7%/年化+25.5%/MDD-14.6%/Calmar=1.75/Sharpe=1.29（2023-01-01~2026-05-08）。实际换仓141次/155次调仓，稳定低换手。
     scoring:
       weights:
@@ -240,7 +240,7 @@ presets:
       f6_drop_thresh: 0.025
       f6_base_penalty: 0.15
   daily_aggressive_f6:
-    label: 日频攻防型 (F6对照)
+    label: 动能保护
     description: '[对照组] 日调仓+F6加法惩罚。MA26/bear30%/方向确认/score_band3%。总收益+183.5%/年化+36.6%/MDD-13.2%/Calmar=2.78/Sharpe=1.73/佣金2.01%（2023-01-01~2026-05-08）。保留此preset供F7
       A/B对照。'
     scoring:
@@ -279,7 +279,7 @@ presets:
       f6_drop_thresh: 0.025
       f6_base_penalty: 0.15
   daily_aggressive:
-    label: 日频攻防型 (F7)
+    label: 波动探测
     description: '[实验组] 日调仓+F7对数收益偏离因子。F7参数经全量扫描优化(w10/k3.0/t11/w0.15)。3年期(2023-05-13~2026-05-13)回测:总收益+229.04%/年化+48.79%/MDD-11.99%/Sharpe=2.03/Sortino=2.99。vs
       F6(+196.08%):总收益+33%,MDD优化-2.66%,Sharpe+0.20。'
     scoring:
@@ -294,8 +294,7 @@ presets:
       sensitivity:
         f1: 8.0
         f3: 1.0
-        f2_dead_zone: 1.5
-        f7_t: 11.0
+        f7_t: 7.0
         f7_k: 3.0
     confidence:
       type: ma_trend
@@ -303,6 +302,12 @@ presets:
       ma_bull_pos: 1.0
       ma_bear_pos: 0.3
       ma_direction_confirm: true
+      dead_zone: 25
+      full_zone: 65
+      regime_base:
+        bull_trend: 0.9
+        choppy_range: 0.55
+        bear_trend: 0.25
     position:
       max_holdings: 6
       discretize_step: 0.05
@@ -312,16 +317,13 @@ presets:
       commission_rate: 0.00026
     factors:
       ema:
-        period_weeks: 16
+        period_weeks: 20
       rsi:
         period_days: 14
       volume_ratio:
         window_days: 20
-      f6_rsi_thresh: 80
+      f6_rsi_thresh: 80.0
       f6_drop_thresh: 0.025
       f6_base_penalty: 0.15
       log_return_deviation:
-        window_days: 10
-        lookback_days: 250
-        min_days: 60
-        sigma_floor: 0.01
+        window_days: 20

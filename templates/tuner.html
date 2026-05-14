@@ -1389,6 +1389,7 @@ function drawConfChart() {
 
 /* ====== Strategy presets ====== */
 var PRESETS = {};
+var CURRENT_PRESET = null;  // currently selected preset key (or 'custom')
 
 /* ====== Universe selector ====== */
 var UNIVERSE_OPTIONS = [];  // [{code, name, sector, bias}]
@@ -1412,22 +1413,37 @@ function renderPresetCards() {
   var container = $id('preset-cards');
   if (!container) return;
   container.innerHTML = '';
-  Object.keys(PRESETS).forEach(function(key) {
+
+  // Fixed display order
+  var order = ['daily_aggressive', 'daily_aggressive_f6', 'weekly_trend', 'custom'];
+  order.forEach(function(key) {
     var p = PRESETS[key];
+    if (!p) return;
+    var label = p.label || key;
+    // Strip legacy "（推荐）" suffix just in case
+    label = label.replace(/（推荐）/, '');
     var card = document.createElement('div');
     card.className = 'preset-card';
     card.id = 'preset-' + key;
     card.onclick = function() { applyPreset(key); };
-    card.innerHTML = '<h4>' + p.label + '</h4>';
+    card.innerHTML = '<h4>' + label + '</h4>';
     container.appendChild(card);
   });
+
+  // Auto-select first preset on init
+  if (!CURRENT_PRESET) {
+    applyPreset(order[0]);
+  }
 }
 
 function applyPreset(name) {
+  CURRENT_PRESET = name;
   document.querySelectorAll('.preset-card').forEach(c => c.classList.remove('active'));
   var card = $id('preset-' + name);
   if (card) card.classList.add('active');
-  if (PRESETS[name]) setParams(PRESETS[name]);
+  if (PRESETS[name]) {
+    setParams(PRESETS[name]);
+  }
 }
 
 /* ====== Universe selector logic ====== */
@@ -1658,7 +1674,7 @@ function renderResults(data) {
   // Connect three charts for shared axisPointer + dataZoom
   setTimeout(function() {
     if (navChart && ddChart) {
-      echarts.connect([navChart, ddChart]);
+      echarts.connect(klineReplayChart ? [navChart, ddChart, klineReplayChart] : [navChart, ddChart]);
     }
   }, 200);
 }
@@ -1791,7 +1807,26 @@ function renderNavChart(data) {
 
   navChart.setOption({
     backgroundColor:'transparent',
-    tooltip:{trigger:'axis', axisPointer:{type:'cross'}, backgroundColor:'rgba(10,25,47,0.95)', borderColor:'rgba(59,130,246,0.2)', textStyle:{color:'#e0e0e0',fontSize:11}},
+    tooltip:{trigger:'axis', axisPointer:{type:'cross'}, backgroundColor:'rgba(10,25,47,0.95)', borderColor:'rgba(59,130,246,0.2)', textStyle:{color:'#e0e0e0',fontSize:11},
+      formatter: function(params) {
+        if (!params || !params.length) return '';
+        var html = '<div style="font-weight:600;margin-bottom:3px">' + params[0].axisValue + '</div>';
+        for (var i = 0; i < params.length; i++) {
+          var p = params[i], c = p.color || '#e0e0e0';
+          html += '<div style="display:flex;justify-content:space-between;gap:18px;font-size:10px;line-height:1.6">' +
+            '<span style="color:#9ca3af">' + p.seriesName + '</span>' +
+            '<span style="color:' + c + ';font-weight:600">' + (p.value != null ? p.value.toFixed(2) + '%' : '-') + '</span></div>';
+        }
+        var idx = params[0].dataIndex;
+        if (idx > 0 && navPct[idx] != null && navPct[idx-1] != null) {
+          var chg = navPct[idx] - navPct[idx-1];
+          html += '<div style="margin-top:4px;padding-top:4px;border-top:1px solid rgba(255,255,255,0.08)">' +
+            '<span style="font-size:10px;color:#9ca3af">日涨跌 </span>' +
+            '<span style="font-size:10px;font-weight:600;color:' + (chg >= 0 ? '#ef4444' : '#10b981') + '">' + (chg >= 0 ? '+' : '') + chg.toFixed(2) + '%</span></div>';
+        }
+        return html;
+      },
+    },
     axisPointer: { link: [{xAxisIndex:'all'}] },
     legend:{data:series.filter(s=>!s.name.startsWith('_')).map(s=>s.name), textStyle:{color:'#9ca3af', fontSize:11}, top:0},
     grid:{left:50, right:20, top:30, bottom:30},
@@ -1810,6 +1845,7 @@ function renderNavChart(data) {
     if (dataIdx == null || dataIdx < 0 || dataIdx >= navDates.length) return;
     jumpToSnapshotByDate(navDates[Math.round(dataIdx)]);
   });
+
 }
 
 // Update only the nav-chart markLine (selected date) — no full redraw
@@ -1869,9 +1905,12 @@ function jumpToSnapshotByDate(clickDate) {
 
 async function saveYAML() {
   try {
-    var resp = await fetch('/api/save', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(getParams()) });
+    var payload = getParams();
+    payload._preset = CURRENT_PRESET || 'daily_aggressive';
+    var resp = await fetch('/api/save', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
     var data = await resp.json();
-    $id('status').textContent = data.ok ? '已保存到 quant_universe.yaml' : '保存失败: ' + (data.error||'');
+    var label = (PRESETS[CURRENT_PRESET] && PRESETS[CURRENT_PRESET].label) || CURRENT_PRESET || '预设';
+    $id('status').textContent = data.ok ? '已保存到 ' + label : '保存失败: ' + (data.error||'');
   } catch(e) { $id('status').textContent = '保存出错: ' + e.message; }
 }
 
@@ -2022,7 +2061,7 @@ function switchKlineFreq(freq) {
   if (currentKlineCode) loadTradeReplay(currentKlineCode);
   // Reconnect (chart instances may be re-created)
   setTimeout(function() {
-    echarts.connect([navChart, ddChart]);
+    echarts.connect(klineReplayChart ? [navChart, ddChart, klineReplayChart] : [navChart, ddChart]);
   }, 200);
 }
 
@@ -2235,6 +2274,47 @@ function renderTradeReplay(code, prices) {
     closeEstimated[prices.close.length - 1] = prices.close[prices.close.length - 1];
   }
 
+  // Pad kline data to navDates so echarts.connect index-based sync (axisPointer + dataZoom)
+  // matches date-for-date between nav-chart and kline-replay.
+  // Always pad: even when lengths match, dates may differ slightly.
+  var _lookup = Object.create(null);
+  for (var _i = 0; _i < navDates.length; _i++) { _lookup[navDates[_i]] = _i; }
+
+  function _pad(arr, def) {
+    var out = new Array(navDates.length);
+    for (var j = 0; j < navDates.length; j++) out[j] = def;
+    for (var k = 0; k < prices.dates.length; k++) {
+      var ni = _lookup[prices.dates[k]];
+      if (ni != null) out[ni] = arr[k];
+    }
+    return out;
+  }
+
+  // Pad price / indicator series
+  prices.close    = _pad(prices.close, null);
+  prices.rsi      = _pad(prices.rsi, null);
+  prices.volume   = _pad(prices.volume, null);
+  closeConfirmed  = _pad(closeConfirmed, null);
+  closeEstimated  = _pad(closeEstimated, null);
+  posSeries       = _pad(posSeries, 0);
+
+  // Remap trade markers
+  markPoints.forEach(function(mp) {
+    if (mp.coord) {
+      var ni2 = _lookup[mp.coord[0]];
+      if (ni2 != null) mp.coord[0] = navDates[ni2];
+    }
+  });
+  var _newTrade = Object.create(null);
+  Object.keys(barIdxToTrade).forEach(function(oldIdx) {
+    var dt = prices.dates[parseInt(oldIdx)];
+    var ni3 = dt ? _lookup[dt] : null;
+    if (ni3 != null) _newTrade[ni3] = barIdxToTrade[oldIdx];
+  });
+  barIdxToTrade = _newTrade;
+
+  prices.dates = navDates;
+
   var curDate = currentSelectedDate;
 
   // Custom tooltip formatter: dedupe date + show trade if exists
@@ -2292,9 +2372,9 @@ function renderTradeReplay(code, prices) {
       top: 0, right: 8,
     },
     grid: [
-      { left: 50, right: 44, top: 28,    height: 220 },   // 价格 (右多留44 给持仓 Y 轴)
-      { left: 50, right: 44, top: 256,   height: 50 },    // RSI
-      { left: 50, right: 44, top: 312,   height: 30 },    // 成交
+      { left: 50, right: 20, top: 28,    height: 220 },   // 价格
+      { left: 50, right: 20, top: 256,   height: 50 },    // RSI
+      { left: 50, right: 20, top: 312,   height: 30 },    // 成交
     ],
     xAxis: [
       { type:'category', data:prices.dates, scale:true, boundaryGap:false, axisLine:{lineStyle:{color:'#2a3a4a'}}, axisLabel:{show:false}, splitLine:{show:false} },
@@ -2310,9 +2390,9 @@ function renderTradeReplay(code, prices) {
       { scale:true, gridIndex:2, axisLabel:{color:'#6b7280',fontSize:9}, splitLine:{show:false}, splitNumber:2 },
       // grid 0 持仓 (右)
       { gridIndex:0, position:'right', min:0, max:100, splitNumber:2,
-        axisLabel:{color:'#10b981',fontSize:9, formatter:'{value}%'},
+        axisLabel:{show:false},
         splitLine:{show:false},
-        axisLine:{show:true, lineStyle:{color:'#2a3a4a'}},
+        axisLine:{show:false},
       },
     ],
     visualMap: {
@@ -2337,6 +2417,11 @@ function renderTradeReplay(code, prices) {
         areaStyle: { color: 'rgba(148,163,184,0.08)' },
         connectNulls: false,
         markPoint: { data: markPoints, animation: false, z: 10 },
+        markLine: curDate ? {
+          silent: true, symbol: 'none',
+          data: [{ xAxis: curDate, lineStyle:{color:'#ef4444',width:1.5,type:'dashed'} }],
+          label: { show: false },
+        } : undefined,
       },
       {
         name: '盘中估算', type: 'line', data: closeEstimated, showSymbol: false,
@@ -2344,11 +2429,6 @@ function renderTradeReplay(code, prices) {
         lineStyle: { color: '#60a5fa', width: 2, type: 'dashed' },
         connectNulls: false,
         markPoint: { data: markPoints, animation: false, z: 10 },
-        markLine: curDate ? {
-          silent: true, symbol: 'none',
-          data: [{ xAxis: curDate, lineStyle:{color:'#ef4444',width:1.5,type:'dashed'} }],
-          label: { show: false },
-        } : undefined,
       },
       {
         name: '🏔️ 持仓', type: 'line',
@@ -2417,9 +2497,18 @@ function renderTradeReplay(code, prices) {
     jumpToSnapshotByDate(prices.dates[Math.round(dataIdx)]);
   });
 
-  // Sync nav+dd only (kline-replay has different x-axis dates; click syncs via markLine)
-  if (navChart && ddChart) {
-    echarts.connect([navChart, ddChart]);
+  // Connect all three charts for shared axisPointer + dataZoom sync
+  if (navChart && ddChart && klineReplayChart) {
+    echarts.connect([navChart, ddChart, klineReplayChart]);
+  }
+
+  // Push nav's current zoom state to kline via ECharts' internal group sync —
+  // the same mechanism used by user drag/zoom, guaranteeing identical alignment.
+  if (navChart) {
+    var _navDz = (navChart.getOption().dataZoom || [{}])[0];
+    if (_navDz.start != null && (_navDz.start > 0 || _navDz.end < 100)) {
+      navChart.dispatchAction({ type: 'dataZoom', start: _navDz.start, end: _navDz.end });
+    }
   }
 }
 
@@ -2493,9 +2582,9 @@ window.addEventListener('load', async function() {
   validateBullBear();  // initial bull/bear validation
   onPeriodSliderChange();  // initialize date labels
   await loadPresets();
-  // Auto-apply weekly_trend preset so the initial backtest uses its params
-  var defaultPreset = PRESETS['weekly_trend'] ? 'weekly_trend' : Object.keys(PRESETS)[0];
-  if (defaultPreset) applyPreset(defaultPreset);
+  // renderPresetCards() already auto-selects daily_aggressive; this is a safety net
+  var defaultPreset = PRESETS['daily_aggressive'] ? 'daily_aggressive' : Object.keys(PRESETS)[0];
+  if (defaultPreset && CURRENT_PRESET !== defaultPreset) applyPreset(defaultPreset);
   var fromUrl = applyUrlParams();
   switchRightView('results');
   // No auto-run on page load — user clicks "运行回测" manually

@@ -93,6 +93,31 @@ def get_price_on_date(all_daily: dict, code: str, date: pd.Timestamp, field: str
     return _get_price_on_date(all_daily, code, date, field)
 
 
+def count_actual_rebalances(signal_history: list) -> int:
+    """Count rebalance dates where at least one ETF position actually changed.
+
+    Uses the same action logic as the tuner's detail enrichment:
+    new (0→>0), adj (|Δ|>1%), out (>0→0).  hold-only dates are NOT counted.
+    """
+    if not signal_history:
+        return 0
+    count = 0
+    prev_positions = {}
+    for sig in signal_history:
+        cur_positions = sig.get("positions", {})
+        had_change = False
+        all_codes = set(prev_positions) | set(cur_positions)
+        for code in all_codes:
+            prev = prev_positions.get(code, 0)
+            cur = cur_positions.get(code, 0)
+            if (cur > 0 and prev == 0) or (cur == 0 and prev > 0) or abs(cur - prev) > 0.01:
+                had_change = True
+                break
+        if had_change:
+            count += 1
+        prev_positions = dict(cur_positions)
+    return count
+
 
 from quant_factors import calc_rsi as _precalc_rsi
 
@@ -855,12 +880,14 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
     else:
         sortino = 0
 
+    actual_trades = count_actual_rebalances(signal_history)
+
     print("\n" + "=" * 60)
     print("回测结果")
     print("=" * 60)
     print(f"  回测区间:    {nav_df['date'].iloc[0].strftime('%Y-%m-%d')} ~ {nav_df['date'].iloc[-1].strftime('%Y-%m-%d')}")
     print(f"  交易日数:    {len(nav_df)}")
-    print(f"  调仓次数:    {len(signal_history)}")
+    print(f"  调仓次数:    {actual_trades} / {len(signal_history)}（实际换仓 / 总调仓日）")
     print(f"  总收益率:    {total_return:+.2f}%")
     print(f"  年化收益率:  {annual_return:+.2f}%")
     print(f"  最大回撤:    {max_drawdown:.2f}%")
@@ -873,7 +900,7 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
         print(f"  交易佣金:    {comm:,.0f} ({comm/initial_capital*100:.2f}% 本金)")
     print("=" * 60)
 
-    return nav_df, signal_history, {"total_commission": comm}
+    return nav_df, signal_history, {"total_commission": comm, "trade_count": actual_trades}
 
 
 def main():

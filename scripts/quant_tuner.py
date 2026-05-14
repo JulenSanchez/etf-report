@@ -889,22 +889,29 @@ def run_tuner_backtest(params):
     # Enrich detail with "action" by comparing consecutive positions
     prev_positions = {}
     enriched_history = []
+    actual_rebalance_count = 0
     for s in signal_history:
         detail = s.get("detail", {})
+        had_action = False
         for code, d in detail.items():
             cur_pos = d.get("position", 0)
             prev_pos = prev_positions.get(code, 0)
             if cur_pos > 0 and prev_pos == 0:
                 d["action"] = "new"
+                had_action = True
             elif cur_pos > 0 and prev_pos > 0 and abs(cur_pos - prev_pos) > 0.01:
                 d["action"] = "adj"
+                had_action = True
             elif cur_pos > 0 and prev_pos > 0:
                 d["action"] = "hold"
             elif cur_pos == 0 and prev_pos > 0:
                 d["action"] = "out"
+                had_action = True
             else:
                 d["action"] = ""
         prev_positions = {code: d.get("position", 0) for code, d in detail.items()}
+        if had_action:
+            actual_rebalance_count += 1
 
         sig_date = s["date"]
         enriched_history.append({
@@ -953,7 +960,7 @@ def run_tuner_backtest(params):
             "startDate": start_dt.strftime("%Y-%m-%d") if hasattr(start_dt, "strftime") else str(start_dt)[:10],
             "endDate": end_dt.strftime("%Y-%m-%d") if hasattr(end_dt, "strftime") else str(end_dt)[:10],
             "tradingDays": len(nav_df),
-            "rebalanceCount": len(enriched_history),
+            "rebalanceCount": actual_rebalance_count,
             "rebalanceDays": len(enriched_history),
             "commissionPct": round(total_commission / initial_cap * 100, 2),
             "elapsed": round(elapsed, 1),
@@ -1101,6 +1108,15 @@ def api_presets():
             "f7_k": p_data.get("scoring", {}).get("sensitivity", {}).get("f7_k", 3.0),
             "f7_window": p_data.get("factors", {}).get("log_return_deviation", {}).get("window_days", 20),
         }
+    # Inject 'custom' preset if not defined in YAML — clone daily_aggressive as template
+    if "custom" not in result:
+        template = result.get("daily_aggressive", {})
+        if template:
+            custom = dict(template)
+            custom["label"] = "自定义策略"
+            custom["description"] = "用户自定义策略，初始参数继承自日频F7。"
+            result["custom"] = custom
+
     # Add universe options for the front-end selector
     result["_universe_options"] = [
         {"code": e["code"], "name": e.get("name", e["code"]),
@@ -1110,13 +1126,37 @@ def api_presets():
     return jsonify(result)
 
 
+def _save_to_preset(preset_name, overrides):
+    """Deep-merge overrides into a specific preset inside quant_universe.yaml.
+    If the preset doesn't exist yet, auto-create it from daily_aggressive template."""
+    with CONFIG_PATH.open("r", encoding="utf-8") as f:
+        cfg = yaml.safe_load(f)
+    presets = cfg.setdefault("presets", {})
+    if preset_name not in presets:
+        template = presets.get("daily_aggressive", {})
+        if template:
+            presets[preset_name] = deepcopy(template)
+            presets[preset_name]["label"] = "自定义策略"
+            presets[preset_name]["description"] = "用户自定义策略。"
+        else:
+            raise ValueError(f"Preset '{preset_name}' not found and no template available")
+    target = presets[preset_name]
+    for section in ("scoring", "confidence", "position", "factors"):
+        if section in overrides:
+            target.setdefault(section, {}).update(overrides[section])
+    with CONFIG_PATH.open("w", encoding="utf-8") as f:
+        yaml.dump(cfg, f, allow_unicode=True, default_flow_style=False, sort_keys=False)
+
+
 @app.route("/api/save", methods=["POST"])
 def api_save():
     guard = _require_ready()
     if guard:
         return guard
     params = request.json
+    preset_name = params.pop("_preset", None)
     try:
+        # Build config fragment from tuner params (shared path)
         cfg = load_config()
         cfg["scoring"]["weights"] = {
             "ema_deviation": params["w1"] / 100.0,
@@ -1132,10 +1172,11 @@ def api_save():
         cfg["confidence"]["full_zone"] = int(params["full_zone"])
         cfg["position"]["max_holdings"] = int(params["max_holdings"])
         cfg["position"]["discretize_step"] = int(params.get("disc_step", 5)) / 100.0
+        cfg["position"]["rebalance_freq"] = params.get("rebalance_freq", "W-FRI")
+        cfg["position"]["score_band"] = float(params.get("score_band", 0)) / 100.0
         cfg["factors"]["ema"]["period_weeks"] = int(params.get("ema_period", 20))
         cfg["factors"]["rsi"]["period_days"] = int(params.get("rsi_period", 14))
         cfg["factors"]["volume_ratio"]["window_days"] = int(params.get("vol_window", 20))
-        # Preserve existing sensitivity keys (e.g. f2_dead_zone) — only update known ones
         sens = cfg.setdefault("scoring", {}).setdefault("sensitivity", {})
         sens["f1"] = float(params.get("f1_sensitivity", 8.0))
         sens["f3"] = float(params.get("f3_sensitivity", 1.0))
@@ -1148,19 +1189,22 @@ def api_save():
         cfg["factors"]["f6_rsi_thresh"] = float(params.get("f6_rsi_thresh", 80))
         cfg["factors"]["f6_drop_thresh"] = float(params.get("f6_drop_thresh", 2.5)) / 100.0
         cfg["factors"]["f6_base_penalty"] = float(params.get("f6_base_penalty", 0.15))
-        # f7_window → factors.log_return_deviation.window_days
         cfg.setdefault("factors", {}).setdefault("log_return_deviation", {})["window_days"] = int(params.get("f7_window", 20))
 
-        # Write only tuner-modifiable keys as overrides — base YAML comments preserved
         overrides = {
             "scoring": cfg["scoring"],
             "confidence": cfg["confidence"],
             "position": cfg["position"],
             "factors": cfg["factors"],
         }
-        with OVERRIDES_PATH.open("w", encoding="utf-8") as f:
-            f.write("# Quant Tuner user overrides — safe to delete to reset to defaults\n")
-            yaml.dump(overrides, f, allow_unicode=True, default_flow_style=False, sort_keys=False)
+
+        if preset_name:
+            _save_to_preset(preset_name, overrides)
+        else:
+            # Fallback: no preset selected → save to overrides file
+            with OVERRIDES_PATH.open("w", encoding="utf-8") as f:
+                f.write("# Quant Tuner user overrides — safe to delete to reset to defaults\n")
+                yaml.dump(overrides, f, allow_unicode=True, default_flow_style=False, sort_keys=False)
         return jsonify({"ok": True})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)})
