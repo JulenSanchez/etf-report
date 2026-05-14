@@ -16,7 +16,7 @@ import os
 import shutil
 import subprocess
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Optional
 
 
 from logger import Logger
@@ -189,7 +189,7 @@ def _deploy_to_source_repo(config: dict) -> bool:
         logger.error("源码仓库 git commit 失败", {"stderr": result.stderr.strip()})
         return False
 
-    result = _run_git(repo_root, ["push", "--force", "--no-verify", "origin", branch])
+    result = _run_git(repo_root, ["push", "--force-with-lease", "origin", branch])
     if result.returncode != 0:
         logger.error("源码仓库 git push 失败", {"stderr": result.stderr.strip()})
         return False
@@ -254,7 +254,7 @@ def _deploy_to_pages_repo(config: dict, skill_dir: str, html_source_path: str = 
         logger.error("Pages 仓库 git commit 失败", {"stderr": result.stderr.strip()})
         return False
 
-    result = _run_git(pages_root, ["push", "--force", "--no-verify", "origin", pages_branch])
+    result = _run_git(pages_root, ["push", "--force-with-lease", "origin", pages_branch])
     if result.returncode != 0:
         logger.error("Pages 仓库 git push 失败", {"stderr": result.stderr.strip()})
         return False

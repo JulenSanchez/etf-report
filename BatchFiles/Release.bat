@@ -138,8 +138,8 @@ REM ===== Phase 6: Commit & Push =====
 echo.
 echo [Phase 6] Commit & Push
 echo --------------------------------------------
-echo Staging all changes...
-git add -A
+echo Staging changes (current directory only)...
+git add .
 
 echo.
 echo Staged files:
@@ -161,8 +161,8 @@ if %errorlevel% neq 0 (
 )
 
 echo.
-echo Force pushing to origin/main...
-git push --force --no-verify origin main
+echo Pushing to origin/main...
+git push --force-with-lease origin main
 if %errorlevel% neq 0 (
     echo [ERROR] Push failed!
     pause

@@ -228,10 +228,10 @@ class SecurityAudit:
                 if file_path.is_file() and file_path.stat().st_size < 1*1024*1024:
                     try:
                         content = file_path.read_text(encoding='utf-8', errors='ignore')
-                    except:
+                    except (UnicodeDecodeError, OSError):
                         try:
                             content = file_path.read_bytes().decode('utf-8', errors='ignore')
-                        except:
+                        except (UnicodeDecodeError, OSError):
                             continue
                     
                     for pattern_type, pattern in patterns.items():
@@ -316,9 +316,8 @@ class SecurityAudit:
                     content = log_file.read_text(errors='ignore')
                     if any(p in content for p in ['password', 'token', 'secret']):
                         log_issues += 1
-                except:
+                except (UnicodeDecodeError, OSError):
                     pass
-
         if log_issues == 0:
             result["checks"].append({"id": 5, "name": "Logs clean", "status": "PASS"})
             result["passed"] += 1
@@ -345,7 +344,7 @@ class GitConfigAudit:
         if gitignore_file.exists():
             try:
                 content = gitignore_file.read_text(encoding='utf-8', errors='ignore')
-            except:
+            except (UnicodeDecodeError, OSError):
                 content = gitignore_file.read_bytes().decode('utf-8', errors='ignore')
             rules = [line.strip() for line in content.split('\n') if line.strip() and not line.startswith('#')]
         
@@ -367,7 +366,7 @@ class GitConfigAudit:
             )
             output = result.stdout.strip()
             return len(output) == 0, output
-        except:
+        except Exception:
             return None, "Cannot check git status"
 
     def check_git_config(self) -> Dict:
@@ -406,9 +405,8 @@ class GitConfigAudit:
                     size = file_path.stat().st_size
                     if size > 5*1024*1024:
                         large_files.append((file_path.relative_to(self.root), size))
-        except:
-            pass
-        
+        except OSError:
+            pass        
         if large_files:
             print("  Found {} large files".format(len(large_files)))
             print("  [WARNING]")

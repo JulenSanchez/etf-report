@@ -232,12 +232,8 @@ def factor_exhaustion_penalty(daily_df: pd.DataFrame,
     df = daily_df.copy()
     df = df.sort_values("date").reset_index(drop=True)
 
-    # RSI
-    delta = df["close"].diff()
-    gain  = delta.clip(lower=0).rolling(rsi_period, min_periods=1).mean()
-    loss  = (-delta.clip(upper=0)).rolling(rsi_period, min_periods=1).mean()
-    rs    = gain / loss.replace(0, np.nan)
-    rsi   = 100 - 100 / (1 + rs)
+    # RSI (use calc_rsi for consistency — Wilder's EMA, same as chart display)
+    rsi = calc_rsi(df["close"], period=rsi_period)
 
     # 量比
     vol_ma   = df["volume"].rolling(vol_window, min_periods=5).mean()
@@ -289,11 +285,15 @@ def compute_all_factors(daily_df: pd.DataFrame, weekly_df: pd.DataFrame,
                         residual_mom_window: int = 12,
                         f6_rsi_thresh: float = 80.0,
                         f6_drop_thresh: float = 0.025,
-                        f6_base_penalty: float = 0.15) -> dict:
+                        f6_base_penalty: float = 0.15,
+                        f7_window: int = 20,
+                        f7_lookback: int = 250,
+                        f7_min_days: int = 60,
+                        f7_sigma_floor: float = 0.01) -> dict:
     """
-    计算一支 ETF 的全部因子 (F1-F5 + 残差动量 + F6惩罚乘数)
+    计算一支 ETF 的全部因子 (F1-F7)
     返回 dict: {f1_ema_dev, f2_rsi_adaptive, f3_volume_ratio, f5_volatility_z,
-                f1_residual_mom, f6_exhaustion_penalty}
+                f1_residual_mom, f6_exhaustion_penalty, f7_log_return_dev}
     """
     f1 = factor_ema_deviation(weekly_df, ema_period)
     f2 = factor_rsi_adaptive(daily_df, rsi_period, weekly_df, ema_period)
@@ -307,6 +307,10 @@ def compute_all_factors(daily_df: pd.DataFrame, weekly_df: pd.DataFrame,
                                    rsi_thresh=f6_rsi_thresh,
                                    drop_thresh=f6_drop_thresh,
                                    base_penalty=f6_base_penalty)
+    f7 = factor_log_return_deviation(daily_df, window=f7_window,
+                                      lookback=f7_lookback,
+                                      min_days=f7_min_days,
+                                      sigma_floor=f7_sigma_floor)
     return {
         "f1_ema_dev": f1,
         "f2_rsi_adaptive": f2,
@@ -314,6 +318,7 @@ def compute_all_factors(daily_df: pd.DataFrame, weekly_df: pd.DataFrame,
         "f5_volatility_z": f5,
         "f1_residual_mom": f1r,
         "f6_exhaustion_penalty": f6,
+        "f7_log_return_dev": f7,
     }
 
 
@@ -491,10 +496,10 @@ def composite_score(factors_df: pd.DataFrame, weights: dict,
                     regime: str = None) -> pd.Series:
     """
     合成综合分（连续映射版）
-    factors_df: index=ETF代码, columns=[f1_ema_dev, f2_rsi_adaptive, f3_volume_ratio]
-    weights: {ema_deviation: 0.30, rsi_adaptive: 0.25, volume_ratio: 0.30, valuation: 0.15}
+    factors_df: index=ETF代码, columns=[f1_ema_dev, f2_rsi_adaptive, f3_volume_ratio, ...]
+    weights: {ema_deviation: 0.30, rsi_adaptive: 0.25, volume_ratio: 0.30, ...}
     bias_map: {code: bonus} 如 {"512400": 0.04, "513120": 0.04, "512070": 0.04}
-    sensitivity: {f1: 8.0, f3: 1.5} 映射函数参数
+    sensitivity: {f1: 8.0, f3: 1.5, f7: 1.0} 映射函数参数
     norm_method: "continuous"（默认，使用映射函数）或 "percentile_rank"（旧方法，已弃用）
 
     返回：pd.Series，值域 [0, 1]（加 bias 后可能略超 1）
@@ -506,19 +511,18 @@ def composite_score(factors_df: pd.DataFrame, weights: dict,
     f3_sens = sensitivity.get("f3", 1.0)
 
     if norm_method == "continuous":
-        # 连续映射：每个因子独立映射到 [0, 1] 的绝对分数
         mapped_f1 = factors_df["f1_ema_dev"].apply(lambda v: map_f1(v, f1_sens))
         mapped_f2 = factors_df["f2_rsi_adaptive"].apply(map_f2)
         mapped_f3 = factors_df["f3_volume_ratio"].apply(lambda v: map_f3(v, f3_sens))
 
-        w1 = weights.get("ema_deviation", 0.30)
-        w2 = weights.get("rsi_adaptive", 0.25)
-        w3 = weights.get("volume_ratio", 0.30)
+        w1 = weights.get("ema_deviation", 0.40)
+        w2 = weights.get("rsi_adaptive", 0.00)
+        w3 = weights.get("volume_ratio", 0.55)
 
         score = mapped_f1 * w1 + mapped_f2 * w2 + mapped_f3 * w3
 
         # F4 估值因子（如果 factors_df 中有 f4_valuation 列）
-        w4 = weights.get("valuation", 0.15)
+        w4 = weights.get("valuation", 0.00)
         if w4 > 0 and "f4_valuation" in factors_df.columns:
             mapped_f4 = factors_df["f4_valuation"].apply(lambda v: map_f4(v, regime or "choppy_range"))
             score = score + mapped_f4 * w4
@@ -529,19 +533,29 @@ def composite_score(factors_df: pd.DataFrame, weights: dict,
             f5_sens = sensitivity.get("f5", 1.0)
             mapped_f5 = factors_df["f5_volatility_z"].apply(lambda v: map_f5(v, f5_sens))
             score = score + mapped_f5 * w5
+
+        # F7 对数收益偏离因子（如果 factors_df 中有 f7_log_return_dev 列）
+        w7 = weights.get("log_return_deviation", 0.0)
+        if w7 > 0 and "f7_log_return_dev" in factors_df.columns:
+            f7_t = sensitivity.get("f7_t", 7.0)
+            f7_k = sensitivity.get("f7_k", 3.0)
+            mapped_f7 = factors_df["f7_log_return_dev"].apply(lambda v: map_f7(v, t=f7_t, k=f7_k))
+            # F7 NaN → 该 ETF 跳过 F7 贡献（得分为中性 0.5，即不加不减）
+            mapped_f7 = mapped_f7.fillna(0.5)
+            score = score + mapped_f7 * w7
     else:
         # 旧方法：截面标准化（已弃用，保留兼容）
         norm_f1 = normalize_cross_section(factors_df["f1_ema_dev"], norm_method) / 100.0
         norm_f2 = normalize_cross_section(factors_df["f2_rsi_adaptive"], norm_method) / 100.0
         norm_f3 = normalize_cross_section(factors_df["f3_volume_ratio"], norm_method) / 100.0
 
-        w1 = weights.get("ema_deviation", 0.30)
-        w2 = weights.get("rsi_adaptive", 0.25)
-        w3 = weights.get("volume_ratio", 0.30)
+        w1 = weights.get("ema_deviation", 0.40)
+        w2 = weights.get("rsi_adaptive", 0.00)
+        w3 = weights.get("volume_ratio", 0.55)
 
         score = norm_f1 * w1 + norm_f2 * w2 + norm_f3 * w3
 
-        w4 = weights.get("valuation", 0.15)
+        w4 = weights.get("valuation", 0.00)
         if w4 > 0 and "f4_valuation" in factors_df.columns:
             norm_f4 = normalize_cross_section(factors_df["f4_valuation"], norm_method) / 100.0
             score = score + norm_f4 * w4
@@ -781,6 +795,104 @@ def map_f5(vol_z: float, sensitivity: float = 1.0) -> float:
     # 反向：-z，低波→高分
     return 1.0 / (1.0 + math.exp(vol_z / sensitivity))
 
+
+def factor_log_return_deviation(daily_df: pd.DataFrame,
+                                 window: int = 20,
+                                 lookback: int = 250,
+                                 min_days: int = 60,
+                                 sigma_floor: float = 0.01) -> float:
+    """
+    F7: 对数收益偏离因子（Log Return Deviation）
+
+    20 日累计对数收益相对 250 日历史的 Z-score 偏离度。
+    连续数值因子，替代 F6（动能衰竭惩罚）的离散条件触发。
+
+    计算：
+      1. 日对数收益率 r_t = ln(close_t / close_{t-1})
+      2. 20 日累计对数收益 = sum(r_t, 20d)
+      3. 历史窗口 μ/σ → Z = (当前值 - μ) / σ
+
+    短历史策略：
+      - < min_days(60) → NaN（该 ETF 跳过 F7）
+      - 60–250 日 → 扩展窗口（全部可用数据）+ σ 地板
+      - ≥ 250 日 → 固定滚动窗口
+
+    Z ≥ +2σ → 极端高估，低分（左侧逃顶）
+    Z ≤ -2σ → 极端超跌，高分（左侧抄底）
+    Z ∈ ±1σ → 中性，交还 F1/F3 主导
+    """
+    if daily_df is None or len(daily_df) < window + min_days:
+        return np.nan
+
+    close = daily_df["close"].astype(float)
+    log_ret = np.log(close / close.shift(1))
+    log_ret = log_ret.dropna()
+
+    if len(log_ret) < window:
+        return np.nan
+
+    # 20 日累计对数收益序列
+    cum_log_ret = log_ret.rolling(window=window).sum()
+    cum_log_ret = cum_log_ret.dropna()
+
+    if len(cum_log_ret) < 2:
+        return np.nan
+
+    current = cum_log_ret.iloc[-1]
+
+    # 窗口策略
+    n = len(cum_log_ret)
+    if n < min_days:
+        return np.nan
+    elif n < lookback:
+        hist = cum_log_ret  # 扩展窗口：全部可用数据
+    else:
+        hist = cum_log_ret.iloc[-lookback:]  # 固定滚动窗口
+
+    mu = hist.mean()
+    sigma = hist.std()
+    sigma = max(sigma, sigma_floor)
+
+    if sigma == 0:
+        return 0.0
+
+    z = (current - mu) / sigma
+    return float(z)
+
+
+def map_f7(z_score: float, t: float = 7.0, k: float = 3.0) -> float:
+    """
+    F7 Z-score -> 分段映射：|Z|≤k 幂函数，|Z|>k 切线线性外延。
+
+    z_score: 对数收益偏离 Z-score
+    t: 奇数幂次（1,3,5,...,25），控制两端加速程度，默认 7
+    k: 标准差倍数阈值 / 切线切换点，默认 3.0
+
+    特性（t=11, k=3）：
+      Z =  0   → 0.50（中性）
+      Z = +3   → 0.00（幂函数边界）
+      Z = -3   → 1.00（幂函数边界）
+      Z = +9   → -11.0（切线外延，约 −1.65 对 composite 的贡献）
+      Z = -9   → +12.0（切线外延）
+
+    设计决策：
+      |Z| ≤ k：幂函数 (z/k)^t，在 ±kσ 附近加速，提供非线性区分
+      |Z| > k：切线 f(z) = f(k) + f'(k)·(z−k)，保持线性区分但截断爆炸增长
+      切线斜率 = −t/(2k)，一阶连续，在切换点平滑过渡
+    """
+    if np.isnan(z_score):
+        return np.nan
+    abs_z = abs(z_score)
+    if abs_z <= k:
+        ratio = abs_z / k
+        powered = math.copysign(1.0, z_score) * (ratio ** t)
+        return 0.5 + 0.5 * (-powered)
+    else:
+        slope = -t / (2.0 * k)
+        if z_score > 0:
+            return slope * (z_score - k)
+        else:
+            return 1.0 + slope * (z_score + k)
 
 def allocate_positions(scores: pd.Series, max_holdings: int = 6,
                        dead_zone: float = 0.25, full_zone: float = 0.65,

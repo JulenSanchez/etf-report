@@ -13,6 +13,24 @@ data/
 outputs/
 _working/
 .backup/
+research/
+.tuner_ready_to_bind
+config/quant_user_overrides.yaml
+
+# ========= 虚拟环境 / IDE =========
+.venv/
+venv/
+env/
+.vscode/
+.idea/
+.env
+.DS_Store
+Thumbs.db
+
+# ========= 测试产物 =========
+.coverage
+htmlcov/
+.pytest_cache/
 
 # ========= 测试缓存与一次性排查文件 =========
 .pytest_cache/

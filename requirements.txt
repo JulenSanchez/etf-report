@@ -5,7 +5,12 @@ PyYAML>=6.0,<7
 requests>=2.31,<3
 Flask>=3.0,<4
 beautifulsoup4>=4.12,<5
+lxml>=5.0,<6
 akshare>=1.14,<2
+psutil>=5.9,<7
+
+# YAML roundtrip with comment preservation (Tuner /api/save)
+ruamel.yaml>=0.18,<1
 
 # 测试
 pytest>=8.0,<9

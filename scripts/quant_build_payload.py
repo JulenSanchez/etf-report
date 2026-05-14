@@ -22,28 +22,33 @@ SKILL_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(SKILL_DIR / "scripts"))
 
 from quant_backtest import run_backtest
+from benchmark_data import load_hs300_daily_cached, build_hs300_pct
 
 CONFIG_PATH = SKILL_DIR / "config" / "quant_universe.yaml"
 TEMPLATES_PATH = SKILL_DIR / "config" / "quant_templates.yaml"
 OUTPUT_PATH = SKILL_DIR / "assets" / "js" / "quant_payload.js"
 
 
-def load_config(preset: str = "weekly_trend"):
+def load_config(preset: str = "daily_aggressive"):
     """加载配置，并用指定 preset 覆盖顶层 scoring/confidence/position/factors。"""
     with CONFIG_PATH.open("r", encoding="utf-8") as f:
         cfg = yaml.safe_load(f)
 
-    if preset:
-        p = cfg.get("presets", {}).get(preset)
-        if p is None:
-            raise ValueError(f"Preset '{preset}' not found in quant_universe.yaml")
-        for block in ("scoring", "confidence", "position", "factors"):
-            if block in p:
-                cfg[block].update(p[block])
-        for key in ("weights", "bias_bonus", "sensitivity"):
-            if key in p.get("scoring", {}):
-                cfg["scoring"][key] = p["scoring"][key]
+    if preset is None:
+        raise ValueError("preset is required — top-level scoring no longer carries weights")
 
+    if cfg.get("scoring") is None:
+        cfg["scoring"] = {}
+
+    p = cfg.get("presets", {}).get(preset)
+    if p is None:
+        raise ValueError(f"Preset '{preset}' not found in quant_universe.yaml")
+    for block in ("scoring", "confidence", "position", "factors"):
+        if block in p:
+            cfg[block].update(p[block])
+    for key in ("weights", "bias_bonus", "sensitivity"):
+        if key in p.get("scoring", {}):
+            cfg["scoring"][key] = p["scoring"][key]
     return cfg
 
 
@@ -105,7 +110,7 @@ def compute_summary(nav_df, signal_count):
         sharpe = 0.0
 
     # Sortino (downside deviation only)
-    downside = daily_returns[daily_returns < rf_daily] - rf_daily
+    downside = daily_returns[daily_returns < rf_daily]
     if len(downside) > 0 and downside.std() > 0:
         sortino = (daily_returns.mean() * 252 - 0.02) / (downside.std() * np.sqrt(252))
     else:
@@ -229,40 +234,14 @@ def build_sector_distribution(signal_history, etf_map):
 
 
 def build_hs300_benchmark(nav_df):
-    """Fetch HS300 and normalize to nav_df date range (100% = first date)."""
+    """Load cached HS300 and normalize to nav_df date range (100% = first date)."""
     try:
-        import akshare as ak
-    except ImportError:
-        print("  [WARN] akshare not installed, HS300 benchmark unavailable")
-        return None
-
-    print("  Fetching HS300 daily...")
-    try:
-        hs = ak.stock_zh_index_daily(symbol="sh000300")
+        hs = load_hs300_daily_cached()
     except Exception as e:
-        print(f"  [WARN] Fetch failed: {e}")
+        print(f"  [WARN] HS300 unavailable: {e}")
         return None
-
-    hs["date"] = pd.to_datetime(hs["date"])
-    hs = hs.sort_values("date").reset_index(drop=True)
-    hs_map = dict(zip(hs["date"].dt.strftime("%Y-%m-%d"), hs["close"].astype(float)))
-
     nav_dates = [d.strftime("%Y-%m-%d") for d in nav_df["date"]]
-    anchor = None
-    for d in nav_dates:
-        if d in hs_map:
-            anchor = hs_map[d]
-            break
-    if not anchor:
-        return None
-
-    result = []
-    last_val = 100.0
-    for d in nav_dates:
-        if d in hs_map:
-            last_val = round(hs_map[d] / anchor * 100, 2)
-        result.append(last_val)
-    return result
+    return build_hs300_pct(hs, nav_dates)
 
 
 def build_equal_weight_benchmark(nav_df, all_daily_data):
@@ -328,7 +307,7 @@ def run_template_backtest(base_cfg, template_override):
     original_load = quant_backtest.load_config
     quant_backtest.load_config = lambda: cfg
     try:
-        nav_df, signal_history = _run()
+        nav_df, signal_history, _extra = _run()
     finally:
         quant_backtest.load_config = original_load
 
@@ -376,9 +355,17 @@ def build_latest_signal(all_daily_data, all_weekly_data, base_cfg, etf_map):
             ema_period=factor_cfg["ema"]["period_weeks"],
             rsi_period=factor_cfg["rsi"]["period_days"],
             vol_window=factor_cfg["volume_ratio"]["window_days"],
+            f6_rsi_thresh=factor_cfg.get("f6_rsi_thresh", 80.0),
+            f6_drop_thresh=factor_cfg.get("f6_drop_thresh", 0.025),
+            f6_base_penalty=factor_cfg.get("f6_base_penalty", 0.15),
+            f7_window=factor_cfg.get("log_return_deviation", {}).get("window_days", 20),
+            f7_lookback=factor_cfg.get("log_return_deviation", {}).get("lookback_days", 250),
+            f7_min_days=factor_cfg.get("log_return_deviation", {}).get("min_days", 60),
+            f7_sigma_floor=factor_cfg.get("log_return_deviation", {}).get("sigma_floor", 0.01),
         )
 
-        if any(np.isnan(v) for v in factors.values()):
+        SKIP_NAN_KEYS = {"f1_residual_mom", "f6_exhaustion_penalty", "f7_log_return_dev"}
+        if any(np.isnan(v) for k, v in factors.items() if k not in SKIP_NAN_KEYS):
             continue
 
         factors_data[code] = factors
@@ -424,8 +411,8 @@ def build_latest_signal(all_daily_data, all_weekly_data, base_cfg, etf_map):
             f4_series = pd.Series(val_scores)
             mapped_f4 = f4_series.apply(map_f4)
             composite = composite + mapped_f4 * w4
-        except Exception:
-            pass  # 估值引擎异常时降级为三因子
+        except Exception as e:
+            print(f"  [WARN] F4 valuation skipped (falling back to 3-factor): {e}")
 
     for code, bonus in bias_map.items():
         if code in composite.index:
@@ -513,6 +500,9 @@ def build_risk_orders(signal_history, all_daily_data, base_cfg, etf_map):
         return None
 
     threshold_score = scores[sorted_codes[6]]  # 7th ETF's score = minimum to be in Top-6
+
+    sensitivity = base_cfg["scoring"].setdefault("sensitivity", {})
+    f1_sens = sensitivity.get("f1", 8.0)
 
     factor_cfg = base_cfg["factors"]
     ema_period = factor_cfg["ema"]["period_weeks"]

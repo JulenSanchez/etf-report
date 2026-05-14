@@ -162,9 +162,22 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
 .u-chip.bias::after { content: '*'; color: #f59e0b; margin-left: 1px; }
 .factor-sub .param-locked .pk { color: #4b5563; font-size: 11px; }
 .factor-sub .param-locked .pv { color: #374151; }
+
+/* Loading overlay — shown while backend preloads data */
+#tuner-loading { position: fixed; inset: 0; background: #0f1419; z-index: 9999;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; }
+#tuner-loading .spinner { width: 36px; height: 36px; border: 3px solid #2a3a4a;
+  border-top-color: #3b82f6; border-radius: 50%; animation: tuner-spin 0.8s linear infinite; }
+@keyframes tuner-spin { to { transform: rotate(360deg); } }
+#tuner-loading .text { font-size: 14px; color: #6b7280; }
 </style>
 </head>
 <body>
+
+<div id="tuner-loading">
+  <div class="spinner"></div>
+  <div class="text">正在加载量化数据...</div>
+</div>
 
 <div class="panel-left" id="tuner-panel-left">
   <h2 id="tuner-title">Quant Tuner</h2>
@@ -181,7 +194,7 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
   <section id="tuner-sec-universe" aria-label="标的池">
     <div class="universe-head" id="universe-head" onclick="toggleUniverse()">
       <span class="u-title">标的池</span>
-      <span class="u-count" id="universe-count">25/25</span>
+      <span class="u-count" id="universe-count">30/30</span>
       <span class="u-chevron">&#9660;</span>
     </div>
     <div class="universe-body" id="universe-body">
@@ -289,6 +302,26 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
       </div>
     </div>
 
+    <!-- F7 -->
+    <div class="slider-group" id="param-w7" aria-label="F7权重">
+      <div class="slider-label"><span class="name">F7 对数收益偏离</span><span class="val" id="v-w7">0%</span></div>
+      <input type="range" id="w7" min="0" max="30" step="5" value="0" oninput="syncWeights()" aria-label="F7对数收益偏离权重">
+    </div>
+    <div class="factor-sub">
+      <div class="slider-group" id="param-f7-t">
+        <div class="slider-label"><span class="name">奇数幂次 t</span><span class="val" id="v-f7-t">7</span></div>
+        <input type="range" id="f7_t" min="1" max="25" step="2" value="7" oninput="$id('v-f7-t').textContent=this.value" aria-label="F7奇数幂次">
+      </div>
+      <div class="slider-group" id="param-f7-k">
+        <div class="slider-label"><span class="name">标准差倍数 k</span><span class="val" id="v-f7-k">3.00</span></div>
+        <input type="range" id="f7_k" min="0.01" max="10" step="0.01" value="3.00" oninput="$id('v-f7-k').textContent=parseFloat(this.value).toFixed(2)" aria-label="F7标准差倍数阈值">
+      </div>
+      <div class="slider-group" id="param-f7-window">
+        <div class="slider-label"><span class="name">累计收益窗口</span><span class="val" id="v-f7-window">20 日</span></div>
+        <input type="range" id="f7_window" min="5" max="60" step="5" value="20" oninput="$id('v-f7-window').textContent=this.value+' 日'" aria-label="F7累计对数收益窗口">
+      </div>
+    </div>
+
     <div class="weight-total" style="margin-top:8px;">合计: <span id="v-total" style="color:#10b981;font-weight:600">100%</span></div>
   </section>
 
@@ -358,6 +391,7 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
   <section id="tuner-sec-period" aria-label="回测周期">
     <div class="section-head">回测周期</div>
     <div class="btn-row" style="margin-bottom:4px;" id="period-span-btns">
+      <button onclick="setPeriodSpan(1)" id="span-btn-1">1 年</button>
       <button class="active" onclick="setPeriodSpan(3)" id="span-btn-3">3 年</button>
       <button onclick="setPeriodSpan(6)" id="span-btn-6">6 年</button>
     </div>
@@ -406,23 +440,21 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
         <span class="g-chevron">&#9654;</span>
       </div>
       <div class="guide-block-body">
-        <p>每个调仓日（每周五），对标的池内的全部 ETF 执行以下流水线：</p>
+        <p>每个调仓日，对标的池内的全部 ETF 执行以下流水线：</p>
         <p><b>Phase 1: 因子计算</b>（每支 ETF 独立）</p>
         <p>1. F1 = 周线EMA偏离度（原始值，如 +5.2%）— 权重 <span class="param-hl">F1 EMA 偏离度</span></p>
-        <p>2. F2 = RSI 偏离 z-score（最近 20 日 RSI 自身均值的标准化偏离）— 权重 <span class="param-hl">F2 RSI 自适应</span></p>
-        <p>3. F3 = 方向性量比（原始值，如 1.8）— 权重 <span class="param-hl">F3 方向性量比</span></p>
-        <p>4. F4 = 估值因子（已映射为 0-100 分）— 权重 <span class="param-hl">F4 估值因子</span></p>
+        <p>2. F3 = 方向性量比（原始值，如 1.8）— 权重 <span class="param-hl">F3 方向性量比</span></p>
+        <p>3. F6 = 动能衰竭惩罚保留率（1.0=无惩罚，0.15=强惩罚）— 权重 <span class="param-hl">F6 动能衰竭惩罚</span></p>
         <p><b>Phase 2: 连续映射</b>（每支 ETF 独立，不做截面排名）</p>
-        <p>5. F1 → <span class="tag">sigmoid(F1<sub>raw</sub> / <span class="param-hl">F1 sigmoid 尺度</span>)</span> → [0, 1]</p>
-        <p>6. F2 → <span class="tag">死区 |z|&lt;<span class="param-hl">F2 死区半宽</span> → 0.5；外 → 0.5 ± 0.5(1−exp(−|z|−dz))</span> → [0, 1]</p>
-        <p>7. F3 → <span class="tag">sigmoid(log(ratio) / <span class="param-hl">F3 指数尺度</span>)</span> → [0, 1]</p>
-        <p>8. F4 → <span class="tag">val_score / 100</span> → [0, 1]（不再做"排名的排名"）</p>
+        <p>4. F1 → <span class="tag">sigmoid(F1<sub>raw</sub> / <span class="param-hl">F1 sigmoid 尺度</span>)</span> → [0, 1]</p>
+        <p>5. F3 → <span class="tag">sigmoid(log(ratio) / <span class="param-hl">F3 指数尺度</span>)</span> → [0, 1]</p>
+        <p>6. F6 → <span class="tag">F6<sub>score</sub> = 保留率 - 1.0</span> → [0, -0.85] 这类负值惩罚</p>
         <p><b>Phase 3: 加权合成</b></p>
-        <p>9. 综合分 = <span class="tag">F<sub>1</sub> &times; w1 + F<sub>2</sub> &times; w2 + F<sub>3</sub> &times; w3 + F<sub>4</sub> &times; w4 + <span class="param-hl">偏好加成</span>(如有)</span>，值域 [0, 1]</p>
+        <p>7. 综合分 = <span class="tag">F<sub>1</sub> &times; w1 + F<sub>3</sub> &times; w3 + (F6保留率 - 1) &times; w6</span>，值域以 F1/F3 为主，F6 只扣分</p>
         <p><b>Phase 4: 仓位分配</b></p>
-        <p>10. 取综合分 Top-N 支 ETF</p>
-        <p>11. <span class="param-hl">仓位控制</span>: 沪深300周线在<span class="param-hl">MA趋势周期</span>均线上方 → <span class="param-hl">MA上方仓位</span>，下方 → <span class="param-hl">MA下方仓位</span>（二值信号，非综合分驱动）</p>
-        <p>12. <span class="tag">pos<sub>i</sub> = w<sub>i</sub> &times; total_pos</span>，按 <span class="param-hl">离散化步长</span> 离散化</p>
+        <p>8. 取综合分 Top-N 支 ETF</p>
+        <p>9. <span class="param-hl">仓位控制</span>: 沪深300周线在<span class="param-hl">MA趋势周期</span>均线上方 → <span class="param-hl">MA上方仓位</span>，下方 → <span class="param-hl">MA下方仓位</span>（二值信号，非综合分驱动）</p>
+        <p>10. <span class="tag">pos<sub>i</sub> = w<sub>i</sub> &times; total_pos</span>，按 <span class="param-hl">离散化步长</span> 离散化</p>
         <p><b>关键差异（vs 截面标准化）</b>：连续映射保留因子的绝对水平和极端性。牛市时所有因子都高 → 综合分普遍高 → 仓位由MA信号决定为满仓；熊市时所有因子都低 → 综合分低 → 且MA信号转bear → 自动降仓。仓位控制由市场趋势驱动（MA20），而非自身NAV回撤驱动，避免频繁误触发导致踏空。</p>
       </div>
     </div>
@@ -600,6 +632,85 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
       </div>
     </div>
 
+    <!-- F6 -->
+    <div class="guide-block" id="guide-f6" aria-label="F6动能衰竭惩罚">
+      <div class="guide-block-header" onclick="toggleGuide('guide-f6')">
+        <span class="g-icon">&#9889;</span>
+        <span class="g-title">F6 动能衰竭惩罚</span>
+        <span class="g-tag" style="color:#f59e0b;">w6</span>
+        <span class="g-chevron">&#9654;</span>
+      </div>
+      <div class="guide-block-body">
+        <p><b>设计理念</b></p>
+        <p>F6 专门识别"高位过热后放量下跌"：它不是奖励强势，而是在动能衰竭时给 ETF 扣分，避免刚出现高位破位的标的继续排在前面。</p>
+        <p><b>Step 1: 计算触发条件</b></p>
+        <p>同时满足三件事才触发：</p>
+        <ul>
+          <li>前一日 RSI ≥ <span class="param-hl">F6 RSI触发门槛</span>（默认80），说明此前已过热</li>
+          <li>当日跌幅 ≥ <span class="param-hl">F6 跌幅门槛</span>（默认2.5%），说明价格开始破位</li>
+          <li>当日成交量 / <span class="param-hl">量比窗口</span>均量 ≥ 1.5，说明下跌伴随放量</li>
+        </ul>
+        <p><b>Step 2: 输出惩罚保留率</b></p>
+        <p><span class="tag">F6保留率 ∈ [base_penalty, 1.0]</span>：1.0 表示无惩罚；触发当日降到 <span class="param-hl">F6 惩罚强度</span>（默认0.15），之后 3 个交易日内线性恢复到 1.0。</p>
+        <p><b>Step 3: 转成综合分扣分项</b></p>
+        <p><span class="tag">F6<sub>score</sub> = F6保留率 - 1.0</span>，因此无惩罚时贡献 0；触发后贡献负数，例如 0.15 - 1.0 = -0.85。</p>
+        <p><span class="tag">综合分扣分 = (F6保留率 - 1.0) &times; <span class="param-hl">F6 动能衰竭惩罚</span>权重</span></p>
+        <p>快照表里的 F6 显示扣分百分比：0 代表无惩罚，-85 代表强惩罚。排序时使用的是上面的负值扣分。</p>
+        <p style="margin-top:6px;color:#6b7280;font-size:12px;">策略视角：</p>
+        <div class="guide-strategy-row">
+          <span class="guide-strategy-chip chip-value">价值型：低权重或关闭，避免过度惩罚低估反弹</span>
+          <span class="guide-strategy-chip chip-tech">技术型：中高权重，重点过滤高位破位</span>
+          <span class="guide-strategy-chip chip-momentum">景气型：小权重，作为趋势过热后的刹车</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- F7 -->
+    <div class="guide-block" id="guide-f7" aria-label="F7对数收益偏离">
+      <div class="guide-block-header" onclick="toggleGuide('guide-f7')">
+        <span class="g-icon">📉</span>
+        <span class="g-title">F7 对数收益偏离</span>
+        <span class="g-tag" style="color:#3b82f6;">w7</span>
+        <span class="g-chevron">▶</span>
+      </div>
+      <div class="guide-block-body">
+        <p><b>Step 1: 日对数收益率</b></p>
+        <p><span class="tag">r<sub>t</sub> = ln(close<sub>t</sub> / close<sub>t-1</sub>)</span></p>
+        <p>对数收益可加、中轴天然为 0、涨跌对称。20 日对数收益之和 = ln(close<sub>t</sub> / close<sub>t-20</sub>)。</p>
+        <p><b>Step 2: 20 日累计对数收益</b></p>
+        <p><span class="tag">cum<sub>t</sub> = Σ<sub>i=0</sub><sup>19</sup> r<sub>t-i</sub></span></p>
+        <p>窗口 = <span class="param-hl">F7 对数收益偏离</span> 权重滑块旁的 20 日（代码常量），≈ 4 个交易周。</p>
+        <p><b>Step 3: 滚动 Z-score</b></p>
+        <p>对 cum<sub>t</sub> 序列，回溯 <span class="tag">lookback</span> = 250 日计算：</p>
+        <p><span class="tag">&mu;<sub>t</sub> = mean(cum<sub>t-lookback</sub> … cum<sub>t-1</sub>)</span></p>
+        <p><span class="tag">&sigma;<sub>t</sub> = max(std(cum<sub>t-lookback</sub> … cum<sub>t-1</sub>), &sigma;<sub>floor</sub>)</span></p>
+        <p><span class="tag">Z<sub>t</sub> = (cum<sub>t</sub> - &mu;<sub>t</sub>) / &sigma;<sub>t</sub></span></p>
+        <p>&sigma;<sub>floor</sub> = 0.01，防止早期样本过少时 Z 值爆炸。数据不足 60 日 → Z<sub>t</sub> = NaN，该 ETF 跳过 F7（仅用 F1+F3 打分）。</p>
+        <p><b>Step 4: 幂次加速映射</b></p>
+        <p><span class="tag">F<sub>7</sub> = 0.5 + 0.5 × (−sign(Z<sub>t</sub>) × (|Z<sub>t</sub>|/k)<sup>t</sup>)</span></p>
+        <p>参数（<span class="param-hl">奇数幂次 t</span> = 7，<span class="param-hl">标准差倍数 k</span> = 3.0）：</p>
+        <ul>
+          <li>Z<sub>t</sub> =  0    → F<sub>7</sub> = 0.50（中性，F1+F3 主导）</li>
+          <li>Z<sub>t</sub> = +1    → F<sub>7</sub> = 0.43（轻度高估，小幅减分）</li>
+          <li>Z<sub>t</sub> = +3    → F<sub>7</sub> = 0.00（3σ高估 → 评分 -100，加速惩罚）</li>
+          <li>Z<sub>t</sub> = −1    → F<sub>7</sub> = 0.57（轻度低估，小幅加分）</li>
+          <li>Z<sub>t</sub> = −3    → F<sub>7</sub> = 1.00（3σ低估 → 评分 +100，加速奖励）</li>
+          <li>Z<sub>t</sub> = +4    → F<sub>7</sub> < 0（4σ → 极端高估，加速惩罚无上限）</li>
+        </ul>
+        <p><b>凸性设计</b>：Z > 0（高估）→ 凸函数，加速下跌；Z < 0（低估）→ 凹函数，加速上涨。t 越大，两端曲率越陡，极端偏离时加速响应。</p>
+        <p><b>无上限惩罚</b>：加速惩罚不截断（用户要求），Z > 3 后 F<sub>7</sub> 继续下降，对应评分 < −100。等回测结果再决定是否 clip。</p>
+        <p><b>Step 5: 加权合成</b></p>
+        <p><span class="tag">综合分贡献 = F<sub>7</sub> &times; <span class="param-hl">F7 对数收益偏离</span>权重</span></p>
+        <p>F7 是加法因子：最终综合分 = F<sub>1</sub>×w<sub>1</sub> + F<sub>3</sub>×w<sub>3</sub> + F<sub>7</sub>×w<sub>7</sub>（+ F6 惩罚项若启用）。与 F6 的减法扣分不同，F7 是双向连续调节。</p>
+        <p style="margin-top:6px;color:#6b7280;font-size:12px;">策略视角：</p>
+        <div class="guide-strategy-row">
+          <span class="guide-strategy-chip chip-value">价值型：中高权重(15-20%)，均值回归是价值投资核心逻辑</span>
+          <span class="guide-strategy-chip chip-tech">技术型：中低权重(5-10%)，辅助逃顶，不对抗主趋势</span>
+          <span class="guide-strategy-chip chip-momentum">景气型：中权重(10-15%)，景气拐点时常伴随极端偏离</span>
+        </div>
+      </div>
+    </div>
+
     <!-- Composite -->
     <div class="guide-block" id="guide-composite" aria-label="综合分合成">
       <div class="guide-block-header" onclick="toggleGuide('guide-composite')">
@@ -610,10 +721,10 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
       </div>
       <div class="guide-block-body">
         <p><b>加权求和（连续映射版）</b></p>
-        <p>四个因子各自经过连续映射后，加权求和：</p>
-        <p><span class="tag">综合分 = F<sub>1</sub> &times; <span class="param-hl">F1 EMA 偏离度</span>权重 + F<sub>3</sub> &times; <span class="param-hl">F3 方向性量比</span>权重</span></p>
-        <p>当前策略仅使用 F1+F3 两个因子（权重之和 = 100%），F2 RSI 自适应和 F4 估值因子保留位（reserved），待未来引入更优因子实现。</p>
-        <p>其中四项权重之和 = 1，各 F<sub>i</sub> &isin; [0, 1]，所以基础综合分 &isin; [0, 1]（显示时 &times; 100 为百分比）。</p>
+        <p>当前实际生效因子为 F1 / F3 / F7（F6 已移除）：</p>
+        <p><span class="tag">综合分 = F<sub>1</sub> &times; <span class="param-hl">F1 EMA 偏离度</span>权重 + F<sub>3</sub> &times; <span class="param-hl">F3 方向性量比</span>权重 + F<sub>7</sub> &times; <span class="param-hl">F7 对数收益偏离</span>权重</span></p>
+        <p>F7 是连续数值因子，使用幂次加速映射：Z > 0（高估）→ 凸函数加速减分，Z < 0（低估）→ 凹函数加速加分。t 控制曲率，k 控制敏感度。建议与 F1+F3 配合使用。</p>
+        <p>F2 RSI 自适应和 F4 估值因子已从当前实际计算链路中关闭，保留配置位置仅为未来因子重启预留。</p>
         <p><b>偏好加成（已锁定 = 0）</b></p>
         <p>REQ-190 敏感性分析证实：偏好加成只损害策略表现，已锁定为 0。未来如需风格偏移可重新启用。</p>
       </div>
@@ -700,13 +811,16 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
             <div id="tuner-perf-block" style="background:#1a2332;border:1px solid #2a3a4a;border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:8px;">
               <div class="metrics" id="tuner-metrics" style="margin-bottom:0;">
                 <div class="metric-card" id="metric-annual" aria-label="年化收益"><div class="label">年化收益</div><div class="value green" id="m-annual">-</div></div>
+                <div class="metric-card" id="metric-total" aria-label="总收益"><div class="label">总收益</div><div class="value green" id="m-total">-</div></div>
                 <div class="metric-card" id="metric-dd" aria-label="最大回撤"><div class="label">最大回撤</div><div class="value red" id="m-dd">-</div></div>
                 <div class="metric-card" id="metric-sharpe" aria-label="Sharpe"><div class="label">Sharpe<i class="tip-icon">?<span class="tip-text">风险调整收益指标 = (年化收益 - 无风险利率) / 收益率标准差。>1 为优，>2 为极优</span></i></div><div class="value blue" id="m-sharpe">-</div></div>
                 <div class="metric-card" id="metric-sortino" aria-label="Sortino"><div class="label">Sortino<i class="tip-icon">?<span class="tip-text">下行风险调整收益 = (年化收益 - 无风险利率) / 下行标准差。只惩罚亏损波动，比 Sharpe 更宽容上涨波动</span></i></div><div class="value blue" id="m-sortino">-</div></div>
-                <div class="metric-card" id="metric-calmar" aria-label="Calmar"><div class="label">Calmar<i class="tip-icon">?<span class="tip-text">回撤调整收益 = 年化收益 / 最大回撤绝对值。衡量每承受1单位最大亏损能换回多少收益，>1 为优</span></i></div><div class="value orange" id="m-calmar">-</div></div>
                 <div class="metric-card" id="metric-winrate" aria-label="日胜率"><div class="label">日胜率</div><div class="value" id="m-wr">-</div></div>
                 <div class="metric-card" id="metric-rebalance" aria-label="换仓调仓次数"><div class="label">换仓/调仓</div><div class="value" id="m-rb">-</div></div>
                 <div class="metric-card" id="metric-commission" aria-label="交易佣金"><div class="label">交易佣金</div><div class="value" id="m-comm">-</div></div>
+              </div>
+              <div id="intraday-estimate-banner" style="display:none;background:rgba(245,158,11,0.10);border:1px solid rgba(245,158,11,0.35);color:#fbbf24;border-radius:8px;padding:6px 10px;font-size:11px;line-height:1.5;">
+                盘中估算：本次回测包含实时行情与预估全天成交额，适合收盘前调仓参考；正式复盘请以收盘确认数据为准。
               </div>
 
               <!-- 净值 + 回撤区: 左标题 + 右 freq Tab -->
@@ -763,9 +877,9 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
                 <tr>
                   <th style="text-align:left;padding:8px 8px;font-size:10px;color:#6b7280;border-bottom:1px solid #2a3a4a;">ETF</th>
                   <th style="text-align:center;padding:8px 4px;font-size:10px;color:#6b7280;border-bottom:1px solid #2a3a4a;">F1</th>
-                  <th style="text-align:center;padding:8px 4px;font-size:10px;color:#6b7280;border-bottom:1px solid #2a3a4a;">F2</th>
                   <th style="text-align:center;padding:8px 4px;font-size:10px;color:#6b7280;border-bottom:1px solid #2a3a4a;">F3</th>
-                  <th style="text-align:center;padding:8px 4px;font-size:10px;color:#6b7280;border-bottom:1px solid #2a3a4a;">F4</th>
+                  <th style="text-align:center;padding:8px 4px;font-size:10px;color:#6b7280;border-bottom:1px solid #2a3a4a;">F6</th>
+                   <th style="text-align:center;padding:8px 4px;font-size:10px;color:#6b7280;border-bottom:1px solid #2a3a4a;">F7</th>
                   <th style="text-align:center;padding:8px 4px;font-size:10px;color:#6b7280;border-bottom:1px solid #2a3a4a;">综合</th>
                   <th style="text-align:center;padding:8px 4px;font-size:10px;color:#6b7280;border-bottom:1px solid #2a3a4a;">仓位</th>
                   <th style="text-align:center;padding:8px 4px;font-size:10px;color:#6b7280;border-bottom:1px solid #2a3a4a;">动作</th>
@@ -1098,16 +1212,17 @@ function syncWeights() {
   $id('v-w1').textContent = $id('w1').value + '%';
   $id('v-w3').textContent = $id('w3').value + '%';
   $id('v-w6').textContent = $id('w6').value + '%';
+  $id('v-w7').textContent = $id('w7').value + '%';
   var w2el = $id('pv-w2');
   var w2 = w2el ? (parseInt(w2el.textContent) || 0) : 0;
-  var total = parseInt($id('w1').value) + w2 + parseInt($id('w3').value) + parseInt($id('w6').value);
+  var total = parseInt($id('w1').value) + w2 + parseInt($id('w3').value) + parseInt($id('w6').value) + parseInt($id('w7').value);
   var te = $id('v-total');
   te.textContent = total + '%';
   te.style.color = total === 100 ? '#10b981' : '#ef4444';
 }
 
 /* ====== Period sliders ====== */
-var PERIOD_SPAN = 3;  // years; 3 or 6
+var PERIOD_SPAN = 3;  // years; 1, 3 or 6
 
 function periodMaxDays() { return PERIOD_SPAN * 365; }
 
@@ -1119,6 +1234,7 @@ function setPeriodSpan(years) {
   PERIOD_SPAN = years;
   var MAX = periodMaxDays();
   // Update button states
+  $id('span-btn-1').classList.toggle('active', years === 1);
   $id('span-btn-3').classList.toggle('active', years === 3);
   $id('span-btn-6').classList.toggle('active', years === 6);
   // Update slider max
@@ -1197,6 +1313,7 @@ function getParams() {
     w3: parseInt($id('w3').value),
     w4: 0,  // 🔒: valuation reserved for future factor
     w6: parseInt($id('w6').value),
+    w7: parseInt($id('w7').value),
     bias: 0,  // 🔒: REQ-190 confirmed bias only hurts performance
     conf_type: 'ma_trend',  // 🔒: only active strategy
     ma_trend_period: parseInt($id('ma_trend_period').value),
@@ -1217,6 +1334,9 @@ function getParams() {
     f6_rsi_thresh: parseInt($id('f6_rsi_thresh').value),
     f6_drop_thresh: parseFloat($id('f6_drop_thresh').value),
     f6_base_penalty: parseFloat($id('f6_base_penalty').value),
+    f7_t: parseFloat($id('f7_t').value),
+    f7_k: parseFloat($id('f7_k').value),
+    f7_window: parseInt($id('f7_window').value),
     start_date: getDateFromSlider($id('start_date_slider').value),
     end_date: getDateFromSlider($id('end_date_slider').value),
     universe: getUniverseParam(),
@@ -1228,6 +1348,7 @@ function setParams(p) {
   if (p.w1 != null) { $id('w1').value = p.w1; }
   if (p.w3 != null) { $id('w3').value = p.w3; }
   if (p.w6 != null) { $id('w6').value = p.w6; }
+  if (p.w7 != null) { $id('w7').value = p.w7; }
   if (p.w2 != null) { var w2el = $id('pv-w2'); if (w2el) w2el.textContent = p.w2 + '%'; }
   syncWeights();
   if (p.ma_trend_period != null) { $id('ma_trend_period').value = p.ma_trend_period; $id('v-ma-period').textContent = p.ma_trend_period + ' 周'; }
@@ -1243,6 +1364,9 @@ function setParams(p) {
   if (p.f6_rsi_thresh != null)  { $id('f6_rsi_thresh').value = p.f6_rsi_thresh; $id('v-f6-rsi').textContent = p.f6_rsi_thresh; }
   if (p.f6_drop_thresh != null) { $id('f6_drop_thresh').value = p.f6_drop_thresh; $id('v-f6-drop').textContent = parseFloat(p.f6_drop_thresh).toFixed(1)+'%'; }
   if (p.f6_base_penalty != null){ $id('f6_base_penalty').value = p.f6_base_penalty; $id('v-f6-penalty').textContent = parseFloat(p.f6_base_penalty).toFixed(2); }
+  if (p.f7_t != null) { $id('f7_t').value = p.f7_t; $id('v-f7-t').textContent = p.f7_t; }
+  if (p.f7_k != null) { $id('f7_k').value = p.f7_k; $id('v-f7-k').textContent = parseFloat(p.f7_k).toFixed(2); }
+  if (p.f7_window != null) { $id('f7_window').value = p.f7_window; $id('v-f7-window').textContent = p.f7_window + ' 日'; }
   if (p.rebalance_freq) setFreq(p.rebalance_freq);
   if (p.universe != null) setUniverseFromParam(p.universe);
   // Note: 🔒 params (w2, w4, bias, f2_dead_zone, rsi_period, max_holdings,
@@ -1497,13 +1621,20 @@ function renderResults(data) {
   $id('results').style.display = 'block';
   var s = data.summary;
   $id('m-annual').textContent = (s.annualReturn>0?'+':'') + s.annualReturn + '%';
+  $id('m-total').textContent = (s.totalReturn>0?'+':'') + s.totalReturn + '%';
   $id('m-dd').textContent = s.maxDrawdown + '%';
   $id('m-sharpe').textContent = s.sharpe.toFixed(2);
   $id('m-sortino').textContent = s.sortino.toFixed(2);
-  $id('m-calmar').textContent = s.calmar.toFixed(2);
   $id('m-wr').textContent = s.winRate + '%';
   $id('m-rb').textContent = s.rebalanceCount + '/' + s.rebalanceDays;
   $id('m-comm').textContent = (s.commissionPct || 0) + '%';
+  var intradayBanner = $id('intraday-estimate-banner');
+  if (intradayBanner) {
+    intradayBanner.style.display = s.hasIntradayEstimate ? 'block' : 'none';
+    if (s.hasIntradayEstimate) {
+      intradayBanner.textContent = '盘中估算：' + (s.intradayDate || '今日') + (s.intradayTime ? ' ' + s.intradayTime : '') + ' 的实时行情与预估全天成交额（' + (s.intradayCount || 0) + ' 支 ETF），适合收盘前调仓参考；正式复盘请以收盘确认数据为准。';
+    }
+  }
 
   // Store signal history and name map for snapshot
   tunerSignalHistory = data.signalHistory || [];
@@ -1527,15 +1658,33 @@ function renderResults(data) {
   // Connect three charts for shared axisPointer + dataZoom
   setTimeout(function() {
     if (navChart && ddChart) {
-      // klineReplayChart may not exist yet (created on first ETF select)
-      var charts = [navChart, ddChart];
-      if (klineReplayChart) charts.push(klineReplayChart);
-      echarts.connect(charts);
+      echarts.connect([navChart, ddChart]);
     }
   }, 200);
 }
 
 /* ====== Resample daily series to weekly (Friday-end) ====== */
+function isIntradayEstimateDate(dateStr) {
+  var s = lastBacktestData && lastBacktestData.summary;
+  return !!(s && s.hasIntradayEstimate && s.intradayDate === dateStr);
+}
+
+function hasIntradayLastPoint(data, dates) {
+  var s = data && data.summary;
+  return !!(s && s.hasIntradayEstimate && s.intradayDate && dates && dates.length && dates[dates.length - 1] === s.intradayDate);
+}
+
+function splitEstimatedLastSegment(values, enabled) {
+  var confirmed = values.slice();
+  var estimated = new Array(values.length).fill(null);
+  if (enabled && values.length >= 2) {
+    confirmed[values.length - 1] = null;
+    estimated[values.length - 2] = values[values.length - 2];
+    estimated[values.length - 1] = values[values.length - 1];
+  }
+  return { confirmed: confirmed, estimated: estimated };
+}
+
 function resampleWeekly(dates, values) {
   if (!dates || dates.length === 0) return { dates: [], values: [] };
   var outDates = [], outValues = [];
@@ -1580,6 +1729,8 @@ function renderNavChart(data) {
   navDates = dates;  // remember for click handler
 
   var curDate = currentSelectedDate;
+  var intradayLastPoint = hasIntradayLastPoint(data, dates);
+  var navSplit = splitEstimatedLastSegment(navPct, intradayLastPoint);
 
   // Build regime switch markPoints on the NAV curve
   var switchMarkPts = [];
@@ -1614,8 +1765,9 @@ function renderNavChart(data) {
   }
 
   var series = [{
-    name:'策略净值', type:'line', data:navPct, showSymbol:false,
+    name:'策略净值', type:'line', data:navSplit.confirmed, showSymbol:false,
     color:'#3b82f6', lineStyle:{width:2, color:'#3b82f6'},
+    connectNulls:false,
     markPoint: switchMarkPts.length ? {
       data: switchMarkPts,
       animation: false,
@@ -1627,6 +1779,13 @@ function renderNavChart(data) {
       label: { show: false },
     } : undefined,
   }];
+  if (intradayLastPoint) {
+    series.push({
+      name:'盘中估算', type:'line', data:navSplit.estimated, showSymbol:false,
+      color:'#60a5fa', lineStyle:{width:2, color:'#60a5fa', type:'dashed'},
+      connectNulls:false,
+    });
+  }
   if (hs300.length) series.push({name:'沪深300', type:'line', data:hs300, showSymbol:false, color:'#f59e0b', lineStyle:{width:1, color:'#f59e0b', type:'dashed'}});
   if (eqWeight.length) series.push({name:'等权持有', type:'line', data:eqWeight, showSymbol:false, color:'#8b5cf6', lineStyle:{width:1, color:'#8b5cf6', type:'dashed'}});
 
@@ -1679,14 +1838,21 @@ function renderDdChart(data) {
     ddData = w.values;
   }
 
+  var intradayLastPoint = hasIntradayLastPoint(data, dates);
+  var ddSplit = splitEstimatedLastSegment(ddData, intradayLastPoint);
+  var ddSeries = [{type:'line', data:ddSplit.confirmed, showSymbol:false, areaStyle:{color:'rgba(239,68,68,0.15)'}, lineStyle:{width:1, color:'#ef4444'}, connectNulls:false}];
+  if (intradayLastPoint) {
+    ddSeries.push({type:'line', data:ddSplit.estimated, showSymbol:false, lineStyle:{width:1, color:'#f87171', type:'dashed'}, connectNulls:false});
+  }
+
   ddChart.setOption({
     backgroundColor:'transparent',
-    tooltip:{trigger:'axis', axisPointer:{type:'cross'}, backgroundColor:'rgba(10,25,47,0.95)', borderColor:'rgba(59,130,246,0.2)', textStyle:{color:'#e0e0e0',fontSize:11}, formatter:function(p){return p[0].axisValue + '<br/>回撤 <b style="color:#ef4444">' + p[0].value.toFixed(2) + '%</b>';}},
+    tooltip:{trigger:'axis', axisPointer:{type:'cross'}, backgroundColor:'rgba(10,25,47,0.95)', borderColor:'rgba(59,130,246,0.2)', textStyle:{color:'#e0e0e0',fontSize:11}, formatter:function(p){var item=(p||[]).find(function(x){return x.value != null;}) || p[0]; return item.axisValue + '<br/>回撤 <b style="color:#ef4444">' + item.value.toFixed(2) + '%</b>' + (intradayLastPoint && item.dataIndex === dates.length - 1 ? '<br/><span style="color:#f59e0b">盘中估算，仅供收盘前参考</span>' : '');}},
     axisPointer: { link: [{xAxisIndex:'all'}] },
     grid:{left:50, right:20, top:8, bottom:20},
     xAxis:{type:'category', data:dates, show:false},
     yAxis:{type:'value', scale:true, axisLabel:{fontSize:10, color:'#6b7280', formatter:'{value}%'}, splitLine:{lineStyle:{color:'rgba(255,255,255,0.06)'}}},
-    series:[{type:'line', data:ddData, showSymbol:false, areaStyle:{color:'rgba(239,68,68,0.15)'}, lineStyle:{width:1, color:'#ef4444'}}],
+    series:ddSeries,
     dataZoom:[{type:'inside', start:0, end:100}],
   }, true);
 }
@@ -1722,7 +1888,12 @@ function renderTunerSnapshot(idx) {
     var dateText = sig.signalDate && sig.executionDate && sig.signalDate !== sig.executionDate
       ? sig.signalDate + ' 信号 → ' + sig.executionDate + ' 执行'
       : sig.date;
-    sub.textContent = dateText + ' · 第 ' + (idx + 1) + '/' + tunerSignalHistory.length + ' 次调仓';
+    if (isIntradayEstimateDate(sig.date)) {
+      var s = lastBacktestData && lastBacktestData.summary || {};
+      sub.innerHTML = dateText + ' · 第 ' + (idx + 1) + '/' + tunerSignalHistory.length + ' 次调仓 · <span style="color:#fbbf24;background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.35);border-radius:4px;padding:1px 6px;">盘中估算' + (s.intradayTime ? ' ' + s.intradayTime : '') + '</span>';
+    } else {
+      sub.textContent = dateText + ' · 第 ' + (idx + 1) + '/' + tunerSignalHistory.length + ' 次调仓';
+    }
   }
 
   // Top metrics
@@ -1787,9 +1958,9 @@ function renderTunerSnapshot(idx) {
     html += '<tr data-code="' + code + '" class="snap-row" style="border-bottom:1px solid #1e293b;cursor:pointer;' + rowBg + '" onclick="onSnapshotRowClick(\'' + code + '\')">' +
       '<td style="padding:9px 10px;font-size:13px;">' + hotPrefix + '<span style="color:#60a5fa;font-weight:600;">' + code + '</span> <span style="color:#e0e0e0;">' + name + '</span></td>' +
       '<td style="padding:9px 6px;text-align:center;font-size:12px;color:#94a3b8;">' + (d.f1 || 0).toFixed(0) + '</td>' +
-      '<td style="padding:9px 6px;text-align:center;font-size:12px;color:#94a3b8;">' + (d.f2 || 0).toFixed(0) + '</td>' +
       '<td style="padding:9px 6px;text-align:center;font-size:12px;color:#94a3b8;">' + (d.f3 || 0).toFixed(0) + '</td>' +
-      '<td style="padding:9px 6px;text-align:center;font-size:12px;color:#94a3b8;">' + (d.f4 || 0).toFixed(0) + '</td>' +
+      '<td style="padding:9px 6px;text-align:center;font-size:12px;color:' + (((d.f6 || 100) - 100) < 0 ? '#f59e0b' : '#94a3b8') + ';">' + ((d.f6 || 100) - 100).toFixed(0) + '</td>' +
+      '<td style="padding:9px 6px;text-align:center;font-size:12px;color:' + (d.f7 != null ? (d.f7 <= 20 ? '#ef4444' : d.f7 >= 80 ? '#10b981' : '#94a3b8') : '#4b5563') + ';">' + (d.f7 != null ? (d.f7 - 50).toFixed(0) : 'N/A') + '</td>' +
       '<td style="padding:9px 6px;text-align:center;">' +
         '<span style="color:' + scoreColor + ';font-weight:700;font-size:13px;">' + score.toFixed(1) + '</span>' +
         '<span style="width:36px;height:4px;background:#2a3a4a;border-radius:2px;display:inline-block;vertical-align:middle;margin-left:4px;position:relative;">' +
@@ -1810,7 +1981,9 @@ function renderTunerSnapshot(idx) {
     if (adjCount > 0) parts.push('<span style="color:#60a5fa;">ADJ ' + adjCount + '</span>');
     if (holdCount > 0) parts.push('<span style="color:#6b7280;">HOLD ' + holdCount + '</span>');
     if (outCount > 0) parts.push('<span style="color:#ef4444;">OUT ' + outCount + '</span>');
-    footer.innerHTML = '&#x1F525; = 持仓标的 · 按综合分排序 · ' + parts.join(' · ');
+    var summary = lastBacktestData && lastBacktestData.summary || {};
+    var note = isIntradayEstimateDate(sig.date) ? ' · <span style="color:#fbbf24;">今日信号含' + (summary.intradayTime ? ' ' + summary.intradayTime + ' ' : '') + '盘中价格/成交额估算</span>' : '';
+    footer.innerHTML = '&#x1F525; = 持仓标的 · 按综合分排序 · ' + parts.join(' · ') + note;
   }
 
   // After table re-render, restore K-line for selected code (if any).
@@ -1849,9 +2022,7 @@ function switchKlineFreq(freq) {
   if (currentKlineCode) loadTradeReplay(currentKlineCode);
   // Reconnect (chart instances may be re-created)
   setTimeout(function() {
-    var charts = [navChart, ddChart];
-    if (klineReplayChart) charts.push(klineReplayChart);
-    echarts.connect(charts);
+    echarts.connect([navChart, ddChart]);
   }, 200);
 }
 
@@ -2053,6 +2224,17 @@ function renderTradeReplay(code, prices) {
     };
   });
 
+  // Detect intraday: split close series for dashed estimated segment on kline-replay
+  var lastDate2 = prices.dates[prices.dates.length - 1];
+  var isIntradayKline = isIntradayEstimateDate(lastDate2);
+  var closeConfirmed = prices.close.slice();
+  var closeEstimated = new Array(prices.close.length).fill(null);
+  if (isIntradayKline && prices.close.length >= 2) {
+    closeConfirmed[prices.close.length - 1] = null;
+    closeEstimated[prices.close.length - 2] = prices.close[prices.close.length - 2];
+    closeEstimated[prices.close.length - 1] = prices.close[prices.close.length - 1];
+  }
+
   var curDate = currentSelectedDate;
 
   // Custom tooltip formatter: dedupe date + show trade if exists
@@ -2065,13 +2247,16 @@ function renderTradeReplay(code, prices) {
     var price = prices.close[idx];
     var rsi = prices.rsi[idx];
     var vol = prices.volume[idx];
+    var pct = idx > 0 && prices.close[idx - 1] ? (price / prices.close[idx - 1] - 1) * 100 : null;
     var pos = posSeries[idx];
     var html = '<div style="font-weight:600;margin-bottom:4px;color:#e0e0e0;">' + dateStr + '</div>';
     html += '<div style="color:#94a3b8;font-size:11px;line-height:1.6;">';
-    html += '价格 <b style="color:#e0e0e0">' + (price != null ? price.toFixed(3) : '-') + '</b><br/>';
-    html += '当前持仓 <b style="color:' + (pos > 0 ? '#10b981' : '#6b7280') + '">' + pos.toFixed(1) + '%</b><br/>';
+    html += '价格 <b style="color:#e0e0e0">' + (price != null ? price.toFixed(3) : '-') + '</b>';
+    if (pct != null) html += ' · 涨跌幅 <b style="color:' + (pct >= 0 ? '#ef4444' : '#10b981') + '">' + (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%</b>';
+    html += '<br/>当前持仓 <b style="color:' + (pos > 0 ? '#10b981' : '#6b7280') + '">' + pos.toFixed(1) + '%</b><br/>';
     if (rsi != null) html += 'RSI <b style="color:#f59e0b">' + rsi.toFixed(1) + '</b><br/>';
     if (vol != null) html += (prices.volumeLabel || '成交') + ' <b style="color:#e0e0e0">' + (vol >= 1e8 ? (vol/1e8).toFixed(2)+' 亿' : vol >= 1e4 ? (vol/1e4).toFixed(1)+' 万' : vol.toFixed(0)) + '</b>';
+    if (isIntradayEstimateDate(dateStr)) { var summary = lastBacktestData && lastBacktestData.summary || {}; html += '<br/><span style="color:#fbbf24">盘中估算' + (summary.intradayTime ? ' ' + summary.intradayTime : '') + '：价格为实时价，成交额为预估全天值</span>'; }
     html += '</div>';
     var t = barIdxToTrade[idx];
     if (t) {
@@ -2097,6 +2282,8 @@ function renderTradeReplay(code, prices) {
     legend: {
       data: [
         { name: '价格', icon: 'rect' },
+        { name: '盘中估算', icon: 'rect' },
+
         { name: '🏔️ 持仓', icon: 'rect' },
         { name: 'RSI'+(prices.rsiPeriod||14), icon: 'rect' },
         { name: '📊 ' + (prices.volumeLabel || '成交额'), icon: 'rect' },
@@ -2144,10 +2331,18 @@ function renderTradeReplay(code, prices) {
     ],
     series: [
       {
-        name: '价格', type: 'line', data: prices.close, showSymbol: false,
+        name: '价格', type: 'line', data: closeConfirmed, showSymbol: false,
         color: '#94a3b8',
         lineStyle: { color: '#94a3b8', width: 1.2 },
         areaStyle: { color: 'rgba(148,163,184,0.08)' },
+        connectNulls: false,
+        markPoint: { data: markPoints, animation: false, z: 10 },
+      },
+      {
+        name: '盘中估算', type: 'line', data: closeEstimated, showSymbol: false,
+        color: '#60a5fa',
+        lineStyle: { color: '#60a5fa', width: 2, type: 'dashed' },
+        connectNulls: false,
         markPoint: { data: markPoints, animation: false, z: 10 },
         markLine: curDate ? {
           silent: true, symbol: 'none',
@@ -2188,6 +2383,7 @@ function renderTradeReplay(code, prices) {
           color: function(p) {
             // Color by current bar's net direction (close vs prev close)
             var idx = p.dataIndex;
+            if (isIntradayEstimateDate(prices.dates[idx])) return 'rgba(245,158,11,0.75)';
             if (idx === 0) return 'rgba(148,163,184,0.5)';
             var prev = prices.close[idx - 1], cur = prices.close[idx];
             return cur >= prev ? 'rgba(239,68,68,0.55)' : 'rgba(16,185,129,0.55)';
@@ -2221,9 +2417,9 @@ function renderTradeReplay(code, prices) {
     jumpToSnapshotByDate(prices.dates[Math.round(dataIdx)]);
   });
 
-  // Connect with NAV/DD for shared dataZoom + axisPointer
+  // Sync nav+dd only (kline-replay has different x-axis dates; click syncs via markLine)
   if (navChart && ddChart) {
-    echarts.connect([navChart, ddChart, klineReplayChart]);
+    echarts.connect([navChart, ddChart]);
   }
 }
 
@@ -2274,7 +2470,24 @@ function applyUrlParams() {
 }
 
 /* ====== Init ====== */
+async function waitForReady() {
+  var overlay = document.getElementById('tuner-loading');
+  for (var i = 0; i < 120; i++) {
+    try {
+      var resp = await fetch('/api/data_status');
+      var data = await resp.json();
+      if (data.ready) break;
+    } catch(e) {
+      // Server not listening yet — keep waiting
+    }
+    await new Promise(function(r) { setTimeout(r, 500); });
+  }
+  if (overlay) overlay.style.display = 'none';
+}
+
 window.addEventListener('load', async function() {
+  await waitForReady();
+
   setConfType(confType);  // sync panel visibility with default confType
   drawConfChart();
   validateBullBear();  // initial bull/bear validation
@@ -2285,12 +2498,7 @@ window.addEventListener('load', async function() {
   if (defaultPreset) applyPreset(defaultPreset);
   var fromUrl = applyUrlParams();
   switchRightView('results');
-  if (fromUrl) {
-    var qs = new URLSearchParams(location.search);
-    if (qs.get('autorun') !== '0') setTimeout(function() { runBacktest(); }, 100);
-  } else {
-    setTimeout(function() { runBacktest(); }, 100);
-  }
+  // No auto-run on page load — user clicks "运行回测" manually
 });
 window.addEventListener('resize', () => {
   navChart && navChart.resize();

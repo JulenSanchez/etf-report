@@ -5,16 +5,18 @@
 ## 架构概览
 
 ```
-新浪财经 API → 数据获取 → 均线计算 → JSON 存储 → HTML 注入 → 本地/企微/GitHub
+腾讯财经 API (K线主源) ─┐
+新浪财经 API (实时行情) ─┤→ 数据获取 → CSV 存储 → 多因子计算 → HTML 注入 → GitHub Pages / 企微
+AKShare (估值/企业行动) ─┘
 ```
 
-四层结构：
-1. **数据获取层** — 新浪财经 API（K线 + 实时行情 + 基准指数）+ AKShare `fund_cf_em`（基金拆分/折算）
-2. **数据处理层** — 份额变动自动识别、数据清洗、MA5/MA20/MA50 均线计算、基准对标
-3. **数据存储层** — `etf_full_kline_data.json` + `etf_realtime_data.json` + `corporate_action_events.json`
-
-4. **报告生成层** — JavaScript 对象注入 HTML，100% 样式保证
-5. **量化回测层** — 25 支 ETF 轮动策略（F1-F5 五因子 + 信心函数 + 周度调仓），当前仅开发环境可用，正式页建设中。详见 `runbooks/QUANT_RUNBOOK.md`
+六层结构：
+1. **数据获取层** — 腾讯财经 API（日/周 K 线，前复权）、新浪财经 API（实时行情 + 基准指数）、AKShare（中证指数 PE/PB 历史、基金拆分/折算）
+2. **数据处理层** — 份额变动自动识别、数据清洗（不复权场景）、MA/EMA 均线计算、基准对标、估值百分位
+3. **数据存储层** — `data/quant/*.csv`（每 ETF 日/周线独立文件）+ `data/valuation_history/` + `corporate_action_events.json` + `market_regimes.json`
+4. **量化引擎层** — F1-F7 七因子（EMA 偏离/RSI 自适应/量比/估值/波动率/动能衰竭/对数收益偏离）+ 信心函数（Regime/MA Trend/DD Trigger）+ 周度调仓回测
+5. **报告生成层** — JavaScript 对象注入 HTML + 量化 payload 独立 JS，100% 样式保证
+6. **调参工具层** — Quant Tuner（Flask localhost:5179），滑块调参 + 一键回测 + K 线复盘
 
 ## 核心设计原则
 
@@ -42,13 +44,20 @@ JSON Lines 格式，多级别（DEBUG/INFO/WARN/ERROR）。
 ## 模块依赖
 
 ```
-config_manager.py → logger.py → update_report.py (主控)
-                                    ├─ fix_ma_and_benchmark.py → data_cleaning.py
-                                    ├─ realtime_data_updater.py
-                                    └─ health_check.py
+数据管线（日更）:
+  config_manager.py → logger.py → update_report.py (主控)
+                                      ├─ fix_ma_and_benchmark.py → data_cleaning.py
+                                      ├─ realtime_data_updater.py
+                                      ├─ valuation_fetcher.py → valuation_engine.py + stock_bps_fetcher.py
+                                      ├─ editorial_fetcher.py + compliance_filter.py
+                                      └─ health_check.py + verify_html_integrity.py
 
-quant_factors.py → quant_backtest.py → quant_tuner.py (Flask 调参)
-                                   └→ quant_build_payload.py (静态 payload)
+量化管线（回测 + Tuner）:
+  trading_calendar.py + benchmark_data.py + quant_data_utils.py
+      → quant_factors.py → quant_backtest.py
+              ├→ quant_tuner.py (Flask localhost:5179)
+              ├→ quant_build_payload.py (静态 payload)
+              └→ quant_data_fetcher.py (腾讯财经 K 线 CSV 增量更新)
 ```
 
 
@@ -60,8 +69,12 @@ quant_factors.py → quant_backtest.py → quant_tuner.py (Flask 调参)
 | 配置格式 | YAML | 新增 ETF 从 4h → 15min，支持环境变量覆盖 |
 | 日志格式 | JSON Lines | 机器可解析，便于搜索和分析 |
 | 健康检查 | 26 项全量（含解释层鲜度） | 问题早期发现，自动化诊断 |
+| 量化因子 | F1-F7 七因子 + 信心函数 | 覆盖趋势/动量/量价/估值/波动率/衰竭/对数收益 |
+| 资产池 | 34 支 ETF，按扇区分类 | 权益宽基 + 行业 + 跨境 + 红利，可配置扩展 |
 
 ## 后续演进
 
-- 多源数据聚合（东财、同花顺）+ 自动容错降级
-- 缓存机制减少 API 调用
+- 实盘调仓信号生成器（盘后一键输出调仓指令）
+- 统一数据获取管线（合并 quant_data_fetcher + fix_ma_and_benchmark + realtime_updater）
+- 参数网格搜索自动化（sweep_f7_full.py 替代废弃的 quant_param_search）
+- 测试覆盖补全（核心量化模块：backtest / tuner / build_payload）

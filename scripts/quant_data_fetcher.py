@@ -1,17 +1,26 @@
 """
-REQ-177 M0.2: 27 支 ETF 历史 K 线数据拉取
-用途：为三因子打分系统提供日线 + 周线历史数据
+ETF K 线数据拉取器 — 腾讯财经 fqkline API（前复权）。
 
 输出：data/quant/{code}_daily.csv  (日线: date, open, close, high, low, volume, amount)
       data/quant/{code}_weekly.csv (周线: 同上)
 
-用法：
-  python scripts/quant_data_fetcher.py              # 增量更新（默认）
-  python scripts/quant_data_fetcher.py --full        # 全量重新拉取
-  python scripts/quant_data_fetcher.py --code 512400 # 只更新一支
+三种模式:
+  incremental (默认)  python quant_data_fetcher.py
+      拉取 CSV 最新日期之后的新行。不覆盖已有数据。安全，可随时运行。
+      约 2 分钟 / 40 支 ETF。
 
-数据源：腾讯财经 fqkline API（前复权）
-合规：3s 请求间隔 + 重试退避 + 收盘冷却规则
+  patch               python quant_data_fetcher.py --start YYYY-MM-DD [--end YYYY-MM-DD]
+      重新拉取指定日期范围，合并入现有 CSV（覆盖重叠行）。
+      用于修正错误数据。end 默认为今天。
+      例: python quant_data_fetcher.py --start 2026-05-13 --end 2026-05-14
+
+  full                 python quant_data_fetcher.py --full
+      丢弃现有 CSV，全量重新拉取。慢（约 10 分钟），用于重建整个数据集。
+
+选项:
+  --code CODE    只操作单支 ETF
+
+合规: 3s 请求间隔 + 重试退避 + 收盘冷却规则（盘中不拉当天未完成 K 线）
 """
 import argparse
 import sys
@@ -22,6 +31,9 @@ from pathlib import Path
 import requests
 import yaml
 
+from trading_calendar import load_trading_calendar, latest_allowed_close_date
+from quant_data_utils import rebuild_weekly_from_daily
+
 sys.stdout.reconfigure(encoding="utf-8")
 
 # A-share market close time and cooling-off rule
@@ -29,65 +41,14 @@ MARKET_CLOSE_HOUR = 15
 MARKET_CLOSE_MIN = 0
 COOL_OFF_MINUTES = 10  # only allow data >= close_time + cool_off (REQ-195: 15:10 即可拉取，为盘后交易预留时间)
 
-# Trading calendar (loaded from data/quant/trading_days_YYYY.txt)
-_TRADING_DAYS_FETCHER = set()
-_TD_LIST_FETCHER = []
-
-
-def _load_trading_calendar_fetcher():
-    """Load trading day calendar for the current year (+ adjacent years)."""
-    global _TRADING_DAYS_FETCHER, _TD_LIST_FETCHER
-    _TRADING_DAYS_FETCHER = set()
-    _TD_LIST_FETCHER = []
-    data_dir = Path(__file__).resolve().parent.parent / "data" / "quant"
-    for year in [datetime.now().year - 1, datetime.now().year, datetime.now().year + 1]:
-        p = data_dir / f"trading_days_{year}.txt"
-        if p.exists():
-            with open(p) as f:
-                for line in f:
-                    ds = line.strip()
-                    if ds:
-                        _TRADING_DAYS_FETCHER.add(ds)
-    _TD_LIST_FETCHER = sorted(_TRADING_DAYS_FETCHER)
-
-
-def _last_trading_day_fetcher(before=None) -> str:
-    """Return the most recent trading day on or before `before` as YYYY-MM-DD."""
-    d = before or datetime.now()
-    if _TD_LIST_FETCHER:
-        ds = d.strftime("%Y-%m-%d")
-        lo, hi = 0, len(_TD_LIST_FETCHER) - 1
-        while lo <= hi:
-            mid = (lo + hi) // 2
-            if _TD_LIST_FETCHER[mid] <= ds:
-                lo = mid + 1
-            else:
-                hi = mid - 1
-        if hi >= 0:
-            return _TD_LIST_FETCHER[hi]
-    # Fallback: simple weekday
-    d2 = d
-    for _ in range(7):
-        if d2.weekday() < 5:
-            return d2.strftime("%Y-%m-%d")
-        d2 -= timedelta(days=1)
-    return d.strftime("%Y-%m-%d")
-
 
 def _latest_allowed_date() -> str:
-    """Return the latest date (YYYY-MM-DD) for which closed K-line data is safe to fetch.
-
-    After 15:10 on a trading day, today's close is available.
-    Before 15:10 (or on a non-trading day), the latest allowed date is
-    the last trading day.
-    """
-    now = datetime.now()
-    close_time = now.replace(hour=MARKET_CLOSE_HOUR, minute=MARKET_CLOSE_MIN,
-                             second=0, microsecond=0)
-    if now >= close_time + timedelta(minutes=COOL_OFF_MINUTES):
-        return _last_trading_day_fetcher(now)
-    else:
-        return _last_trading_day_fetcher(now - timedelta(minutes=1))
+    """Return the latest date (YYYY-MM-DD) for which closed K-line data is safe to fetch."""
+    return latest_allowed_close_date(
+        market_close_hour=MARKET_CLOSE_HOUR,
+        market_close_minute=MARKET_CLOSE_MIN,
+        cool_off_minutes=COOL_OFF_MINUTES,
+    )
 
 SKILL_DIR = Path(__file__).resolve().parent.parent
 CONFIG_PATH = SKILL_DIR / "config" / "quant_universe.yaml"
@@ -112,18 +73,19 @@ def load_universe(config_path: Path = CONFIG_PATH):
     return cfg.get("universe", [])
 
 
-def _tx_request(tx_code: str, period: str, count: int, retries: int = MAX_RETRIES) -> list:
+def _tx_request(tx_code: str, period: str, count: int,
+                end_date: str = "", retries: int = MAX_RETRIES) -> list:
     """Tencent Finance API request with retry logic. Returns list of kline rows.
     period: 'daily' or 'weekly' (converted to 'day'/'week' for API)
+    end_date: optional end date (YYYY-MM-DD) for backward pagination; empty = latest
     """
     # Convert internal period names to Tencent API format
     tx_period = "day" if period == "daily" else "week"
     # param format: {code},{period},{start},{end},{count},{qfq_type}
-    param_str = f"{tx_code},{period},,,{count},qfq"
     for attempt in range(1, retries + 1):
         try:
             # Build URL directly — requests params dict encodes commas, breaking Tencent API
-            full_url = f"{TX_KLINE_URL}?param={tx_code},{tx_period},,,{count},qfq"
+            full_url = f"{TX_KLINE_URL}?param={tx_code},{tx_period},,{end_date},{count},qfq"
             resp = requests.get(full_url, headers=TX_HEADERS, timeout=15)
             if resp.status_code == 200:
                 data = resp.json()
@@ -185,11 +147,13 @@ def _parse_tx_rows(rows: list) -> list[dict]:
 
 
 def fetch_etf_kline(code: str, market: str, period: str = "daily",
-                    start_date: str = None):
+                    start_date: str = None, end_date: str = None):
     """
     从腾讯财经 API 拉取 ETF 前复权 K 线。
     period: 'daily' | 'weekly'
-    start_date: 增量拉取起始日期 (YYYY-MM-DD)，客户端过滤
+    start_date: 增量拉取起始日期 (YYYY-MM-DD)，客户端过滤 (> start_date)
+    end_date:   截止日期 (YYYY-MM-DD)，客户端过滤 (<= end_date)。
+                盘中使用，确保不拉到当天未完成的K线。默认用 _latest_allowed_date()。
     返回 DataFrame: date, open, close, high, low, volume, amount
     """
     import pandas as pd
@@ -209,14 +173,33 @@ def fetch_etf_kline(code: str, market: str, period: str = "daily",
     # Fetch data (single request for incremental, paginated for full)
     all_rows = []
     if start_date is None:
-        # Full fetch: paginate from oldest to newest
-        # Tencent returns latest N rows, so we need to work backwards
-        # Strategy: fetch MAX, check if we got the earliest data
-        batch = _tx_request(tx_code, period, TX_MAX_COUNT)
-        if batch:
+        # Full fetch: paginate backwards to get ALL historical data
+        # Tencent API returns rows up to end_date. To paginate:
+        #   1. First request: end="" (latest) → get latest 800 rows
+        #   2. Note earliest date in response
+        #   3. Next request: end = earliest_date - 1 day → get 800 rows before that
+        #   4. Repeat until batch < 800 (reached listing date)
+        end_date = ""
+        max_pages = 20  # safety: 20 * 800 = 16000 rows > 12 years daily
+
+        for page in range(max_pages):
+            batch = _tx_request(tx_code, period, TX_MAX_COUNT, end_date=end_date)
+            if not batch:
+                break
+
             all_rows.extend(batch)
-        # One batch of 800 should cover ~3 years of daily data for most ETFs
-        # If more is needed, additional batches can be added
+
+            if len(batch) < TX_MAX_COUNT:
+                # Fewer than max rows → reached the beginning
+                break
+
+            # Find earliest date in this batch to set end for next page
+            earliest = batch[0][0]  # date is first field
+            end_dt = datetime.strptime(earliest, "%Y-%m-%d") - timedelta(days=1)
+            end_date = end_dt.strftime("%Y-%m-%d")
+
+            # Rate limiting between pages
+            time.sleep(1.0)
     else:
         # Incremental: just fetch the needed count
         batch = _tx_request(tx_code, period, need_count)
@@ -231,6 +214,9 @@ def fetch_etf_kline(code: str, market: str, period: str = "daily",
         return pd.DataFrame(columns=["date", "open", "close", "high", "low", "volume", "amount"])
 
     df = pd.DataFrame(parsed)
+
+    # Deduplicate by date (pagination batches may overlap at boundaries)
+    df = df.drop_duplicates(subset=["date"], keep="first").sort_values("date").reset_index(drop=True)
 
     if period == "weekly":
         df["date"] = pd.to_datetime(df["date"])
@@ -251,8 +237,8 @@ def fetch_etf_kline(code: str, market: str, period: str = "daily",
         cutoff = pd.Timestamp(start_date)
         df = df[df["date"] > cutoff].copy()
 
-    # Only keep rows on or before the latest allowed close date
-    latest = _latest_allowed_date()
+    # Only keep rows on or before the latest allowed close date (or explicit end_date)
+    latest = end_date if end_date else _latest_allowed_date()
     df = df[df["date"] <= pd.Timestamp(latest)].copy()
 
     # Final output: string dates
@@ -280,36 +266,6 @@ def save_csv(df, path: Path):
     df.to_csv(path, index=False, encoding="utf-8")
 
 
-def rebuild_weekly_from_daily(daily_df):
-    """Build weekly OHLCV from daily data using each week's latest trading day.
-
-    Tencent weekly K-line may lag during the current week. Rebuilding from
-    local daily data keeps weekly factors/K-line aligned with the latest
-    available trading day (e.g. Monday 2026-05-11 instead of prior Friday).
-    """
-    import pandas as pd
-    if daily_df is None or daily_df.empty:
-        return pd.DataFrame(columns=["date", "open", "close", "high", "low", "volume", "amount"])
-
-    df = daily_df.copy()
-    df["date"] = pd.to_datetime(df["date"])
-    df = df.sort_values("date").reset_index(drop=True)
-    df["_week"] = df["date"].dt.isocalendar().year.astype(str) + "-" + df["date"].dt.isocalendar().week.astype(str).str.zfill(2)
-
-    weekly = df.groupby("_week", as_index=False).agg({
-        "date": "last",
-        "open": "first",
-        "high": "max",
-        "low": "min",
-        "close": "last",
-        "volume": "sum",
-        "amount": "sum",
-    })
-    weekly = weekly[["date", "open", "close", "high", "low", "volume", "amount"]]
-    weekly["date"] = weekly["date"].dt.strftime("%Y-%m-%d")
-    return weekly
-
-
 def append_csv(new_df, path: Path):
     """Append new data to existing CSV, deduplicate by date."""
     import pandas as pd
@@ -327,8 +283,10 @@ def append_csv(new_df, path: Path):
         new_df.to_csv(path, index=False, encoding="utf-8")
 
 
-def update_single(etf: dict, full: bool = False):
-    """Update one ETF's daily + weekly data. Returns (daily_rows, weekly_rows, mode)."""
+def update_single(etf: dict, full: bool = False, end_date: str = None):
+    """Update one ETF's daily + weekly data. Returns (daily_rows, weekly_rows, mode).
+    end_date: exclusive end date (YYYY-MM-DD), passed to fetch_etf_kline to exclude
+              incomplete intraday bars when called during market hours."""
     code = etf["code"]
     market = etf["market"]
     name = etf["name"]
@@ -337,7 +295,7 @@ def update_single(etf: dict, full: bool = False):
     weekly_path = DATA_DIR / f"{code}_weekly.csv"
 
     if full:
-        df_daily = fetch_etf_kline(code, market, "daily")
+        df_daily = fetch_etf_kline(code, market, "daily", end_date=end_date)
         save_csv(df_daily, daily_path)
         df_weekly = rebuild_weekly_from_daily(df_daily)
         save_csv(df_weekly, weekly_path)
@@ -345,11 +303,10 @@ def update_single(etf: dict, full: bool = False):
 
     # Incremental
     last_daily = get_last_date(daily_path)
-    last_weekly = get_last_date(weekly_path)
 
     if last_daily is None:
         # First time (no CSV)
-        df_daily = fetch_etf_kline(code, market, "daily")
+        df_daily = fetch_etf_kline(code, market, "daily", end_date=end_date)
         save_csv(df_daily, daily_path)
         df_weekly = rebuild_weekly_from_daily(df_daily)
         save_csv(df_weekly, weekly_path)
@@ -357,7 +314,7 @@ def update_single(etf: dict, full: bool = False):
 
     # Incremental: only fetch daily rows after last_date, then rebuild weekly from local daily.
     # Rebuilding avoids Tencent weekly lag during an unfinished trading week.
-    df_daily = fetch_etf_kline(code, market, "daily", start_date=last_daily)
+    df_daily = fetch_etf_kline(code, market, "daily", start_date=last_daily, end_date=end_date)
     new_daily = len(df_daily)
 
     if new_daily > 0:
@@ -378,12 +335,64 @@ def update_single(etf: dict, full: bool = False):
     return new_daily, new_weekly, "incremental"
 
 
+def patch_range(etf: dict, start_date: str, end_date: str):
+    """Re-fetch a specific date range and merge into existing CSV (replacing overlapping rows).
+    Returns (daily_rows_written, weekly_rows, "patch")."""
+    code = etf["code"]
+    market = etf["market"]
+    name = etf["name"]
+
+    import pandas as pd
+    daily_path = DATA_DIR / f"{code}_daily.csv"
+    weekly_path = DATA_DIR / f"{code}_weekly.csv"
+
+    # Subtract 1 day from start because fetch_etf_kline uses > filter
+    adj_start = (datetime.strptime(start_date, "%Y-%m-%d") - timedelta(days=1)).strftime("%Y-%m-%d")
+    df_new = fetch_etf_kline(code, market, "daily", start_date=adj_start, end_date=end_date)
+    if df_new.empty:
+        return 0, 0, "patch"
+
+    df_new["date"] = pd.to_datetime(df_new["date"])
+
+    if daily_path.exists():
+        df_old = pd.read_csv(daily_path)
+        df_old["date"] = pd.to_datetime(df_old["date"])
+        start_dt = pd.Timestamp(start_date)
+        end_dt = pd.Timestamp(end_date)
+        mask = (df_old["date"] >= start_dt) & (df_old["date"] <= end_dt)
+        df_merged = pd.concat([df_old[~mask], df_new], ignore_index=True)
+    else:
+        df_merged = df_new
+
+    df_merged = df_merged.sort_values("date").drop_duplicates(subset=["date"], keep="last").reset_index(drop=True)
+    df_merged["date"] = df_merged["date"].dt.strftime("%Y-%m-%d")
+    save_csv(df_merged, daily_path)
+
+    old_weekly_rows = 0
+    if weekly_path.exists():
+        try:
+            old_weekly_rows = len(pd.read_csv(weekly_path, usecols=["date"]))
+        except Exception:
+            old_weekly_rows = 0
+    weekly = rebuild_weekly_from_daily(df_merged)
+    save_csv(weekly, weekly_path)
+    new_weekly = max(len(weekly) - old_weekly_rows, 0)
+
+    return len(df_new), new_weekly, "patch"
+
+
 def main():
-    _load_trading_calendar_fetcher()
+    load_trading_calendar()
     parser = argparse.ArgumentParser(description="ETF K-line data fetcher (Tencent Finance qfq)")
     parser.add_argument("--code", type=str, default=None, help="Only update specified ETF")
-    parser.add_argument("--full", action="store_true", help="Full re-fetch (default: incremental)")
+    parser.add_argument("--full", action="store_true", help="Full re-fetch all history")
+    parser.add_argument("--start", type=str, default=None, help="Patch mode: start date (YYYY-MM-DD, inclusive)")
+    parser.add_argument("--end", type=str, default=None, help="Patch mode: end date (YYYY-MM-DD, inclusive)")
     args = parser.parse_args()
+
+    patch_mode = bool(args.start)
+    if patch_mode and not args.end:
+        args.end = datetime.now().strftime("%Y-%m-%d")
 
     universe = load_universe()
     if args.code:
@@ -393,7 +402,12 @@ def main():
         print(f"[ERROR] ETF not found: {args.code}")
         return
 
-    mode_label = "full" if args.full else "incremental"
+    if patch_mode:
+        mode_label = f"patch {args.start}~{args.end}"
+    elif args.full:
+        mode_label = "full"
+    else:
+        mode_label = "incremental"
     print(f"=== ETF K-line fetch ({mode_label}) · {len(universe)} ETFs ===\n")
 
     ok, fail = 0, 0
@@ -403,7 +417,10 @@ def main():
 
         try:
             print(f"  [{i:2d}/{len(universe)}] {name}({code}) ... ", end="", flush=True)
-            daily_rows, weekly_rows, mode = update_single(etf, full=args.full)
+            if patch_mode:
+                daily_rows, weekly_rows, mode = patch_range(etf, args.start, args.end)
+            else:
+                daily_rows, weekly_rows, mode = update_single(etf, full=args.full)
             print(f"OK [{mode}] daily+{daily_rows} weekly+{weekly_rows}")
             ok += 1
 

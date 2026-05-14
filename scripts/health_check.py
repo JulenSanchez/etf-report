@@ -485,9 +485,8 @@ class DataChecker:
                         first_etf = next(iter(realtime_data.values()), {})
                         if "timestamp" in first_etf:
                             realtime_date = first_etf["timestamp"][:10]
-            except:
-                pass
-            
+            except (KeyError, IndexError, TypeError, AttributeError):
+                pass            
             if kline_date:
                 result.status = "PASS"
                 result.details = {"kline_date": kline_date, "realtime_date": realtime_date or "N/A"}

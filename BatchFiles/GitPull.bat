@@ -5,10 +5,21 @@ title Git Pull - ETF Report
 cd /d "%~dp0.."
 
 echo ============================================
-echo   Git Pull - Force Overwrite Local
+echo   Git Pull - Sync with Origin
 echo ============================================
 echo.
-echo [1/2] Fetching from origin...
+
+REM Stash local changes before pull to avoid data loss
+echo [1/3] Stashing local changes (if any)...
+git stash push -m "auto-stash before pull %date% %time%" 2>nul
+if %errorlevel%==0 (
+    echo [OK] Local changes stashed. Use 'git stash pop' to restore.
+) else (
+    echo [OK] No local changes to stash.
+)
+
+echo.
+echo [2/3] Fetching from origin...
 git fetch --all --prune
 if %errorlevel% neq 0 (
     echo [ERROR] Fetch failed.
@@ -17,7 +28,15 @@ if %errorlevel% neq 0 (
 )
 
 echo.
-echo [2/2] Resetting to origin/main (force overwrite)...
+echo [3/3] Resetting to origin/main...
+echo WARNING: This will overwrite all local tracked files with origin/main.
+set /p CONFIRM="Continue? (y/N): "
+if /i not "%CONFIRM%"=="y" (
+    echo Aborted. Use 'git stash pop' to restore stashed changes.
+    pause
+    exit /b 0
+)
+
 git reset --hard origin/main
 if %errorlevel% neq 0 (
     echo [ERROR] Reset failed.

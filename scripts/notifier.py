@@ -97,7 +97,7 @@ def build_summary_text(realtime_data: Dict) -> str:
         "",
         "## 查看完整报告",
         "",
-        "[📊 点击打开报告](https://julensanchez.github.io/etf-report/)",
+        f"[📊 点击打开报告]({publish_config.get('github', {}).get('pages_url', 'https://julensanchez.github.io/etf-report/')})",
         "---",
         "数据来源: 新浪财经 | 自动推送 by CodeBuddy",
     ])

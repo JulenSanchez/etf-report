@@ -70,7 +70,7 @@ def _run_one(args):
     old_stdout = sys.stdout
     sys.stdout = _Sink()
     try:
-        nav, signals = run_backtest(start_date=start, end_date=end, preset=preset)
+        nav, signals, _extra = run_backtest(start_date=start, end_date=end, preset=preset)
     finally:
         sys.stdout = old_stdout
 

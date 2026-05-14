@@ -10,12 +10,23 @@
 # 1. ETF列表与基准指数配置
 # ============================================================
 # 说明：定义系统需要跟踪的ETF及其基准指数
-# 格式：每支ETF包含代码、名称、交易所、基准指数等信息
+# 格式：每支ETF包含代码、名称、交易所、跟踪标的、业绩基准、展示基准
+#
+# 三个指数字段语义区别（REQ-171）：
+#   tracking_index        = ETF 跟谁（成分构建依据，出现在估值区"参考指数"）
+#   performance_benchmark = ETF 合同评估用谁（注释文档，暂不展示）
+#   benchmark             = 页面 K 线对比 + fund-info "业绩基准" 展示用谁（宽基锚）
+#                           选型原则：不能用 ETF 自己跟踪的指数（走势重合无意义），
+#                           而同市场宽基锚（A 股用沪深300，港股用恒生代理）
 etfs:
   # ETF-1: 有色金属ETF
   - code: "512400"
     name: "有色金属ETF"
     market: "sh"              # 市场代码：sh=上海 sz=深圳
+    tracking_index:
+      name: "中证申万有色金属指数"
+      source: "天天基金 fundf10.eastmoney.com"
+    performance_benchmark: "中证申万有色金属指数"
     benchmark:
       code: "sh000300"        # 基准指数代码
       name: "沪深300"
@@ -116,6 +127,10 @@ api:
     user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
     referer: "https://finance.sina.com.cn/"
     
+    # 重试与超时
+    retries: 3               # API 请求失败重试次数
+    retry_delay: 0.5         # 重试间隔（秒）
+
     # 请求间隔（避免被服务器限流）
     request_delays:
       kline_fetch: 0.2      # 每次K线请求之间的间隔（秒）
@@ -139,7 +154,11 @@ files:
     kline: "etf_full_kline_data.json"         # K线数据存储文件
     realtime: "etf_realtime_data.json"        # 实时行情数据文件
     fund_flow: "fund_flow_data.json"          # 基金流向数据文件
-  
+    corporate_actions: "corporate_action_events.json"  # 份额变动/拆分事件
+
+  # 持仓数据文件
+  holdings_file: "config/holdings.yaml"       # ETF 成分股持仓数据
+
   # 输出文件
   html_file: "index.html"  # 前端报告HTML文件
   js_main: "main.js"       # 前端主JS文件
@@ -176,7 +195,22 @@ html_update:
     neutral_change: "#9ca3af"   # 灰色，用于表示平盘或无数据
 
 # ============================================================
-# 6. 系统检查配置
+# 6. 数据清洗配置（份额变动 / 企业行动）
+# ============================================================
+# 说明：处理基金份额拆分、合并等影响历史价格的企业行动
+# 当 ETF 发生拆分/合并时，在此登记事件以清洗历史价格和成交量
+# 注意：数据源切换为前复权后，此功能仅用于不复权原始数据场景
+data_cleaning:
+  corporate_action_events: {}
+  # 示例（取消注释以启用）：
+  # "515880":
+  #   - action: "share_split"
+  #     ex_date: "2026-02-03"
+  #     ratio: 3.0
+  #     note: "基金份额拆分（1拆3）"
+
+# ============================================================
+# 7. 系统检查配置
 # ============================================================
 # 说明：系统健康检查时需要验证的必需文件和脚本
 system_check:

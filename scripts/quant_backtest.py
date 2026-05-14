@@ -22,52 +22,46 @@ SKILL_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(SKILL_DIR / "scripts"))
 
 from quant_factors import (
-    compute_all_factors,
-    map_f1, map_f2, map_f3, map_f4,
+    compute_all_factors, factor_exhaustion_penalty,
+    map_f1, map_f2, map_f3, map_f4, map_f7,
     confidence_function, regime_confidence, infer_regime_from_nav, dd_trigger_confidence, momentum_crash_confidence, ma_trend_confidence,
 )
+from quant_data_utils import load_etf_data as _load_etf_data, get_price_on_date as _get_price_on_date
+from benchmark_data import load_hs300_daily_cached, build_hs300_weekly, build_ma_trend_cache
 
 CONFIG_PATH = SKILL_DIR / "config" / "quant_universe.yaml"
 DATA_DIR = SKILL_DIR / "data" / "quant"
 OUTPUT_DIR = SKILL_DIR / "data" / "quant_results"
 
 
-def load_config(preset: str = "weekly_trend"):
+def load_config(preset: str = "daily_aggressive"):
     """加载配置，并用指定 preset 覆盖顶层 scoring/confidence/position/factors。
-    preset=None 时保留顶层原始值（仅用于调试）。
+    preset=None 将报错（顶层不再维护权重）。
     """
     with CONFIG_PATH.open("r", encoding="utf-8") as f:
         cfg = yaml.safe_load(f)
 
-    if preset:
-        p = cfg.get("presets", {}).get(preset)
-        if p is None:
-            raise ValueError(f"Preset '{preset}' not found in quant_universe.yaml")
-        # 用 preset 的四个子块覆盖顶层，缺失子块保留顶层原值
-        for block in ("scoring", "confidence", "position", "factors"):
-            if block in p:
-                cfg[block].update(p[block])
-        # scoring 本身的 weights/bias_bonus/sensitivity 直接挂在 preset.scoring 下
-        for key in ("weights", "bias_bonus", "sensitivity"):
-            if key in p.get("scoring", {}):
-                cfg["scoring"][key] = p["scoring"][key]
+    if preset is None:
+        raise ValueError("preset is required — top-level scoring no longer carries weights")
 
+    if cfg.get("scoring") is None:
+        cfg["scoring"] = {}
+
+    p = cfg.get("presets", {}).get(preset)
+    if p is None:
+        raise ValueError(f"Preset '{preset}' not found in quant_universe.yaml")
+    for block in ("scoring", "confidence", "position", "factors"):
+        if block in p:
+            cfg[block].update(p[block])
+    for key in ("weights", "bias_bonus", "sensitivity"):
+        if key in p.get("scoring", {}):
+            cfg["scoring"][key] = p["scoring"][key]
     return cfg
 
 
 def load_etf_data(code: str):
     """加载一支 ETF 的日线和周线数据"""
-    daily_path = DATA_DIR / f"{code}_daily.csv"
-    weekly_path = DATA_DIR / f"{code}_weekly.csv"
-
-    if not daily_path.exists() or not weekly_path.exists():
-        return None, None
-
-    daily = pd.read_csv(daily_path, parse_dates=["date"])
-    weekly = pd.read_csv(weekly_path, parse_dates=["date"])
-    daily = daily.sort_values("date").reset_index(drop=True)
-    weekly = weekly.sort_values("date").reset_index(drop=True)
-    return daily, weekly
+    return _load_etf_data(code, DATA_DIR)
 
 
 def get_rebalance_dates(daily_dates: pd.DatetimeIndex, freq: str = "W-FRI"):
@@ -96,36 +90,91 @@ def get_execution_date(signal_date: pd.Timestamp, all_dates: pd.DatetimeIndex, t
 
 
 def get_price_on_date(all_daily: dict, code: str, date: pd.Timestamp, field: str = "close") -> float | None:
-    df = all_daily.get(code)
-    if df is None:
-        return None
-    row = df[df["date"] == date]
-    if len(row) == 0 or field not in row.columns:
-        return None
-    return float(row[field].iloc[0])
+    return _get_price_on_date(all_daily, code, date, field)
 
+
+
+from quant_factors import calc_rsi as _precalc_rsi
+
+def _precompute_factors(all_daily, all_weekly, ema_period, vol_window,
+                         f7_window=20, f7_lookback=250, f7_min_days=60, f7_sigma_floor=0.01):
+    '''Precompute F1/F3/F7/RSI series once — O(1) lookup per rebalance date.'''
+    import numpy as np
+    from quant_factors import calc_ema as _ce
+    out = {}
+    for code, daily_df in all_daily.items():
+        weekly_df = all_weekly.get(code)
+        daily_dates = daily_df["date"].values
+        weekly_dates = weekly_df["date"].values if weekly_df is not None else np.array([])
+        f1_val = np.full(len(weekly_dates), np.nan, dtype=float)
+        if weekly_df is not None and len(weekly_df) >= ema_period:
+            cw = weekly_df["close"].astype(float)
+            ema = _ce(cw, span=ema_period)
+            s = ((cw - ema) / ema * 100).astype(float).to_numpy()
+            f1_val[:len(s)] = s; f1_val[:ema_period-1] = np.nan
+        f3_val = np.full(len(daily_dates), np.nan, dtype=float)
+        if len(daily_df) >= vol_window + 1:
+            close = daily_df["close"].astype(float)
+            chg = close.pct_change()
+            vc = "amount" if "amount" in daily_df.columns else "volume"
+            vol = daily_df[vc].astype(float)
+            um = chg > 0; dm = chg < 0
+            us = vol.where(um, 0.0).rolling(vol_window, min_periods=vol_window).sum()
+            ds = vol.where(dm, 0.0).rolling(vol_window, min_periods=vol_window).sum()
+            uc = um.astype(int).rolling(vol_window, min_periods=vol_window).sum()
+            dc = dm.astype(int).rolling(vol_window, min_periods=vol_window).sum()
+            um2 = us / uc.replace(0, np.nan)
+            dm2 = ds / dc.replace(0, np.nan)
+            ratio = um2 / dm2
+            ratio = ratio.mask(dc == 0, np.where(uc > 0, 3.0, 1.0))
+            f3_val = np.array(ratio.to_numpy(dtype=float)); f3_val[:vol_window] = np.nan
+        f7_val = np.full(len(daily_dates), np.nan, dtype=float)
+        if len(daily_df) >= f7_window + f7_min_days:
+            cd = daily_df["close"].astype(float)
+            lr = np.log(cd / cd.shift(1))
+            cs = lr.rolling(window=f7_window).sum().values
+            for i in range(len(cs)):
+                v = cs[i]
+                if np.isnan(v): continue
+                s = 0 if i < f7_lookback else i - f7_lookback
+                wv = cs[max(0, s):i]
+                if len(wv) < f7_min_days: continue
+                mu = np.nanmean(wv); sigma = max(np.nanstd(wv), f7_sigma_floor)
+                if sigma == 0: continue
+                f7_val[i] = float((v - mu) / sigma)
+        rsi_val = np.full(len(daily_dates), np.nan, dtype=float)
+        if len(daily_df) >= 15:
+            rsi_val = _precalc_rsi(daily_df["close"].astype(float), period=14).to_numpy(dtype=float)
+        out[code] = {"daily_dates": daily_dates, "weekly_dates": weekly_dates,
+                      "f1": f1_val, "f3": f3_val, "f7": f7_val, "rsi": rsi_val}
+    return out
 
 def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
                  initial_capital: float = 1000000.0,
                  rebalance_freq: str = None,
-                 preset: str = "weekly_trend",
+                 preset: str = "daily_aggressive",
                  execution_timing: str = None,
-                 universe_filter: list = None):
+                 universe_filter: list = None,
+                 preloaded: dict = None,
+                 config_override: dict = None,
+                 return_details: bool = False):
     """
-    主回测函数
+    主回测函数 — CLI 与 Tuner 共用唯一引擎。
 
-    逻辑：
-    1. 每个调仓日计算选中的 ETF 三因子
-    2. 截面标准化 + 合成综合分
-    3. Top-6 选股 + 信心函数仓位分配
-    4. 按目标仓位调仓（用调仓日收盘价成交）
-    5. 持仓到下一个调仓日，按每日收盘价计算组合市值
-
-    rebalance_freq: "W-FRI"（每周最后一个交易日）或 "daily"（每个交易日）
-                   None 时读配置文件 position.rebalance_freq
-    universe_filter: 可选的 ETF code 列表，None 表示使用配置中的全部 ETF
+    preloaded: 可选预加载数据字典，跳过 CSV 加载:
+        {"all_daily": {code: DataFrame}, "all_weekly": {code: DataFrame},
+         "market_regimes": {date: regime}, "hs300_above_ma": {date: bool}}
+    config_override: 可选配置覆盖字典，在 preset 加载后应用:
+        {"scoring": {...}, "confidence": {...}, "position": {...}, "factors": {...}}
     """
     cfg = load_config(preset=preset)
+    if config_override:
+        for section, values in config_override.items():
+            if section in cfg:
+                if isinstance(values, dict):
+                    cfg[section].update(values)
+                else:
+                    cfg[section] = values
     if universe_filter:
         allowed = set(universe_filter)
         cfg["universe"] = [e for e in cfg["universe"] if e["code"] in allowed]
@@ -172,166 +221,195 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
     recovery_dd_level = confidence_cfg.get("recovery_dd_level", -0.05)
     ma_bull_pos = confidence_cfg.get("ma_bull_pos", 0.95)
     ma_bear_pos = confidence_cfg.get("ma_bear_pos", 0.10)
+    ma_trend_period = confidence_cfg.get("ma_trend_period", 26)
+    ma_direction_confirm = confidence_cfg.get("ma_direction_confirm", True)
     max_holdings = position_cfg["max_holdings"]
     step = position_cfg["discretize_step"]
     f6_rsi_thresh   = factor_cfg.get("f6_rsi_thresh", 80.0)
     f6_drop_thresh  = factor_cfg.get("f6_drop_thresh", 0.025)
     f6_base_penalty = factor_cfg.get("f6_base_penalty", 0.15)
+    # F7 params
+    f7_cfg = factor_cfg.get("log_return_deviation", {})
+    f7_window = f7_cfg.get("window_days", 20)
+    f7_lookback = f7_cfg.get("lookback_days", 250)
+    f7_min_days = f7_cfg.get("min_days", 60)
+    f7_sigma_floor = f7_cfg.get("sigma_floor", 0.01)
 
+    f7_t = sensitivity.get("f7_t", 7.0)
+    f7_k = sensitivity.get("f7_k", 3.0)
     # 构建偏好 map（0-1 尺度）
     bias_map = {e["code"]: bias_bonus / 100.0 for e in universe if e.get("bias")}
 
-    # 加载所有 ETF 数据
-    print("加载数据...")
-    all_daily = {}
-    all_weekly = {}
-    for etf in universe:
-        code = etf["code"]
-        daily, weekly = load_etf_data(code)
-        if daily is not None:
-            all_daily[code] = daily
-            all_weekly[code] = weekly
-
-    print(f"  成功加载 {len(all_daily)}/{len(universe)} 支 ETF")
+    # 加载所有 ETF 数据（优先使用预加载数据）
+    if preloaded and preloaded.get("all_daily"):
+        all_daily = preloaded["all_daily"]
+        all_weekly = preloaded.get("all_weekly", {})
+        print(f"  使用预加载数据 {len(all_daily)}/{len(universe)} 支 ETF")
+    else:
+        print("加载数据...")
+        all_daily = {}
+        all_weekly = {}
+        for etf in universe:
+            code = etf["code"]
+            daily, weekly = load_etf_data(code)
+            if daily is not None:
+                all_daily[code] = daily
+                all_weekly[code] = weekly
+        print(f"  成功加载 {len(all_daily)}/{len(universe)} 支 ETF")
 
     # 加载市场状态（F4 regime-aware 映射需要）
-    regimes_path = SKILL_DIR / "data" / "market_regimes.json"
-    market_regimes = {}
-    if regimes_path.exists():
-        try:
-            with regimes_path.open("r", encoding="utf-8") as f:
-                regimes_data = json.load(f)
-            market_regimes = {r["date"]: r["regime"] for r in regimes_data.get("regimes", [])}
-            print(f"  市场状态: {len(market_regimes)} 天")
-        except Exception as e:
-            print(f"  [WARN] 加载市场状态失败: {e}")
+    if preloaded and preloaded.get("market_regimes"):
+        market_regimes = preloaded["market_regimes"]
+    else:
+        regimes_path = SKILL_DIR / "data" / "market_regimes.json"
+        market_regimes = {}
+        if regimes_path.exists():
+            try:
+                with regimes_path.open("r", encoding="utf-8") as f:
+                    regimes_data = json.load(f)
+                market_regimes = {r["date"]: r["regime"] for r in regimes_data.get("regimes", [])}
+                print(f"  市场状态: {len(market_regimes)} 天")
+            except Exception as e:
+                print(f"  [WARN] 加载市场状态失败: {e}")
 
-    # Load HS300 MA20 trend signal for ma_trend confidence
+    # Load HS300 MA trend signal for ma_trend confidence
     hs300_above_ma_map = {}
     if conf_type == "ma_trend":
-        try:
-            import akshare as ak
-            hs = ak.stock_zh_index_daily(symbol="sh000300")
-            hs["date"] = pd.to_datetime(hs["date"])
-            hs = hs.sort_values("date").reset_index(drop=True)
-            hs["week"] = hs["date"].dt.isocalendar().year.astype(str) + "-" + hs["date"].dt.isocalendar().week.astype(str).str.zfill(2)
-            weekly = hs.groupby("week").last().reset_index()[["date", "close"]]
-            weekly["ma20"] = weekly["close"].rolling(20, min_periods=10).mean()
-            weekly["above"] = weekly["close"] >= weekly["ma20"]
-            for _, wr in weekly.iterrows():
-                if pd.isna(wr["ma20"]):
-                    continue
-                wk_start = wr["date"] - pd.Timedelta(days=6)
-                mask = (hs["date"] >= wk_start) & (hs["date"] <= wr["date"])
-                for _, dr in hs[mask].iterrows():
-                    hs300_above_ma_map[dr["date"].strftime("%Y-%m-%d")] = bool(wr["above"])
-            print(f"  HS300 MA20: {len(hs300_above_ma_map)} days loaded")
-        except Exception as e:
-            print(f"  [WARN] HS300 MA20 failed: {e}")
+        if preloaded and preloaded.get("hs300_above_ma"):
+            hs300_above_ma_map = preloaded["hs300_above_ma"]
+            print(f"  HS300 MA{ma_trend_period}: {len(hs300_above_ma_map)} days preloaded")
+        else:
+            try:
+                hs = load_hs300_daily_cached()
+                weekly = build_hs300_weekly(hs)
+                ma_cache = build_ma_trend_cache(hs, weekly, ma_trend_period) or {}
+                hs300_above_ma_map = ma_cache.get("above", {})
+                print(f"  HS300 MA{ma_trend_period}: {len(hs300_above_ma_map)} days loaded")
+            except Exception as e:
+                print(f"  [WARN] HS300 MA{ma_trend_period} failed: {e}")
 
     # 确定回测日期范围
-    # 用所有 ETF 的日线数据的交集确定公共日期范围
-    all_dates = set()
-    for code, df in all_daily.items():
-        dates = set(df["date"].values)
-        if not all_dates:
-            all_dates = dates
-        else:
-            all_dates = all_dates.union(dates)
+    all_dates_set = set()
+    for df in all_daily.values():
+        all_dates_set.update(df["date"].values)
+    all_dates_full = pd.DatetimeIndex(sorted(all_dates_set))
 
-    all_dates = sorted(all_dates)
-    all_dates = pd.DatetimeIndex(all_dates)
+    user_start = pd.Timestamp(start_date)
+    user_end = pd.Timestamp(end_date) if end_date else all_dates_full[-1]
 
-    start_dt = pd.Timestamp(start_date)
-    end_dt = pd.Timestamp(end_date) if end_date else all_dates[-1]
-    all_dates = all_dates[(all_dates >= start_dt) & (all_dates <= end_dt)]
+    # Always precompute factor series and price lookup (no fast/slow path distinction)
+    print("预计算因子序列...")
+    factor_series = _precompute_factors(
+        all_daily, all_weekly,
+        factor_cfg["ema"]["period_weeks"],
+        factor_cfg["volume_ratio"]["window_days"],
+        f7_window=f7_window, f7_lookback=f7_lookback,
+        f7_min_days=f7_min_days, f7_sigma_floor=f7_sigma_floor,
+    )
+    price_lookup = {
+        code: {str(row["date"])[:10]: row for _, row in df.iterrows()}
+        for code, df in all_daily.items()
+    }
+
+    # Find initial trade date: last rebalance date before user_start
+    all_dates_full_reb = get_rebalance_dates(
+        all_dates_full[all_dates_full >= all_dates_full.min()],
+        freq=rebalance_freq)
+    warmup_rb = all_dates_full_reb[all_dates_full_reb < user_start]
+    initial_rb_date = warmup_rb[-1] if len(warmup_rb) > 0 else None
+
+    all_dates = all_dates_full[(all_dates_full >= user_start) & (all_dates_full <= user_end)]
 
     if len(all_dates) == 0:
         print("[ERROR] 无有效交易日")
         return None
 
-    print(f"  回测区间: {all_dates[0].strftime('%Y-%m-%d')} ~ {all_dates[-1].strftime('%Y-%m-%d')}")
+    rebalance_dates = get_rebalance_dates(all_dates, freq=rebalance_freq)
+    if initial_rb_date is not None and initial_rb_date < user_start:
+        rebalance_dates = pd.DatetimeIndex([initial_rb_date] + list(rebalance_dates))
+
+    print(f"  回测区间: {user_start.strftime('%Y-%m-%d')} ~ {user_end.strftime('%Y-%m-%d')}")
     print(f"  交易日数: {len(all_dates)}")
     print(f"  调仓频率: {rebalance_freq}")
-
-    # 获取调仓日
-    rebalance_dates = get_rebalance_dates(all_dates, freq=rebalance_freq)
-    rebalance_dates = rebalance_dates[(rebalance_dates >= start_dt) & (rebalance_dates <= end_dt)]
-
-    # 需要至少 EMA 周期的预热期
-    min_warmup_weeks = factor_cfg["ema"]["period_weeks"]
-    if rebalance_freq == "daily":
-        # 日频模式下，跳过等价周数 × 5 个交易日
-        warmup_skip = min_warmup_weeks * 5
-    else:
-        warmup_skip = min_warmup_weeks
-    # 从第 warmup_skip 个调仓日开始才有有效信号
-    if len(rebalance_dates) <= warmup_skip:
-        print(f"[ERROR] 调仓日数({len(rebalance_dates)})不够预热({warmup_skip})")
-        return None
-
-    rebalance_dates = rebalance_dates[warmup_skip:]
-    print(f"  有效调仓日: {len(rebalance_dates)}（跳过前 {warmup_skip} 个预热）")
+    print(f"  调仓日: {len(rebalance_dates)}（含初始建仓 {1 if initial_rb_date is not None and initial_rb_date < user_start else 0}）")
 
     # ============================================================
     # 回测主循环
     # ============================================================
-    portfolio = {}  # {code: shares}
+    portfolio = {}
     cash = initial_capital
     total_commission = 0.0
-    nav_history = []  # [{date, nav, cash, holdings_value, positions: {...}}]
-    signal_history = []  # 每次调仓的打分记录
-    nav_peak_nav = initial_capital  # running peak NAV for drawdown calc
-    regime = "choppy_range"  # will be updated each rebalance
-    nav_list_bt = []  # simple NAV list for regime inference
+    nav_history = []
+    signal_history = []
+    nav_peak_nav = initial_capital
+    regime = "choppy_range"
+    nav_list_bt = []
 
     print("\n开始回测...")
 
     for rb_idx, rb_date in enumerate(rebalance_dates):
+        # 初始建仓日：回测周期前最后一个调仓日，仅执行首次买入
+        is_initial = initial_rb_date is not None and rb_date == initial_rb_date
+        if is_initial:
+            pass  # 执行初始建仓
+
         execution_date = get_execution_date(rb_date, all_dates, execution_timing)
         if execution_date is None:
             continue
         execution_price_field = "open" if execution_timing == "next_open" else "close"
 
-        # ------ 1. 计算当日三因子 ------
+        # ------ 1. 查找当日因子（全部预计算，O(log n) 二分查找）------
         factors_data = {}
         prices_today = {}
+        rb_np = np.datetime64(rb_date)
+        exec_key = execution_date.strftime("%Y-%m-%d")
 
         for code in all_daily:
             daily_df = all_daily[code]
-            weekly_df = all_weekly[code]
 
-            # 截取到调仓日为止的数据
-            daily_slice = daily_df[daily_df["date"] <= rb_date]
-            weekly_slice = weekly_df[weekly_df["date"] <= rb_date]
+            # Price: O(1) from precomputed lookup
+            row = price_lookup.get(code, {}).get(exec_key)
+            if row is None or execution_price_field not in row.index:
+                continue
+            exec_price = float(row[execution_price_field])
 
-            if len(daily_slice) < 30 or len(weekly_slice) < factor_cfg["ema"]["period_weeks"]:
-                continue  # 数据不足跳过
-
-            factors = compute_all_factors(
-                daily_slice, weekly_slice,
-                ema_period=factor_cfg["ema"]["period_weeks"],
-                rsi_period=factor_cfg["rsi"]["period_days"],
-                vol_window=factor_cfg["volume_ratio"]["window_days"],
-                f6_rsi_thresh=f6_rsi_thresh,
-                f6_drop_thresh=f6_drop_thresh,
-                f6_base_penalty=f6_base_penalty,
-            )
-
-            # f1_residual_mom 权重=0，hs300_weekly未传时为NaN属正常，跳过此字段
-            # f6_exhaustion_penalty 是乘数非因子，不参与NaN过滤
-            SKIP_NAN_KEYS = {"f1_residual_mom", "f6_exhaustion_penalty"}
-            if any(np.isnan(v) for k, v in factors.items() if k not in SKIP_NAN_KEYS):
+            # Factors: O(log n) binary search in precomputed arrays
+            fs = factor_series.get(code)
+            if fs is None:
+                continue
+            daily_end = np.searchsorted(fs["daily_dates"], rb_np, side="right")
+            weekly_end = np.searchsorted(fs["weekly_dates"], rb_np, side="right")
+            if daily_end < 30 or weekly_end < factor_cfg["ema"]["period_weeks"]:
+                continue
+            f1_val = fs["f1"][weekly_end - 1] if weekly_end > 0 else np.nan
+            f3_val = fs["f3"][daily_end - 1] if daily_end > 0 else np.nan
+            f7_val = fs["f7"][daily_end - 1] if daily_end > 0 else np.nan
+            if np.isnan(f1_val) or np.isnan(f3_val):
                 continue
 
-            exec_price = get_price_on_date(all_daily, code, execution_date, execution_price_field)
-            if exec_price is None:
-                continue
+            # F6: check using precomputed RSI
+            w6_val = weights.get("exhaustion_penalty", 0.0)
+            if w6_val > 0 and daily_end >= 2:
+                rsi_now = fs.get("rsi", [None])[daily_end - 1] if "rsi" in fs else None
+                close_arr = daily_df["close"].values
+                drop_pct = (close_arr[daily_end - 2] - close_arr[daily_end - 1]) / close_arr[daily_end - 2] if daily_end >= 2 else 0
+                if (rsi_now is not None and not np.isnan(rsi_now) and
+                    rsi_now > f6_rsi_thresh and drop_pct > f6_drop_thresh):
+                    f6_val = 1.0 - f6_base_penalty
+                else:
+                    f6_val = 1.0
+            else:
+                f6_val = 1.0
+
+            factors = {
+                "f1_ema_dev": f1_val, "f2_rsi_adaptive": 50.0,
+                "f3_volume_ratio": f3_val, "f4_valuation": 50.0,
+                "f7_log_return_dev": f7_val, "f6_exhaustion_penalty": f6_val,
+            }
             factors_data[code] = factors
             prices_today[code] = exec_price
 
         if len(factors_data) < max_holdings:
-            # 可用 ETF 不够，跳过本次调仓
             continue
 
         # ------ 2. 连续映射 + 合成 ------
@@ -341,13 +419,17 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
         mapped_f2 = factors_df["f2_rsi_adaptive"].apply(lambda v: map_f2(v, f2_dz))
         mapped_f3 = factors_df["f3_volume_ratio"].apply(lambda v: map_f3(v, f3_sens))
 
+        mapped_f7 = factors_df["f7_log_return_dev"].apply(lambda v: map_f7(v, t=f7_t, k=f7_k))
         w1 = weights.get("ema_deviation", 0.35)
         w2 = weights.get("rsi_adaptive", 0.30)
         w3 = weights.get("volume_ratio", 0.35)
         w4 = weights.get("valuation", 0.15)
         w6 = weights.get("exhaustion_penalty", 0.0)
+        w7 = weights.get("log_return_deviation", 0.0)
 
         composite = mapped_f1 * w1 + mapped_f2 * w2 + mapped_f3 * w3
+        if w7 > 0:
+            composite = composite + mapped_f7 * w7
 
         # F4 估值因子（regime-aware）
         rb_date_str = rb_date.strftime("%Y-%m-%d") if hasattr(rb_date, "strftime") else str(rb_date)[:10]
@@ -472,6 +554,19 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
         target_positions = (target_positions / step).round() * step
         target_positions = target_positions.clip(lower=0)
 
+        # Fallback: fill missing prices for held ETFs with most recent available close.
+        # ETFs whose price comes from fallback (not from today's data) are treated as
+        # suspended: they are valued at last-known price but cannot be bought or sold.
+        suspended_codes = set()
+        for code in list(portfolio.keys()):
+            if code not in prices_today:
+                df = all_daily.get(code)
+                if df is not None:
+                    past = df[df["date"] < rb_date]
+                    if len(past) > 0:
+                        prices_today[code] = float(past["close"].iloc[-1])
+                        suspended_codes.add(code)
+
         # ------ 4. 计算当前组合市值 ------
         holdings_value = sum(
             portfolio.get(code, 0) * prices_today.get(code, 0)
@@ -479,11 +574,20 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
         )
         total_value = cash + holdings_value
 
+        # Tradable value excludes suspended holdings (can't sell them)
+        frozen_value = sum(
+            portfolio.get(code, 0) * prices_today.get(code, 0)
+            for code in suspended_codes
+        )
+        tradable_tv = total_value - frozen_value
+
         # ------ 5. 调仓：卖出不在 Top-6 的，调整仓位 ------
         target_codes = set(target_positions.index)
 
-        # 先卖出
+        # 先卖出（跳过停牌 ETF）
         for code in list(portfolio.keys()):
+            if code in suspended_codes:
+                continue  # suspended, cannot sell
             if code not in target_codes or target_positions.get(code, 0) == 0:
                 # 全卖
                 if code in prices_today:
@@ -493,14 +597,13 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
                     total_commission += commission
                 del portfolio[code]
 
-        # 调整已有持仓 + 买入新持仓
+        # 调整已有持仓 + 买入新持仓（基于可交易总资产）
         for code in target_codes:
-            target_value = total_value * target_positions[code]
-            current_value = portfolio.get(code, 0) * prices_today.get(code, 0)
-            diff = target_value - current_value
-
             if code not in prices_today or prices_today[code] == 0:
                 continue
+            target_value = tradable_tv * target_positions[code]
+            current_value = portfolio.get(code, 0) * prices_today.get(code, 0)
+            diff = target_value - current_value
 
             if diff > 0:
                 # 买入
@@ -511,7 +614,7 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
                 portfolio[code] = portfolio.get(code, 0) + buy_shares
                 cash -= buy_value
                 total_commission += commission
-            elif diff < -step * total_value:
+            elif diff < -step * tradable_tv:
                 # 卖出（超过一个档位才卖，避免微调）
                 sell_shares = -diff / prices_today[code]
                 sell_shares = min(sell_shares, portfolio.get(code, 0))
@@ -523,7 +626,7 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
                 if portfolio[code] <= 0:
                     del portfolio[code]
 
-        # 记录信号；date 保持为实际执行日，signal_date 保留信号生成日
+        # 记录信号
         signal_history.append({
             "date": execution_date,
             "signal_date": rb_date,
@@ -534,7 +637,31 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
             "positions": target_positions.to_dict(),
             "avg_confidence": avg_conf,
             "total_target": total_target,
+            "regime": regime,
         })
+        if return_details:
+            # Convert to plain dicts for O(1) lookup (avoid pandas Series .get() overhead)
+            _f1_d = mapped_f1.to_dict()
+            _f3_d = mapped_f3.to_dict()
+            _f7_d = mapped_f7.to_dict() if "f7_log_return_dev" in factors_df.columns else {}
+            _comp_d = composite.to_dict()
+            _pos_d = target_positions.to_dict()
+            _f6_col = factors_df.get("f6_exhaustion_penalty")
+            _f6_d = _f6_col.to_dict() if _f6_col is not None else {}
+            _has_f7 = "f7_log_return_dev" in factors_df.columns and w7 > 0
+            detail = {}
+            for code in factors_df.index:
+                detail[code] = {
+                    "f1": round(_f1_d.get(code, 0) * 100, 1),
+                    "f3": round(_f3_d.get(code, 0) * 100, 1),
+                    "f6": round(_f6_d.get(code, 100.0) * 100, 1) if _f6_d else 100.0,
+                    "f7": round(_f7_d.get(code, 0.5) * 100, 1) if _has_f7 else None,
+                    "score": round(_comp_d.get(code, 0) * 100, 1),
+                    "confidence": round(float(total_target) * 100, 0),
+                    "position": round(_pos_d.get(code, 0) * 100, 1),
+                    "price": round(float(prices_today.get(code, 0)), 3),
+                }
+            signal_history[-1]["detail"] = detail
 
         # 进度
         if (rb_idx + 1) % 20 == 0:
@@ -554,8 +681,40 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
     cash2 = initial_capital
     signal_idx = 0
     nav_records = []
+    total_commission2 = 0.0
 
     for date in all_dates:
+        if False:  # dead code — precomputation eliminated warmup expansion
+            # 慢路径预热期：执行调仓但不记录 NAV
+            if signal_idx < len(signal_history) and date >= signal_history[signal_idx]["date"]:
+                sig = signal_history[signal_idx]
+                target_codes = set(sig["positions"].keys())
+                trade_field = "open" if sig.get("execution_timing") == "next_open" else "close"
+                prices = {code: get_price_on_date(all_daily, code, date, trade_field) for code in all_daily}
+                prices = {k: v for k, v in prices.items() if v is not None}
+                hv = sum(portfolio2.get(c, 0) * prices.get(c, 0) for c in portfolio2)
+                tv = cash2 + hv
+                for code in list(portfolio2.keys()):
+                    if code not in target_codes or sig["positions"].get(code, 0) == 0:
+                        if code in prices:
+                            cash2 += portfolio2[code] * prices[code]
+                        del portfolio2[code]
+                for code in target_codes:
+                    if code not in prices or prices[code] == 0: continue
+                    target_value = tv * sig["positions"][code]
+                    current_value = portfolio2.get(code, 0) * prices.get(code, 0)
+                    diff = target_value - current_value
+                    if diff > 0 and cash2 >= diff:
+                        portfolio2[code] = portfolio2.get(code, 0) + diff / prices[code]
+                        cash2 -= diff
+                    elif diff < 0:
+                        sell_shares = min(-diff / prices[code], portfolio2.get(code, 0))
+                        portfolio2[code] = portfolio2.get(code, 0) - sell_shares
+                        cash2 += sell_shares * prices[code]
+                        if portfolio2.get(code, 0) <= 0: portfolio2.pop(code, None)
+                signal_idx += 1
+            continue
+
         # 检查是否是调仓日
         if signal_idx < len(signal_history) and date >= signal_history[signal_idx]["date"]:
             # 执行调仓
@@ -571,38 +730,69 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
                 if p is not None:
                     prices[code] = p
 
+            # Fallback: fill missing prices for held ETFs with most recent available close.
+            # ETFs whose price comes from fallback (not from today's data) are treated as
+            # suspended: they are valued at last-known price but cannot be bought or sold.
+            suspended_codes2 = set()
+            for code in list(portfolio2.keys()):
+                if code not in prices:
+                    df = all_daily.get(code)
+                    if df is not None:
+                        past = df[df["date"] < date]
+                        if len(past) > 0:
+                            prices[code] = float(past["close"].iloc[-1])
+                            suspended_codes2.add(code)
+
             # 当前总值
             hv = sum(portfolio2.get(c, 0) * prices.get(c, 0) for c in portfolio2)
             tv = cash2 + hv
 
-            # 卖出
+            # Tradable value excludes suspended holdings
+            frozen_value2 = sum(
+                portfolio2.get(c, 0) * prices.get(c, 0)
+                for c in suspended_codes2
+            )
+            tradable_tv2 = tv - frozen_value2
+
+            # 卖出（跳过停牌 ETF）
             for code in list(portfolio2.keys()):
+                if code in suspended_codes2:
+                    continue  # suspended, cannot sell
                 if code not in target_codes or target_positions.get(code, 0) == 0:
                     if code in prices:
-                        cash2 += portfolio2[code] * prices[code]
+                        sell_value = portfolio2[code] * prices[code]
+                        commission = sell_value * commission_rate
+                        cash2 += sell_value - commission
+                        total_commission2 += commission
                     del portfolio2[code]
 
             # 重新计算 total value
             hv = sum(portfolio2.get(c, 0) * prices.get(c, 0) for c in portfolio2)
             tv = cash2 + hv
 
-            # 买入调整
+            # 买入调整（基于可交易总资产）
             for code in target_codes:
                 if code not in prices or prices[code] == 0:
                     continue
-                target_value = tv * target_positions[code]
+                target_value = tradable_tv2 * target_positions[code]
                 current_value = portfolio2.get(code, 0) * prices.get(code, 0)
                 diff = target_value - current_value
 
                 if diff > 0 and cash2 >= diff:
-                    shares = diff / prices[code]
-                    portfolio2[code] = portfolio2.get(code, 0) + shares
-                    cash2 -= diff
+                    buy_value = diff
+                    commission = buy_value * commission_rate
+                    net_buy = buy_value - commission
+                    portfolio2[code] = portfolio2.get(code, 0) + net_buy / prices[code]
+                    cash2 -= net_buy
+                    total_commission2 += commission
                 elif diff < 0:
                     sell_shares = -diff / prices[code]
                     sell_shares = min(sell_shares, portfolio2.get(code, 0))
+                    sell_value = sell_shares * prices[code]
+                    commission = sell_value * commission_rate
                     portfolio2[code] = portfolio2.get(code, 0) - sell_shares
-                    cash2 += sell_shares * prices[code]
+                    cash2 += sell_value - commission
+                    total_commission2 += commission
                     if portfolio2.get(code, 0) <= 0:
                         portfolio2.pop(code, None)
 
@@ -615,6 +805,15 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
             row = df[df["date"] == date]
             if len(row) > 0:
                 prices[code] = float(row["close"].iloc[0])
+
+        # Fallback: fill missing prices for held ETFs with most recent available close
+        for code in list(portfolio2.keys()):
+            if code not in prices:
+                df = all_daily.get(code)
+                if df is not None:
+                    past = df[df["date"] < date]
+                    if len(past) > 0:
+                        prices[code] = float(past["close"].iloc[-1])
 
         hv = sum(portfolio2.get(c, 0) * prices.get(c, 0) for c in portfolio2)
         nav = cash2 + hv
@@ -649,6 +848,13 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
     else:
         sharpe = 0
 
+    # 索提诺比率（只惩罚下行波动）
+    downside = daily_returns[daily_returns < 0]
+    if len(downside) > 0 and downside.std() > 0:
+        sortino = (daily_returns.mean() * 252 - 0.02) / (downside.std() * np.sqrt(252))
+    else:
+        sortino = 0
+
     print("\n" + "=" * 60)
     print("回测结果")
     print("=" * 60)
@@ -659,13 +865,15 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
     print(f"  年化收益率:  {annual_return:+.2f}%")
     print(f"  最大回撤:    {max_drawdown:.2f}%")
     print(f"  夏普比率:    {sharpe:.2f}")
+    print(f"  索提诺比率:  {sortino:.2f}")
     print(f"  最终 NAV:    {final_nav:,.0f} (初始 {initial_capital:,.0f})")
     print(f"  最终持仓数:  {nav_df['holdings'].iloc[-1]}")
-    if total_commission > 0:
-        print(f"  交易佣金:    {total_commission:,.0f} ({total_commission/initial_capital*100:.2f}% 本金)")
+    comm = total_commission2  # from second-pass NAV loop (matches returned NAV curve)
+    if comm > 0:
+        print(f"  交易佣金:    {comm:,.0f} ({comm/initial_capital*100:.2f}% 本金)")
     print("=" * 60)
 
-    return nav_df, signal_history
+    return nav_df, signal_history, {"total_commission": comm}
 
 
 def main():
@@ -675,9 +883,11 @@ def main():
     parser.add_argument("--execution-timing", choices=["same_close", "next_open"], default=None,
                         help="成交口径：same_close=信号日收盘成交，next_open=下一交易日开盘成交")
     parser.add_argument("--output", type=str, default=None, help="输出净值 CSV 路径")
+    parser.add_argument("--preset", type=str, default="daily_aggressive",
+                        help="预设配置名 (default: daily_aggressive)")
     args = parser.parse_args()
 
-    nav_df, signals = run_backtest(start_date=args.start, end_date=args.end, execution_timing=args.execution_timing)
+    nav_df, signals, _extra = run_backtest(start_date=args.start, end_date=args.end, execution_timing=args.execution_timing, preset=args.preset)
 
     if nav_df is not None and args.output:
         output_path = Path(args.output)

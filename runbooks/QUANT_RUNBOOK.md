@@ -418,7 +418,7 @@ http://localhost:5179/?universe=512400,515880,512070,513120,512660,512690
 
 ### 5.2 参数搜索方法论
 
-8 种搜索策略，按场景选择（详见 memory `quant_search_methodology.md`）：
+8 种搜索策略，按场景选择（详见 `docs/08-quant-research-memo.md`）：
 
 | 策略 | 适用场景 | 典型用法 |
 |------|---------|---------|
@@ -800,7 +800,7 @@ pip install -r requirements.txt   # pandas, numpy, akshare, flask, pyyaml
 
 ### ADR-3: F2 双通道设计
 
-F2（RSI 自适应变换）采用双通道架构：z-score 通道（相对历史）+ 绝对位置通道（固定阈值），取较大值。死区 `dead_zone=1.5` 过滤噪声。设计细节见 memory `f2_dual_channel_redesign.md`。
+F2（RSI 自适应变换）采用双通道架构：z-score 通道（相对历史）+ 绝对位置通道（固定阈值），取较大值。死区 `dead_zone=1.5` 过滤噪声。多窗口验证后，F2 不适合作为默认策略；如重新启用，应作为明确标注的进取/牛市 preset。设计细节见 `docs/08-quant-research-memo.md`。
 
 ### ADR-4: 正式页遮罩决策
 

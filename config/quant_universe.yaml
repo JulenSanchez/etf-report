@@ -1,205 +1,176 @@
-# 量化打分系统 - ETF 选股池配置
-# REQ-177 M0.1
-# 27 支 ETF，统一三因子打分
-
 universe:
-  # ============================================================
-  # 偏好标的（+bias 加成）
-  # ============================================================
-  - code: "512400"
-    name: "有色金属ETF"
-    market: "sh"
-    sector: "资源周期"
-    bias: true
-
-  - code: "513120"
-    name: "创新药ETF"
-    market: "sh"
-    sector: "医药"
-    bias: true
-
-  - code: "512070"
-    name: "证券保险ETF"
-    market: "sh"
-    sector: "金融"
-    bias: true
-
-  # ============================================================
-  # 科技/TMT
-  # ============================================================
-  - code: "515880"
-    name: "通信设备ETF"
-    market: "sh"
-    sector: "科技"
-
-  - code: "588200"
-    name: "芯片ETF"
-    market: "sh"
-    sector: "科技"
-
-  - code: "159206"
-    name: "卫星ETF"
-    market: "sz"
-    sector: "科技"
-
-  - code: "513310"
-    name: "中韩半导体ETF"
-    market: "sh"
-    sector: "科技"
-
-  - code: "562500"
-    name: "机器人ETF"
-    market: "sh"
-    sector: "科技"
-
-  - code: "513130"
-    name: "恒科ETF"
-    market: "sh"
-    sector: "港股科技"
-
-  - code: "512980"
-    name: "传媒ETF"
-    market: "sh"
-    sector: "TMT"
-
-  - code: "159869"
-    name: "游戏ETF"
-    market: "sz"
-    sector: "TMT"
-
-  # ============================================================
-  # 新能源/制造
-  # ============================================================
-  - code: "159755"
-    name: "电池ETF"
-    market: "sz"
-    sector: "新能源"
-
-  - code: "159326"
-    name: "电网设备ETF"
-    market: "sz"
-    sector: "新能源"
-
-  - code: "159611"
-    name: "电力ETF"
-    market: "sz"
-    sector: "公用事业"
-
-  # ============================================================
-  # 军工/制造
-  # ============================================================
-  - code: "512660"
-    name: "军工ETF"
-    market: "sh"
-    sector: "军工"
-
-  - code: "560710"
-    name: "船舶ETF"
-    market: "sh"
-    sector: "军工"
-
-  # ============================================================
-  # 资源周期
-  # ============================================================
-  - code: "159870"
-    name: "化工ETF"
-    market: "sz"
-    sector: "资源周期"
-
-  - code: "561360"
-    name: "石油ETF"
-    market: "sh"
-    sector: "资源周期"
-
-  - code: "515220"
-    name: "煤炭ETF"
-    market: "sh"
-    sector: "资源周期"
-
-  # ============================================================
-  # 金融
-  # ============================================================
-  - code: "513090"
-    name: "港券ETF"
-    market: "sh"
-    sector: "金融"
-
-  - code: "512800"
-    name: "银行ETF"
-    market: "sh"
-    sector: "金融"
-
-  # ============================================================
-  # 消费/周期
-  # ============================================================
-  - code: "512690"
-    name: "酒ETF"
-    market: "sh"
-    sector: "消费"
-
-  - code: "159928"
-    name: "消费ETF"
-    market: "sz"
-    sector: "消费"
-
-  - code: "159865"
-    name: "养殖ETF"
-    market: "sz"
-    sector: "周期"
-
-  - code: "512200"
-    name: "房地产ETF"
-    market: "sh"
-    sector: "周期"
-
-  # ============================================================
-  # 另类（非A港权益资产：跨境/商品/避险）
-  # ============================================================
-  - code: "159941"
-    name: "纳指ETF"
-    market: "sz"
-    sector: "另类"
-
-  - code: "518880"
-    name: "黄金ETF"
-    market: "sh"
-    sector: "另类"
-
-# ============================================================
-# 打分参数（初始值，回测后校准）
-# ============================================================
-scoring:
-  # 因子权重（和为 1）
-  weights:
-    ema_deviation: 0.30
-    rsi_adaptive: 0.25
-    volume_ratio: 0.30
-    valuation: 0.15  # REQ-178: 估值因子，低估=高分
-
-  # 偏好加成（0-100 整数尺度，内部自动转换为 0-1 综合分尺度）
-  bias_bonus: 0
-
-  # 连续映射函数参数（替代截面标准化）
-  sensitivity:
-    f1: 8.0   # sigmoid 响应尺度：±8% 偏离对应 ~0.27/0.73，越小越敏感
-    f3: 1.0   # log+sigmoid 尺度：量比1→0.5，量比2→0.66，越小越敏感
-    f2_dead_zone: 1.5   # F2 双通道死区半宽：|z|<dz 输出 0.5（中性），1.5 对应 RSI<27.5 或 >72.5
-
-# ============================================================
-# 信心函数参数（[0, 1] 尺度，与连续映射后的综合分一致）
-# ============================================================
+- code: '512400'
+  name: 有色金属ETF
+  market: sh
+  sector: 资源周期
+  bias: true
+- code: '513120'
+  name: 创新药ETF
+  market: sh
+  sector: 医药
+  bias: true
+- code: '159883'
+  name: 医疗器械ETF
+  market: sz
+  sector: 医药
+- code: '512010'
+  name: 医药ETF
+  market: sh
+  sector: 医药
+- code: '512070'
+  name: 证券保险ETF
+  market: sh
+  sector: 金融
+  bias: true
+- code: '515880'
+  name: 通信设备ETF
+  market: sh
+  sector: 科技
+- code: '588200'
+  name: 芯片ETF
+  market: sh
+  sector: 科技
+- code: '159206'
+  name: 卫星ETF
+  market: sz
+  sector: 科技
+- code: '513310'
+  name: 中韩半导体ETF
+  market: sh
+  sector: 科技
+- code: '562500'
+  name: 机器人ETF
+  market: sh
+  sector: 科技
+- code: '513130'
+  name: 恒科ETF
+  market: sh
+  sector: 港股科技
+- code: '512980'
+  name: 传媒ETF
+  market: sh
+  sector: TMT
+- code: '159869'
+  name: 游戏ETF
+  market: sz
+  sector: TMT
+- code: '159755'
+  name: 电池ETF
+  market: sz
+  sector: 新能源
+- code: '515790'
+  name: 光伏ETF
+  market: sh
+  sector: 新能源
+- code: '159326'
+  name: 电网设备ETF
+  market: sz
+  sector: 新能源
+- code: '159611'
+  name: 电力ETF
+  market: sz
+  sector: 公用事业
+- code: '512660'
+  name: 军工ETF
+  market: sh
+  sector: 军工
+- code: '560710'
+  name: 船舶ETF
+  market: sh
+  sector: 军工
+- code: '560280'
+  name: 工程机械ETF
+  market: sh
+  sector: 制造
+- code: '159870'
+  name: 化工ETF
+  market: sz
+  sector: 资源周期
+- code: '561360'
+  name: 石油ETF
+  market: sh
+  sector: 资源周期
+- code: '515220'
+  name: 煤炭ETF
+  market: sh
+  sector: 资源周期
+- code: '513090'
+  name: 港券ETF
+  market: sh
+  sector: 金融
+- code: '512800'
+  name: 银行ETF
+  market: sh
+  sector: 金融
+- code: '512690'
+  name: 酒ETF
+  market: sh
+  sector: 消费
+- code: '159928'
+  name: 消费ETF
+  market: sz
+  sector: 消费
+- code: '159766'
+  name: 旅游ETF
+  market: sz
+  sector: 消费
+- code: '159865'
+  name: 养殖ETF
+  market: sz
+  sector: 周期
+- code: '512200'
+  name: 房地产ETF
+  market: sh
+  sector: 周期
+- code: '513690'
+  name: 港股红利ETF
+  market: sh
+  sector: 红利
+- code: '563300'
+  name: 中证2000ETF
+  market: sh
+  sector: 宽基
+- code: '159941'
+  name: 纳指ETF
+  market: sz
+  sector: 另类
+- code: '518880'
+  name: 黄金ETF
+  market: sh
+  sector: 另类
+- code: '513880'
+  name: 日经ETF
+  market: sh
+  sector: 另类
+- code: '159561'
+  name: 德国ETF
+  market: sz
+  sector: 另类
+- code: '159329'
+  name: 沙特ETF
+  market: sz
+  sector: 另类
+- code: '159518'
+  name: 油气ETF
+  market: sz
+  sector: 另类
+- code: '159502'
+  name: 生物ETF
+  market: sz
+  sector: 另类
+- code: '159985'
+  name: 豆粕ETF
+  market: sz
+  sector: 另类
+scoring: null
 confidence:
-  type: "ma_trend"  # ma_trend（唯一策略：HS300周线MA上方→高仓位，下方→低仓位）
-  # --- MA Trend params ---
-  ma_trend_period: 26   # 沪深300周线MA周期（优化后从20调至26，Calmar 0.92→1.55, MDD -24%→-16%）
-  ma_bull_pos: 1.00   # MA上方仓位（满仓）
-  ma_bear_pos: 0.30   # MA下方仓位（优化后从0.40调至0.30，减回撤不牺牲收益）
-  ma_direction_confirm: true  # MA方向确认：MA上升+价格高于MA才确认Bull，反之确认Bear，减少震荡反转
-  # --- 以下为历史参数，保留供回测对比，不再作为主策略 ---
-  # Legacy quadratic (deprecated)
+  type: ma_trend
+  ma_trend_period: 26
+  ma_bull_pos: 1.0
+  ma_bear_pos: 0.3
+  ma_direction_confirm: true
   dead_zone: 25
   full_zone: 65
-  # Legacy regime (deprecated)
   regime_base:
     bull_trend: 0.95
     choppy_range: 0.75
@@ -209,122 +180,148 @@ confidence:
   breadth_weight: 0.2
   clarity_threshold: 0.03
   dd_sensitivity: 0.2
-
-# ============================================================
-# 仓位参数
-# ============================================================
 position:
   max_holdings: 6
   max_holdings_special: 8
-  discretize_step: 0.05  # 5% 档位
-  weighting: "arithmetic"  # arithmetic | softmax
-  rebalance_freq: "W-FRI"  # W-FRI | daily
-  execution_timing: "same_close"  # same_close | next_open；next_open用于2026-07-06前实盘过渡
-  score_band: 0            # 分数带阈值（0=关闭，内部0-1尺度；推荐范围 0.02-0.10）
-  commission_rate: 0.00026 # ETF 单次交易费率（万0.26 = 佣金+过户费，无印花税）
-
-# ============================================================
-# 因子计算参数
-# ============================================================
+  discretize_step: 0.05
+  weighting: arithmetic
+  rebalance_freq: W-FRI
+  execution_timing: same_close
+  score_band: 0
+  commission_rate: 0.00026
 factors:
   ema:
-    period_weeks: 16  # EMA 周期（周线）— REQ-190 敏感性分析：16 比 20 Calmar+19%
+    period_weeks: 16
   rsi:
     period_days: 14
-    # 趋势自适应阈值
-    bullish_overbought: 75   # 上行趋势中 RSI 超过此值减分
-    bullish_oversold: 30     # 上行趋势中 RSI 低于此值加分
-    bearish_overbought: 60   # 下行趋势中 RSI 超过此值减分
-    bearish_oversold: 20     # 下行趋势中 RSI 低于此值加分
+    bullish_overbought: 75
+    bullish_oversold: 30
+    bearish_overbought: 60
+    bearish_oversold: 20
   volume_ratio:
-    window_days: 20  # 方向性量比滚动窗口
-
-# ============================================================
-# 策略 Preset（REQ-179）
-# ============================================================
+    window_days: 20
 presets:
-  # ---- 基于 REQ-183/185 参数搜索验证的策略预设 ----
-  # 所有预设均经过 1yr/2yr/3yr 多窗口验证
-  #
-  # 参数分类（REQ-190 收束）:
-  #   LOCKED  = 固化参数，UI 不可交互，值由策略设计决定
-  #   OPEN    = 开放参数，UI 可交互，有优化空间
-  #   RESERVED= 保留位，当前未使用，待未来因子重新占位
-
   weekly_trend:
-    label: "周频趋势型（推荐）"
-    description: "HS300周线MA趋势仓位控制+方向确认，无F6。总收益+113.7%/年化+25.5%/MDD-14.6%/Calmar=1.75/Sharpe=1.29（2023-01-01~2026-05-08）。实际换仓141次/155次调仓，稳定低换手。"
+    label: 周频趋势型（推荐）
+    description: HS300周线MA趋势仓位控制+方向确认，无F6。总收益+113.7%/年化+25.5%/MDD-14.6%/Calmar=1.75/Sharpe=1.29（2023-01-01~2026-05-08）。实际换仓141次/155次调仓，稳定低换手。
     scoring:
       weights:
-        ema_deviation: 0.40    # OPEN
-        rsi_adaptive: 0.00     # RESERVED — F2 保留位，待引入更优 RSI 用法或新因子
-        volume_ratio: 0.60     # OPEN
-        valuation: 0.00        # RESERVED — F4 保留位，待估值因子成熟
-        exhaustion_penalty: 0.00  # OPEN — F6惩罚权重，0=关闭，weekly_trend默认关闭
-      bias_bonus: 0            # LOCKED — REQ-190 确认偏好加成只损害收益
+        ema_deviation: 0.4
+        rsi_adaptive: 0.0
+        volume_ratio: 0.6
+        valuation: 0.0
+        exhaustion_penalty: 0.0
+      bias_bonus: 0
       sensitivity:
-        f1: 8.0               # OPEN
-        f3: 1.0                # OPEN
-        f2_dead_zone: 1.5      # LOCKED — F2 权重=0，此参数无意义
+        f1: 8.0
+        f3: 1.0
+        f2_dead_zone: 1.5
     confidence:
-      type: "ma_trend"        # LOCKED — 唯一活跃策略
-      ma_trend_period: 26      # OPEN — 2026-05-08 优化：20→26
-      ma_bull_pos: 1.00         # OPEN — 核心风控参数
-      ma_bear_pos: 0.30         # OPEN — 核心风控参数（2026-05-08 优化：0.40→0.30）
-      ma_direction_confirm: true  # OPEN — MA方向确认（2026-05-08 确认：ON是最大单因子提升）
+      type: ma_trend
+      ma_trend_period: 26
+      ma_bull_pos: 1.0
+      ma_bear_pos: 0.3
+      ma_direction_confirm: true
     position:
-      max_holdings: 6           # LOCKED — REQ-190 确认 5 vs 6 差异为噪声
-      discretize_step: 0.05     # LOCKED — 5% 是合理粒度
-      rebalance_freq: "W-FRI"  # OPEN — 本质上是 preset 级选择
-      execution_timing: "same_close"  # OPEN — 研究口径；2026-07-06后可评估为实盘收盘价口径
-      score_band: 0             # OPEN — 默认关闭；可开启以减少无效换仓（推荐范围 0.02-0.05）
-      commission_rate: 0.00026  # LOCKED — 市场事实
+      max_holdings: 6
+      discretize_step: 0.05
+      rebalance_freq: W-FRI
+      execution_timing: same_close
+      score_band: 0
+      commission_rate: 0.00026
     factors:
       ema:
-        period_weeks: 16        # OPEN — REQ-190 从 20 调至 16
+        period_weeks: 16
       rsi:
-        period_days: 14         # LOCKED — F2 权重=0
+        period_days: 14
       volume_ratio:
-        window_days: 20         # OPEN
-      f6_rsi_thresh: 80         # OPEN — RSI触发门槛
-      f6_drop_thresh: 0.025     # OPEN — 跌幅门槛
-      f6_base_penalty: 0.15     # OPEN — 触发当日惩罚强度
-
+        window_days: 20
+      f6_rsi_thresh: 80
+      f6_drop_thresh: 0.025
+      f6_base_penalty: 0.15
+  daily_aggressive_f6:
+    label: 日频攻防型 (F6对照)
+    description: '[对照组] 日调仓+F6加法惩罚。MA26/bear30%/方向确认/score_band3%。总收益+183.5%/年化+36.6%/MDD-13.2%/Calmar=2.78/Sharpe=1.73/佣金2.01%（2023-01-01~2026-05-08）。保留此preset供F7
+      A/B对照。'
+    scoring:
+      weights:
+        ema_deviation: 0.4
+        rsi_adaptive: 0.0
+        volume_ratio: 0.55
+        valuation: 0.0
+        exhaustion_penalty: 0.05
+      bias_bonus: 0
+      sensitivity:
+        f1: 8.0
+        f3: 1.0
+        f2_dead_zone: 1.5
+    confidence:
+      type: ma_trend
+      ma_trend_period: 26
+      ma_bull_pos: 1.0
+      ma_bear_pos: 0.3
+      ma_direction_confirm: true
+    position:
+      max_holdings: 6
+      discretize_step: 0.05
+      rebalance_freq: daily
+      execution_timing: same_close
+      score_band: 0.03
+      commission_rate: 0.00026
+    factors:
+      ema:
+        period_weeks: 16
+      rsi:
+        period_days: 14
+      volume_ratio:
+        window_days: 20
+      f6_rsi_thresh: 80
+      f6_drop_thresh: 0.025
+      f6_base_penalty: 0.15
   daily_aggressive:
-    label: "日频攻防型"
-    description: "日调仓+分数带+F6加法惩罚。MA26/bear30%/方向确认/score_band5%。总收益+183.5%/年化+36.6%/MDD-13.2%/Calmar=2.78/Sharpe=1.73/佣金2.01%（2023-01-01~2026-05-08）。"
+    label: 日频攻防型 (F7)
+    description: '[实验组] 日调仓+F7对数收益偏离因子。F7参数经全量扫描优化(w10/k3.0/t11/w0.15)。3年期(2023-05-13~2026-05-13)回测:总收益+229.04%/年化+48.79%/MDD-11.99%/Sharpe=2.03/Sortino=2.99。vs
+      F6(+196.08%):总收益+33%,MDD优化-2.66%,Sharpe+0.20。'
     scoring:
       weights:
-        ema_deviation: 0.40    # OPEN
-        rsi_adaptive: 0.05     # RESERVED — daily 模式保留少量 RSI 权重
-        volume_ratio: 0.50     # OPEN
-        valuation: 0.00        # RESERVED
-        exhaustion_penalty: 0.05  # OPEN — F6惩罚权重，daily_aggressive默认5%
-      bias_bonus: 0            # LOCKED
+        ema_deviation: 0.35
+        rsi_adaptive: 0.0
+        volume_ratio: 0.5
+        valuation: 0.0
+        exhaustion_penalty: 0.0
+        log_return_deviation: 0.15
+      bias_bonus: 0
       sensitivity:
-        f1: 8.0               # OPEN
-        f3: 1.0                # OPEN
-        f2_dead_zone: 1.5      # LOCKED
+        f1: 8.0
+        f3: 1.0
+        f2_dead_zone: 1.5
+        f7_t: 11.0
+        f7_k: 3.0
     confidence:
-      type: "ma_trend"        # LOCKED
-      ma_trend_period: 26      # OPEN -- optimized 20 -> 26
-      ma_bull_pos: 1.00         # OPEN
-      ma_bear_pos: 0.30         # OPEN -- optimized 0.40 -> 0.30
-      ma_direction_confirm: true  # OPEN -- optimized
+      type: ma_trend
+      ma_trend_period: 26
+      ma_bull_pos: 1.0
+      ma_bear_pos: 0.3
+      ma_direction_confirm: true
     position:
-      max_holdings: 6           # LOCKED
-      discretize_step: 0.05     # LOCKED
-      rebalance_freq: "daily"   # OPEN — 区别于 weekly_trend 的核心差异
-      execution_timing: "same_close"  # OPEN — next_open用于2026-07-06前实盘过渡
-      score_band: 0.05          # OPEN — daily_aggressive 推荐5%，可调范围0-20%
-      commission_rate: 0.00026  # LOCKED
+      max_holdings: 6
+      discretize_step: 0.05
+      rebalance_freq: daily
+      execution_timing: same_close
+      score_band: 0.03
+      commission_rate: 0.00026
     factors:
       ema:
-        period_weeks: 16        # OPEN
+        period_weeks: 16
       rsi:
-        period_days: 14         # LOCKED
+        period_days: 14
       volume_ratio:
-        window_days: 20         # OPEN
-      f6_rsi_thresh: 80         # OPEN — RSI触发门槛，推荐80
-      f6_drop_thresh: 0.025     # OPEN — 跌幅门槛，推荐2.5%
-      f6_base_penalty: 0.15     # OPEN — 触发当日惩罚强度，推荐0.15
+        window_days: 20
+      f6_rsi_thresh: 80
+      f6_drop_thresh: 0.025
+      f6_base_penalty: 0.15
+      log_return_deviation:
+        window_days: 10
+        lookback_days: 250
+        min_days: 60
+        sigma_floor: 0.01
