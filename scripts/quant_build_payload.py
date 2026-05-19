@@ -320,7 +320,7 @@ def build_latest_signal(all_daily_data, all_weekly_data, base_cfg, etf_map):
     M4.2: 基于最新日线数据计算今日收盘后的目标仓位建议。
     与回测中的周度调仓逻辑一致，但使用最新数据（而非回测历史）。
     """
-    from quant_factors import compute_all_factors, map_f1, map_f2, map_f3, map_f4, confidence_function
+    from quant_factors import compute_all_factors, map_f1, map_f3, map_f4, confidence_function
 
     cfg = base_cfg
     weights = cfg["scoring"]["weights"]
@@ -354,7 +354,6 @@ def build_latest_signal(all_daily_data, all_weekly_data, base_cfg, etf_map):
         factors = compute_all_factors(
             daily_df, weekly_df,
             ema_period=factor_cfg["ema"]["period_weeks"],
-            rsi_period=factor_cfg["rsi"]["period_days"],
             vol_window=factor_cfg["volume_ratio"]["window_days"],
             f6_rsi_thresh=factor_cfg.get("f6_rsi_thresh", 80.0),
             f6_drop_thresh=factor_cfg.get("f6_drop_thresh", 0.025),
@@ -385,11 +384,12 @@ def build_latest_signal(all_daily_data, all_weekly_data, base_cfg, etf_map):
     # 连续映射 + 合成
     factors_df = pd.DataFrame(factors_data).T
     mapped_f1 = factors_df["f1_ema_dev"].apply(lambda v: map_f1(v, f1_sens))
-    mapped_f2 = factors_df["f2_rsi_adaptive"].apply(map_f2)
+    f2_sens = sensitivity.get("f2", 8.0)
+    mapped_f2 = factors_df["f2_daily_ma"].apply(lambda v: map_f1(v, f2_sens))
     mapped_f3 = factors_df["f3_volume_ratio"].apply(lambda v: map_f3(v, f3_sens))
 
     w1 = weights.get("ema_deviation", 0.30)
-    w2 = weights.get("rsi_adaptive", 0.25)
+    w2 = weights.get("f2_daily_ma", 0.0)
     w3 = weights.get("volume_ratio", 0.30)
     w4 = weights.get("valuation", 0.15)
 

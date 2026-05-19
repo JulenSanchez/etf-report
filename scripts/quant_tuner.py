@@ -171,6 +171,9 @@ def preload():
     # Load market regimes for F4 regime-aware mapping
     _load_market_regimes()
 
+    # Precompute heatmap returns (5d / 20d rolling pct_change)
+    _precompute_heatmap_returns()
+
     CACHE["ready"] = True
     print("Preload complete.\n")
 
@@ -396,6 +399,7 @@ def refresh_data():
     _precompute_benchmarks()
     _precompute_valuation_scores()
     _load_market_regimes()
+    _precompute_heatmap_returns()
 
     # ── Post-market (>=15:10) ──
     if post_market:
@@ -666,12 +670,70 @@ def _load_market_regimes():
         CACHE["market_regimes"] = {}
 
 
+def _precompute_heatmap_returns(lookbacks=(5, 20)):
+    """Precompute N-day rolling returns for all ETFs.
+    Called once at startup; subsequent requests read CACHE["heatmap"].
+    Set CACHE["heatmap"] = { "5": {code: {date_str: ret}}, "20": {...} }
+    Uses date column as index so pct_change aligns on calendar dates.
+    """
+    all_daily = CACHE.get("all_daily", {})
+    if not all_daily:
+        return
+    result = {}
+    for lb in lookbacks:
+        lb_key = str(lb)
+        result[lb_key] = {}
+        for code, df in all_daily.items():
+            # Set date as index so pct_change aligns on trading days
+            close = df.set_index("date")["close"].astype(float)
+            ret = close.pct_change(lb).dropna()
+            # Convert to dict {date_str: return_value}
+            result[lb_key][code] = {str(d): float(v) for d, v in zip(ret.index, ret.values)}
+    CACHE["heatmap"] = result
+    total = sum(len(v) for v in result.values())
+    print(f"  Heatmap returns precomputed: {len(result)} lookbacks, {total} series")
+
+
+def _weight_total_pct(params):
+    return sum(float(params.get(k, 0) or 0) for k in ("w1", "w2", "w3", "w4", "w6", "w7"))
+
+
+def _parse_universe_filter(params):
+    universe_str = (params.get("universe", "") or "").strip()
+    if universe_str == "__NONE__":
+        return [], "empty"
+    if not universe_str:
+        return None, "all"
+    codes = [c.strip() for c in universe_str.split(",") if c.strip()]
+    return sorted(set(codes)), "filtered"
+
+
+def _validate_tuner_params(params):
+    total = _weight_total_pct(params)
+    if abs(total - 100.0) > 1e-6:
+        return f"Factor weights must sum to 100%, got {total:g}%"
+
+    universe_filter, mode = _parse_universe_filter(params)
+    if mode == "empty":
+        return "Universe is empty; select at least 6 ETFs"
+    if universe_filter is not None and len(universe_filter) < 6:
+        return f"Only {len(universe_filter)} ETFs selected, need at least 6"
+
+    if float(params.get("ma_bull_pos", 1.0)) <= float(params.get("ma_bear_pos", 0.3)):
+        return "Bull position must be greater than bear position"
+    return None
+
+
 def run_tuner_backtest(params):
     """Tuner wrapper → unified quant_backtest.run_backtest().
 
     Builds config_override from frontend params, prepares preloaded data from
     CACHE, calls the shared backtest engine, and formats output for the frontend.
     """
+    validation_error = _validate_tuner_params(params)
+    if validation_error:
+        return {"error": validation_error}
+
     t0 = time.time()
     from quant_backtest import run_backtest as _run_backtest
 
@@ -680,7 +742,7 @@ def run_tuner_backtest(params):
         "scoring": {
             "weights": {
                 "ema_deviation": params.get("w1", 35) / 100.0,
-                "rsi_adaptive": 0.0,
+                "f2_daily_ma": params.get("w2", 0) / 100.0,
                 "volume_ratio": params.get("w3", 50) / 100.0,
                 "valuation": params.get("w4", 0) / 100.0,
                 "volatility": params.get("w5", 0) / 100.0,
@@ -692,7 +754,7 @@ def run_tuner_backtest(params):
             "sensitivity": {
                 "f1": float(params.get("f1_sensitivity", 8.0)),
                 "f3": float(params.get("f3_sensitivity", 1.0)),
-                "f2_dead_zone": float(params.get("f2_dead_zone", 1.5)),
+                "f2": float(params.get("f2_sensitivity", 8.0)),
                 "f1_residual": float(params.get("f1r_sensitivity", 5.0)),
                 "f7_t": float(params.get("f7_t", 7.0)),
                 "f7_k": float(params.get("f7_k", 3.0)),
@@ -709,23 +771,24 @@ def run_tuner_backtest(params):
         },
         "position": {
             "max_holdings": int(params.get("max_holdings", 6)),
-            "discretize_step": float(params.get("disc_step", 5)) / 100.0,
+            "discretize_step": float(params.get("disc_step", 0.05)),
+            "concentration": float(params.get("concentration", 2.0)),
             "rebalance_freq": params.get("rebalance_freq", "W-FRI"),
-            "execution_timing": params.get("execution_timing", "same_close"),
+            "execution_timing": params.get("execution_timing", "next_open"),
             "score_band": float(params.get("score_band", 0)) / 100.0,
             "commission_rate": 0.00026,
         },
         "factors": {
             "ema": {"period_weeks": int(params.get("ema_period", 20))},
-            "rsi": {"period_days": int(params.get("rsi_period", 14))},
             "volume_ratio": {"window_days": int(params.get("vol_window", 20))},
             "f6_rsi_thresh": float(params.get("f6_rsi_thresh", 80.0)),
-            "f6_drop_thresh": float(params.get("f6_drop_thresh", 0.025)),
+            "f6_drop_thresh": float(params.get("f6_drop_thresh", 2.5)) / 100.0,
             "f6_base_penalty": float(params.get("f6_base_penalty", 0.15)),
             "log_return_deviation": {
                 "window_days": int(params.get("f7_window", 20)),
                 "lookback_days": 250, "min_days": 60, "sigma_floor": 0.01,
             },
+            "f2_ma_period": int(params.get("f2_ma_period", 25)),
         },
     }
 
@@ -739,9 +802,8 @@ def run_tuner_backtest(params):
             all_daily[code] = _get_daily_with_cache(code)
             all_weekly[code] = _get_weekly_with_cache(code)
 
-    universe_str = params.get("universe", "")
-    universe_filter = list(set(universe_str.split(","))) if universe_str else None
-    if universe_filter:
+    universe_filter, _universe_mode = _parse_universe_filter(params)
+    if universe_filter is not None:
         all_daily = {k: v for k, v in all_daily.items() if k in universe_filter}
         all_weekly = {k: v for k, v in all_weekly.items() if k in universe_filter}
 
@@ -756,15 +818,17 @@ def run_tuner_backtest(params):
         "all_weekly": all_weekly,
         "market_regimes": CACHE.get("market_regimes", {}),
         "hs300_above_ma": ma_cache.get("above", {}),
+        "hs300_ma_rising": ma_cache.get("ma_rising", {}),
     }
 
     # Factor precomputation and price lookup now handled inside run_backtest()
 
     execution_timing = config_override["position"]["execution_timing"]
     if execution_timing not in ("same_close", "next_open"):
-        execution_timing = "same_close"
+        execution_timing = "next_open"
 
     # ── Call unified backtest engine ──
+    return_debug = bool(params.get("debug", False))
     nav_df, signal_history, extra = _run_backtest(
         start_date=params.get("start_date"),
         end_date=params.get("end_date"),
@@ -774,6 +838,7 @@ def run_tuner_backtest(params):
         preloaded=preloaded,
         config_override=config_override,
         return_details=True,
+        return_debug=return_debug,
     )
     total_commission = extra.get("total_commission", 0)
 
@@ -938,6 +1003,16 @@ def run_tuner_backtest(params):
     ic_time = ic_times[-1] if ic_times else None
     has_intraday = bool(ic_date and nav_date_strs and nav_date_strs[-1] == ic_date)
 
+    # Write debug snapshots if requested
+    if return_debug:
+        import json as _json
+        snaps = extra.get("debug_snapshots", [])
+        debug_path = SKILL_DIR / "data" / "debug_tuner.json"
+        debug_path.parent.mkdir(parents=True, exist_ok=True)
+        with debug_path.open("w", encoding="utf-8") as _f:
+            _json.dump({"count": len(snaps), "snapshots": snaps}, _f, ensure_ascii=False, indent=2)
+        print(f"DEBUG: {len(snaps)} snapshots saved → {debug_path}")
+
     return {
         "strategy": strategy_label,
         "etfNameMap": etf_name_map,
@@ -970,6 +1045,7 @@ def run_tuner_backtest(params):
             "hasIntradayEstimate": has_intraday,
             "intradayDate": ic_date if has_intraday else None,
             "intradayTime": ic_time if has_intraday else None,
+            "intradayCount": len(CACHE.get("intraday_cache", {})) if has_intraday else 0,
         },
         "nav": {
             "dates": nav_date_strs,
@@ -1036,7 +1112,7 @@ def api_run():
     guard = _require_ready()
     if guard:
         return guard
-    params = request.json
+    params = request.json or {}
     try:
         result = run_tuner_backtest(params)
     except Exception as e:
@@ -1066,7 +1142,7 @@ def api_presets():
             "label": p_data.get("label", key),
             "description": p_data.get("description", ""),
             "w1": int(w.get("ema_deviation", 0.30) * 100),
-            "w2": 0,  # F2 disabled in tuner
+            "w2": int(w.get("f2_daily_ma", 0) * 100),
             "w3": int(w.get("volume_ratio", 0.30) * 100),
             "w4": int(w.get("valuation", 0.15) * 100),
             "bias": p_data.get("scoring", {}).get("bias_bonus", 4.0),
@@ -1092,21 +1168,25 @@ def api_presets():
             "ma_trend_period": pc.get("ma_trend_period", global_conf.get("ma_trend_period", 26)),
             "ma_direction_confirm": pc.get("ma_direction_confirm", global_conf.get("ma_direction_confirm", True)),
             "max_holdings": p_data.get("position", {}).get("max_holdings", 6),
-            "disc_step": int(p_data.get("position", {}).get("discretize_step", 0.05) * 100),
+            "disc_step": p_data.get("position", {}).get("discretize_step", 0.05),
+            "concentration": p_data.get("position", {}).get("concentration", 2.0),
             "ema_period": p_data.get("factors", {}).get("ema", {}).get("period_weeks", 20),
-            "rsi_period": p_data.get("factors", {}).get("rsi", {}).get("period_days", 14),
+            "f2_sensitivity": p_data.get("scoring", {}).get("sensitivity", {}).get("f2", 8.0),
             "vol_window": p_data.get("factors", {}).get("volume_ratio", {}).get("window_days", 20),
             "f1_sensitivity": p_data.get("scoring", {}).get("sensitivity", {}).get("f1", 8.0),
             "f3_sensitivity": p_data.get("scoring", {}).get("sensitivity", {}).get("f3", 1.0),
-            "f2_dead_zone": p_data.get("scoring", {}).get("sensitivity", {}).get("f2_dead_zone", 1.5),
             "rebalance_freq": p_data.get("position", {}).get("rebalance_freq", "W-FRI"),
-            "execution_timing": p_data.get("position", {}).get("execution_timing", "same_close"),
+            "execution_timing": p_data.get("position", {}).get("execution_timing", "next_open"),
             "score_band": int(p_data.get("position", {}).get("score_band", 0) * 100),
             "w6": int(p_data.get("scoring", {}).get("weights", {}).get("exhaustion_penalty", 0) * 100),
             "w7": int(p_data.get("scoring", {}).get("weights", {}).get("log_return_deviation", 0) * 100),
             "f7_t": p_data.get("scoring", {}).get("sensitivity", {}).get("f7_t", 7.0),
             "f7_k": p_data.get("scoring", {}).get("sensitivity", {}).get("f7_k", 3.0),
             "f7_window": p_data.get("factors", {}).get("log_return_deviation", {}).get("window_days", 20),
+            "f2_ma_period": p_data.get("factors", {}).get("f2_ma_period", 25),
+            "f6_rsi_thresh": p_data.get("factors", {}).get("f6_rsi_thresh", 80.0),
+            "f6_drop_thresh": p_data.get("factors", {}).get("f6_drop_thresh", 0.025) * 100,
+            "f6_base_penalty": p_data.get("factors", {}).get("f6_base_penalty", 0.15),
         }
     # Inject 'custom' preset if not defined in YAML — clone daily_aggressive as template
     if "custom" not in result:
@@ -1114,7 +1194,7 @@ def api_presets():
         if template:
             custom = dict(template)
             custom["label"] = "自定义策略"
-            custom["description"] = "用户自定义策略，初始参数继承自日频F7。"
+            custom["description"] = "用户自定义策略，初始参数继承自波动探测。"
             result["custom"] = custom
 
     # Add universe options for the front-end selector
@@ -1153,14 +1233,17 @@ def api_save():
     guard = _require_ready()
     if guard:
         return guard
-    params = request.json
+    params = dict(request.json or {})
     preset_name = params.pop("_preset", None)
+    validation_error = _validate_tuner_params(params)
+    if validation_error:
+        return jsonify({"ok": False, "error": validation_error})
     try:
         # Build config fragment from tuner params (shared path)
         cfg = load_config()
         cfg["scoring"]["weights"] = {
             "ema_deviation": params["w1"] / 100.0,
-            "rsi_adaptive": 0.0,
+            "f2_daily_ma": params.get("w2", 0) / 100.0,
             "volume_ratio": params["w3"] / 100.0,
             "valuation": params.get("w4", 0) / 100.0,
             "exhaustion_penalty": params.get("w6", 0) / 100.0,
@@ -1168,29 +1251,31 @@ def api_save():
         }
         cfg["scoring"]["bias_bonus"] = float(params.get("bias", 0))
         cfg["confidence"]["type"] = params.get("conf_type", "quadratic")
-        cfg["confidence"]["dead_zone"] = int(params["dead_zone"])
-        cfg["confidence"]["full_zone"] = int(params["full_zone"])
+        cfg["confidence"]["dead_zone"] = int(params.get("dead_zone", 25))
+        cfg["confidence"]["full_zone"] = int(params.get("full_zone", 65))
         cfg["position"]["max_holdings"] = int(params["max_holdings"])
-        cfg["position"]["discretize_step"] = int(params.get("disc_step", 5)) / 100.0
+        cfg["position"]["discretize_step"] = float(params.get("disc_step", 0.05))
+        cfg["position"]["concentration"] = float(params.get("concentration", 2.0))
         cfg["position"]["rebalance_freq"] = params.get("rebalance_freq", "W-FRI")
         cfg["position"]["score_band"] = float(params.get("score_band", 0)) / 100.0
         cfg["factors"]["ema"]["period_weeks"] = int(params.get("ema_period", 20))
-        cfg["factors"]["rsi"]["period_days"] = int(params.get("rsi_period", 14))
         cfg["factors"]["volume_ratio"]["window_days"] = int(params.get("vol_window", 20))
         sens = cfg.setdefault("scoring", {}).setdefault("sensitivity", {})
         sens["f1"] = float(params.get("f1_sensitivity", 8.0))
+        sens["f2"] = float(params.get("f2_sensitivity", 8.0))
         sens["f3"] = float(params.get("f3_sensitivity", 1.0))
         sens["f7_t"] = float(params.get("f7_t", 7.0))
         sens["f7_k"] = float(params.get("f7_k", 3.0))
         cfg["confidence"]["ma_bull_pos"] = float(params.get("ma_bull_pos", 1.0))
         cfg["confidence"]["ma_bear_pos"] = float(params.get("ma_bear_pos", 0.3))
         cfg["confidence"]["ma_trend_period"] = int(params.get("ma_trend_period", 26))
-        cfg["position"]["execution_timing"] = params.get("execution_timing", "same_close")
+        cfg["confidence"]["ma_direction_confirm"] = bool(params.get("ma_direction_confirm", True))
+        cfg["position"]["execution_timing"] = params.get("execution_timing", "next_open")
         cfg["factors"]["f6_rsi_thresh"] = float(params.get("f6_rsi_thresh", 80))
         cfg["factors"]["f6_drop_thresh"] = float(params.get("f6_drop_thresh", 2.5)) / 100.0
         cfg["factors"]["f6_base_penalty"] = float(params.get("f6_base_penalty", 0.15))
         cfg.setdefault("factors", {}).setdefault("log_return_deviation", {})["window_days"] = int(params.get("f7_window", 20))
-
+        cfg["factors"]["f2_ma_period"] = int(params.get("f2_ma_period", 25))
         overrides = {
             "scoring": cfg["scoring"],
             "confidence": cfg["confidence"],
@@ -1205,6 +1290,8 @@ def api_save():
             with OVERRIDES_PATH.open("w", encoding="utf-8") as f:
                 f.write("# Quant Tuner user overrides — safe to delete to reset to defaults\n")
                 yaml.dump(overrides, f, allow_unicode=True, default_flow_style=False, sort_keys=False)
+        # Refresh CACHE so /api/presets returns updated config immediately
+        CACHE["cfg"] = load_config()
         return jsonify({"ok": True})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)})
@@ -1398,6 +1485,48 @@ def api_etf_prices():
         "rsi": [None if pd.isna(v) else round(float(v), 2) for v in rsi_series],
         "rsiPeriod": rsi_period,
     })
+
+
+@app.route("/api/heatmap_data")
+def api_heatmap_data():
+    guard = _require_ready()
+    if guard:
+        return guard
+    """Return precomputed N-day rolling returns for all ETFs."""
+    lookback = request.args.get("lookback", "20").strip()
+    force = request.args.get("force", "0") == "1"
+
+    if force or "heatmap" not in CACHE:
+        _precompute_heatmap_returns()
+
+    heatmap = CACHE.get("heatmap", {})
+    if lookback not in heatmap:
+        return jsonify({"error": f"Unknown lookback: {lookback}"}), 400
+
+    data = heatmap[lookback]
+    cfg = CACHE.get("cfg", {})
+
+    # Collect all dates (union of all ETF date keys, sorted)
+    all_dates = set()
+    for code, ret_map in data.items():
+        all_dates.update(ret_map.keys())
+    dates = sorted(all_dates)
+
+    etfs_out = []
+    for entry in cfg.get("universe", []):
+        code = entry["code"]
+        if code not in data:
+            continue
+        ret_map = data[code]
+        rets = [ret_map.get(d) for d in dates]  # None if date missing
+        etfs_out.append({
+            "code": code,
+            "name": entry.get("name", code),
+            "sector": entry.get("sector", ""),
+            "returns": rets,
+        })
+
+    return jsonify({"lookback": int(lookback), "dates": dates, "etfs": etfs_out})
 
 
 TUNER_PORT = 5179

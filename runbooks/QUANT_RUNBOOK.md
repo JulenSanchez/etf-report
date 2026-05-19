@@ -1,8 +1,8 @@
 # 量化调试规程（本地私有）
 
-**版本**: 1.1
-**最后更新**: 2026-04-30
-**当前状态**: 调试工具已可用（支持冷启动+增量自动更新），正式页尚未上线（建设中遮罩）
+**版本**: 1.3
+**最后更新**: 2026-05-18
+**当前状态**: 调试工具已可用，默认直接启动（不更新数据）；`--auto` 可先增量更新再启动。正式页尚未上线（建设中遮罩）
 
 ---
 
@@ -26,7 +26,7 @@
 ```
 
 **关键约定**：
-- 最快启动：`python scripts/quant_tuner.py --auto` → http://localhost:5179
+- 最快启动：`python scripts/quant_tuner.py` → http://localhost:5179
 - 长时间回测：必须独立进程（`nohup` 或 `Start-Process`），不能用 AI 会话后台任务
 - batch 模式：每次 ≤5 combo，靠 checkpoint 断点续传
 
@@ -58,7 +58,7 @@
 
 1. **唯一事实源**：量子系统的架构、数据管线、工具使用规程，只由本文定义。
 2. **方法论 vs 工程**：`docs/07-quant-methodology.md` 管"为什么这样打分"（公式、因子语义、截面标准化），本文管"工具怎么用、数据怎么流"。
-3. **本地治理文档**：本文位于技能根目录 `QUANT_RUNBOOK.md`，只服务本地开发，不进入公开仓。
+3. **本地治理文档**：本文位于技能根目录 `runbooks/QUANT_RUNBOOK.md`，只服务本地开发。
 
 ---
 
@@ -166,10 +166,13 @@ quant_backtest.py             ← 回测引擎（load_etf_data / run_backtest）
 ### 3.1 数据获取（冷启动 + 增量更新）
 
 ```bash
-# 推荐：通过 Tuner --auto 自动处理
+# 直接启动 Tuner
+python scripts/quant_tuner.py           # 启动，访问 http://localhost:5179
+
+# 如需先更新数据再启动
 python scripts/quant_tuner.py --auto    # 自动检测并更新数据，然后启动 Tuner
 
-# 也可单独更新数据
+# 单独更新数据（不启动 Tuner）
 python scripts/quant_data_fetcher.py              # 增量更新（默认）
 python scripts/quant_data_fetcher.py --full        # 全量重新拉取
 python scripts/quant_data_fetcher.py --code 512400 # 只更新一支
@@ -181,13 +184,13 @@ python scripts/quant_data_fetcher.py --code 512400 # 只更新一支
 
 **增量更新**：CSV 已存在时，读取最后一条日期，只拉该日期之后的新数据并追加（~25 秒）。去重后保存。
 
-**实时性要求**：量化回测数据需要每日更新（不像估值历史 PB/BPS 是季更数据），建议每次使用 Tuner 前用 `--auto` 确保数据最新。
+**实时性要求**：量化回测数据需要每日更新（不像估值历史 PB/BPS 是季更数据）。如需最新数据，先跑 `quant_data_fetcher.py` 再启动 Tuner，或使用 `--auto`。
 
 ### 3.2 交互管线（Tuner）
 
 ```bash
-python scripts/quant_tuner.py        # 启动，访问 http://localhost:5179
-python scripts/quant_tuner.py --auto # 自动更新数据后启动
+python scripts/quant_tuner.py        # 默认启动（不更新数据，最快）
+python scripts/quant_tuner.py --auto # 先增量更新数据再启动
 ```
 
 启动流程：
@@ -242,7 +245,7 @@ python scripts/quant_build_payload.py
 **未来接入路径**（待管线成熟后）：
 1. `update_report.py` 改为直接调 `quant_backtest` 引擎（不依赖 Tuner 运行）
 2. 删除 `#quant-construction-mask`，`#quant-content-wrapper` 恢复显示
-3. 公开仓用户可复现的完整数据获取流程
+3. 外部用户可复现的完整数据获取流程
 
 ### 3.5 关键交接点
 
@@ -253,7 +256,65 @@ python scripts/quant_build_payload.py
 | Python → JS | `window.__QUANT_RUNTIME__ = {...}` | `quant_payload.js` 是唯一交接文件 |
 | JS → DOM | ECharts + innerHTML | `quant-main.js` 读取 `__QUANT_RUNTIME__` 渲染到特定 DOM id |
 
-### 3.6 数据源运维与排障
+### 3.6 盘中数据机制（intraday cache）
+
+#### 3.6.1 设计目标
+
+回测和热力图在盘中（9:30–15:10）需要展示当天未收盘的实时数据，但不能把不完整 K 线写入 CSV——CSV 只存已收盘确认的数据。
+
+#### 3.6.2 数据存储
+
+```
+CACHE["intraday_cache"] = {
+    "512400": {"date":"2026-05-18", "open":1.23, "close":1.25,
+               "high":1.26, "low":1.22, "volume":12345, "amount":15432},
+    ...
+}
+```
+
+纯内存，**绝不写入 CSV**。每个 code 最多一条记录，`refresh_data()` 每次拉取时整体覆盖。
+
+数据来源：新浪实时行情 API（`hq.sinajs.cn`），`_fetch_sina_realtime()` 拉取。成交量/额通过 A 股日内 W 形分布模板估算到收盘值（`_estimate_eod_volume()`）。
+
+#### 3.6.3 透明 merge：`_get_daily_with_cache()`
+
+上游消费者（回测引擎、K 线 API、热力图预计算）不直接读 `CACHE["all_daily"]`，而是调 `_get_daily_with_cache(code)`：
+
+```
+CACHE["all_daily"][code]   ← CSV 确认数据（到昨天）
+        +
+CACHE["intraday_cache"][code]  ← 今天的实时估算
+        ↓
+_get_daily_with_cache() → 返回合并后的 DataFrame
+```
+
+合并规则：
+- **cache 日期 > CSV 最后日期** → DataFrame 末尾追加一行当天的估算 bar
+- **cache 日期 = CSV 最后日期** → 替换最后一行（盘中价格持续刷新，反复覆盖同一行）
+- **cache 不存在** → 原样返回 CSV 数据
+
+对上游完全透明——回测/热力图无需区分数据来自 CSV 还是实时估算。
+
+#### 3.6.4 生命周期（`refresh_data()` 内）
+
+| 时段 | 行为 |
+|------|------|
+| **盘中** (9:30–15:10 交易日) | 拉新浪实时 → 写入 `intraday_cache`；CSV 不做增量更新（等收盘确认） |
+| **收盘后** (≥15:10) | CSV 增量拉取（腾讯 API）→ 写入磁盘 → `_reload_csv_to_cache()` → **清空 `intraday_cache`** |
+| **盘前/非交易日** | CSV 增量拉取（补历史缺口），无盘中数据 |
+
+核心原则：收盘后今天的 K 线从"内存估算"转为"CSV 持久化"，intraday_cache 归零，第二天重新开始。
+
+#### 3.6.5 成交量估算（`_estimate_eod_volume`）
+
+A 股交易量日内呈 W 形分布（开盘高峰 → 午盘低谷 → 收盘翘尾），简单线性外推会低估。系统使用预计算的 8 段累积分布模板（`_INTRADAY_CUM`，每 30 分钟一段），根据当前时刻的累积占比反推到收盘：
+
+```python
+cum_pct = _intraday_cumulative_pct(now)  # 当前已过去的成交量占比
+eod_vol = current_vol / cum_pct           # 反推全天成交量
+```
+
+### 3.7 数据源运维与排障
 
 > 数据源全景追踪见 `docs/01-数据源与工具生态.md` §9。
 
@@ -752,21 +813,25 @@ regimes = [infer_regime(s["total_target"]) for s in signal_history]
 
 ## 7. 从零搭建量化环境
 
-### 一键启动（推荐）
+### 一键启动
 
 ```bash
-python scripts/quant_tuner.py --auto
+python scripts/quant_tuner.py
+# 浏览器打开 http://localhost:5179
 ```
 
-自动流程：
-1. 检测数据 → CSV 不存在则冷启动（全量拉取，~3-5 分钟）
-2. CSV 已存在则增量更新（只拉新增数据，~25 秒）
-3. 启动 Flask 服务 → 打开浏览器 http://localhost:5179
+前置：`data/quant/` 下需已有 CSV 数据。
+
+如需先更新数据再启动：
+```bash
+python scripts/quant_tuner.py --auto
+# 自动流程：检测数据 → CSV 不存在则冷启动（~3-5 分钟）/ 已存在则增量更新（~25 秒）→ 启动 Flask
+```
 
 ### 手动分步（调试用）
 
 ```bash
-# Step 1: 更新数据
+# Step 1（可选）: 更新数据
 python scripts/quant_data_fetcher.py              # 增量
 python scripts/quant_data_fetcher.py --full        # 全量重拉
 
@@ -796,7 +861,7 @@ pip install -r requirements.txt   # pandas, numpy, akshare, flask, pyyaml
 
 ### ADR-2: 为什么 update_report.py 通过 HTTP 调 Tuner
 
-历史原因：Tuner 先建成，`update_report.py` 后接。当时 Tuner 已有完善的 preload 缓存 + 参数注入逻辑，HTTP 调用复用最快。**已知问题**：这导致 Tuner 成为硬依赖，公开仓用户无法独立生成 payload。未来应改为直接调 `quant_backtest` 引擎。
+历史原因：Tuner 先建成，`update_report.py` 后接。当时 Tuner 已有完善的 preload 缓存 + 参数注入逻辑，HTTP 调用复用最快。**已知问题**：这导致 Tuner 成为硬依赖，外部用户无法独立生成 payload。未来应改为直接调 `quant_backtest` 引擎。
 
 ### ADR-3: F2 双通道设计
 
@@ -804,7 +869,7 @@ F2（RSI 自适应变换）采用双通道架构：z-score 通道（相对历史
 
 ### ADR-4: 正式页遮罩决策
 
-2026-04-29 决定：量化回测板块对公开仓用户完全不可用（无 CSV 数据、无数据获取流程、回测依赖本地 Tuner），但页面上没有任何提示，fallback 路径用硬编码假数据。改为：
+2026-04-29 决定：量化回测板块对外部用户完全不可用（无 CSV 数据、无数据获取流程、回测依赖本地 Tuner），但页面上没有任何提示，fallback 路径用硬编码假数据。改为：
 1. 量化板块加"建设中"遮罩
 2. fallback 改为空 payload（不展示假数据）
 3. 待管线成熟后正式上线

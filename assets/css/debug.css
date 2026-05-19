@@ -20,20 +20,15 @@
             opacity: 1;
         }
         .debug-toolbar {
-            position: fixed;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            height: 33.6px;
+            height: 34px;
             display: flex;
             align-items: stretch;
             gap: 0;
             background: rgba(3, 8, 18, 0.99);
             border-top: 1px solid rgba(148, 163, 184, 0.16);
             box-shadow: 0 -6px 18px rgba(0, 0, 0, 0.22);
-
             z-index: 99999;
-            backdrop-filter: blur(10px);
+            flex-shrink: 0;
         }
         .debug-market-strip {
             flex: 1;

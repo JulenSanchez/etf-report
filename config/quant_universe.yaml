@@ -45,7 +45,7 @@ universe:
 - code: '513130'
   name: 恒科ETF
   market: sh
-  sector: 港股科技
+  sector: TMT
 - code: '512980'
   name: 传媒ETF
   market: sh
@@ -69,15 +69,15 @@ universe:
 - code: '159611'
   name: 电力ETF
   market: sz
-  sector: 公用事业
+  sector: 传统
 - code: '512660'
   name: 军工ETF
   market: sh
-  sector: 军工
+  sector: 制造
 - code: '560710'
   name: 船舶ETF
   market: sh
-  sector: 军工
+  sector: 制造
 - code: '560280'
   name: 工程机械ETF
   market: sh
@@ -117,15 +117,15 @@ universe:
 - code: '159865'
   name: 养殖ETF
   market: sz
-  sector: 周期
+  sector: 传统
 - code: '512200'
   name: 房地产ETF
   market: sh
-  sector: 周期
+  sector: 传统
 - code: '513690'
   name: 港股红利ETF
   market: sh
-  sector: 红利
+  sector: 传统
 - code: '563300'
   name: 中证2000ETF
   market: sh
@@ -186,28 +186,22 @@ position:
   discretize_step: 0.05
   weighting: arithmetic
   rebalance_freq: W-FRI
-  execution_timing: same_close
+  execution_timing: next_open
   score_band: 0
   commission_rate: 0.00026
 factors:
   ema:
     period_weeks: 16
-  rsi:
-    period_days: 14
-    bullish_overbought: 75
-    bullish_oversold: 30
-    bearish_overbought: 60
-    bearish_oversold: 20
   volume_ratio:
     window_days: 20
 presets:
   weekly_trend:
-    label: 周频趋势型
-    description: HS300周线MA趋势仓位控制+方向确认，无F6。总收益+113.7%/年化+25.5%/MDD-14.6%/Calmar=1.75/Sharpe=1.29（2023-01-01~2026-05-08）。实际换仓141次/155次调仓，稳定低换手。
+    label: 周频趋势
+    description: 周调仓，F1+F3，无F6/F7。MA趋势仓位控制。总收益+113.7%/年化+25.5%/MDD-14.6%/Calmar=1.75/Sharpe=1.29（2023-01-01~2026-05-08）。实际换仓141次/155次调仓，稳定低换手。
     scoring:
       weights:
         ema_deviation: 0.4
-        rsi_adaptive: 0.0
+        f2_daily_ma: 0.0
         volume_ratio: 0.6
         valuation: 0.0
         exhaustion_penalty: 0.0
@@ -215,7 +209,7 @@ presets:
       sensitivity:
         f1: 8.0
         f3: 1.0
-        f2_dead_zone: 1.5
+        f2: 8.0
     confidence:
       type: ma_trend
       ma_trend_period: 26
@@ -225,6 +219,7 @@ presets:
     position:
       max_holdings: 6
       discretize_step: 0.05
+      concentration: 2.0
       rebalance_freq: W-FRI
       execution_timing: same_close
       score_band: 0
@@ -232,8 +227,6 @@ presets:
     factors:
       ema:
         period_weeks: 16
-      rsi:
-        period_days: 14
       volume_ratio:
         window_days: 20
       f6_rsi_thresh: 80
@@ -241,20 +234,19 @@ presets:
       f6_base_penalty: 0.15
   daily_aggressive_f6:
     label: 动能保护
-    description: '[对照组] 日调仓+F6加法惩罚。MA26/bear30%/方向确认/score_band3%。总收益+183.5%/年化+36.6%/MDD-13.2%/Calmar=2.78/Sharpe=1.73/佣金2.01%（2023-01-01~2026-05-08）。保留此preset供F7
-      A/B对照。'
+    description: 日调仓，F1+F3+F6动能衰竭惩罚。MA趋势仓位控制。
     scoring:
       weights:
-        ema_deviation: 0.4
-        rsi_adaptive: 0.0
+        ema_deviation: 0.3
+        f2_daily_ma: 0.0
         volume_ratio: 0.55
         valuation: 0.0
-        exhaustion_penalty: 0.05
+        exhaustion_penalty: 0.15
       bias_bonus: 0
       sensitivity:
         f1: 8.0
         f3: 1.0
-        f2_dead_zone: 1.5
+        f2: 8.0
     confidence:
       type: ma_trend
       ma_trend_period: 26
@@ -264,38 +256,37 @@ presets:
     position:
       max_holdings: 6
       discretize_step: 0.05
+      concentration: 2.0
       rebalance_freq: daily
-      execution_timing: same_close
+      execution_timing: next_open
       score_band: 0.03
       commission_rate: 0.00026
     factors:
       ema:
         period_weeks: 16
-      rsi:
-        period_days: 14
       volume_ratio:
         window_days: 20
-      f6_rsi_thresh: 80
-      f6_drop_thresh: 0.025
+      f6_rsi_thresh: 65.0
+      f6_drop_thresh: 0.02
       f6_base_penalty: 0.15
   daily_aggressive:
     label: 波动探测
-    description: '[实验组] 日调仓+F7对数收益偏离因子。F7参数经全量扫描优化(w10/k3.0/t11/w0.15)。3年期(2023-05-13~2026-05-13)回测:总收益+229.04%/年化+48.79%/MDD-11.99%/Sharpe=2.03/Sortino=2.99。vs
-      F6(+196.08%):总收益+33%,MDD优化-2.66%,Sharpe+0.20。'
+    description: 日调仓，F2日线MA偏离+F3自归一化量比+F7对数收益偏离。MA趋势仓位控制。
     scoring:
       weights:
-        ema_deviation: 0.35
-        rsi_adaptive: 0.0
-        volume_ratio: 0.5
+        ema_deviation: 0.0
+        f2_daily_ma: 0.45
+        volume_ratio: 0.45
         valuation: 0.0
         exhaustion_penalty: 0.0
-        log_return_deviation: 0.15
-      bias_bonus: 0
+        log_return_deviation: 0.1
+      bias_bonus: 0.0
       sensitivity:
         f1: 8.0
-        f3: 1.0
-        f7_t: 7.0
-        f7_k: 3.0
+        f2: 8.0
+        f3: 1.5
+        f7_t: 15.0
+        f7_k: 3.5
     confidence:
       type: ma_trend
       ma_trend_period: 26
@@ -305,21 +296,27 @@ presets:
       dead_zone: 25
       full_zone: 65
       regime_base:
-        bull_trend: 0.9
-        choppy_range: 0.55
-        bear_trend: 0.25
+        bull_trend: 0.95
+        choppy_range: 0.75
+        bear_trend: 0.35
+      regime_window: 8
+      regime_threshold: 0.03
+      breadth_weight: 0.2
+      clarity_threshold: 0.03
+      dd_sensitivity: 0.2
     position:
       max_holdings: 6
       discretize_step: 0.05
+      concentration: 0.0
       rebalance_freq: daily
-      execution_timing: same_close
+      execution_timing: next_open
       score_band: 0.03
       commission_rate: 0.00026
+      max_holdings_special: 8
+      weighting: arithmetic
     factors:
       ema:
-        period_weeks: 20
-      rsi:
-        period_days: 14
+        period_weeks: 5
       volume_ratio:
         window_days: 20
       f6_rsi_thresh: 80.0
@@ -327,3 +324,59 @@ presets:
       f6_base_penalty: 0.15
       log_return_deviation:
         window_days: 20
+  custom:
+    label: 自定义策略
+    description: 用户自定义策略。
+    scoring:
+      weights:
+        ema_deviation: 0.0
+        f2_daily_ma: 0.45
+        volume_ratio: 0.45
+        valuation: 0.0
+        exhaustion_penalty: 0.0
+        log_return_deviation: 0.1
+      bias_bonus: 0.0
+      sensitivity:
+        f1: 8.0
+        f2: 3.5
+        f3: 1.08
+        f7_t: 11.0
+        f7_k: 1.5
+    confidence:
+      type: ma_trend
+      ma_trend_period: 26
+      ma_bull_pos: 1.0
+      ma_bear_pos: 0.3
+      ma_direction_confirm: true
+      dead_zone: 25
+      full_zone: 65
+      regime_base:
+        bull_trend: 0.95
+        choppy_range: 0.75
+        bear_trend: 0.35
+      regime_window: 8
+      regime_threshold: 0.03
+      breadth_weight: 0.2
+      clarity_threshold: 0.03
+      dd_sensitivity: 0.2
+    position:
+      max_holdings: 6
+      discretize_step: 0.05
+      concentration: 2.6
+      rebalance_freq: daily
+      execution_timing: next_open
+      score_band: 0.09
+      commission_rate: 0.00026
+      max_holdings_special: 8
+      weighting: arithmetic
+    factors:
+      ema:
+        period_weeks: 5
+      volume_ratio:
+        window_days: 35
+      f6_rsi_thresh: 80.0
+      f6_drop_thresh: 0.025
+      f6_base_penalty: 0.15
+      log_return_deviation:
+        window_days: 15
+      f2_ma_period: 30

@@ -7,7 +7,7 @@ REQ-177 M1.1: 三因子计算模块
 因子：
   F1: 周线 EMA 偏离度 = (close - EMA_N) / EMA_N
   F2: 日线 RSI(14) 趋势自适应变换
-  F3: 方向性量比 = mean(上涨日volume) / mean(下跌日volume), N日滚动
+  F3: 自归一化量比 = vol_z = volume/60d_avg → mean(up_vol_z)/mean(down_vol_z), N日滚动
 
 评分管线（连续映射版）：
   原始因子 → 连续映射函数 → [0, 1] 绝对分数 → 加权合成 → 信心函数 → 仓位分配
@@ -49,63 +49,17 @@ def factor_ema_deviation(weekly_df: pd.DataFrame, ema_period: int = 16) -> float
     return deviation
 
 
-def factor_rsi_adaptive(daily_df: pd.DataFrame, rsi_period: int = 14,
-                        weekly_df: pd.DataFrame = None, ema_period: int = 20,
-                        rsi_window: int = 20) -> float:
+def f2_daily_ma_deviation(daily_close: np.ndarray, period_days: int) -> float:
     """
-    F2: RSI 双通道异动检测器
-
-    通道 1（相对）: z-score vs 近期基线
-      - 检测"RSI 突然偏离自身近期均值"
-      - 问题：持续趋势中，均值跟随 RSI → z ≈ 0 → 沉默
-
-    通道 2（绝对）: RSI 距中性 50 的距离
-      - 检测"RSI 处于绝对极端水平，无论趋势如何"
-      - 缩放: ÷15（RSI=35 → -1.0, RSI=20 → -2.0, RSI=65 → +1.0, RSI=80 → +2.0）
-      - 比 z-score 更保守，避免牛市中 RSI=65 的误触发
-
-    合成: 取两个通道中绝对值更大的信号。
-      - 趋势中 z≈0 但 RSI 极端时，绝对通道接管
-      - 突然异动但绝对水平不高时，相对通道主导
-
-    输出: z-like score, 含义与 map_f2 一致:
-      << 0 → 超卖异动 → 博反弹（映射高分）
-      >> 0 → 超买异动 → 逃顶（映射低分）
-      ≈ 0 → 无显著异动 → 中性（死区内不投票）
-
-    注意：weekly_df / ema_period 参数保留以维持调用兼容，新逻辑不再使用它们
+    F2: 日线 MA 偏离度
+    (close - MA) / MA × 100
     """
-    if daily_df is None or len(daily_df) < rsi_period + rsi_window + 5:
+    if len(daily_close) < period_days:
         return np.nan
-
-    close = daily_df["close"].astype(float)
-    rsi_series = calc_rsi(close, rsi_period)
-    current_rsi = rsi_series.iloc[-1]
-
-    if np.isnan(current_rsi):
+    ma = daily_close[-period_days:].mean()
+    if ma == 0:
         return np.nan
-
-    # 通道 1: 相对 z-score（原有设计）
-    recent = rsi_series.iloc[-rsi_window:].dropna()
-    if len(recent) < max(5, rsi_window // 2):
-        return np.nan
-    rsi_mean = recent.mean()
-    rsi_std = recent.std()
-    sigma_floor = 5.0
-    sigma = max(rsi_std, sigma_floor) if not np.isnan(rsi_std) else sigma_floor
-    rel_z = (current_rsi - rsi_mean) / sigma
-
-    # 通道 2: 绝对 RSI 位置
-    # ÷15 缩放: RSI=35 → -1.0, RSI=65 → +1.0（dead_zone=1.0 时刚好在边界）
-    abs_z = (current_rsi - 50.0) / 15.0
-
-    # 合成: 取更极端的信号
-    if abs(rel_z) >= abs(abs_z):
-        composite = rel_z
-    else:
-        composite = abs_z
-
-    return float(np.clip(composite, -3.0, 3.0))
+    return float((daily_close[-1] - ma) / ma * 100)
 
 
 def factor_volume_ratio(daily_df: pd.DataFrame, window: int = 20) -> float:
@@ -137,6 +91,58 @@ def factor_volume_ratio(daily_df: pd.DataFrame, window: int = 20) -> float:
 
     ratio = up_vol / down_vol
     return ratio
+
+
+def factor_volume_ratio_normalized(daily_df: pd.DataFrame, window: int = 20,
+                                   norm_window: int = 60) -> float:
+    """
+    F3-N (自归一化量比): 先用自身历史均值校准每日成交量，再做方向性量比。
+
+    vol_z[t] = volume[t] / mean(volume[t-norm_window : t])
+    F3-N = mean(vol_z on up days) / mean(vol_z on down days)  over `window`
+
+    相比原 F3:
+    - 停牌日量低 → vol_z < 1 → 被自身历史校准，不影响跨 ETF 比较
+    - 热度日量大 → vol_z > 1 → 信号保留但不靠绝对量霸榜
+    - 正常 ETF → vol_z ≈ 1.0 → F3-N ≈ 原 F3
+
+    返回原始比值（后续截面标准化）。若历史不足 norm_window+window 天则返回 NaN。
+    """
+    min_days = norm_window + window + 1
+    if daily_df is None or len(daily_df) < min_days:
+        return np.nan
+
+    vol_col = "volume"
+    if "amount" in daily_df.columns:
+        vol_col = "amount"
+
+    df = daily_df.tail(min_days).copy()
+    vol = df[vol_col].astype(float)
+    close = df["close"].astype(float)
+
+    # Rolling mean of trailing `norm_window` volume (excludes current day)
+    vol_ma = vol.rolling(window=norm_window, min_periods=norm_window).mean().shift(1)
+    vol_z = vol / vol_ma  # NaN where vol_ma is NaN
+
+    chg = close.pct_change()
+
+    # Only use the last `window` days for ratio computation
+    vol_z = vol_z.iloc[-window:]
+    chg = chg.iloc[-window:]
+
+    up_mask = chg > 0
+    down_mask = chg < 0
+
+    up_z = vol_z[up_mask]
+    down_z = vol_z[down_mask]
+
+    if len(down_z) == 0 or down_z.mean() == 0:
+        return 3.0 if len(up_z) > 0 else 1.0
+
+    up_avg = up_z.mean() if len(up_z) > 0 else 0
+    down_avg = down_z.mean()
+
+    return up_avg / down_avg
 
 
 def factor_residual_momentum(weekly_df: pd.DataFrame,
@@ -278,7 +284,7 @@ def factor_exhaustion_penalty(daily_df: pd.DataFrame,
 
 
 def compute_all_factors(daily_df: pd.DataFrame, weekly_df: pd.DataFrame,
-                        ema_period: int = 20, rsi_period: int = 14,
+                        ema_period: int = 20,
                         vol_window: int = 20,
                         hs300_weekly: pd.DataFrame = None,
                         residual_reg_window: int = 12,
@@ -292,17 +298,19 @@ def compute_all_factors(daily_df: pd.DataFrame, weekly_df: pd.DataFrame,
                         f7_sigma_floor: float = 0.01) -> dict:
     """
     计算一支 ETF 的全部因子 (F1-F7)
-    返回 dict: {f1_ema_dev, f2_rsi_adaptive, f3_volume_ratio, f5_volatility_z,
-                f1_residual_mom, f6_exhaustion_penalty, f7_log_return_dev}
+    返回 dict: {f1_ema_dev, f2_daily_ma, f3_volume_ratio (自归一化),
+                f5_volatility_z, f1_residual_mom, f6_exhaustion_penalty, f7_log_return_dev}
+    F2 为日线 MA 偏离度（占位，由 _precompute_factors 在实际回测中提供）。
     """
     f1 = factor_ema_deviation(weekly_df, ema_period)
-    f2 = factor_rsi_adaptive(daily_df, rsi_period, weekly_df, ema_period)
-    f3 = factor_volume_ratio(daily_df, vol_window)
+    f3 = factor_volume_ratio_normalized(daily_df, vol_window, norm_window=60)
+    if np.isnan(f3):
+        f3 = factor_volume_ratio(daily_df, vol_window)
     f5 = factor_volatility_zscore(daily_df, vol_window=20, lookback=60)
     f1r = factor_residual_momentum(weekly_df, hs300_weekly,
                                    reg_window=residual_reg_window,
                                    mom_window=residual_mom_window)
-    f6 = factor_exhaustion_penalty(daily_df, rsi_period=rsi_period,
+    f6 = factor_exhaustion_penalty(daily_df, rsi_period=14,
                                    vol_window=vol_window,
                                    rsi_thresh=f6_rsi_thresh,
                                    drop_thresh=f6_drop_thresh,
@@ -311,9 +319,11 @@ def compute_all_factors(daily_df: pd.DataFrame, weekly_df: pd.DataFrame,
                                       lookback=f7_lookback,
                                       min_days=f7_min_days,
                                       sigma_floor=f7_sigma_floor)
+    # F2 daily MA: 占位，实际回测由 _precompute_factors 提供
+    f2 = 50.0 if len(daily_df) >= (ema_period * 5) else np.nan
     return {
         "f1_ema_dev": f1,
-        "f2_rsi_adaptive": f2,
+        "f2_daily_ma": f2,
         "f3_volume_ratio": f3,
         "f5_volatility_z": f5,
         "f1_residual_mom": f1r,
@@ -379,40 +389,6 @@ def map_f1_residual(residual_mom_pct: float, sensitivity: float = 5.0) -> float:
     if np.isnan(residual_mom_pct):
         return np.nan
     return 1.0 / (1.0 + math.exp(-residual_mom_pct / sensitivity))
-
-
-def map_f2(rsi_z: float, dead_zone: float = 1.0) -> float:
-    """
-    F2 RSI 异动 → 死区+饱和映射
-
-    rsi_z: RSI 偏离 z-score（来自 factor_rsi_adaptive）
-    dead_zone: 死区半宽，|z| < dead_zone 时输出 0.5（中性，不投票）
-
-    特性：
-      |z| < dead_zone   → 0.5 (中性，让 F1/F4 主导)
-      z << -dead_zone   → 趋向 1.0 (博反弹，鼓励买入)
-      z >>  dead_zone   → 趋向 0.0 (逃顶，鼓励卖出)
-
-    饱和速度：z 超过死区后 1 个 sigma → 输出约 0.85/0.15；2 sigma → 约 0.94/0.06
-
-    设计意图：让 F2 在 ETF "自身热度涌现" 时输出极值，平时沉默。
-    """
-    if np.isnan(rsi_z):
-        return np.nan
-
-    if abs(rsi_z) < dead_zone:
-        return 0.5
-
-    # 死区外的"超出量"
-    overshoot = abs(rsi_z) - dead_zone
-
-    # 用 1 - exp(-x) 饱和函数，决定偏离 0.5 的幅度
-    # overshoot=1.0 → magnitude≈0.63；overshoot=2.0 → magnitude≈0.86
-    magnitude = 1.0 - math.exp(-overshoot)
-
-    if rsi_z < 0:
-        return 0.5 + 0.5 * magnitude  # 博反弹，向 1.0 趋近
-    return 0.5 - 0.5 * magnitude      # 逃顶，向 0.0 趋近
 
 
 def map_f3(ratio: float, sensitivity: float = 1.0) -> float:
@@ -496,8 +472,8 @@ def composite_score(factors_df: pd.DataFrame, weights: dict,
                     regime: str = None) -> pd.Series:
     """
     合成综合分（连续映射版）
-    factors_df: index=ETF代码, columns=[f1_ema_dev, f2_rsi_adaptive, f3_volume_ratio, ...]
-    weights: {ema_deviation: 0.30, rsi_adaptive: 0.25, volume_ratio: 0.30, ...}
+    factors_df: index=ETF代码, columns=[f1_ema_dev, f2_daily_ma, f3_volume_ratio, ...]
+    weights: {ema_deviation: 0.30, f2_daily_ma: 0.0, volume_ratio: 0.30, ...}
     bias_map: {code: bonus} 如 {"512400": 0.04, "513120": 0.04, "512070": 0.04}
     sensitivity: {f1: 8.0, f3: 1.5, f7: 1.0} 映射函数参数
     norm_method: "continuous"（默认，使用映射函数）或 "percentile_rank"（旧方法，已弃用）
@@ -512,11 +488,11 @@ def composite_score(factors_df: pd.DataFrame, weights: dict,
 
     if norm_method == "continuous":
         mapped_f1 = factors_df["f1_ema_dev"].apply(lambda v: map_f1(v, f1_sens))
-        mapped_f2 = factors_df["f2_rsi_adaptive"].apply(map_f2)
+        mapped_f2 = factors_df["f2_daily_ma"].apply(lambda v: map_f1(v, sensitivity.get("f2", 8.0)))
         mapped_f3 = factors_df["f3_volume_ratio"].apply(lambda v: map_f3(v, f3_sens))
 
         w1 = weights.get("ema_deviation", 0.40)
-        w2 = weights.get("rsi_adaptive", 0.00)
+        w2 = weights.get("f2_daily_ma", 0.00)
         w3 = weights.get("volume_ratio", 0.55)
 
         score = mapped_f1 * w1 + mapped_f2 * w2 + mapped_f3 * w3
@@ -546,11 +522,11 @@ def composite_score(factors_df: pd.DataFrame, weights: dict,
     else:
         # 旧方法：截面标准化（已弃用，保留兼容）
         norm_f1 = normalize_cross_section(factors_df["f1_ema_dev"], norm_method) / 100.0
-        norm_f2 = normalize_cross_section(factors_df["f2_rsi_adaptive"], norm_method) / 100.0
+        norm_f2 = normalize_cross_section(factors_df["f2_daily_ma"], norm_method) / 100.0
         norm_f3 = normalize_cross_section(factors_df["f3_volume_ratio"], norm_method) / 100.0
 
         w1 = weights.get("ema_deviation", 0.40)
-        w2 = weights.get("rsi_adaptive", 0.00)
+        w2 = weights.get("f2_daily_ma", 0.00)
         w3 = weights.get("volume_ratio", 0.55)
 
         score = norm_f1 * w1 + norm_f2 * w2 + norm_f3 * w3
@@ -865,7 +841,7 @@ def map_f7(z_score: float, t: float = 7.0, k: float = 3.0) -> float:
     F7 Z-score -> 分段映射：|Z|≤k 幂函数，|Z|>k 切线线性外延。
 
     z_score: 对数收益偏离 Z-score
-    t: 奇数幂次（1,3,5,...,25），控制两端加速程度，默认 7
+    t: 幂次（≥1），控制两端加速程度，默认 7
     k: 标准差倍数阈值 / 切线切换点，默认 3.0
 
     特性（t=11, k=3）：

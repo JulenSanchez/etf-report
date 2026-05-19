@@ -1,21 +1,21 @@
-# ETF Report 安全发布规程（公开仓）
+# ETF Report 安全发布规程
 
 ## 定位
 
 1. **唯一门禁**：发布前到底要做什么，只由本文定义。
 2. **单一事实源**：`PLAN.md` 与 `.codebuddy/rules/etf-report.mdc` 只能引用本文，不能再各自维护一套并列的发布前检查。
-3. **公开仓治理文档**：本文位于技能根目录 `RELEASE_RUNBOOK.md`，随仓库公开。治理文件（`plans/`、`CONTRIBUTING.md` 等）已在公开仓中跟踪。
+3. **治理文档**：本文位于技能根目录 `runbooks/RELEASE_RUNBOOK.md`，随仓库提交。治理文件（`plans/`、`CONTRIBUTING.md` 等）均纳入版本控制。
 
 ## 提交边界速查
 
 | 类别 | 典型路径 | 是否可提交 | 原因 |
 |------|----------|------------|------|
-| 公开稳定文档 | `README.md`、`SKILL.md`、`WORKFLOW.md`、`DESIGN.md`、`docs/AKSHARE_*`、`docs/DAILY_UPDATE_PARAMETERS.md`、`docs/ETF_REPLACEMENT_CHECKLIST.md`、`docs/HEALTH_CHECK_*` | ✅ 可以 | 对外用户可见，且内容稳定、可复用 |
-| 实现与公开模板 | `scripts/`、`tests/`、`requirements.txt`、`config/*.example.yaml`、`config/holdings.yaml`、根目录 `index.html` | ✅ 按需 | 属于实际功能、测试、公开模板或发布产物 |
-| 治理文档 | `CONTRIBUTING.md`、`PLAN.md`、`plans/`、`statusbar.config.md`、`RELEASE_RUNBOOK.md`、`AUDIT_RUNBOOK.md`、`runbooks/`、`research/` | ✅ 可以 | 公开仓策略：治理文件纳入版本控制，便于跨机器同步与协作追溯 |
-| 运行时配置 | `config/config.yaml` | ✅ 可以 | 已移除本地绝对路径，内容可公开；仅 `repo_root` 为空字符串 |
+| 稳定文档 | `README.md`、`SKILL.md`、`WORKFLOW.md`、`DESIGN.md`、`docs/` 下稳定补充文档 | ✅ 可以 | 对外用户可见，且内容稳定、可复用 |
+| 实现与模板 | `scripts/`、`tests/`、`requirements.txt`、`config/*.example.yaml`、`config/holdings.yaml`、根目录 `index.html` | ✅ 按需 | 属于实际功能、测试、公开模板或发布产物 |
+| 治理文档 | `CONTRIBUTING.md`、`PLAN.md`、`plans/`、`statusbar.config.md`、`runbooks/` | ✅ 可以 | 治理文件纳入版本控制，便于跨机器同步与协作追溯 |
+| 运行时配置 | `config/config.yaml` | ✅ 可以 | 已移除本地绝对路径，内容可公开 |
 | 敏感配置 | `config/secrets.yaml` | ❌ 不可 | 含 API 密钥等敏感信息，.gitignore 必须覆盖 |
-| 运行产物与缓存 | `data/`、`logs/`、`_working/`、`.backup/`、`outputs/` | ❌ 不可 | 运行缓存、日志、临时输出或备份，本地生成即可 |
+| 运行产物与缓存 | `data/`、`logs/`、`_working/`、`.backup/`、`outputs/`、`research/` | ❌ 不可 | 运行缓存、日志、临时输出或备份，本地生成即可 |
 
 ### `docs/` 准入标准
 
@@ -59,9 +59,9 @@
 - [ ] 运行 `python scripts/audit_project.py --full --report-only`
 - [ ] 若审计报告有异常，先修复后再继续
 
-### Phase 2: 公开仓安全审查
+### Phase 2: 安全审查
 
-在暂存前，先审视"哪些内容绝不能进公开仓"：
+在暂存前，先审视"哪些内容绝不能提交"：
 
 - [ ] 回读 `git diff`
 - [ ] 回读 `git diff --stat`
@@ -73,7 +73,7 @@
 
 ### Phase 3: 敏感文件边界核对
 
-确认公开仓中不存在敏感文件：
+确认仓库中不存在敏感文件：
 
 - [ ] `.gitignore` 已覆盖 `config/secrets.yaml`、运行数据、日志、临时目录
 - [ ] 运行 `git ls-files config/secrets.yaml`，应返回空结果

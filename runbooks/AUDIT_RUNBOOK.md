@@ -1,8 +1,8 @@
-# 项目审计规程（本地私有）
+# 项目审计规程
 
-**版本**: 1.1  
-**最后更新**: 2026-04-22  
-**目的**: 定期梳理项目结构、检查敏感信息、验证文档一致性，并守住公开仓边界
+**版本**: 1.2
+**最后更新**: 2026-05-18
+**目的**: 定期梳理项目结构、检查敏感信息、验证文档一致性，并守住仓库边界
 
 ---
 
@@ -10,7 +10,6 @@
 
 - 本文是 `python scripts/audit_project.py` 的**执行细则**。
 - 发布前"必须不要漏什么"由 `RELEASE_RUNBOOK.md` 管；本文负责解释"审计到底查什么"。
-- 本文属于**本地治理文档**，不进入公开仓。
 
 ## 核心审计模块
 
@@ -58,12 +57,12 @@
 
 ### 模块 4：Git 边界审计
 
-**目的**：优化 `.gitignore`，确保不会意外提交本地治理面或运行面内容。
+**目的**：验证 `.gitignore` 正确覆盖运行产物和敏感文件，确保不会意外提交不应跟踪的内容。
 
 **检查项**：
-1. `.gitignore` 是否覆盖 `PLAN.md`、`plans/`、`statusbar.config.md`、`CONTRIBUTING.md`、`RELEASE_RUNBOOK.md`、`AUDIT_RUNBOOK.md`
-2. `data/`、`logs/`、`_working/`、`.backup/`、`outputs/` 是否被忽略
-3. `git ls-files` 是否错误跟踪了禁止提交对象
+1. `.gitignore` 是否覆盖 `data/`、`logs/`、`_working/`、`.backup/`、`outputs/`、`research/`、`config/secrets.yaml`、`config/quant_user_overrides.yaml`
+2. 治理文件（`CONTRIBUTING.md`、`PLAN.md`、`plans/`、`statusbar.config.md`、`runbooks/`）是否已合法纳入 Git 跟踪
+3. `git ls-files config/secrets.yaml` 是否返回空结果
 4. 是否有大文件、缓存或一次性产物被意外纳入版本控制
 5. `git status` 是否只呈现预期改动
 
@@ -125,9 +124,10 @@ python scripts/audit_project.py --git-config
 
 ### Git 边界通过标准
 
-- `git ls-files PLAN.md plans statusbar.config.md CONTRIBUTING.md RELEASE_RUNBOOK.md AUDIT_RUNBOOK.md config/config.yaml config/secrets.yaml` 返回空结果
-- `.gitignore` 能覆盖所有本地治理面与运行面对象
-- `git status` 中没有意外新增的私有文档或运行产物
+- `git ls-files config/secrets.yaml` 返回空结果（敏感文件绝不跟踪）
+- `git ls-files CONTRIBUTING.md PLAN.md plans/Board.md statusbar.config.md runbooks/` 返回正常跟踪结果（治理文件已纳入版本控制）
+- `.gitignore` 覆盖所有运行产物目录和敏感配置
+- `git status` 中没有意外新增的运行产物或敏感文件
 
 ---
 
@@ -143,9 +143,9 @@ python scripts/audit_project.py --git-config
 ### 自动化输出要求
 
 自动化结果至少应回答：
-1. 本周是否发现新的公开仓泄露风险
+1. 本周是否发现新的敏感信息泄露风险
 2. `docs/` 是否混入了不该留在那里的文档
-3. `.gitignore` / `git ls-files` 是否仍守住本地治理边界
+3. `.gitignore` / `git ls-files` 是否守住运行产物与敏感文件边界
 4. 哪些文件需要人工跟进
 
 ---

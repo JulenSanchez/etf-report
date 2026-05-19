@@ -8,12 +8,6 @@ provider:
 
 # 需求管理守卫 — ETF 报告技能
 
-> ⛔ **P0 硬约束（任何情况下不得绕过）**
-> - **Claude 侧禁止一切发布动作**：`--publish`、`git push`、企微通知、deployer.py 均不可执行
-> - 发布必须在 **CodeBuddy 侧**完成；Claude 侧只做本地开发与预览
-> - 违反此约束将导致未验证版本直推生产、企微群污染、日更节奏错乱
-> - 详见 `~/.codebuddy/rules/dual-ide-rhythm.md` §2
-
 ## 激活条件
 
 1. 用户提到/编辑的文件路径匹配：`etf-report/`（skill 根目录）
@@ -34,52 +28,12 @@ provider:
 本规则文件只负责 **ETF 报告技能自己的需求看板 / 版本 / Bug 守卫**，不再负责状态栏协议本身。
 
 当前分工：
-- 通用状态栏协议宿主：`.codebuddy/rules/statusbar-protocol.mdc`
-- `etf-report` 状态网络配置：`.codebuddy/skills/etf-report/statusbar.config.md`
-- `etf-report` 需求管理与版本治理：本文件
-- `runbooks/RELEASE_RUNBOOK.md`：发布前**唯一门禁**与唯一步骤事实源，定义发布前到底要做什么
-- `PLAN.md`：需求管理入口文件；不再重复维护发布前检查清单
+- `statusbar.config.md` — 状态网络配置
+- 本文件 — 需求管理与版本治理
+- `runbooks/RELEASE_RUNBOOK.md` — 发布前**唯一门禁**与唯一步骤事实源
+- `PLAN.md` — 需求管理入口文件，不再重复维护发布前检查清单
 
 ## 版本发布守卫
-
-### 0. 前置检查：IDE 端点判定（Claude ↔ CodeBuddy）
-
-本守卫文件通过 agent-sync 在 Claude 侧（`.codebuddy/rules/etf-report.md`）与 CodeBuddy 侧（`.codebuddy/rules/etf-report.mdc`）两端同时存在。但 **发布动作的合法端只有 CodeBuddy**。
-
-#### 🧠 助记模型：工坊 / 出版社
-
-> **Claude 侧 = 开发工坊 + 本地展厅**
-> **CodeBuddy 侧 = 出版社 + 发行部**
->
-> 工坊里打磨样品，样品只给自己看（本地 `file://` 预览）；
-> 月末把样品打包送到出版社（`agent-sync merge-all`）；
-> 出版社走发行流程把它送到读者面前（`--publish` → 企微 / GitHub Pages）。
-
-由此可以秒答常见问题：
-
-- "Claude 里能跑 `--publish` 吗？" → 工坊不做发行，不能
-- "Claude 里能改 `index.html` 吗？" → 可以，这是样品，不碰对外出版物
-- "两端 `index.html` 会不会打架？" → 不会，一份在工坊、一份在出版社仓库，各自独立
-- "月末改完代码怎么出版？" → 先 `agent-sync merge-all` 送到出版社，再由出版社走发布流程
-
-这个助记模型**只服务于 etf-report 心智对齐**，严格的行为约束仍以下方判定规则和 `~/.codebuddy/rules/dual-ide-rhythm.md` §2 为准。
-
-#### 判定规则
-
-进入下方任何"正常发布 / 已发布补救 / 发布阻塞"子模式前，AI 必须先做一次端点判定：
-
-- 若当前会话运行在 **Claude Code** ——
-  - 立即拒绝发布动作，引用 `~/.codebuddy/rules/dual-ide-rhythm.md` §2 的硬约束
-  - 明确告知用户："Claude 侧是开发沙箱，发布要到 CodeBuddy 会话里做"
-  - 提醒用户正确路径：先 `agent-sync merge-all`，再切 CodeBuddy 跑 `update_report.py --publish`
-  - **不进入**下面的 §1 / §2 / §3 子模式
-- 若当前会话运行在 **CodeBuddy** ——
-  - 正常进入下方发布守卫
-- 若当前 IDE 端点**无法判定** ——
-  - 主动向用户确认一次："你现在是在 Claude 还是 CodeBuddy 会话里？"
-  - 用户明确回答后再决定是否放行
-
-**理由**：两端共享同一份项目级规则（经 agent-sync 保证内容一致），但每端的合法动作集不同。项目级规则必须**自己知道**这个差异，不能依赖上层宏观规则被 AI 记得引用。
 
 ### 1. 正常发布模式
 
@@ -130,33 +84,6 @@ provider:
 2. 判断它是一次性轻任务、活跃 Bug、还是需要继续推进的新需求
 3. 若已进入持续跟踪，应补号登记后再继续
 4. 不要在版本治理未完成的情况下直接宣称"发布完成"
-
-### 典型发布场景示例
-
-```
-用户："发布"
-
-AI：[版本发布守卫启动]
-    ① 端点判定：当前为 CodeBuddy 侧 ✅，允许发布。
-
-    Phase 0 资格判定：
-    - Board.md done 区有 REQ-007「添加成分股涨跌幅列」✅
-    - bugs 区无 open/fixing 的 critical/major Bug ✅
-    → 具备发布资格，进入 Phase 1。
-
-    Phase 1 本地验证：
-    - 运行 python scripts/update_report.py → 正常生成 index.html ✅
-    - 审计 python scripts/audit_project.py --full --report-only → 无异常 ✅
-    → 进入 Phase 2。
-
-    [Phase 2~7 依次执行…]
-
-    Phase 8 发布后复核：
-    - git log -1：「feat: 成分股涨跌幅列 v1.3.0」✅
-    - Pages 已更新，企微通知已发送 ✅
-    → 版本治理收尾：Archive.md 新增 v1.3.0 记录，Board.md done 区已清空。
-    → v1.3.0 发布完成。
-```
 
 ## 出口守卫
 

@@ -1,38 +1,87 @@
-# Quant Research 归档
+# Quant Research — 治理框架
 
-> 按 REQ ID 组织的量化调研产出。每个子目录对应一个已完成的调研需求，内含报告 + 实验数据。
+三个常驻研究轨道，各自独立推进、独立可停。与需求看板（`plans/`）分离——需求看板管功能级 Bug/Feature，research 管持续探索。
 
-## 索引
+## 反馈三角
 
-| REQ | 标题 | 日期 | 核心发现 | 文件 |
-|-----|------|------|---------|------|
-| REQ-189 | 后视镜最优收益 | 2026-05-07 | 信息效率6.5%；周收益负自相关(-0.144)；反转(8.5%)>动量(3.4%)<<因子打分(25.4%) | `REQ-189/hindsight_research_report.md` `REQ-189/hindsight_full_results.json` `REQ-189/hindsight_results.json` `REQ-189/hindsight_weekly_top6_log.json` |
-| MA-TREND-OPT | MA Trend仓位参数优化 | 2026-05-08 | MA26/B100/B30/DirON Calmar 0.92→1.55, MDD -24%→-16%; Dir=ON是最大单因子; Bear 30%替代40%减回撤不牺牲收益 | `MA-TREND-OPT/report.md` `MA-TREND-OPT/coarse_checkpoint_440of490.json` |
+```
+        ┌─── pool/ ────┐
+        │  标的池选择     │
+        └──────┬─────────┘
+               │ 池子新增 ETF 类型 → 旧策略可能无法覆盖
+               │ 策略需要某类资产 → 池子缺少 → 触发补入
+               ▼
+      ┌── strategy/ ──┐
+      │  策略优化       │
+      └───────┬─────────┘
+              │ 参数推到边界 → 公式结构可能有问题
+              │ 公式改了 → 旧参数作废，重新扫
+              ▼
+        ┌── params/ ──┐
+        │  参数优化     │
+        └─────────────┘
+```
 
-## 目录结构
+## 触发机制
+
+| 观察到的现象 | 可能根因 | 触发动作 |
+|-------------|---------|---------|
+| 参数扫描最优值在可行域边界 | 因子/公式设计有问题 | → `strategy/`，重新审视 |
+| 策略在特定行情表现差 | 池子缺少对冲资产 | → `pool/`，候选新 ETF |
+| 池子扩容后基线回测退化 | 旧参数在新池子失效 | → `params/`，重新扫 |
+| 交叉验证结论矛盾 | 评分公式依赖特定环境 | → `strategy/` + `params/` |
+
+## 停止条件
+
+优化没有"完成"，但可以在以下任一条件满足时暂停：
+
+| 条件 | 动作 |
+|------|------|
+| 连续 N 次改进幅度 < 阈值 | 搁置，标记 "diminishing returns" |
+| 最优参数在可行域内部（非边界） | 结构合理，暂时稳定 |
+| 触发了跨轨审视 | 转入另一轨道，本轨暂停 |
+| 时间/精力/兴趣转移 | 直接停——TODO 记录当前状态即可恢复 |
+
+## 并行规则
+
+- 三个轨道各自独立，互不阻塞
+- 同一轨道内可开多支并行（如 `strategy/position-sizing/` + `strategy/new-factor/`）
+- **Promotion 只按基线对比，不按"谁先开始"排队**
+
+## Promotion 闸门
+
+1. 新配置在 1Y/3Y 上跑基线回测
+2. 不低于当前生产配置 → 直接 promotion
+3. 有退化 → 不阻塞升级，但写 trigger 到对应轨道的 TODO
+4. 在轨道 README 的 "Applied" 段记录：日期、变更、基线数据
+
+## 目录公约
 
 ```
 research/
-├── README.md          ← 本文件（索引）
-├── REQ-189/           ← 后视镜最优收益调研
-│   ├── hindsight_research_report.md   ← 完整报告
-│   ├── hindsight_full_results.json    ← 全变体×3时段数值
-│   ├── hindsight_results.json         ← 汇总结果
-│   └── hindsight_weekly_top6_log.json ← 周频Top6组合日志
-├── MA-TREND-OPT/       ← MA Trend仓位参数优化
-│   ├── report.md                      ← 完整报告
-│   ├── coarse_checkpoint_440of490.json ← 440个粗扫结果+checkpoint
-│   ├── v1_run_log.txt                 ← v1运行日志
-│   ├── v1_nohup_output.txt            ← v1 nohup日志
-│   └── v2_nohup_output.txt            ← v2 nohup日志
-└── REQ-XXX/           ← 未来调研（按此模式扩展）
-    ├── report.md
-    └── data.json
+├── README.md           ← 本文件（治理框架）
+├── pool/               ← 标的池选择
+│   ├── README.md       ← 当前池子、候选列表、DEAD_ENDS
+│   └── ...
+├── strategy/           ← 策略优化
+│   ├── README.md       ← 当前策略、历史探索、DEAD_ENDS
+│   ├── MA-TREND-OPT/   ← MA Trend 仓位参数优化 (2026-05)
+│   ├── REQ-189/        ← 后视镜最优收益 (2026-05)
+│   └── ...
+├── params/             ← 参数优化
+│   ├── README.md       ← 当前最优参数、扫描历史、DEAD_ENDS
+│   ├── F7-optimization/        ← F7 因子历史优化
+│   ├── F7F6-joint-optimization/ ← F7+F6 联合优化 (2026-05)
+│   └── ...
+└── experiment_results.json  ← 早期实验汇总（待归入轨道）
 ```
 
-## 约定
+## 与需求看板的边界
 
-- 每个调研需求一个 `REQ-XXX/` 子目录
-- 报告文件以可读 markdown 为主，实验数据以 JSON 为主
-- 新增调研时更新本文件索引表
-- 对应的 `plans/REQ-XXX.md` 记录需求动机与结论摘要，`research/REQ-XXX/` 存放完整产出
+| | `plans/` (需求看板) | `research/` (本目录) |
+|------|------|------|
+| 追踪对象 | 功能/Bug/Feature | 持续优化/探索 |
+| 生命周期 | 有明确完成态 | 长期开放 |
+| 产出 | 代码变更 | 数据结论 + promotion |
+| Bug | ✅ 由需求看板接管 | ❌ research bug → 提 BUG 号 |
+| 文档 | REQ-XXX.md | README + 报告 + JSON |

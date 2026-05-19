@@ -488,7 +488,7 @@ def generate_quant_baseline_payload():
 
         preset_params = {
             "w1": int(weights.get("ema_deviation", 0.40) * 100),
-            "w2": int(weights.get("rsi_adaptive", 0) * 100),
+            "w2": int(weights.get("f2_daily_ma", 0) * 100),
             "w3": int(weights.get("volume_ratio", 0.60) * 100),
             "w4": int(weights.get("valuation", 0) * 100),
             "w6": int(weights.get("exhaustion_penalty", 5) * 100),
@@ -685,7 +685,7 @@ def generate_quant_baseline_payload():
             "scoring": {
                 "weights": {
                     "ema_deviation": preset_params.get("w1", 40) / 100.0,
-                    "rsi_adaptive": preset_params.get("w2", 0) / 100.0,
+                    "f2_daily_ma": preset_params.get("w2", 0) / 100.0,
                     "volume_ratio": preset_params.get("w3", 60) / 100.0,
                     "valuation": preset_params.get("w4", 0) / 100.0,
                 },

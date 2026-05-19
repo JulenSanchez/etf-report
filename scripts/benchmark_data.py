@@ -86,7 +86,7 @@ def build_ma_trend_cache(hs_daily, hs_weekly, period):
         d,
         w[["date", "above", "ma_rising"]],
         on="date",
-        direction="forward",
+        direction="backward",
         tolerance=pd.Timedelta(days=6),
     ).dropna(subset=["above"])
     date_keys = merged["date"].dt.strftime("%Y-%m-%d")

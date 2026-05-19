@@ -72,6 +72,60 @@ JSON Lines 格式，多级别（DEBUG/INFO/WARN/ERROR）。
 | 量化因子 | F1-F7 七因子 + 信心函数 | 覆盖趋势/动量/量价/估值/波动率/衰竭/对数收益 |
 | 资产池 | 34 支 ETF，按扇区分类 | 权益宽基 + 行业 + 跨境 + 红利，可配置扩展 |
 
+## 调仓执行模型 (2026-05-18)
+
+量化引擎在每轮调仓中执行以下工序。买卖逻辑分布在 backtest 第一 pass 和 NA V 第二 pass 中，两 pass 行为一致。
+
+### 阶段顺序
+
+```
+1. 全卖（掉出 Top-N）  → 回收现金
+2. 减仓（仍在 Top-N 但降权）→ 回收现金
+3. 加仓（仍在 Top-N 但增权）→ 消耗现金，最后一支吃残量
+```
+
+阶段 1 和 2 都卖出，先执行确保现金池最大化。阶段 3 买入。
+
+### 买入顺序
+
+买入按以下键升序排列（小者先，大者最后）：
+
+1. **目标仓位**（`target_position`，ASC）—— 小仓位先买
+2. **当日成交额**（`amount`，ASC）—— 同仓位下成交额小者先买
+
+最后一支（最大仓位 + 最大成交额）吸收残留现金，**上限为自身目标仓位**（`max(diff, 0)`），不破坏 MA 趋势仓位控制的现金缓冲区。
+
+### 买入量计算
+
+```python
+diff = target_value - current_value
+threshold = discretize_step * tradable_value * 0.5
+
+if is_last and cash > threshold:
+    buy_value = min(cash, max(diff, 0))   # 吸残量，不超自身目标
+elif diff > threshold:
+    buy_value = min(diff, cash)           # 不超过 diff
+else:
+    continue
+
+handshares = (buy_value - commission) / price
+```
+
+### 确定性保证
+
+不依赖 `set` 迭代顺序。买卖逻辑封装在 `_execute_rebalance()` 共用函数中，第一 pass（信号生成）和第二 pass（逐日净值）调用同一实现。
+
+### 不处理的场景（已评估，当前无影响）
+
+- **ETF 全天停牌**：全 40 支 ETF 上市以来无停牌事件。若未来出现，应跳过当日打分、冻结目标仓位、标记 HOLD
+- **份额拆分/折算**：数据源为后复权，价格连续无跳变。若切换不复权源，需在 `corporate_action_events.json` 登记事件后由 `data_cleaning.py` 清洗
+
+### 相关代码
+
+| 文件 | 范围 |
+|------|------|
+| `scripts/quant_backtest.py` | `_execute_rebalance()` 共用调仓函数 + `run_backtest()` 调用 |
+
 ## 后续演进
 
 - 实盘调仓信号生成器（盘后一键输出调仓指令）
