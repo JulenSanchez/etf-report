@@ -463,63 +463,64 @@ def _build_kline_replay_data(etf_name_map, start_date, end_date):
     return result
 
 
+def load_quant_preset_params(quant_config_path, preset="preset2"):
+    """Load a quant preset and convert it to Tuner parameter shape via quant_contract."""
+    import yaml
+    import quant_contract as qc
+
+    with open(quant_config_path, "r", encoding="utf-8") as f:
+        qcfg = yaml.safe_load(f)
+    p = qcfg.get("presets", {}).get(preset, {})
+    params = qc.preset_to_tuner_params(preset, p, qcfg.get("confidence", {}))
+    validation_error = qc.validate_tuner_params(params)
+    if validation_error:
+        raise ValueError(validation_error)
+    return params
+
+
+def default_quant_preset_params():
+    """Fallback params matching current preset2 defaults."""
+    return {
+        "w1": 0, "w2": 45, "w3": 45, "w4": 0, "w6": 0, "w7": 10, "bias": 0,
+        "conf_type": "ma_trend", "ma_trend_period": 26,
+        "ma_bull_pos": 1.0, "ma_bear_pos": 0.3, "ma_direction_confirm": True,
+        "max_holdings": 6, "disc_step": 0.05, "concentration": 0.0,
+        "rebalance_freq": "daily", "execution_timing": "same_close", "score_band": 3,
+        "ema_period": 5, "vol_window": 20,
+        "f1_sensitivity": 8.0, "f2_sensitivity": 8.0, "f3_sensitivity": 1.5,
+        "f7_t": 15.0, "f7_k": 3.5, "f7_window": 20, "f2_ma_period": 25,
+        "f6_rsi_thresh": 80.0, "f6_drop_thresh": 2.5, "f6_base_penalty": 0.15,
+    }
+
+
+def build_quant_payload_config_section(preset_params):
+    """Build yr1/yr3 payload config from the same contract used by Tuner /api/run."""
+    import quant_contract as qc
+
+    config_override = qc.tuner_params_to_config_override(preset_params)
+    return {
+        "yr1": config_override,
+        "yr3": json.loads(json.dumps(config_override)),
+    }
+
+
 def generate_quant_baseline_payload():
     """生成量化回测 payload（1yr + 3yr），从 YAML 读取策略参数，调用 tuner 真实回测接口。"""
     import urllib.request
     import urllib.error
-    import yaml
 
     os.makedirs(ASSETS_JS_DIR, exist_ok=True)
     payload_file = os.path.join(ASSETS_JS_DIR, "quant_payload.js")
 
-    # ── 从 YAML 读取 daily_aggressive preset 参数 ─────────────────
+    # ── 从 YAML 读取 preset1 参数 ─────────────────
     QUANT_CONFIG = os.path.join(SKILL_DIR, "config", "quant_universe.yaml")
     preset_params = {}
     try:
-        with open(QUANT_CONFIG, "r", encoding="utf-8") as f:
-            qcfg = yaml.safe_load(f)
-        p = qcfg.get("presets", {}).get("daily_aggressive", {})
-        scoring = p.get("scoring", {})
-        weights = scoring.get("weights", {})
-        sens = scoring.get("sensitivity", {})
-        conf = p.get("confidence", {})
-        pos = p.get("position", {})
-        factors = p.get("factors", {})
-
-        preset_params = {
-            "w1": int(weights.get("ema_deviation", 0.40) * 100),
-            "w2": int(weights.get("f2_daily_ma", 0) * 100),
-            "w3": int(weights.get("volume_ratio", 0.60) * 100),
-            "w4": int(weights.get("valuation", 0) * 100),
-            "w6": int(weights.get("exhaustion_penalty", 5) * 100),
-            "bias": scoring.get("bias_bonus", 0),
-            "conf_type": conf.get("type", "ma_trend"),
-            "ma_trend_period": conf.get("ma_trend_period", 20),
-            "ma_bull_pos": conf.get("ma_bull_pos", 1.0),
-            "ma_bear_pos": conf.get("ma_bear_pos", 0.4),
-            "ma_direction_confirm": conf.get("ma_direction_confirm", False),
-            "max_holdings": pos.get("max_holdings", 6),
-            "disc_step": int(pos.get("discretize_step", 0.05) * 100),
-            "rebalance_freq": pos.get("rebalance_freq", "W-FRI"),
-            "score_band": int(pos.get("score_band", 0) * 100),
-            "ema_period": factors.get("ema", {}).get("period_weeks", 16),
-            "rsi_period": factors.get("rsi", {}).get("period_days", 14),
-            "vol_window": factors.get("volume_ratio", {}).get("window_days", 20),
-            "f1_sensitivity": sens.get("f1", 8.0),
-            "f3_sensitivity": sens.get("f3", 1.0),
-            "f2_dead_zone": sens.get("f2_dead_zone", 1.5),
-        }
-        logger.info("从 YAML 读取 daily_aggressive preset 参数", {"params": {k: v for k, v in preset_params.items() if k != "start_date"}})
+        preset_params = load_quant_preset_params(QUANT_CONFIG, "preset1")
+        logger.info("从 YAML 读取 preset1 参数", {"params": {k: v for k, v in preset_params.items() if k != "start_date"}})
     except Exception as e:
         logger.warn("读取 quant_universe.yaml 失败，使用默认参数", {"error": str(e)})
-        preset_params = {
-            "w1": 40, "w2": 0, "w3": 55, "w4": 0, "w6": 5, "bias": 0,
-            "conf_type": "ma_trend", "ma_trend_period": 26,
-            "ma_bull_pos": 1.0, "ma_bear_pos": 0.3, "ma_direction_confirm": True,
-            "max_holdings": 6, "disc_step": 5, "rebalance_freq": "W-FRI", "score_band": 0,
-            "ema_period": 16, "rsi_period": 14, "vol_window": 20,
-            "f1_sensitivity": 8.0, "f3_sensitivity": 1.0, "f2_dead_zone": 1.5,
-        }
+        preset_params = default_quant_preset_params()
 
     # ── 调用 tuner 运行 1yr + 3yr 回测 ─────────────────────
     TUNER_URL = "http://localhost:5179/api/run"
@@ -594,6 +595,7 @@ def generate_quant_baseline_payload():
                 "scores": sig.get("scores", {}),
                 "top6": sig.get("topN", []),
                 "positions": sig.get("positions", {}),
+                "detail": sig.get("detail", {}),
                 "avgConfidence": sig.get("avgConfidence", 0) / 100.0,
                 "totalTarget": sig.get("totalPosition", 0) / 100.0,
                 "regime": sig.get("regime", ""),
@@ -630,6 +632,10 @@ def generate_quant_baseline_payload():
                 "sortino": summary.get("sortino", 0),
                 "calmar": summary.get("calmar", 0),
                 "winRate": summary.get("winRate", 0),
+                "payoffRatio": summary.get("payoffRatio", 0),
+                "avgWin": summary.get("avgWin", 0),
+                "avgLoss": summary.get("avgLoss", 0),
+                "tradeCount": summary.get("tradeCount", 0),
                 "monthlyWinRate": monthly_win_rate,
                 "bestMonth": max([m.get("ret", 0) for m in mr]) if mr else 0,
                 "worstMonth": min([m.get("ret", 0) for m in mr]) if mr else 0,
@@ -639,6 +645,7 @@ def generate_quant_baseline_payload():
                 "endDate": summary.get("endDate", ""),
                 "tradingDays": len(nav_dates),
                 "rebalanceCount": summary.get("rebalanceCount", len(signal_history)),
+                "rebalanceDays": summary.get("rebalanceDays", len(signal_history)),
                 "commissionPct": summary.get("commissionPct", 0),
                 "initialCapital": 1000000.0,
                 "finalNav": 1000000.0 * (1 + summary.get("totalReturn", 0) / 100)
@@ -678,39 +685,8 @@ def generate_quant_baseline_payload():
             "description": f"{s['startDate']} ~ {s['endDate']} | 年化 {s['annualReturn']:.1f}% | Calmar {s['calmar']:.2f}"
         }
 
-    # Build config section from preset_params
-    config_section = {}
-    if tpl_1yr or tpl_3yr:
-        config_section["yr1"] = {
-            "scoring": {
-                "weights": {
-                    "ema_deviation": preset_params.get("w1", 40) / 100.0,
-                    "f2_daily_ma": preset_params.get("w2", 0) / 100.0,
-                    "volume_ratio": preset_params.get("w3", 60) / 100.0,
-                    "valuation": preset_params.get("w4", 0) / 100.0,
-                },
-                "bias_bonus": float(preset_params.get("bias", 0)),
-            },
-            "confidence": {
-                "type": preset_params.get("conf_type", "ma_trend"),
-                "ma_trend_period": preset_params.get("ma_trend_period", 20),
-                "ma_bull_pos": preset_params.get("ma_bull_pos", 1.0),
-                "ma_bear_pos": preset_params.get("ma_bear_pos", 0.4),
-                "ma_direction_confirm": preset_params.get("ma_direction_confirm", False),
-            },
-            "position": {
-                "max_holdings": preset_params.get("max_holdings", 6),
-                "discretize_step": preset_params.get("disc_step", 5) / 100.0,
-                "rebalance_freq": preset_params.get("rebalance_freq", "W-FRI"),
-            },
-            "factors": {
-                "ema": {"period_weeks": preset_params.get("ema_period", 16)},
-                "rsi": {"period_days": preset_params.get("rsi_period", 14)},
-                "volume_ratio": {"window_days": preset_params.get("vol_window", 20)},
-            }
-        }
-        # yr3 config is the same params, just different time window
-        config_section["yr3"] = dict(config_section["yr1"])
+    # Build config section from the same contract used by Tuner /api/run.
+    config_section = build_quant_payload_config_section(preset_params) if (tpl_1yr or tpl_3yr) else {}
 
     etf_name_map = (bt_1yr or bt_3yr or {}).get("etfNameMap", {})
 
@@ -726,7 +702,7 @@ def generate_quant_baseline_payload():
         "klineReplay": kline_replay,
     }
 
-    content = '// Auto-generated by update_report.py\n// Strategy: daily_aggressive (from quant_universe.yaml)\n// Generated: ' + datetime.now().isoformat() + '\nwindow.__QUANT_RUNTIME__ = ' + json.dumps(payload, ensure_ascii=False, indent=2) + ';\n'
+    content = '// Auto-generated by update_report.py\n// Strategy: preset1 (from quant_universe.yaml)\n// Generated: ' + datetime.now().isoformat() + '\nwindow.__QUANT_RUNTIME__ = ' + json.dumps(payload, ensure_ascii=False, indent=2) + ';\n'
     with open(payload_file, 'w', encoding='utf-8') as f:
         f.write(content)
     logger.info("量化回测载荷已写入", {

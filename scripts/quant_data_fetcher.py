@@ -53,6 +53,7 @@ def _latest_allowed_date() -> str:
 SKILL_DIR = Path(__file__).resolve().parent.parent
 CONFIG_PATH = SKILL_DIR / "config" / "quant_universe.yaml"
 DATA_DIR = SKILL_DIR / "data" / "quant"
+FRESH_MARKER = DATA_DIR / ".fresh_today"
 
 # Tencent Finance K-line API
 TX_KLINE_URL = "https://web.ifzq.gtimg.cn/appstock/app/fqkline/get"
@@ -312,6 +313,11 @@ def update_single(etf: dict, full: bool = False, end_date: str = None):
         save_csv(df_weekly, weekly_path)
         return len(df_daily), len(df_weekly), "init"
 
+    # Freshness check: if CSV already has today's (or yesterday's) data, skip
+    last_dt = datetime.strptime(last_daily, "%Y-%m-%d").date()
+    if (datetime.now().date() - last_dt).days <= 1:
+        return 0, 0, "fresh"
+
     # Incremental: only fetch daily rows after last_date, then rebuild weekly from local daily.
     # Rebuilding avoids Tencent weekly lag during an unfinished trading week.
     df_daily = fetch_etf_kline(code, market, "daily", start_date=last_daily, end_date=end_date)
@@ -410,7 +416,18 @@ def main():
         mode_label = "incremental"
     print(f"=== ETF K-line fetch ({mode_label}) · {len(universe)} ETFs ===\n")
 
-    ok, fail = 0, 0
+    # Global freshness check: skip entire loop if already updated today
+    if not args.full and not patch_mode and FRESH_MARKER.exists():
+        try:
+            marker_date = FRESH_MARKER.read_text().strip()
+            if marker_date == datetime.now().strftime("%Y-%m-%d"):
+                print(f"  All {len(universe)} ETFs already fresh ({marker_date}), skipping.\n")
+                print(f"=== Done: OK={len(universe)} (cached), FAIL=0 ===")
+                return
+        except Exception:
+            pass
+
+    ok, fail, fresh = 0, 0, 0
     for i, etf in enumerate(universe, 1):
         code = etf["code"]
         name = etf["name"]
@@ -421,17 +438,29 @@ def main():
                 daily_rows, weekly_rows, mode = patch_range(etf, args.start, args.end)
             else:
                 daily_rows, weekly_rows, mode = update_single(etf, full=args.full)
-            print(f"OK [{mode}] daily+{daily_rows} weekly+{weekly_rows}")
-            ok += 1
-
-            if i < len(universe):
-                time.sleep(3.0)
+            if mode == "fresh":
+                print(f"OK [fresh]")
+                fresh += 1
+            else:
+                print(f"OK [{mode}] daily+{daily_rows} weekly+{weekly_rows}")
+                ok += 1
+                if i < len(universe):
+                    time.sleep(3.0)
 
         except Exception as e:
             print(f"FAIL: {e}")
             fail += 1
 
-    print(f"\n=== Done: OK={ok}, FAIL={fail} ===")
+    # Write freshness marker if all ETFs are up to date
+    if fail == 0 and not args.full and not patch_mode:
+        try:
+            FRESH_MARKER.parent.mkdir(parents=True, exist_ok=True)
+            FRESH_MARKER.write_text(datetime.now().strftime("%Y-%m-%d"))
+        except Exception:
+            pass
+
+    total_ok = ok + fresh
+    print(f"\n=== Done: OK={total_ok}, FAIL={fail} ===")
 
 
 if __name__ == "__main__":

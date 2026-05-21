@@ -19,9 +19,10 @@
 | 3 | `plans/Board.md` | 当前版本、in_progress、活跃 Bug、ID 计数器 |
 | 4 | 相关 `plans/REQ-*.md` / `plans/BUG-*.md` | 边界决策、用户覆盖、落地记录 |
 | 5 | `statusbar.config.md` | 状态网络配置（States / Actions / Routing / Display） |
-| 6 | `runbooks/QUANT_RUNBOOK.md` | 量子系统架构 + 数据管线 + Tuner 使用规程 |
-| 7 | `SKILL.md` / `README.md` | 对外公开面描述，不要让它们反向覆盖开发事实 |
-| 8 | `config/*.yaml` / `scripts/*.py` / `tests/` | 实现事实源 |
+| 6 | `QUANT_SYSTEM.md` | 量化回测 / Tuner / preset / payload 的系统入口与变更路由 |
+| 7 | `runbooks/QUANT_RUNBOOK.md` | 量化系统启动、数据刷新、payload 运维与排障 |
+| 8 | `SKILL.md` / `README.md` | 对外公开面描述，不要让它们反向覆盖开发事实 |
+| 9 | `config/*.yaml` / `scripts/*.py` / `tests/` | 实现事实源 |
 
 ## 完整目录全景图
 
@@ -51,6 +52,7 @@ etf-report/
 ├── docs/                       ← 参考文档
 ├── .github/workflows/test.yml  ← CI 配置
 ├── CONTRIBUTING.md             ← 开发者指南（本文件）
+├── QUANT_SYSTEM.md             ← 量化回测系统入口
 ├── PLAN.md                     ← 需求管理入口
 ├── plans/                      ← 需求看板（Board/Backlog/Archive/REQ-*）
 ├── statusbar.config.md         ← 状态网络配置
@@ -133,4 +135,5 @@ etf-report/
 | 改公开导航 | 先改 `README.md` / `SKILL.md`，再检查本文件边界是否需同步 |
 | 改配置模板 | 读 `config/config.example.yaml`，确认是否影响 `README.md` |
 | 接发布链路 | 读 `scripts/notifier.py` / `scripts/deployer.py` |
+| 量化回测 / Tuner / preset / payload | `QUANT_SYSTEM.md` → 按变更路由进入 `BACKTEST_ENGINE.md` / `QUANT_RUNBOOK.md` / `quant_contract.py` |
 | 量化调试 / 调参 | `runbooks/QUANT_RUNBOOK.md` → 启动 Tuner → 交互调参 → Save to YAML |

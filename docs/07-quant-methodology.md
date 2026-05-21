@@ -1,5 +1,7 @@
 # 量化打分系统方法论
 
+> 历史文档：本文描述早期 REQ-177 M5.1 的三因子 / 25 支 ETF / 截面标准化版本，不作为当前量化系统事实源。当前系统入口见 `../QUANT_SYSTEM.md`，当前参数事实源见 `../config/quant_universe.yaml`，当前回测引擎契约见 `BACKTEST_ENGINE.md`。
+>
 > REQ-177 M5.1 · 三因子 ETF 轮动策略 · 25 支选股池
 
 ## 1. 系统定位
@@ -136,7 +138,7 @@ F1 是唯一直接依赖价格的因子。假设 F2/F3 不变，反推：
 | 均衡型 | 4 | 25 | 6 | 三因子等权、标准参数 |
 | 激进型 | 8 | 15 | 8 | 多持仓、低门槛、偏 EMA |
 
-配置文件：`config/quant_templates.yaml`
+历史配置文件：`config/quant_templates.yaml`（已删除；当前 preset 事实源见 `config/quant_universe.yaml`）
 
 ## 8. 回测结果摘要（2023-01 ~ 2026-04）
 
@@ -160,7 +162,6 @@ F1 是唯一直接依赖价格的因子。假设 F2/F3 不变，反推：
 | 文件 | 用途 |
 |------|------|
 | `config/quant_universe.yaml` | 选股池 + 因子/仓位参数 |
-| `config/quant_templates.yaml` | 3 套策略模板 |
 | `scripts/quant_factors.py` | M1.1 三因子计算 |
 | `scripts/quant_backtest.py` | M2.1 回测引擎 |
 | `scripts/quant_build_payload.py` | 多模板 payload 生成 |

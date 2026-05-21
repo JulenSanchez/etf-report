@@ -27,11 +27,12 @@ def load_realtime_data(data_dir: str) -> Dict:
         return json.load(f)
 
 
-def build_summary_text(realtime_data: Dict) -> str:
+def build_summary_text(realtime_data: Dict, publish_config: Dict = None) -> str:
     """构建企微消息摘要文本（匹配历史推送格式）
 
     Args:
         realtime_data: etf_realtime_data.json 的内容
+        publish_config: 发布配置（用于提取 pages_url）
 
     Returns:
         Markdown 格式的摘要文本
@@ -190,7 +191,7 @@ def main(data_dir: str) -> bool:
         return False
 
     # 2. 构建摘要
-    summary = build_summary_text(realtime_data)
+    summary = build_summary_text(realtime_data, publish_config)
     logger.info("摘要文本已生成", {"length": len(summary)})
 
     # 3. 发送

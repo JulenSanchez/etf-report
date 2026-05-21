@@ -38,6 +38,7 @@ from quant_factors import calc_ema, calc_rsi
 from quant_data_utils import load_etf_data, rebuild_weekly_from_daily
 from benchmark_data import load_hs300_daily_cached, build_hs300_pct, build_hs300_weekly, build_ma_trend_cache
 from trading_calendar import load_trading_calendar, is_trading_day, last_trading_day
+import quant_contract as qc
 
 CONFIG_PATH = SKILL_DIR / "config" / "quant_universe.yaml"
 OVERRIDES_PATH = SKILL_DIR / "config" / "quant_user_overrides.yaml"
@@ -332,17 +333,40 @@ def _run_incremental_fetch(cfg, end_date=None):
     end_date: passed through to fetch_etf_kline to cap the data range.
     Returns (ok_count, fail_count).
     """
-    from quant_data_fetcher import update_single
+    from quant_data_fetcher import update_single, FRESH_MARKER
+    from datetime import datetime as _dt
     import time as _time
-    ok, fail = 0, 0
+
+    # Global freshness check
+    if FRESH_MARKER.exists():
+        try:
+            if FRESH_MARKER.read_text().strip() == _dt.now().strftime("%Y-%m-%d"):
+                print(f"  (All {len(cfg['universe'])} ETFs already fresh, skipping fetch)")
+                return len(cfg["universe"]), 0
+        except Exception:
+            pass
+
+    ok, fail, fresh = 0, 0, 0
     for etf in cfg["universe"]:
         try:
-            update_single(etf, full=False, end_date=end_date)
-            ok += 1
-            _time.sleep(1.0)  # 1s between ETFs (faster than default 3s)
+            _, _, mode = update_single(etf, full=False, end_date=end_date)
+            if mode == "fresh":
+                fresh += 1
+            else:
+                ok += 1
+                _time.sleep(1.0)  # only sleep when we actually hit the API
         except Exception as e:
             print(f"  [Fetch] {etf['code']} failed: {e}")
             fail += 1
+    if fresh > 0:
+        print(f"  (Skipped {fresh} already-fresh ETFs)")
+    # Write freshness marker if all succeeded
+    if fail == 0:
+        try:
+            FRESH_MARKER.parent.mkdir(parents=True, exist_ok=True)
+            FRESH_MARKER.write_text(_dt.now().strftime("%Y-%m-%d"))
+        except Exception:
+            pass
     return ok, fail
 
 
@@ -387,11 +411,15 @@ def refresh_data():
     # ── Incremental fetch (backfill historical gaps) ──
     # Post-market / non-trading / pre-market: no end_date cap, safe to write CSV.
     # Intraday: pass end_date=today_str so fetch_etf_kline excludes today's incomplete bar.
-    run_fetch = post_market or not trading or pre_market or intraday
+    run_fetch = post_market or not trading or pre_market
     if run_fetch:
         print(f"  [Refresh] Running incremental fetch...")
-        fetch_end = today_str if intraday else None
-        ok, fail = _run_incremental_fetch(cfg, end_date=fetch_end)
+        ok, fail = _run_incremental_fetch(cfg)
+    elif intraday:
+        # Intraday: skip CSV write. _latest_allowed_date() naturally excludes today.
+        # Live data goes into intraday cache only (populated below).
+        ok, fail = 0, 0
+        print(f"  [Refresh] Intraday — CSV write skipped (live data → cache only)")
         _reload_csv_to_cache(cfg)
 
     gap_msg = f"CSV gap-fill | {ok} OK, {fail} fail" if run_fetch else ""
@@ -695,33 +723,15 @@ def _precompute_heatmap_returns(lookbacks=(5, 20)):
 
 
 def _weight_total_pct(params):
-    return sum(float(params.get(k, 0) or 0) for k in ("w1", "w2", "w3", "w4", "w6", "w7"))
+    return qc.weight_total_pct(params)
 
 
 def _parse_universe_filter(params):
-    universe_str = (params.get("universe", "") or "").strip()
-    if universe_str == "__NONE__":
-        return [], "empty"
-    if not universe_str:
-        return None, "all"
-    codes = [c.strip() for c in universe_str.split(",") if c.strip()]
-    return sorted(set(codes)), "filtered"
+    return qc.parse_universe_filter(params)
 
 
 def _validate_tuner_params(params):
-    total = _weight_total_pct(params)
-    if abs(total - 100.0) > 1e-6:
-        return f"Factor weights must sum to 100%, got {total:g}%"
-
-    universe_filter, mode = _parse_universe_filter(params)
-    if mode == "empty":
-        return "Universe is empty; select at least 6 ETFs"
-    if universe_filter is not None and len(universe_filter) < 6:
-        return f"Only {len(universe_filter)} ETFs selected, need at least 6"
-
-    if float(params.get("ma_bull_pos", 1.0)) <= float(params.get("ma_bear_pos", 0.3)):
-        return "Bull position must be greater than bear position"
-    return None
+    return qc.validate_tuner_params(params)
 
 
 def run_tuner_backtest(params):
@@ -737,60 +747,8 @@ def run_tuner_backtest(params):
     t0 = time.time()
     from quant_backtest import run_backtest as _run_backtest
 
-    # ── Build config_override from frontend params ──
-    config_override = {
-        "scoring": {
-            "weights": {
-                "ema_deviation": params.get("w1", 35) / 100.0,
-                "f2_daily_ma": params.get("w2", 0) / 100.0,
-                "volume_ratio": params.get("w3", 50) / 100.0,
-                "valuation": params.get("w4", 0) / 100.0,
-                "volatility": params.get("w5", 0) / 100.0,
-                "residual_momentum": params.get("w1r", 0) / 100.0,
-                "exhaustion_penalty": params.get("w6", 0) / 100.0,
-                "log_return_deviation": params.get("w7", 0) / 100.0,
-            },
-            "bias_bonus": params.get("bias", 0),
-            "sensitivity": {
-                "f1": float(params.get("f1_sensitivity", 8.0)),
-                "f3": float(params.get("f3_sensitivity", 1.0)),
-                "f2": float(params.get("f2_sensitivity", 8.0)),
-                "f1_residual": float(params.get("f1r_sensitivity", 5.0)),
-                "f7_t": float(params.get("f7_t", 7.0)),
-                "f7_k": float(params.get("f7_k", 3.0)),
-            },
-        },
-        "confidence": {
-            "type": params.get("conf_type", "ma_trend"),
-            "dead_zone": params.get("dead_zone", 25),
-            "full_zone": params.get("full_zone", 65),
-            "ma_bull_pos": float(params.get("ma_bull_pos", 1.00)),
-            "ma_bear_pos": float(params.get("ma_bear_pos", 0.30)),
-            "ma_trend_period": int(params.get("ma_trend_period", 26)),
-            "ma_direction_confirm": bool(params.get("ma_direction_confirm", True)),
-        },
-        "position": {
-            "max_holdings": int(params.get("max_holdings", 6)),
-            "discretize_step": float(params.get("disc_step", 0.05)),
-            "concentration": float(params.get("concentration", 2.0)),
-            "rebalance_freq": params.get("rebalance_freq", "W-FRI"),
-            "execution_timing": params.get("execution_timing", "next_open"),
-            "score_band": float(params.get("score_band", 0)) / 100.0,
-            "commission_rate": 0.00026,
-        },
-        "factors": {
-            "ema": {"period_weeks": int(params.get("ema_period", 20))},
-            "volume_ratio": {"window_days": int(params.get("vol_window", 20))},
-            "f6_rsi_thresh": float(params.get("f6_rsi_thresh", 80.0)),
-            "f6_drop_thresh": float(params.get("f6_drop_thresh", 2.5)) / 100.0,
-            "f6_base_penalty": float(params.get("f6_base_penalty", 0.15)),
-            "log_return_deviation": {
-                "window_days": int(params.get("f7_window", 20)),
-                "lookback_days": 250, "min_days": 60, "sigma_floor": 0.01,
-            },
-            "f2_ma_period": int(params.get("f2_ma_period", 25)),
-        },
-    }
+    # ── Build config_override from shared parameter contract ──
+    config_override = qc.tuner_params_to_config_override(params)
 
     # ── Prepare preloaded data ──
     all_daily = dict(CACHE["all_daily"])
@@ -825,14 +783,14 @@ def run_tuner_backtest(params):
 
     execution_timing = config_override["position"]["execution_timing"]
     if execution_timing not in ("same_close", "next_open"):
-        execution_timing = "next_open"
+        execution_timing = "same_close"
 
     # ── Call unified backtest engine ──
     return_debug = bool(params.get("debug", False))
     nav_df, signal_history, extra = _run_backtest(
         start_date=params.get("start_date"),
         end_date=params.get("end_date"),
-        preset="daily_aggressive",
+        preset="preset2",
         execution_timing=execution_timing,
         universe_filter=universe_filter,
         preloaded=preloaded,
@@ -870,8 +828,22 @@ def run_tuner_backtest(params):
 
     monthly_groups = nav_df.groupby(nav_df["date"].dt.to_period("M"))
     monthly_rets = monthly_groups["nav"].last().pct_change().dropna()
-    win_rate = float((daily_rets > 0.02 / 252).sum() / max(len(daily_rets), 1) * 100) if len(daily_rets) > 0 else 0.0
     monthly_win_rate = float((monthly_rets > 0).sum() / max(len(monthly_rets), 1) * 100) if len(monthly_rets) > 0 else 0.0
+
+    # ── Per-trade win rate & payoff ratio from trade log ──
+    trade_log = extra.get("trade_log", [])
+    if trade_log:
+        winning_trades = [t for t in trade_log if t["pnl_pct"] > 0]
+        losing_trades = [t for t in trade_log if t["pnl_pct"] <= 0]
+        win_rate = round(len(winning_trades) / len(trade_log) * 100, 1)
+        avg_win = sum(t["pnl_pct"] for t in winning_trades) / len(winning_trades) if winning_trades else 0.0
+        avg_loss = abs(sum(t["pnl_pct"] for t in losing_trades) / len(losing_trades)) if losing_trades else 0.0
+        payoff_ratio = round(avg_win / avg_loss, 2) if avg_loss > 0 else 999.0
+    else:
+        win_rate = 0.0
+        payoff_ratio = 0.0
+        avg_win = 0.0
+        avg_loss = 0.0
     best_month = float(monthly_rets.max() * 100) if len(monthly_rets) > 0 else 0.0
     worst_month = float(monthly_rets.min() * 100) if len(monthly_rets) > 0 else 0.0
     calmar = annual_return / abs(max_drawdown) if abs(max_drawdown) > 0 else 0.0
@@ -965,7 +937,7 @@ def run_tuner_backtest(params):
                 d["action"] = "new"
                 had_action = True
             elif cur_pos > 0 and prev_pos > 0 and abs(cur_pos - prev_pos) > 0.01:
-                d["action"] = "adj"
+                d["action"] = "adj_up" if cur_pos > prev_pos else "adj_down"
                 had_action = True
             elif cur_pos > 0 and prev_pos > 0:
                 d["action"] = "hold"
@@ -1027,6 +999,10 @@ def run_tuner_backtest(params):
             "sortino": round(float(sortino), 2),
             "calmar": round(float(calmar), 2),
             "winRate": round(win_rate, 1),
+            "payoffRatio": round(payoff_ratio, 2),
+            "avgWin": round(avg_win, 2) if isinstance(avg_win, (int, float)) else 0.0,
+            "avgLoss": round(avg_loss, 2) if isinstance(avg_loss, (int, float)) else 0.0,
+            "tradeCount": len(trade_log),
             "monthlyWinRate": round(monthly_win_rate, 1),
             "bestMonth": round(best_month, 2),
             "worstMonth": round(worst_month, 2),
@@ -1122,6 +1098,12 @@ def api_run():
     return jsonify(result)
 
 
+@app.route("/api/param_schema")
+def api_param_schema():
+    """Return shared Tuner parameter schema."""
+    return jsonify(qc.get_param_schema())
+
+
 @app.route("/api/presets")
 def api_presets():
     guard = _require_ready()
@@ -1129,81 +1111,7 @@ def api_presets():
         return guard
     """Return strategy presets from YAML config."""
     cfg = CACHE.get("cfg") or load_config()
-    presets = cfg.get("presets", {})
-    result = {}
-    # Use global confidence as fallback for regime params not in preset
-    global_conf = cfg.get("confidence", {})
-    global_regime_base = global_conf.get("regime_base", {})
-    for key, p_data in presets.items():
-        pc = p_data.get("confidence", {})
-        prb = pc.get("regime_base", {})
-        w = p_data.get("scoring", {}).get("weights", {})
-        result[key] = {
-            "label": p_data.get("label", key),
-            "description": p_data.get("description", ""),
-            "w1": int(w.get("ema_deviation", 0.30) * 100),
-            "w2": int(w.get("f2_daily_ma", 0) * 100),
-            "w3": int(w.get("volume_ratio", 0.30) * 100),
-            "w4": int(w.get("valuation", 0.15) * 100),
-            "bias": p_data.get("scoring", {}).get("bias_bonus", 4.0),
-            "conf_type": pc.get("type", "regime"),
-            "dead_zone": pc.get("dead_zone", global_conf.get("dead_zone", 25)),
-            "full_zone": pc.get("full_zone", global_conf.get("full_zone", 65)),
-            "regime_base_bull": prb.get("bull_trend", global_regime_base.get("bull_trend", 0.95)),
-            "regime_base_choppy": prb.get("choppy_range", global_regime_base.get("choppy_range", 0.75)),
-            "regime_base_bear": prb.get("bear_trend", global_regime_base.get("bear_trend", 0.35)),
-            "regime_window": pc.get("regime_window", global_conf.get("regime_window", 8)),
-            "regime_threshold": pc.get("regime_threshold", global_conf.get("regime_threshold", 0.03)),
-            "breadth_weight": pc.get("breadth_weight", global_conf.get("breadth_weight", 0.2)),
-            "clarity_threshold": pc.get("clarity_threshold", global_conf.get("clarity_threshold", 0.03)),
-            "dd_sensitivity": pc.get("dd_sensitivity", global_conf.get("dd_sensitivity", 0.2)),
-            "crash_window": pc.get("crash_window", global_conf.get("crash_window", 2)),
-            "crash_threshold": pc.get("crash_threshold", global_conf.get("crash_threshold", -0.03)),
-            "recovery_threshold": pc.get("recovery_threshold", global_conf.get("recovery_threshold", -0.01)),
-            "crash_pos": pc.get("crash_pos", global_conf.get("crash_pos", 0.20)),
-            "recovery_pos": pc.get("recovery_pos", global_conf.get("recovery_pos", 0.70)),
-            "recovery_dd_level": pc.get("recovery_dd_level", global_conf.get("recovery_dd_level", -0.05)),
-            "ma_bull_pos": pc.get("ma_bull_pos", global_conf.get("ma_bull_pos", 1.00)),
-            "ma_bear_pos": pc.get("ma_bear_pos", global_conf.get("ma_bear_pos", 0.30)),
-            "ma_trend_period": pc.get("ma_trend_period", global_conf.get("ma_trend_period", 26)),
-            "ma_direction_confirm": pc.get("ma_direction_confirm", global_conf.get("ma_direction_confirm", True)),
-            "max_holdings": p_data.get("position", {}).get("max_holdings", 6),
-            "disc_step": p_data.get("position", {}).get("discretize_step", 0.05),
-            "concentration": p_data.get("position", {}).get("concentration", 2.0),
-            "ema_period": p_data.get("factors", {}).get("ema", {}).get("period_weeks", 20),
-            "f2_sensitivity": p_data.get("scoring", {}).get("sensitivity", {}).get("f2", 8.0),
-            "vol_window": p_data.get("factors", {}).get("volume_ratio", {}).get("window_days", 20),
-            "f1_sensitivity": p_data.get("scoring", {}).get("sensitivity", {}).get("f1", 8.0),
-            "f3_sensitivity": p_data.get("scoring", {}).get("sensitivity", {}).get("f3", 1.0),
-            "rebalance_freq": p_data.get("position", {}).get("rebalance_freq", "W-FRI"),
-            "execution_timing": p_data.get("position", {}).get("execution_timing", "next_open"),
-            "score_band": int(p_data.get("position", {}).get("score_band", 0) * 100),
-            "w6": int(p_data.get("scoring", {}).get("weights", {}).get("exhaustion_penalty", 0) * 100),
-            "w7": int(p_data.get("scoring", {}).get("weights", {}).get("log_return_deviation", 0) * 100),
-            "f7_t": p_data.get("scoring", {}).get("sensitivity", {}).get("f7_t", 7.0),
-            "f7_k": p_data.get("scoring", {}).get("sensitivity", {}).get("f7_k", 3.0),
-            "f7_window": p_data.get("factors", {}).get("log_return_deviation", {}).get("window_days", 20),
-            "f2_ma_period": p_data.get("factors", {}).get("f2_ma_period", 25),
-            "f6_rsi_thresh": p_data.get("factors", {}).get("f6_rsi_thresh", 80.0),
-            "f6_drop_thresh": p_data.get("factors", {}).get("f6_drop_thresh", 0.025) * 100,
-            "f6_base_penalty": p_data.get("factors", {}).get("f6_base_penalty", 0.15),
-        }
-    # Inject 'custom' preset if not defined in YAML — clone daily_aggressive as template
-    if "custom" not in result:
-        template = result.get("daily_aggressive", {})
-        if template:
-            custom = dict(template)
-            custom["label"] = "自定义策略"
-            custom["description"] = "用户自定义策略，初始参数继承自波动探测。"
-            result["custom"] = custom
-
-    # Add universe options for the front-end selector
-    result["_universe_options"] = [
-        {"code": e["code"], "name": e.get("name", e["code"]),
-         "sector": e.get("sector", ""), "bias": bool(e.get("bias", False))}
-        for e in cfg.get("universe", [])
-    ]
-    return jsonify(result)
+    return jsonify(qc.build_presets_response(cfg))
 
 
 def _save_to_preset(preset_name, overrides):
@@ -1213,7 +1121,7 @@ def _save_to_preset(preset_name, overrides):
         cfg = yaml.safe_load(f)
     presets = cfg.setdefault("presets", {})
     if preset_name not in presets:
-        template = presets.get("daily_aggressive", {})
+        template = presets.get("preset2", {})
         if template:
             presets[preset_name] = deepcopy(template)
             presets[preset_name]["label"] = "自定义策略"
@@ -1239,49 +1147,8 @@ def api_save():
     if validation_error:
         return jsonify({"ok": False, "error": validation_error})
     try:
-        # Build config fragment from tuner params (shared path)
-        cfg = load_config()
-        cfg["scoring"]["weights"] = {
-            "ema_deviation": params["w1"] / 100.0,
-            "f2_daily_ma": params.get("w2", 0) / 100.0,
-            "volume_ratio": params["w3"] / 100.0,
-            "valuation": params.get("w4", 0) / 100.0,
-            "exhaustion_penalty": params.get("w6", 0) / 100.0,
-            "log_return_deviation": params.get("w7", 0) / 100.0,
-        }
-        cfg["scoring"]["bias_bonus"] = float(params.get("bias", 0))
-        cfg["confidence"]["type"] = params.get("conf_type", "quadratic")
-        cfg["confidence"]["dead_zone"] = int(params.get("dead_zone", 25))
-        cfg["confidence"]["full_zone"] = int(params.get("full_zone", 65))
-        cfg["position"]["max_holdings"] = int(params["max_holdings"])
-        cfg["position"]["discretize_step"] = float(params.get("disc_step", 0.05))
-        cfg["position"]["concentration"] = float(params.get("concentration", 2.0))
-        cfg["position"]["rebalance_freq"] = params.get("rebalance_freq", "W-FRI")
-        cfg["position"]["score_band"] = float(params.get("score_band", 0)) / 100.0
-        cfg["factors"]["ema"]["period_weeks"] = int(params.get("ema_period", 20))
-        cfg["factors"]["volume_ratio"]["window_days"] = int(params.get("vol_window", 20))
-        sens = cfg.setdefault("scoring", {}).setdefault("sensitivity", {})
-        sens["f1"] = float(params.get("f1_sensitivity", 8.0))
-        sens["f2"] = float(params.get("f2_sensitivity", 8.0))
-        sens["f3"] = float(params.get("f3_sensitivity", 1.0))
-        sens["f7_t"] = float(params.get("f7_t", 7.0))
-        sens["f7_k"] = float(params.get("f7_k", 3.0))
-        cfg["confidence"]["ma_bull_pos"] = float(params.get("ma_bull_pos", 1.0))
-        cfg["confidence"]["ma_bear_pos"] = float(params.get("ma_bear_pos", 0.3))
-        cfg["confidence"]["ma_trend_period"] = int(params.get("ma_trend_period", 26))
-        cfg["confidence"]["ma_direction_confirm"] = bool(params.get("ma_direction_confirm", True))
-        cfg["position"]["execution_timing"] = params.get("execution_timing", "next_open")
-        cfg["factors"]["f6_rsi_thresh"] = float(params.get("f6_rsi_thresh", 80))
-        cfg["factors"]["f6_drop_thresh"] = float(params.get("f6_drop_thresh", 2.5)) / 100.0
-        cfg["factors"]["f6_base_penalty"] = float(params.get("f6_base_penalty", 0.15))
-        cfg.setdefault("factors", {}).setdefault("log_return_deviation", {})["window_days"] = int(params.get("f7_window", 20))
-        cfg["factors"]["f2_ma_period"] = int(params.get("f2_ma_period", 25))
-        overrides = {
-            "scoring": cfg["scoring"],
-            "confidence": cfg["confidence"],
-            "position": cfg["position"],
-            "factors": cfg["factors"],
-        }
+        # Build config fragment from shared parameter contract
+        overrides = qc.tuner_params_to_preset_patch(params, load_config())
 
         if preset_name:
             _save_to_preset(preset_name, overrides)

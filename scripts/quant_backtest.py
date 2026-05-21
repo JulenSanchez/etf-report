@@ -34,7 +34,7 @@ DATA_DIR = SKILL_DIR / "data" / "quant"
 OUTPUT_DIR = SKILL_DIR / "data" / "quant_results"
 
 
-def load_config(preset: str = "daily_aggressive"):
+def load_config(preset: str = "preset2"):
     """加载配置，并用指定 preset 覆盖顶层 scoring/confidence/position/factors。
     preset=None 将报错（顶层不再维护权重）。
     """
@@ -89,14 +89,52 @@ def get_execution_date(signal_date: pd.Timestamp, all_dates: pd.DatetimeIndex, t
     return signal_date
 
 
+def execution_price_field(timing: str) -> str:
+    """Return price field used for trade execution."""
+    return "open" if timing == "next_open" else "close"
+
+
 def get_price_on_date(all_daily: dict, code: str, date: pd.Timestamp, field: str = "close") -> float | None:
     return _get_price_on_date(all_daily, code, date, field)
 
 
 def _execute_rebalance(portfolio, cash, prices, suspended_codes,
-                       target_positions, tradable_tv, step, commission_rate, turnover):
-    """执行一次调仓：卖出→减仓→加仓。原地修改 portfolio，返回 (commission, new_cash)。"""
+                       target_positions, tradable_tv, step, commission_rate, turnover,
+                       trade_lots=None, exec_date_str=""):
+    """执行一次调仓：卖出→减仓→加仓。原地修改 portfolio，返回 (commission, new_cash, trade_log)。
+
+    trade_lots: {code: [{"buy_date", "buy_price", "shares"}, ...]}  开仓 lot 登记（原地修改）
+    trade_log:  [{"code", "buy_date", "sell_date", "buy_price", "sell_price", "shares", "pnl_pct"}, ...]
+    """
     commission_total = 0.0
+    trade_log = []
+    if trade_lots is None:
+        trade_lots = {}
+
+    def _close_lots(code, sell_price, shares_to_sell):
+        """FIFO 平仓：从 code 的最老 lot 开始匹配，记录每笔平仓 P&L。返回 (平仓记录列表, 剩余待卖份额)。"""
+        closed = []
+        remaining = shares_to_sell
+        if code not in trade_lots:
+            return closed, remaining
+        for lot in trade_lots[code]:
+            if remaining <= 0:
+                break
+            matched = min(lot["shares"], remaining)
+            cost = matched * lot["buy_price"] / (1.0 - commission_rate) if commission_rate < 1.0 else matched * lot["buy_price"]
+            proceeds = matched * sell_price * (1.0 - commission_rate)
+            pnl_pct = (proceeds / cost - 1.0) * 100.0 if cost > 0 else 0.0
+            closed.append({
+                "code": code, "buy_date": lot["buy_date"], "sell_date": exec_date_str,
+                "buy_price": round(lot["buy_price"], 4), "sell_price": round(sell_price, 4),
+                "shares": matched, "pnl_pct": round(pnl_pct, 2),
+            })
+            lot["shares"] -= matched
+            remaining -= matched
+        trade_lots[code] = [l for l in trade_lots[code] if l["shares"] > 1e-10]
+        if not trade_lots[code]:
+            del trade_lots[code]
+        return closed, remaining
 
     # 1. 全卖：不在目标范围内的
     for code in list(portfolio.keys()):
@@ -104,9 +142,12 @@ def _execute_rebalance(portfolio, cash, prices, suspended_codes,
             continue
         if code not in target_positions or target_positions.get(code, 0) == 0:
             if code in prices:
-                sell_value = portfolio[code] * prices[code]
+                sell_price = prices[code]
+                sell_value = portfolio[code] * sell_price
                 commission_total += sell_value * commission_rate
                 cash += sell_value - sell_value * commission_rate
+                closed, _ = _close_lots(code, sell_price, portfolio[code])
+                trade_log.extend(closed)
             del portfolio[code]
 
     # 2. 减仓：仍在目标范围但需降权
@@ -119,10 +160,13 @@ def _execute_rebalance(portfolio, cash, prices, suspended_codes,
         if diff < -step * tradable_tv:
             sell_shares = -diff / prices[code]
             sell_shares = min(sell_shares, portfolio.get(code, 0))
-            sell_value = sell_shares * prices[code]
+            sell_price = prices[code]
+            sell_value = sell_shares * sell_price
             commission_total += sell_value * commission_rate
             portfolio[code] = portfolio.get(code, 0) - sell_shares
             cash += sell_value - sell_value * commission_rate
+            closed, _ = _close_lots(code, sell_price, sell_shares)
+            trade_log.extend(closed)
             if portfolio[code] <= 0:
                 del portfolio[code]
 
@@ -147,10 +191,17 @@ def _execute_rebalance(portfolio, cash, prices, suspended_codes,
         if buy_value > 0:
             commission_total += buy_value * commission_rate
             net_buy = buy_value - buy_value * commission_rate
-            portfolio[code] = portfolio.get(code, 0) + net_buy / prices[code]
+            new_shares = net_buy / prices[code]
+            portfolio[code] = portfolio.get(code, 0) + new_shares
             cash -= buy_value
+            trade_lots.setdefault(code, []).append({
+                "code": code,
+                "buy_date": exec_date_str,
+                "buy_price": round(prices[code], 4),
+                "shares": new_shares,
+            })
 
-    return commission_total, cash
+    return commission_total, cash, trade_log
 
 
 def count_actual_rebalances(signal_history: list) -> int:
@@ -291,7 +342,7 @@ def _precompute_factors(all_daily, all_weekly, ema_period, vol_window,
 def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
                  initial_capital: float = 1000000.0,
                  rebalance_freq: str = None,
-                 preset: str = "daily_aggressive",
+                 preset: str = "preset2",
                  execution_timing: str = None,
                  universe_filter: list = None,
                  preloaded: dict = None,
@@ -333,9 +384,9 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
         rebalance_freq = position_cfg.get("rebalance_freq", "W-FRI")
     score_band = position_cfg.get("score_band", 0)
     if execution_timing is None:
-        execution_timing = position_cfg.get("execution_timing", "next_open")
+        execution_timing = position_cfg.get("execution_timing", "same_close")
     if execution_timing not in ("same_close", "next_open"):
-        execution_timing = "next_open"
+        execution_timing = "same_close"
     commission_rate = position_cfg.get("commission_rate", 0)
     f3_sens = sensitivity.get("f3", 1.0)
     f2_sens = sensitivity.get("f2", 8.0)
@@ -501,6 +552,8 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
     regime = "choppy_range"
     nav_list_bt = []
     prev_effective_bull = True
+    trade_lots = {}       # {code: [{"buy_date","buy_price","shares"}, ...]}
+    all_trade_log = []    # accumulated closed trades from each rebalance
 
     print("\n开始回测...")
     debug_snapshots = []
@@ -514,7 +567,7 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
         execution_date = get_execution_date(rb_date, all_dates, execution_timing)
         if execution_date is None:
             continue
-        execution_price_field = "open" if execution_timing == "next_open" else "close"
+        price_field = execution_price_field(execution_timing)
 
         # ------ 1. 查找当日因子（全部预计算，O(log n) 二分查找）------
         factors_data = {}
@@ -528,9 +581,9 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
 
             # Price & turnover: O(1) from precomputed lookup
             row = price_lookup.get(code, {}).get(exec_key)
-            if row is None or execution_price_field not in row.index:
+            if row is None or price_field not in row.index:
                 continue
-            exec_price = float(row[execution_price_field])
+            exec_price = float(row[price_field])
             amt_col = "amount" if "amount" in row.index else None
             if amt_col:
                 turnover_today[code] = float(row[amt_col])
@@ -759,11 +812,13 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
         tradable_tv = total_value - frozen_value
 
         # ------ 5. 调仓 ------
-        comm, cash = _execute_rebalance(
+        comm, cash, trade_log = _execute_rebalance(
             portfolio, cash, prices_today, suspended_codes,
             target_positions.to_dict(), tradable_tv, step, commission_rate, turnover_today,
+            trade_lots=trade_lots, exec_date_str=exec_key,
         )
         total_commission += comm
+        all_trade_log.extend(trade_log)
 
         # 记录信号
         signal_history.append({
@@ -845,6 +900,28 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
             print(f"  [{rb_idx+1}/{len(rebalance_dates)}] {rb_date.strftime('%Y-%m-%d')} "
                   f"NAV={nav/initial_capital*100:.1f}% holdings={len(portfolio)}")
 
+    # ── Close remaining open lots at last available close price ──
+    if trade_lots:
+        last_close = {}
+        for code in all_daily:
+            df = all_daily[code]
+            if len(df) > 0:
+                last_close[code] = float(df["close"].iloc[-1])
+        final_date = str(all_dates[-1])[:10] if len(all_dates) > 0 else exec_key
+        for code, lots in trade_lots.items():
+            sell_price = last_close.get(code)
+            if sell_price is None or sell_price <= 0:
+                continue
+            for lot in lots:
+                cost = lot["shares"] * lot["buy_price"] / (1.0 - commission_rate) if commission_rate < 1.0 else lot["shares"] * lot["buy_price"]
+                proceeds = lot["shares"] * sell_price * (1.0 - commission_rate)
+                pnl_pct = (proceeds / cost - 1.0) * 100.0 if cost > 0 else 0.0
+                all_trade_log.append({
+                    "code": code, "buy_date": lot["buy_date"], "sell_date": final_date,
+                    "buy_price": lot["buy_price"], "sell_price": round(sell_price, 4),
+                    "shares": lot["shares"], "pnl_pct": round(pnl_pct, 2),
+                })
+
     # ============================================================
     # 逐日计算 NAV（从第一个调仓日到最后一个交易日）
     # ============================================================
@@ -865,7 +942,7 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
             if signal_idx < len(signal_history) and date >= signal_history[signal_idx]["date"]:
                 sig = signal_history[signal_idx]
                 target_codes = set(sig["positions"].keys())
-                trade_field = "open" if sig.get("execution_timing") == "next_open" else "close"
+                trade_field = execution_price_field(sig.get("execution_timing"))
                 prices = {code: get_price_on_date(all_daily, code, date, trade_field) for code in all_daily}
                 prices = {k: v for k, v in prices.items() if v is not None}
                 hv = sum(portfolio2.get(c, 0) * prices.get(c, 0) for c in portfolio2)
@@ -935,7 +1012,7 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
             tradable_tv2 = tv - frozen_value2
 
             # 执行调仓
-            comm2, cash2 = _execute_rebalance(
+            comm2, cash2, _ = _execute_rebalance(
                 portfolio2, cash2, prices, suspended_codes2,
                 target_positions, tradable_tv2, step, commission_rate, turnover2,
             )
@@ -1020,7 +1097,7 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
         print(f"  交易佣金:    {comm:,.0f} ({comm/initial_capital*100:.2f}% 本金)")
     print("=" * 60)
 
-    return nav_df, signal_history, {"total_commission": comm, "trade_count": actual_trades, "debug_snapshots": debug_snapshots}
+    return nav_df, signal_history, {"total_commission": comm, "trade_count": actual_trades, "debug_snapshots": debug_snapshots, "trade_log": all_trade_log}
 
 
 def main():
@@ -1030,8 +1107,8 @@ def main():
     parser.add_argument("--execution-timing", choices=["same_close", "next_open"], default=None,
                         help="成交口径：same_close=信号日收盘成交，next_open=下一交易日开盘成交")
     parser.add_argument("--output", type=str, default=None, help="输出净值 CSV 路径")
-    parser.add_argument("--preset", type=str, default="daily_aggressive",
-                        help="预设配置名 (default: daily_aggressive)")
+    parser.add_argument("--preset", type=str, default="preset2",
+                        help="预设配置名 (default: preset2)")
     parser.add_argument("--debug", action="store_true", dest="debug",
                         help="输出调试快照到 data/debug_cli.json")
     args = parser.parse_args()

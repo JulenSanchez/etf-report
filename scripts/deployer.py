@@ -16,7 +16,7 @@ import os
 import shutil
 import subprocess
 from datetime import datetime
-from typing import Optional
+from typing import Dict, List, Optional
 
 
 from logger import Logger

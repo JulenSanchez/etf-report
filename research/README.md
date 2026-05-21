@@ -2,6 +2,8 @@
 
 三个常驻研究轨道，各自独立推进、独立可停。与需求看板（`plans/`）分离——需求看板管功能级 Bug/Feature，research 管持续探索。
 
+> 本目录记录研究过程、实验结果和 promotion 证据；当前生效参数始终以 `../config/quant_universe.yaml` 为准，工程入口见 `../QUANT_SYSTEM.md`。
+
 ## 反馈三角
 
 ```
@@ -54,6 +56,17 @@
 2. 不低于当前生产配置 → 直接 promotion
 3. 有退化 → 不阻塞升级，但写 trigger 到对应轨道的 TODO
 4. 在轨道 README 的 "Applied" 段记录：日期、变更、基线数据
+
+## 自动化工具
+
+参数优化推荐使用统一优化器 `scripts/quant_optimizer.py`（替代手工 sweep 脚本）：
+
+```bash
+# 见 runbooks/QUANT_RUNBOOK.md §6 完整用法
+python scripts/quant_optimizer.py --preset daily_aggressive --strategy bayesian --auto-bounds --n-trials 100
+```
+
+支持 grid / random / bayesian (Optuna TPE) 三种策略，输出结构化 results.json + report.md。
 
 ## 目录公约
 

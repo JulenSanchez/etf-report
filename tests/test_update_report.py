@@ -1,8 +1,96 @@
 import json
 import sys
+import textwrap
 from datetime import datetime
 from types import SimpleNamespace
 
+
+
+def test_load_quant_preset_params_uses_shared_contract(tmp_path, load_module):
+    module = load_module("update_report")
+    config_path = tmp_path / "quant_universe.yaml"
+    config_path.write_text(
+        textwrap.dedent(
+            """
+            confidence:
+              dead_zone: 25
+              full_zone: 65
+            presets:
+              daily_aggressive:
+                label: 波动探测
+                scoring:
+                  weights:
+                    ema_deviation: 0.0
+                    f2_daily_ma: 0.45
+                    volume_ratio: 0.45
+                    valuation: 0.0
+                    exhaustion_penalty: 0.0
+                    log_return_deviation: 0.1
+                  bias_bonus: 0.0
+                  sensitivity:
+                    f1: 8.0
+                    f2: 8.0
+                    f3: 1.5
+                    f7_t: 15.0
+                    f7_k: 3.5
+                confidence:
+                  type: ma_trend
+                  ma_trend_period: 26
+                  ma_bull_pos: 1.0
+                  ma_bear_pos: 0.3
+                  ma_direction_confirm: true
+                position:
+                  max_holdings: 6
+                  discretize_step: 0.05
+                  concentration: 0.0
+                  rebalance_freq: daily
+                  execution_timing: same_close
+                  score_band: 0.03
+                factors:
+                  ema:
+                    period_weeks: 5
+                  volume_ratio:
+                    window_days: 20
+                  log_return_deviation:
+                    window_days: 20
+                  f2_ma_period: 25
+                  f6_rsi_thresh: 80.0
+                  f6_drop_thresh: 0.025
+                  f6_base_penalty: 0.15
+            """
+        ).strip(),
+        encoding="utf-8",
+    )
+
+    params = module.load_quant_preset_params(str(config_path))
+
+    assert params["w2"] == 45
+    assert params["w3"] == 45
+    assert params["w7"] == 10
+    assert params["disc_step"] == 0.05
+    assert params["execution_timing"] == "same_close"
+    assert params["concentration"] == 0.0
+    assert params["score_band"] == 3
+
+
+def test_build_quant_payload_config_section_uses_shared_contract(load_module):
+    module = load_module("update_report")
+    params = module.default_quant_preset_params()
+
+    section = module.build_quant_payload_config_section(params)
+    yr1 = section["yr1"]
+    yr3 = section["yr3"]
+
+    assert yr1["scoring"]["weights"]["f2_daily_ma"] == 0.45
+    assert yr1["scoring"]["weights"]["log_return_deviation"] == 0.1
+    assert yr1["position"]["discretize_step"] == 0.05
+    assert yr1["position"]["execution_timing"] == "same_close"
+    assert yr1["position"]["concentration"] == 0.0
+    assert yr1["position"]["score_band"] == 0.03
+    assert yr1["factors"]["f6_drop_thresh"] == 0.025
+    assert yr1["factors"]["log_return_deviation"]["window_days"] == 20
+    assert yr3 == yr1
+    assert yr3 is not yr1
 
 
 def test_replace_text_in_html_replaces_target_near_marker(load_module):

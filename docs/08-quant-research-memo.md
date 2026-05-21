@@ -1,5 +1,7 @@
 # 08 - 量化研究备忘录
 
+> 本文是历史研究备忘录，记录策略演进经验和已验证/已放弃的想法，不作为当前工程事实源。当前系统入口见 `../QUANT_SYSTEM.md`，当前参数事实源见 `../config/quant_universe.yaml`，回测引擎契约见 `BACKTEST_ENGINE.md`。
+>
 > 本文收拢原先散落在外部 memory 中的 etf-report 量化策略演进记录。后续 ETF/量化策略事实源优先写入技能内部的 `docs/`、`runbooks/`、`plans/`、`research/`，不要再依赖外部 memory。
 
 ---
@@ -10,6 +12,7 @@
 
 | 场景 | 推荐策略 | 用法 |
 |---|---|---|
+| **自动化统一优化** | `quant_optimizer.py` | 一条命令替代手工 sweep, 支持 grid/random/bayesian (Optuna TPE) |
 | 改模型后首次探索 | Stratum → Cascade | 先逐因子识别敏感维度，再对敏感维度细扫 |
 | 时间充裕、维度低 | Full Grid | 参数 ≤ 3 时可全量扫 |
 | 单因子行为确认 | One-Factor Sweep / Ridge | 固定其他参数，深扫目标因子 |
@@ -17,6 +20,8 @@
 | 地形未知、多峰 | Funnel | 随机撒点 → top-K 周边补点 |
 | 指定收益/回撤范围 | Target Band Filter | 粗扫后筛满足目标带的组合 |
 | 找弱点和崩溃区 | Adversarial Search | 反向按最差窗口、最大回撤等排序 |
+
+统一优化器用法见 `runbooks/QUANT_RUNBOOK.md` §6。
 
 每次正式搜索应记录：策略、采样效率、是否漏峰、是否过慢、用户反馈和新适用场景。
 

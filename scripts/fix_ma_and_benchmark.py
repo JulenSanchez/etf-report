@@ -18,10 +18,13 @@ import re
 import os
 from datetime import datetime, timedelta
 
+import pandas as pd
+
 from logger import Logger
 from corporate_action_source import detect_corporate_action_events, save_detected_corporate_action_payload
 from data_cleaning import apply_share_change_events, normalize_corporate_action_events, run_data_cleaning_pipeline
 from config_manager import get_config
+from quant_data_fetcher import update_single as quant_update_single, DATA_DIR as QUANT_DATA_DIR
 
 
 
@@ -257,6 +260,76 @@ def fetch_json_with_retries(url, error_message):
 
     logger.error(error_message, {"error": str(last_error), "attempts": API_RETRIES})
     return None
+
+
+def fetch_kline_from_csv(code, market, target_days):
+    """从 quant CSV 读取 K 线数据（代替新浪 API），数据不足时触发增量更新。
+
+    返回格式与 fetch_kline_sina 一致：
+        {"dates": [...], "kline": [[O,C,L,H],...], "volumes": [...],
+         "amounts": [...], "latest_close": float, "latest_change": float}
+    """
+    csv_path = QUANT_DATA_DIR / f"{code}_daily.csv"
+    etf_info = {"code": code, "market": market, "name": code}
+
+    # 检查 CSV 是否存在且数据新鲜（最近交易日 <= 1 天前）
+    need_fetch = True
+    if csv_path.exists():
+        try:
+            existing = pd.read_csv(csv_path)
+            if len(existing) > 0:
+                last_date = pd.Timestamp(existing["date"].iloc[-1])
+                today = pd.Timestamp.now().normalize()
+                if (today - last_date).days <= 1:
+                    need_fetch = False
+        except Exception:
+            pass
+
+    if need_fetch:
+        logger.info("CSV 缺失或过期，触发 quant_data_fetcher 增量更新", {"code": code})
+        try:
+            new_daily, new_weekly, mode = quant_update_single(etf_info, full=False)
+            logger.info("增量更新完成", {"code": code, "new_daily": new_daily, "mode": mode})
+        except Exception as e:
+            logger.warn("增量更新失败，尝试直接读取已有 CSV", {"code": code, "error": str(e)})
+
+    if not csv_path.exists():
+        logger.error("CSV 仍不存在，无法获取 K 线数据", {"code": code})
+        return None
+
+    df = pd.read_csv(csv_path)
+    if len(df) < 2:
+        logger.error("CSV 数据不足", {"code": code, "rows": len(df)})
+        return None
+
+    # 截取最近 target_days 行
+    df = df.tail(target_days)
+    df = df.sort_values("date").reset_index(drop=True)
+
+    dates = df["date"].astype(str).tolist()
+    kline = []
+    for _, row in df.iterrows():
+        kline.append([
+            float(row["open"]),
+            float(row["close"]),
+            float(row["low"]),
+            float(row["high"]),
+        ])
+    volumes = df["volume"].astype(int).tolist()
+    amounts = df["amount"].fillna(0).astype(int).tolist()
+
+    latest_close = float(df["close"].iloc[-1])
+    prev_close = float(df["close"].iloc[-2])
+    change_pct = (latest_close - prev_close) / prev_close * 100 if prev_close != 0 else 0
+
+    return {
+        "dates": dates,
+        "kline": kline,
+        "volumes": volumes,
+        "amounts": amounts,
+        "latest_close": latest_close,
+        "latest_change": round(change_pct, 2),
+    }
 
 
 def fetch_kline_sina(symbol, scale=240, days=60):
@@ -651,7 +724,7 @@ def main():
         
         # 获取足量日线数据：既供日K使用，也用于本地重建周K，避免跨份额变动周失真
 
-        daily_source_data = fetch_kline_sina(symbol, scale=240, days=weekly_source_days)
+        daily_source_data = fetch_kline_from_csv(code, market, weekly_source_days)
         time.sleep(KLINE_DELAY)
         
         # 获取基准指数数据（只用于日线对比）
@@ -668,9 +741,8 @@ def main():
                 "original_days": len(daily_source_data['dates'])
             })
 
-            if cleaning_events:
-                daily_source_data = run_data_cleaning_pipeline(daily_source_data, cleaning_events)
-
+            # CSV 数据来自腾讯 fqkline（前复权），不需要份额变动清洗。
+            # 旧新浪管线的不复权+清洗逻辑已废弃，清洗函数保留在代码中供参考。
             weekly_source_data = build_weekly_from_daily(daily_source_data)
 
             daily_data = trim_data_with_ma(daily_source_data, MA_WARMUP_DAYS, DISPLAY_DAYS)

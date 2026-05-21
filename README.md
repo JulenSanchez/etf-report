@@ -90,6 +90,7 @@ etf-report/
 ├── README.md               ← 本文件
 ├── WORKFLOW.md             ← 执行手册
 ├── DESIGN.md               ← 架构设计
+├── QUANT_SYSTEM.md         ← 量化回测 / Tuner / preset 统一入口
 └── requirements.txt        ← Python 依赖
 ```
 
@@ -144,6 +145,7 @@ python scripts/update_report.py --publish
 |------|------|
 | [WORKFLOW.md](WORKFLOW.md) | 详细执行步骤、排障、验证 |
 | [DESIGN.md](DESIGN.md) | 架构设计与模块依赖 |
+| [QUANT_SYSTEM.md](QUANT_SYSTEM.md) | 量化回测、Tuner、preset、正式页量化板块的统一入口 |
 | [SKILL.md](SKILL.md) | AI 技能描述与触发词 |
 | [docs/](docs/) | 文档（通识知识、运维手册、工具参考） |
 
@@ -167,8 +169,8 @@ python scripts/quant_tuner.py
 | 协议 | `http://localhost:5179`（Flask 本地服务） |
 | 定位 | 开发调试工具，不纳入 `index.html` 静态页面 |
 | Git | 正常提交，属于项目 feature（`scripts/quant_tuner.py`） |
-| 数据 | 启动时一次性预加载 25 支 ETF 历史数据 + F4 估值分数，回测过程无网络请求 |
-| 可调参数 | 因子权重(F1-F4) / 偏好加成 / 信心函数(类型/死区/满配) / 仓位控制(持仓数/步长) / 因子周期(EMA/RSI/量比) / 标的池筛选 |
+| 数据 | 启动时一次性预加载资产池 ETF 历史数据 + 估值/市场状态缓存，回测过程无网络请求 |
+| 可调参数 | 因子权重(F1/F2/F3/F4/F6/F7) / MA Trend 仓位控制 / 持仓数 / 集中度 / 离散化 / 因子周期 / 标的池筛选 |
 | 保存 | "保存参数"按钮直接写回 `config/quant_universe.yaml` |
 
 调参完成后：关闭 Flask → 执行 `python scripts/quant_build_payload.py` 重新生成正式 payload。

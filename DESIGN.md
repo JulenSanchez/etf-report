@@ -18,6 +18,8 @@ AKShare (估值/企业行动) ─┘
 5. **报告生成层** — JavaScript 对象注入 HTML + 量化 payload 独立 JS，100% 样式保证
 6. **调参工具层** — Quant Tuner（Flask localhost:5179），滑块调参 + 一键回测 + K 线复盘
 
+> 量化回测系统的详细入口、事实源优先级、Tuner/回测/preset/正式页的文件分工，统一见 `QUANT_SYSTEM.md`。本文只保留整体架构层面的摘要。
+
 ## 核心设计原则
 
 ### 数据+模板分离

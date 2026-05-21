@@ -114,12 +114,12 @@
     var s = tpl.summary;
     var map = [
       {id:"m-annual",  v:s.annualReturn.toFixed(1)+"%", cls:s.annualReturn>=0?"green":"red"},
+      {id:"m-total",   v:s.totalReturn.toFixed(1)+"%", cls:s.totalReturn>=0?"green":"red"},
       {id:"m-dd",      v:s.maxDrawdown.toFixed(1)+"%", cls:"red"},
       {id:"m-sharpe",  v:s.sharpe.toFixed(2), cls:"blue"},
       {id:"m-sortino", v:s.sortino.toFixed(2), cls:"blue"},
-      {id:"m-calmar",  v:s.calmar.toFixed(2), cls:"orange"},
-      {id:"m-wr",      v:s.winRate.toFixed(1)+"%", cls:s.winRate>=50?"green":""},
-      {id:"m-rb",      v:s.rebalanceCount+"次", cls:""},
+      {id:"m-wr",      v:s.winRate.toFixed(1)+"% / "+(s.payoffRatio||0).toFixed(2), cls:s.winRate>=50?"green":""},
+      {id:"m-rb",      v:(s.rebalanceDays>0?Math.round(s.rebalanceCount/s.rebalanceDays*100)+"%":"-"), cls:""},
       {id:"m-comm",    v:(s.commissionPct||0).toFixed(2)+"%", cls:""},
     ];
     for (var i = 0; i < map.length; i++) {
@@ -312,7 +312,30 @@
     el = document.getElementById("snap-m-cash"); if (el) { el.textContent = cash.toFixed(0) + "%"; el.style.color = cash > 50 ? C.red : cash > 20 ? C.orange : C.gray; }
 
     renderSnapshotTable(sig, tpl);
+    syncSnapshotHeight();
   }
+
+  // ── Scroll-lock for snapshot table ──────────────────────
+  function syncSnapshotHeight() {
+    var scroll = document.getElementById("quant-snapshot-scroll");
+    var left = document.getElementById("quant-perf-section");
+    if (!scroll || !left) return;
+    scroll.style.maxHeight = (left.offsetHeight - 220) + "px";
+  }
+
+  (function() {
+    var scroll = document.getElementById("quant-snapshot-scroll");
+    if (!scroll) return;
+    scroll.addEventListener("wheel", function(e) {
+      var atTop = scroll.scrollTop <= 0;
+      var atBottom = scroll.scrollTop + scroll.clientHeight >= scroll.scrollHeight - 1;
+      if ((e.deltaY < 0 && atTop) || (e.deltaY > 0 && atBottom)) {
+        return; // let page scroll
+      }
+      e.preventDefault();
+      scroll.scrollTop += e.deltaY;
+    }, {passive: false});
+  })();
 
   function renderSnapshotTable(sig, tpl) {
     var tbody = document.getElementById("quant-snapshot-body");
@@ -329,33 +352,41 @@
     var html = '';
     var holdC = 0, outC = 0;
 
+    var detail = sig.detail || {};
     for (var i = 0; i < sorted.length; i++) {
       var code = sorted[i];
-      var score = scores[code];
-      // positions are 0-100 range in payload, no *100 needed
-      var pos = positions[code] || 0;
+      var score = scores[code] * 100;
+      // positions from backtest are 0-1 ratios; display as percentage
+      var pos = (positions[code] || 0) * 100;
       var inTop6 = top6.indexOf(code) >= 0;
       var name = Q.etfNameMap[code] || code;
-      var barW = Math.round(score / maxScore * 100);
+      var codeDetail = detail[code] || {};
 
-      var action = "HOLD";
-      var actionStyle = "color:#6b7280;";
-      if (pos > 0) {
-        holdC++;
+      // Score color: green if positive, neutral if zero/negative
+      var scoreColor = score > 50 ? '#10b981' : (score > 30 ? '#f59e0b' : '#6b7280');
+      var scoreWeight = score > 50 ? '700' : '400';
+
+      // Action from detail
+      var action = codeDetail.action || '';
+      if (!action) {
+        if (pos > 0) { action = 'HOLD'; holdC++; }
+        else { action = 'OUT'; outC++; }
       } else {
-        action = "OUT"; outC++;
+        if (pos > 0) holdC++; else outC++;
       }
+      var actionColor = {'new':'#10b981','add':'#3b82f6','reduce':'#f59e0b','adj_up':'#3b82f6','adj_down':'#f59e0b','HOLD':'#6b7280','OUT':'#4b5563'}[action] || '#6b7280';
+      var actionLabel = {'new':'NEW','add':'UP','reduce':'DOWN','adj_up':'UP','adj_down':'DOWN','HOLD':'HOLD','OUT':'OUT'}[action] || '';
+      if (action === 'OUT') { actionLabel = ''; }
 
       var topBadge = inTop6 ? '<span style="font-size:10px;margin-left:2px;">🔥</span>' : '';
-      var scoreBar = '<span style="display:inline-block;width:50px;height:5px;background:rgba(255,255,255,0.06);border-radius:3px;vertical-align:middle;margin-left:4px;">' +
-        '<span style="display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,#3b82f6,#10b981);width:'+barW+'%"></span></span>';
-      var posStr = pos > 0 ? '<span style="color:#10b981;font-weight:600;">'+pos.toFixed(1)+'%</span>' : '<span style="color:#4b5563;">-</span>';
+      var posColor = pos > 0 ? '#10b981' : '#4b5563';
+      var posStr = pos > 0 ? '<span style="color:'+posColor+';font-weight:600;">'+pos.toFixed(0)+'%</span>' : '<span style="color:#4b5563;">-</span>';
 
       html += '<tr class="qt-snap-row" data-code="'+code+'" style="'+(inTop6?'background:rgba(16,185,129,0.04);':'')+'cursor:pointer;">' +
         '<td style="padding:8px 10px;"><span style="color:#60a5fa;font-weight:600;font-size:12px;">'+code+'</span> <span style="color:#e0e0e0;font-size:12px;">'+name+'</span>'+topBadge+'</td>' +
-        '<td style="text-align:center;padding:8px 6px;">'+score.toFixed(1)+scoreBar+'</td>' +
+        '<td style="text-align:center;padding:8px 6px;color:'+scoreColor+';font-weight:'+scoreWeight+';font-size:13px;">'+score.toFixed(1)+'</td>' +
         '<td style="text-align:center;padding:8px 6px;">'+posStr+'</td>' +
-        '<td style="text-align:center;padding:8px 6px;font-size:11px;'+actionStyle+'">'+action+'</td>' +
+        '<td style="text-align:center;padding:8px 6px;font-size:11px;color:'+actionColor+';font-weight:600;">'+actionLabel+'</td>' +
         '</tr>';
     }
 

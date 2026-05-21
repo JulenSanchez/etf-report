@@ -21,8 +21,9 @@
 2. **`README.md`**：配置、运行、目录结构
 3. **`WORKFLOW.md`**：排障、核对步骤、验证
 4. **`DESIGN.md`**：架构设计与模块依赖
-5. **`research/README.md`**：量化调研索引（按 REQ ID 查找历史调研产出）
-6. **`config/*.yaml`** / **`scripts/*.py`**：进入事实源与实现
+5. **`QUANT_SYSTEM.md`**：量化回测 / Tuner / preset / 正式页量化板块的统一入口
+6. **`research/README.md`**：量化调研索引（按 REQ ID 查找历史调研产出）
+7. **`config/*.yaml`** / **`scripts/*.py`**：进入事实源与实现
 
 ### 快捷提示词
 
@@ -32,7 +33,7 @@
 | "改配置" / "换 ETF" | 读 `README.md` 配置部分 |
 | "发布" | 必须先读 `runbooks/RELEASE_RUNBOOK.md`（唯一门禁），勿直跳 README |
 | "做个健康检查" | 读 `WORKFLOW.md` |
-| "调参" / "量化调参" / "quant tuner" | 启动 `python scripts/quant_tuner.py` → http://localhost:5179 |
+| "调参" / "量化调参" / "quant tuner" | 先读 `QUANT_SYSTEM.md`，再启动 `python scripts/quant_tuner.py` → http://localhost:5179 |
 | "查看XX调研" / "后视镜调研" / "research" | 读 `research/README.md` 索引，定位对应 REQ 子目录 |
 
 ## 在线报告

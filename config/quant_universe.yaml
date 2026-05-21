@@ -18,12 +18,12 @@ universe:
   market: sh
   sector: 医药
 - code: '512070'
-  name: 证券保险ETF
+  name: 非银ETF
   market: sh
   sector: 金融
   bias: true
 - code: '515880'
-  name: 通信设备ETF
+  name: 通信ETF
   market: sh
   sector: 科技
 - code: '588200'
@@ -94,6 +94,10 @@ universe:
   name: 煤炭ETF
   market: sh
   sector: 资源周期
+- code: '516150'
+  name: 稀土ETF
+  market: sh
+  sector: 资源周期
 - code: '513090'
   name: 港券ETF
   market: sh
@@ -118,6 +122,10 @@ universe:
   name: 养殖ETF
   market: sz
   sector: 传统
+- code: '159698'
+  name: 粮食ETF
+  market: sz
+  sector: 传统
 - code: '512200'
   name: 房地产ETF
   market: sh
@@ -127,7 +135,7 @@ universe:
   market: sh
   sector: 传统
 - code: '563300'
-  name: 中证2000ETF
+  name: 微盘ETF
   market: sh
   sector: 宽基
 - code: '159941'
@@ -142,20 +150,28 @@ universe:
   name: 日经ETF
   market: sh
   sector: 另类
-- code: '159561'
-  name: 德国ETF
+- code: '520870'
+  name: 巴西ETF
+  market: sh
+  sector: 另类
+- code: '159509'
+  name: 纳指科技ETF
   market: sz
+  sector: 另类
+- code: '513050'
+  name: 中概互联ETF
+  market: sh
   sector: 另类
 - code: '159329'
   name: 沙特ETF
   market: sz
   sector: 另类
 - code: '159518'
-  name: 油气ETF
+  name: 标普油气ETF
   market: sz
   sector: 另类
 - code: '159502'
-  name: 生物ETF
+  name: 标普生物ETF
   market: sz
   sector: 另类
 - code: '159985'
@@ -186,7 +202,7 @@ position:
   discretize_step: 0.05
   weighting: arithmetic
   rebalance_freq: W-FRI
-  execution_timing: next_open
+  execution_timing: same_close
   score_band: 0
   commission_rate: 0.00026
 factors:
@@ -195,44 +211,117 @@ factors:
   volume_ratio:
     window_days: 20
 presets:
-  weekly_trend:
-    label: 周频趋势
-    description: 周调仓，F1+F3，无F6/F7。MA趋势仓位控制。总收益+113.7%/年化+25.5%/MDD-14.6%/Calmar=1.75/Sharpe=1.29（2023-01-01~2026-05-08）。实际换仓141次/155次调仓，稳定低换手。
+  preset1:
+    label: 趋势锚定
+    description: 日调仓，F1(50%)+F3(40%)+F7(10%)，F2=0，MA趋势仓位，44支ETF池。6Y基线+536.1%/年化+36.1%/MDD-17.1%/Sharpe=1.48/Sortino=2.07/Calmar=2.11（2020-05-20~2026-05-21）。浓度扫描C=0.5最优，EMA=5w。
     scoring:
       weights:
-        ema_deviation: 0.4
+        ema_deviation: 0.5
         f2_daily_ma: 0.0
-        volume_ratio: 0.6
+        volume_ratio: 0.4
         valuation: 0.0
         exhaustion_penalty: 0.0
-      bias_bonus: 0
+        log_return_deviation: 0.1
+      bias_bonus: 0.0
       sensitivity:
         f1: 8.0
-        f3: 1.0
         f2: 8.0
+        f3: 1.5
+        f7_t: 15.0
+        f7_k: 3.5
     confidence:
       type: ma_trend
       ma_trend_period: 26
       ma_bull_pos: 1.0
       ma_bear_pos: 0.3
       ma_direction_confirm: true
+      dead_zone: 25
+      full_zone: 65
+      regime_base:
+        bull_trend: 0.95
+        choppy_range: 0.75
+        bear_trend: 0.35
+      regime_window: 8
+      regime_threshold: 0.03
+      breadth_weight: 0.2
+      clarity_threshold: 0.03
+      dd_sensitivity: 0.2
     position:
       max_holdings: 6
       discretize_step: 0.05
-      concentration: 2.0
-      rebalance_freq: W-FRI
+      concentration: 0.5
+      rebalance_freq: daily
       execution_timing: same_close
-      score_band: 0
+      score_band: 0.03
       commission_rate: 0.00026
+      max_holdings_special: 8
+      weighting: arithmetic
     factors:
       ema:
-        period_weeks: 16
+        period_weeks: 5
       volume_ratio:
         window_days: 20
-      f6_rsi_thresh: 80
+      f6_rsi_thresh: 80.0
       f6_drop_thresh: 0.025
       f6_base_penalty: 0.15
-  daily_aggressive_f6:
+      log_return_deviation:
+        window_days: 20
+  preset4:
+    label: 集中趋势
+    description: 日调仓，F1(50%)+F3(40%)+F7(10%)，F2=0。相比趋势锚定：持仓更集中(4支)+趋势信号更快(MA20w)+仓位集中度更高(C=1.0)。6Y+710.6%/年化+41.7%/MDD-17.3%/Sharpe=1.50（2020-05-22~2026-05-21，CLI实测）。
+    scoring:
+      weights:
+        ema_deviation: 0.5
+        f2_daily_ma: 0.0
+        volume_ratio: 0.4
+        valuation: 0.0
+        exhaustion_penalty: 0.0
+        log_return_deviation: 0.1
+      bias_bonus: 0.0
+      sensitivity:
+        f1: 8.0
+        f2: 8.0
+        f3: 1.5
+        f7_t: 15.0
+        f7_k: 3.5
+    confidence:
+      type: ma_trend
+      ma_trend_period: 20
+      ma_bull_pos: 1.0
+      ma_bear_pos: 0.3
+      ma_direction_confirm: true
+      dead_zone: 25
+      full_zone: 65
+      regime_base:
+        bull_trend: 0.95
+        choppy_range: 0.75
+        bear_trend: 0.35
+      regime_window: 8
+      regime_threshold: 0.03
+      breadth_weight: 0.2
+      clarity_threshold: 0.03
+      dd_sensitivity: 0.2
+    position:
+      max_holdings: 4
+      discretize_step: 0.05
+      concentration: 1.0
+      rebalance_freq: daily
+      execution_timing: same_close
+      score_band: 0.03
+      commission_rate: 0.00026
+      max_holdings_special: 8
+      weighting: arithmetic
+    factors:
+      ema:
+        period_weeks: 5
+      volume_ratio:
+        window_days: 20
+      f6_rsi_thresh: 80.0
+      f6_drop_thresh: 0.025
+      f6_base_penalty: 0.15
+      log_return_deviation:
+        window_days: 20
+  preset3:
     label: 动能保护
     description: 日调仓，F1+F3+F6动能衰竭惩罚。MA趋势仓位控制。
     scoring:
@@ -258,7 +347,7 @@ presets:
       discretize_step: 0.05
       concentration: 2.0
       rebalance_freq: daily
-      execution_timing: next_open
+      execution_timing: same_close
       score_band: 0.03
       commission_rate: 0.00026
     factors:
@@ -269,7 +358,7 @@ presets:
       f6_rsi_thresh: 65.0
       f6_drop_thresh: 0.02
       f6_base_penalty: 0.15
-  daily_aggressive:
+  preset2:
     label: 波动探测
     description: 日调仓，F2日线MA偏离+F3自归一化量比+F7对数收益偏离。MA趋势仓位控制。
     scoring:
@@ -307,9 +396,9 @@ presets:
     position:
       max_holdings: 6
       discretize_step: 0.05
-      concentration: 0.0
+      concentration: 0.5
       rebalance_freq: daily
-      execution_timing: next_open
+      execution_timing: same_close
       score_band: 0.03
       commission_rate: 0.00026
       max_holdings_special: 8
@@ -324,59 +413,4 @@ presets:
       f6_base_penalty: 0.15
       log_return_deviation:
         window_days: 20
-  custom:
-    label: 自定义策略
-    description: 用户自定义策略。
-    scoring:
-      weights:
-        ema_deviation: 0.0
-        f2_daily_ma: 0.45
-        volume_ratio: 0.45
-        valuation: 0.0
-        exhaustion_penalty: 0.0
-        log_return_deviation: 0.1
-      bias_bonus: 0.0
-      sensitivity:
-        f1: 8.0
-        f2: 3.5
-        f3: 1.08
-        f7_t: 11.0
-        f7_k: 1.5
-    confidence:
-      type: ma_trend
-      ma_trend_period: 26
-      ma_bull_pos: 1.0
-      ma_bear_pos: 0.3
-      ma_direction_confirm: true
-      dead_zone: 25
-      full_zone: 65
-      regime_base:
-        bull_trend: 0.95
-        choppy_range: 0.75
-        bear_trend: 0.35
-      regime_window: 8
-      regime_threshold: 0.03
-      breadth_weight: 0.2
-      clarity_threshold: 0.03
-      dd_sensitivity: 0.2
-    position:
-      max_holdings: 6
-      discretize_step: 0.05
-      concentration: 2.6
-      rebalance_freq: daily
-      execution_timing: next_open
-      score_band: 0.09
-      commission_rate: 0.00026
-      max_holdings_special: 8
-      weighting: arithmetic
-    factors:
-      ema:
-        period_weeks: 5
-      volume_ratio:
-        window_days: 35
-      f6_rsi_thresh: 80.0
-      f6_drop_thresh: 0.025
-      f6_base_penalty: 0.15
-      log_return_deviation:
-        window_days: 15
-      f2_ma_period: 30
+      f2_ma_period: 15
