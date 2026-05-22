@@ -921,7 +921,7 @@
             <!-- Tuner-style scoped styles -->
             <style>
               /* Metric cards — adapted to page glass style */
-              .qt-metrics { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:16px; }
+              .qt-metrics { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; margin-bottom:16px; }
               .qt-metric { background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:12px; padding:12px; text-align:center; position:relative; }
               .qt-metric .label { font-size:12px; color:#6b7280; text-transform:uppercase; display:inline-flex; align-items:center; gap:3px; }
               .qt-metric .value { font-size:18px; font-weight:700; margin-top:2px; }
@@ -1007,7 +1007,9 @@
                 <div class="qt-metric" id="metric-dd"><div class="label">最大回撤</div><div class="value red" id="m-dd">-</div></div>
                 <div class="qt-metric" id="metric-sharpe"><div class="label">Sharpe<i class="tip-icon">?<span class="tip-text">风险调整收益指标 = (年化收益 - 无风险利率) / 收益率标准差。>1 为优，>2 为极优</span></i></div><div class="value blue" id="m-sharpe">-</div></div>
                 <div class="qt-metric" id="metric-sortino"><div class="label">Sortino<i class="tip-icon">?<span class="tip-text">下行风险调整收益 = (年化收益 - 无风险利率) / 下行标准差。只惩罚亏损波动，比 Sharpe 更宽容上涨波动</span></i></div><div class="value blue" id="m-sortino">-</div></div>
-                <div class="qt-metric" id="metric-winrate"><div class="label">胜率/赔率<i class="tip-icon">?<span class="tip-text">逐笔配对胜率 = 盈利交易笔数 ÷ 已平仓交易总数。赔率 = 盈利交易平均收益% ÷ 亏损交易平均亏损%（绝对值）。>1 表示赚一次够亏一次以上。</span></i></div><div class="value" id="m-wr">-</div></div>
+                <div class="qt-metric" id="metric-winrate"><div class="label">胜率<i class="tip-icon">?<span class="tip-text">逐笔配对胜率 = 盈利交易笔数 ÷ 已平仓交易总数。FIFO配对，期末按收盘价虚拟平仓。</span></i></div><div class="value" id="m-wr">-</div></div>
+                <div class="qt-metric" id="metric-payoff"><div class="label">赔率<i class="tip-icon">?<span class="tip-text">盈亏比 = 盈利交易平均收益% ÷ 亏损交易平均亏损%（取绝对值）。>1 表示赚一次够亏一次以上。</span></i></div><div class="value" id="m-payoff">-</div></div>
+                <div class="qt-metric" id="metric-excess"><div class="label">超额(沪深300)<i class="tip-icon">?<span class="tip-text">策略总收益 − 同期沪深300总收益。正值表示跑赢大盘。</span></i></div><div class="value" id="m-excess">-</div></div>
                 <div class="qt-metric" id="metric-rebalance"><div class="label">换仓率<i class="tip-icon">?<span class="tip-text">实际发生换仓的调仓日 ÷ 总调仓日数</span></i></div><div class="value" id="m-rb">-</div></div>
                 <div class="qt-metric" id="metric-commission"><div class="label">交易佣金</div><div class="value" id="m-comm">-</div></div>
               </div>

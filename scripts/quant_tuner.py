@@ -175,6 +175,9 @@ def preload():
     # Precompute heatmap returns (5d / 20d rolling pct_change)
     _precompute_heatmap_returns()
 
+    # Load ETF metadata (AUM + top10 holdings)
+    _load_etf_metadata()
+
     CACHE["ready"] = True
     print("Preload complete.\n")
 
@@ -333,14 +336,15 @@ def _run_incremental_fetch(cfg, end_date=None):
     end_date: passed through to fetch_etf_kline to cap the data range.
     Returns (ok_count, fail_count).
     """
-    from quant_data_fetcher import update_single, FRESH_MARKER
+    from quant_data_fetcher import update_single, FRESH_MARKER, _latest_allowed_date
     from datetime import datetime as _dt
     import time as _time
 
-    # Global freshness check
+    # Global freshness check: require data up to latest allowed close date
     if FRESH_MARKER.exists():
         try:
-            if FRESH_MARKER.read_text().strip() == _dt.now().strftime("%Y-%m-%d"):
+            expected = _latest_allowed_date()
+            if FRESH_MARKER.read_text().strip() >= expected:
                 print(f"  (All {len(cfg['universe'])} ETFs already fresh, skipping fetch)")
                 return len(cfg["universe"]), 0
         except Exception:
@@ -698,6 +702,22 @@ def _load_market_regimes():
         CACHE["market_regimes"] = {}
 
 
+def _load_etf_metadata():
+    """Load ETF metadata (AUM + top10 holdings) from disk into CACHE."""
+    path = SKILL_DIR / "data" / "quant" / "etf_metadata.json"
+    try:
+        if path.exists():
+            with path.open("r", encoding="utf-8") as f:
+                CACHE["etf_metadata"] = json.load(f)
+            print(f"  ETF metadata: {len(CACHE['etf_metadata'])} ETFs loaded")
+        else:
+            CACHE["etf_metadata"] = {}
+            print("  ETF metadata: no file, skipping")
+    except Exception as e:
+        CACHE["etf_metadata"] = {}
+        print(f"  ETF metadata: load failed ({e})")
+
+
 def _precompute_heatmap_returns(lookbacks=(5, 20)):
     """Precompute N-day rolling returns for all ETFs.
     Called once at startup; subsequent requests read CACHE["heatmap"].
@@ -732,6 +752,171 @@ def _parse_universe_filter(params):
 
 def _validate_tuner_params(params):
     return qc.validate_tuner_params(params)
+
+
+def _compute_etf_contributions(trade_log, signal_history, etf_name_map, etf_sector_map):
+    """Aggregate per-ETF contribution metrics from trade log and signal history.
+
+    Returns dict: {code: {name, sector, selectedCount, selectionRate, avgWeight,
+                          avgHoldDays, firstSelected, totalPnlPct, avgTradePnl,
+                          tradeCount, winRate, payoffRatio, sectorShare,
+                          topCooccurrence, cooccurrenceCount, phaseRates, trend}}
+    """
+    total_signals = max(len(signal_history), 1)
+    all_codes = set(etf_name_map.keys())  # all ETFs in universe, including never-selected
+    for s in signal_history:
+        for code in s.get("top6", []):
+            all_codes.add(code)
+    for t in trade_log:
+        all_codes.add(t["code"])
+
+    # ── Phase definitions ──
+    phases = [
+        ("2020-2021", "2020-01-01", "2021-12-31"),
+        ("2022",      "2022-01-01", "2022-12-31"),
+        ("2023",      "2023-01-01", "2023-12-31"),
+        ("2024",      "2024-01-01", "2024-12-31"),
+        ("2025",      "2025-01-01", "2025-12-31"),
+        ("2026",      "2026-01-01", "2026-12-31"),
+    ]
+
+    # ── Per-code aggregation ──
+    result = {}
+    for code in sorted(all_codes):
+        name = etf_name_map.get(code, code)
+        sector = etf_sector_map.get(code, "")
+
+        # --- Participation (from signal_history) ---
+        selected_count = 0
+        available_signals = 0
+        weight_sum = 0.0
+        weight_n = 0
+        hold_streaks = []
+        current_streak = 0
+        first_selected = None
+
+        for s in signal_history:
+            top6 = s.get("top6", [])
+            positions = s.get("positions", {})
+            scores = s.get("scores", {})
+            if code in scores:
+                available_signals += 1
+            date_str = str(s.get("date", ""))[:10]
+            in_top6 = code in top6
+            if in_top6:
+                selected_count += 1
+                w = positions.get(code, 0)
+                weight_sum += w * 100  # convert to %
+                weight_n += 1
+                current_streak += 1
+                if first_selected is None:
+                    first_selected = date_str
+            else:
+                if current_streak > 0:
+                    hold_streaks.append(current_streak)
+                current_streak = 0
+        if current_streak > 0:
+            hold_streaks.append(current_streak)
+
+        effective = max(available_signals, 1)
+        selection_rate = round(selected_count / effective * 100, 1)
+        avg_weight = round(weight_sum / max(weight_n, 1), 1)
+        avg_hold = round(sum(hold_streaks) / max(len(hold_streaks), 1), 1)
+
+        # --- Performance (from trade_log) ---
+        code_trades = [t for t in trade_log if t["code"] == code]
+        if code_trades:
+            winners = [t for t in code_trades if t["pnl_pct"] > 0]
+            losers = [t for t in code_trades if t["pnl_pct"] <= 0]
+            total_pnl = round(sum(t["pnl_pct"] for t in code_trades), 2)
+            avg_pnl = round(total_pnl / len(code_trades), 2)
+            wr = round(len(winners) / len(code_trades) * 100, 1)
+            aw = sum(t["pnl_pct"] for t in winners) / len(winners) if winners else 0
+            al = abs(sum(t["pnl_pct"] for t in losers) / len(losers)) if losers else 0
+            payoff = round(aw / al, 2) if al > 0 else 999.0
+        else:
+            total_pnl, avg_pnl, wr, payoff = 0.0, 0.0, 0.0, 0.0
+
+        # --- Structural ---
+        # Sector share: this ETF's selection count / total selections in its sector
+        sector_total = sum(
+            1 for s in signal_history
+            for c in s.get("top6", [])
+            if etf_sector_map.get(c, "") == sector
+        )
+        sector_share = round(selected_count / max(sector_total, 1) * 100, 1)
+
+        # Co-occurrence: most common co-selected ETF
+        co_occur = {}
+        for s in signal_history:
+            top6 = s.get("top6", [])
+            if code in top6:
+                for other in top6:
+                    if other != code:
+                        co_occur[other] = co_occur.get(other, 0) + 1
+        top_co = max(co_occur, key=co_occur.get) if co_occur else ""
+        top_co_name = etf_name_map.get(top_co, top_co) if top_co else ""
+        top_co_n = co_occur.get(top_co, 0) if top_co else 0
+
+        # --- Lifecycle (phase rates) ---
+        phase_rates = {}
+        for phase_label, p_start, p_end in phases:
+            n = sum(1 for s in signal_history
+                    if p_start <= str(s.get("date", ""))[:10] <= p_end)
+            c = sum(1 for s in signal_history
+                    if p_start <= str(s.get("date", ""))[:10] <= p_end
+                    and code in s.get("top6", []))
+            phase_rates[phase_label] = round(c / max(n, 1) * 100, 1) if n > 0 else 0
+
+        # Trend: compare last 2 phases with first 2
+        recent = sum(phase_rates.get(p[0], 0) for p in phases[-2:])
+        early = sum(phase_rates.get(p[0], 0) for p in phases[:2])
+        if recent > early + 5:
+            trend = "rising"
+        elif recent < early - 5:
+            trend = "declining"
+        else:
+            trend = "stable"
+
+        # Observation period: < 80 trading days since listing
+        meta = (CACHE.get("etf_metadata") or {}).get(code, {})
+        listing_str = meta.get("listing_date", "")
+        trading_days = 0
+        observation = False
+        if listing_str:
+            try:
+                listing_dt = pd.Timestamp(listing_str)
+                end_dt = pd.Timestamp(end_date_str) if (end_date_str := str(signal_history[-1].get("date", ""))[:10]) else None
+                if end_dt:
+                    trading_days = max(0, len([d for d in pd.date_range(listing_dt, end_dt) if d.weekday() < 5]))
+                observation = trading_days < 80
+            except Exception:
+                pass
+
+        result[code] = {
+            "name": name,
+            "sector": sector,
+            "observation": observation,
+            "tradingDays": trading_days,
+            "selectedCount": selected_count,
+            "availableSignals": available_signals,
+            "selectionRate": selection_rate,
+            "avgWeight": avg_weight,
+            "avgHoldDays": avg_hold,
+            "firstSelected": first_selected or "",
+            "totalPnlPct": total_pnl,
+            "avgTradePnl": avg_pnl,
+            "tradeCount": len(code_trades),
+            "winRate": wr,
+            "payoffRatio": payoff,
+            "sectorShare": sector_share,
+            "topCooccurrence": top_co,
+            "topCoName": top_co_name,
+            "cooccurrenceCount": top_co_n,
+            "phaseRates": phase_rates,
+            "trend": trend,
+        }
+    return result
 
 
 def run_tuner_backtest(params):
@@ -892,6 +1077,9 @@ def run_tuner_backtest(params):
 
     hs_sliced = _rebase_slice(hs_full, eq_dates, nav_date_strs)
     eq_sliced = _rebase_slice(eq_full, eq_dates, nav_date_strs)
+    # Excess return vs HS300 (both rebased to 100)
+    excess_return = round((final_nav_val / initial_cap) - (hs_sliced[-1] / 100 if hs_sliced else 1), 4) * 100
+    excess_return = round(excess_return, 1)
 
     latest_holdings = []
     if signal_history:
@@ -998,6 +1186,7 @@ def run_tuner_backtest(params):
             "sharpe": round(float(sharpe), 2),
             "sortino": round(float(sortino), 2),
             "calmar": round(float(calmar), 2),
+            "excessReturn": excess_return,
             "winRate": round(win_rate, 1),
             "payoffRatio": round(payoff_ratio, 2),
             "avgWin": round(avg_win, 2) if isinstance(avg_win, (int, float)) else 0.0,
@@ -1035,6 +1224,7 @@ def run_tuner_backtest(params):
             "etfSectorMap": etf_sector_map,
         },
         "signalHistory": enriched_history,
+        "etfContributions": _compute_etf_contributions(trade_log, signal_history, etf_name_map, etf_sector_map),
     }
 
 
@@ -1083,6 +1273,21 @@ def _require_ready():
     return None
 
 
+_BACKTEST_CACHE_PATH = SKILL_DIR / "data" / "quant" / "cache" / "last_backtest.json"
+
+
+def _cache_version_hash():
+    """Hash key source files so cached results invalidate on code change."""
+    import hashlib
+    h = hashlib.md5()
+    for fname in ["quant_tuner.py", "quant_backtest.py", "quant_factors.py",
+                  "quant_contract.py", "quant_data_utils.py"]:
+        fp = SKILL_DIR / "scripts" / fname
+        if fp.exists():
+            h.update(fp.read_bytes())
+    return h.hexdigest()[:8]
+
+
 @app.route("/api/run", methods=["POST"])
 def api_run():
     guard = _require_ready()
@@ -1095,7 +1300,68 @@ def api_run():
         import traceback
         traceback.print_exc()
         return jsonify({"error": f"{type(e).__name__}: {str(e)}"}), 500
+    # Save to disk cache
+    try:
+        cache = {"version": _cache_version_hash(), "params": params, "result": result}
+        _BACKTEST_CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
+        with _BACKTEST_CACHE_PATH.open("w", encoding="utf-8") as f:
+            json.dump(cache, f, ensure_ascii=False, default=str)
+    except Exception:
+        pass
     return jsonify(result)
+
+
+@app.route("/api/last_result")
+def api_last_result():
+    guard = _require_ready()
+    if guard:
+        return guard
+    try:
+        if _BACKTEST_CACHE_PATH.exists():
+            with _BACKTEST_CACHE_PATH.open("r", encoding="utf-8") as f:
+                cache = json.load(f)
+            if cache.get("version") == _cache_version_hash():
+                return jsonify({"cached": True, "params": cache.get("params", {}),
+                                "result": cache.get("result", {})})
+    except Exception:
+        pass
+    return jsonify({"cached": False})
+
+
+@app.route("/api/metadata")
+def api_metadata():
+    guard = _require_ready()
+    if guard:
+        return guard
+    return jsonify(CACHE.get("etf_metadata", {}))
+
+
+@app.route("/api/refresh_metadata", methods=["POST"])
+def api_refresh_metadata():
+    guard = _require_ready()
+    if guard:
+        return guard
+    try:
+        from fetch_etf_metadata import load_universe, fetch_one, load_existing, save_metadata
+        universe = load_universe()
+        existing = load_existing()
+        ok = fail = 0
+        import time as _t
+        for etf in universe:
+            try:
+                entry = fetch_one(etf, existing)
+                existing[etf["code"]] = entry
+                ok += 1
+                _t.sleep(1.0)
+            except Exception:
+                fail += 1
+        save_metadata(existing)
+        CACHE["etf_metadata"] = existing
+        return jsonify({"ok": True, "message": f"meta: {ok} OK, {fail} fail", "ok_count": ok, "fail_count": fail})
+    except ImportError:
+        return jsonify({"ok": False, "message": "fetch_etf_metadata not available"}), 500
+    except Exception as e:
+        return jsonify({"ok": False, "message": str(e)}), 500
 
 
 @app.route("/api/param_schema")

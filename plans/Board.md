@@ -4,10 +4,11 @@
 
 | 字段 | 值 |
 |------|------|
-| **当前版本** | v3.2.0-dev |
-| **发布日期** | —（开发中） |
-| **下一目标版本** | v3.2.0 |
+| **当前版本** | v3.2.0 |
+| **发布日期** | 2026-05-22 |
+| **下一目标版本** | v3.3.0 |
 | **开发中需求** | 0 |
+| **池子规模** | 44 支 ETF，11 个扇区 |
 
 
 
@@ -17,7 +18,7 @@
 
 | ID | 标题 | 优先级 | 目标版本 | 最后活动 | 备注 |
 |----|------|--------|---------|---------|------|
-| REQ-213 | ETF 元数据补充 — 规模 + 前十大重仓股 | P1 | v3.2.0 | 2026-05-21 | 为全部 40 支 ETF 补充规模(资产净值)和前十大重仓股信息，支持脚本增量更新，用于成分股分析、重叠度评估、池子准入决策 |
+| — | — | — | — | — | — |
 
 
 
@@ -38,6 +39,15 @@
 
 | ID | 标题 | 完成日期 | 备注 |
 |----|------|---------|------|
+| REQ-213 | ETF 元数据补充 — 规模 + 前十大重仓股 | 2026-05-22 | `fetch_etf_metadata.py` 拉取东方财富 AUM+Top10 持仓 → `etf_metadata.json`。Tuner 启动加载 + `/api/refresh_metadata` 端点 + 前端 chk-meta 勾选框顺带更新。44 支全量，38 支有持仓数据。 |
+| REQ-221 | 扇区语义配色 | 2026-05-22 | 11 扇区固定语义配色（科技蓝/TMT青/新能源绿/医药粉/消费橙/金融金/资源棕/传统石灰/制造紫/宽基银灰/另类堇），替代顺序随机分配。热力图+快照表同步。 |
+| REQ-220 | Tuner UI 综合优化 | 2026-05-21~22 | nav-chart boundaryGap 对齐 + freq-tabs 入 chart + 快照扇区色块/火焰后置/sticky thead/滚动区 + 个股回放独立 kline-section + contrib-grid 重构 + metric 居中 + guide 公式标准化 + 导览栏目重排 + param-schema 字号 + kline-replay 成交额亿元标注 + 滚动条隐藏 |
+| REQ-219 | 超额收益 + 10 卡指标重排 | 2026-05-22 | 胜率/赔率拆分 + 超额(沪深300)新增。5×2 网格: 年化→总→超额→胜率→赔率→Sharpe→Sortino→回撤→换仓率→佣金。excessReturn 后端计算。 |
+| REQ-218 | 回测结果持久化缓存 | 2026-05-22 | `/api/run` 后存盘 `last_backtest.json`，页面刷新 `renderResults()` 自动恢复 + 参数还原。版本 hash 校验(5 源文件)，代码变更自动失效。 |
+| REQ-217 | 盘中 CSV 写入 bug 修复 | 2026-05-21 | `refresh_data()` 盘中不再跑 `_run_incremental_fetch`，实时数据仅写 intraday_cache。根因: `fetch_end=today_str` 覆盖 `_latest_allowed_date()` 安全机制 + `<=` 闭区间包含当日未完成 K 线。 |
+| REQ-216 | ETF 贡献度评估系统 | 2026-05-22 | `_compute_etf_contributions()` 9 项指标(选中率/均权重/均持有/笔数/胜率/赔率/交易盈亏/份额/共现)。`docs/ETF_CONTRIBUTION_FRAMEWORK.md` 分析框架。`scripts/analyze_contributions.py`。前端 contrib-grid + 扇区图例过滤。观察期排除(上市<80日)。选中率按有效信号数归一化。 |
+| REQ-215 | 逐笔配对胜率 + 赔率 (替代日胜率) | 2026-05-20 | `_execute_rebalance` 埋点 trade_log(FIFO配对)。quant_backtest.py 返回 trade_log，quant_tuner.py 聚合胜率/赔率。tuner + formal page 同步。 |
+| REQ-214 | ETF 池子 40→44 + 扇区重划 + preset 重命名 | 2026-05-21 | −德国 +巴西(520870) +纳指科技(159509) +中概互联(513050) +稀土(516150) +粮食(159698)。中概互联入 TMT。preset weekly_trend→preset1, daily_aggressive→preset2, daily_aggressive_f6→preset3, custom→preset4。 |
 | REQ-199 | 搭建标的池扩容流程 | 2026-05-12 | 完成: 512010/159766/513690/563300 入库, 池子 30→34, 新增红利/宽基扇区。注意事项: 此后池子继续增至 40 支(6 支未编号加入,待追溯), 持续扩容优化移交 `research/pool/`。 |
 | REQ-198 | 搭建回测预计算管道 + Tuner 调试页基础设施 | 2026-05-12 | 完成: 抽出 benchmark/trading-calendar/quant-data 模块; 盘中估算+时间戳; preload 优化。持续性能优化移交 `research/params/`。注意事项: F2 计算未移除(仅 w2=0); 当前 3Y 回测约 24.5s(40 支 ETF), 与 12s 标称有差距(原值基于 30 支池子测量)。 |
 | REQ-108 | 添加腾讯财经 API 作为备用源 | 2026-05-09 | 腾讯已作为 quant_data_fetcher.py 主数据源接入（东财 API IP 被封后切换）。后续数据源问题移交 `docs/01-数据源与工具生态.md`。 |
@@ -99,6 +109,8 @@
 | BUG-024 | `set()` 迭代顺序非确定 → CLI/Tuner 回测结果不一致 | 🔴 Critical | fixed | v3.2.0-dev | REQ-205 | 2026-05-18 | PYTHONHASHSEED 随机化导致买入循环顺序不同、现金分配不同。修复: `sorted()` + 成交额排序 | v3.2.0 |
 | BUG-025 | MA 趋势信号 lookahead bias — `merge_asof(direction="forward")` | 🔴 Critical | fixed | v3.2.0-dev | weekly_trend/daily_aggressive | 2026-05-18 | 周一~周四用了本周五的 MA 信号(未来数据)。修复: `direction="backward"` | v3.2.0 |
 | BUG-026 | `is_last` 残量回收无视 total_target 上限 → 熊市现金被花光 | 🔴 Critical | fixed | v3.2.0-dev | REQ-205 | 2026-05-18 | 第一 pass `buy_value=cash`→修了；第二 pass 用 `cash2` 变量名不同 → 漏修。修复: `min(cash, max(diff,0))` + 共用函数 | v3.2.0 |
+| BUG-027 | setSlider `removeAttribute('step')` → 浏览器默认 step=1 → 滑块锁死 0%/100% | 🟡 Medium | fixed | v3.2.0-dev | ma_bull/ma_bear 滑块 | 2026-05-21 | HTML 规范: range input 无 step 属性时默认值=1。修复: `el.step='any'` 代替 `removeAttribute` | v3.2.0 |
+| BUG-028 | 中概互联(513050) `--full` 分页 bug → CSV 仅 2017-2019 数据 → 不进因子计算 | 🟡 Medium | fixed | v3.2.0-dev | REQ-214 池子扩容 | 2026-05-22 | `fetch_etf_kline` full 模式后处理丢失中间页数据。手动分页重建 2264 行 CSV。后续 full fetch 仍可能有此问题，需统一修复。 | v3.2.0 |
 
 
 
@@ -115,13 +127,13 @@
 
 ## ID 计数器
 
-**下一个需求 ID**: REQ-214
+**下一个需求 ID**: REQ-222
 
 
 
 
 
-**下一个 Bug ID**: BUG-027
+**下一个 Bug ID**: BUG-029
 
 
 

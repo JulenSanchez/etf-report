@@ -633,6 +633,7 @@ def generate_quant_baseline_payload():
                 "calmar": summary.get("calmar", 0),
                 "winRate": summary.get("winRate", 0),
                 "payoffRatio": summary.get("payoffRatio", 0),
+                "excessReturn": summary.get("excessReturn", 0),
                 "avgWin": summary.get("avgWin", 0),
                 "avgLoss": summary.get("avgLoss", 0),
                 "tradeCount": summary.get("tradeCount", 0),

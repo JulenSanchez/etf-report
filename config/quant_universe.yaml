@@ -161,7 +161,7 @@ universe:
 - code: '513050'
   name: 中概互联ETF
   market: sh
-  sector: 另类
+  sector: TMT
 - code: '159329'
   name: 沙特ETF
   market: sz

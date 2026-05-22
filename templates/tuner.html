@@ -106,15 +106,16 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
 .param-focus-flash { outline:2px solid #f59e0b; outline-offset:2px; border-radius:4px; transition:outline-color .2s; }
 
 /* Results */
-.metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; }
-.metric-card { background: #1a2332; border: 1px solid #2a3a4a; border-radius: 8px; padding: 10px; text-align: center; position: relative; }
-.metric-card .label { font-size: 10px; color: #6b7280; text-transform: uppercase; display: inline-flex; align-items: center; gap: 3px; }
-.metric-card .value { font-size: 18px; font-weight: 700; margin-top: 2px; }
+.metrics { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 16px; }
+.metric-card { background: #1a2332; border: 1px solid #2a3a4a; border-radius: 8px; padding: 10px; text-align: center; position: relative; display:flex; flex-direction:column; justify-content:center; }
+.metric-card .label { font-size: 11px; color: #6b7280; display:flex; align-items:center; justify-content:center; gap:3px; }
+.metric-card .value { font-size: 18px; font-weight: 700; }
 .param-hl { color: #fbbf24; font-weight: 600; }
 .formula { display: inline-block; vertical-align: middle; text-align: center; line-height: 1.2; margin: 0 1px; font-family: 'Segoe UI', system-ui, sans-serif; }
 .formula .frac-top { display: block; border-bottom: 1px solid #94a3b8; padding: 0 5px 1px; }
 .formula .frac-bot { display: block; padding: 0 5px; }
 .green { color: #10b981; } .red { color: #ef4444; } .blue { color: #3b82f6; } .orange { color: #f59e0b; }
+.hide-scrollbar::-webkit-scrollbar { display: none; }
 .tip-icon { display: inline-block; width: 12px; height: 12px; line-height: 12px; font-size: 9px; border-radius: 50%; background: #2a3a4a; color: #6b7280; text-align: center; cursor: help; font-style: normal; }
 .tip-icon:hover .tip-text { display: block; }
 .tip-text { display: none; position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(100% + 6px); background: #1e293b; border: 1px solid #3b4a5a; border-radius: 6px; padding: 8px 10px; font-size: 11px; color: #c0c8d4; text-transform: none; line-height: 1.5; white-space: normal; min-width: 180px; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,.4); }
@@ -460,6 +461,9 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
     <label style="display:block;margin-top:4px;font-size:12px;color:#9ca3af;cursor:pointer;user-select:none;">
       <input type="checkbox" id="chk-debug" style="vertical-align:middle;margin-right:3px;">debug
     </label>
+    <label style="display:block;margin-top:2px;font-size:12px;color:#9ca3af;cursor:pointer;user-select:none;">
+      <input type="checkbox" id="chk-meta" style="vertical-align:middle;margin-right:3px;">ETF元数据
+    </label>
 </div>
 
 <div class="panel-right" id="tuner-panel-right">
@@ -767,7 +771,7 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
     </div>
     <div id="results" style="display:none;">
       <!-- 左右布局: 左侧 NAV 区 / 右侧 调仓快照, stretch 对齐高度 -->
-      <div style="display:grid;grid-template-columns:6fr 4fr;gap:14px;align-items:stretch;">
+      <div style="display:grid;grid-template-columns:60% 40%;gap:14px;align-items:stretch;">
         <!-- 左 6: 业绩主区 + 单ETF详情区 -->
         <div id="tuner-nav-block" style="display:flex;flex-direction:column;gap:14px;min-height:0;">
           <!-- 业绩主区 (含单 ETF 详情) -->
@@ -778,10 +782,12 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
               <div class="metrics" id="tuner-metrics" style="margin-bottom:0;">
                 <div class="metric-card" id="metric-annual" aria-label="年化收益"><div class="label">年化收益</div><div class="value green" id="m-annual">-</div></div>
                 <div class="metric-card" id="metric-total" aria-label="总收益"><div class="label">总收益</div><div class="value green" id="m-total">-</div></div>
-                <div class="metric-card" id="metric-dd" aria-label="最大回撤"><div class="label">最大回撤</div><div class="value red" id="m-dd">-</div></div>
+                <div class="metric-card" id="metric-excess" aria-label="超额收益"><div class="label">超额收益<i class="tip-icon">?<span class="tip-text">策略总收益 − 同期沪深300总收益。正值表示跑赢大盘。</span></i></div><div class="value" id="m-excess">-</div></div>
+                <div class="metric-card" id="metric-winrate" aria-label="胜率"><div class="label">胜率<i class="tip-icon">?<span class="tip-text">逐笔配对胜率 = 盈利交易笔数 ÷ 已平仓交易总数。FIFO配对，期末按收盘价虚拟平仓。</span></i></div><div class="value" id="m-wr">-</div></div>
+                <div class="metric-card" id="metric-payoff" aria-label="赔率"><div class="label">赔率<i class="tip-icon">?<span class="tip-text">盈亏比 = 盈利交易平均收益% ÷ 亏损交易平均亏损%（取绝对值）。>1 表示赚一次够亏一次以上。</span></i></div><div class="value" id="m-payoff">-</div></div>
                 <div class="metric-card" id="metric-sharpe" aria-label="Sharpe"><div class="label">Sharpe<i class="tip-icon">?<span class="tip-text">风险调整收益指标 = (年化收益 - 无风险利率) / 收益率标准差。>1 为优，>2 为极优</span></i></div><div class="value blue" id="m-sharpe">-</div></div>
                 <div class="metric-card" id="metric-sortino" aria-label="Sortino"><div class="label">Sortino<i class="tip-icon">?<span class="tip-text">下行风险调整收益 = (年化收益 - 无风险利率) / 下行标准差。只惩罚亏损波动，比 Sharpe 更宽容上涨波动</span></i></div><div class="value blue" id="m-sortino">-</div></div>
-                <div class="metric-card" id="metric-winrate" aria-label="胜率/赔率"><div class="label">胜率/赔率<i class="tip-icon">?<span class="tip-text">逐笔配对胜率 = 盈利交易笔数 ÷ 已平仓交易总数。赔率 = 盈利交易平均收益% ÷ 亏损交易平均亏损%（绝对值）。>1 表示赚一次够亏一次以上。</span></i></div><div class="value" id="m-wr">-</div></div>
+                <div class="metric-card" id="metric-dd" aria-label="最大回撤"><div class="label">最大回撤</div><div class="value red" id="m-dd">-</div></div>
                 <div class="metric-card" id="metric-rebalance" aria-label="换仓率"><div class="label">换仓率<i class="tip-icon">?<span class="tip-text">实际发生换仓的调仓日 ÷ 总调仓日数。低比率说明策略稳定、持仓延续性强。</span></i></div><div class="value" id="m-rb">-</div></div>
                 <div class="metric-card" id="metric-commission" aria-label="交易佣金"><div class="label">交易佣金</div><div class="value" id="m-comm">-</div></div>
               </div>
@@ -791,20 +797,24 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
 
               <!-- 净值 + 回撤区: 左标题 + 右 freq Tab -->
               <div id="tuner-nav-section" aria-label="净值与回撤图">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-                  <div id="nav-title" style="font-size:12px;color:#94a3b8;font-weight:600;">💼 策略净值 vs 基准 · 红线 = 当前选中日期</div>
-                  <div id="kline-freq-tabs" style="display:flex;gap:2px;">
+                <div id="nav-chart" style="height:320px;position:relative;">
+                  <div id="kline-freq-tabs" style="position:absolute; top:6px; right:8px; display:flex; gap:2px; z-index:10; background:rgba(15,20,25,0.85); border-radius:6px; padding:2px;">
                     <button id="kline-freq-daily"  class="kline-tab active" onclick="switchKlineFreq('daily')">日 K</button>
                     <button id="kline-freq-weekly" class="kline-tab"        onclick="switchKlineFreq('weekly')">周 K</button>
                   </div>
                 </div>
-                <div id="nav-chart" style="height:320px;"></div>
                 <div id="dd-chart" style="height:100px;"></div>
               </div>
+            </div>
+          </section>
 
-              <!-- 单 ETF K 线/回放区 -->
-              <div id="tuner-snapshot-kline-block" style="border-top:1px solid #2a3a4a;padding-top:8px;" aria-label="单ETF K线回放">
-                <div id="kline-title" style="font-size:12px;color:#94a3b8;font-weight:600;margin-bottom:4px;">点击右侧表格行查看 ETF 走势 + 买卖点</div>
+          <!-- 单 ETF K 线 + 贡献度 -->
+          <section id="tuner-kline-section" style="display:none;">
+            <h2 id="tuner-kline-heading" style="font-size:15px;color:#e0e0e0;margin-bottom:8px;">📈 个股回放</h2>
+            <div id="tuner-kline-subtitle" style="font-size:12px;color:#94a3b8;margin-bottom:12px;">点击右侧表格行查看 ETF 走势 + 买卖点</div>
+            <div id="etf-contrib-grid" style="display:none; grid-template-columns:repeat(9,1fr); gap:6px; margin-bottom:10px;"></div>
+            <div id="tuner-kline-block" style="background:#1a2332;border:1px solid #2a3a4a;border-radius:10px;padding:10px;">
+              <div id="tuner-snapshot-kline-block" aria-label="单ETF K线回放">
                 <div id="kline-replay" style="width:100%;height:380px;"></div>
               </div>
             </div>
@@ -813,33 +823,34 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
 
         <!-- 右 4: 调仓快照 (仅指标行 + 表格) -->
         <section id="tuner-snapshot-section" style="display:none;">
-          <h2 id="tuner-snapshot-heading" style="font-size:15px;color:#e0e0e0;margin-bottom:8px;">🔍 调仓快照</h2>
-          <div id="tuner-snapshot-subtitle" style="font-size:12px;color:#94a3b8;margin-bottom:12px;">点击左侧 NAV 切换调仓 · 点击表格行查看 K 线 / 回放</div>
+          <h2 id="tuner-snapshot-heading" style="font-size:15px;color:#e0e0e0;margin-bottom:8px;flex-shrink:0;">🔍 调仓快照</h2>
+          <div id="tuner-snapshot-subtitle" style="font-size:12px;color:#94a3b8;margin-bottom:12px;flex-shrink:0;">点击左侧 NAV 切换调仓 · 点击表格行查看 K 线 / 回放</div>
 
           <!-- 顶部指标行 -->
-          <div id="tuner-snapshot-metrics" style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px;" aria-label="调仓快照指标">
+          <div id="tuner-snapshot-metrics" style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px;flex-shrink:0;" aria-label="调仓快照指标">
             <div id="snap-metric-holdings" style="background:#1a2332;border:1px solid #2a3a4a;border-radius:6px;padding:8px;text-align:center;">
-              <div style="font-size:10px;color:#6b7280;">持仓</div>
+              <div style="font-size:11px;color:#6b7280;">持仓</div>
               <div id="snap-m-holdings" style="font-size:17px;font-weight:700;color:#3b82f6;margin-top:2px;">-</div>
             </div>
             <div id="snap-metric-total-pos" style="background:#1a2332;border:1px solid #2a3a4a;border-radius:6px;padding:8px;text-align:center;">
-              <div style="font-size:10px;color:#6b7280;">总仓位</div>
+              <div style="font-size:11px;color:#6b7280;">总仓位</div>
               <div id="snap-m-total-pos" style="font-size:17px;font-weight:700;color:#10b981;margin-top:2px;">-</div>
             </div>
             <div id="snap-metric-avg-conf" style="background:#1a2332;border:1px solid #2a3a4a;border-radius:6px;padding:8px;text-align:center;">
-              <div style="font-size:10px;color:#6b7280;">信心</div>
+              <div style="font-size:11px;color:#6b7280;">信心</div>
               <div id="snap-m-avg-conf" style="font-size:17px;font-weight:700;color:#f59e0b;margin-top:2px;">-</div>
             </div>
             <div id="snap-metric-cash" style="background:#1a2332;border:1px solid #2a3a4a;border-radius:6px;padding:8px;text-align:center;">
-              <div style="font-size:10px;color:#6b7280;">现金</div>
+              <div style="font-size:11px;color:#6b7280;">现金</div>
               <div id="snap-m-cash" style="font-size:17px;font-weight:700;color:#6b7280;margin-top:2px;">-</div>
             </div>
           </div>
 
           <!-- 打分表格区 -->
-          <div id="tuner-snapshot-table-block" style="background:#1a2332;border:1px solid #2a3a4a;border-radius:10px;overflow:hidden;">
+          <div style="max-height:calc(100vh - 250px); overflow-y:auto; scrollbar-width:none; -ms-overflow-style:none;" class="hide-scrollbar">
+          <div id="tuner-snapshot-table-block" style="background:#1a2332;border:1px solid #2a3a4a;border-radius:10px 10px 0 0;overflow:hidden;">
             <table id="tuner-snapshot-table" style="width:100%;border-collapse:collapse;">
-              <thead id="tuner-snapshot-thead">
+              <thead id="tuner-snapshot-thead" style="position:sticky;top:0;z-index:1;background:#1a2332;">
                 <tr>
                   <th style="text-align:left;padding:8px 4px;font-size:10px;color:#6b7280;border-bottom:1px solid #2a3a4a;">ETF</th>
                   <th style="text-align:center;padding:8px 4px;font-size:10px;color:#6b7280;border-bottom:1px solid #2a3a4a;">F1</th>
@@ -855,7 +866,10 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
               </thead>
               <tbody id="tuner-snapshot-body"></tbody>
             </table>
-            <div id="tuner-snapshot-footer" style="padding:6px 10px;font-size:10px;color:#4b5563;border-top:1px solid #1e293b;"></div>
+          </div>
+          </div>
+          <div id="tuner-snapshot-footer" style="padding:6px 10px;font-size:10px;color:#9ca3af;border:1px solid #2a3a4a;border-top:none;border-radius:0 0 10px 10px;background:#1a2332;display:flex;flex-wrap:wrap;gap:4px 12px;">
+            <span style="color:#6b7280;">扇区:</span>
           </div>
         </section>
       </div>
@@ -2014,6 +2028,9 @@ async function refreshData() {
     else if (data.status === 'intraday') badge = '<span class="data-badge intraday">intraday</span>';
     else if (data.status === 'error') badge = '<span class="data-badge stale">error</span>';
     status.innerHTML = (data.message || 'done') + ' ' + badge;
+    if ($id('chk-meta').checked) {
+      try { var mResp = await fetch('/api/refresh_metadata', { method:'POST' }); var mData = await mResp.json(); status.innerHTML += ' · ' + (mData.message || 'meta ok'); } catch(e) {}
+    }
   } catch(e) { status.innerHTML = '请求失败: ' + e.message + ' <span class="data-badge stale">error</span>'; }
   finally { btn.disabled = false; btn.textContent = '刷新数据'; }
 }
@@ -2035,7 +2052,7 @@ async function runBacktest() {
     lastResult = data;
     renderResults(data);
     switchRightView('results');
-    status.textContent = '完成 ' + data.summary.startDate + ' → ' + data.summary.endDate + ' · ' + data.summary.rebalanceCount + '/' + data.summary.rebalanceDays + ' 次换仓/调仓 · 耗时 ' + data.summary.elapsed + ' 秒';
+    status.textContent = '完成 ' + data.summary.startDate + ' → ' + data.summary.endDate + ' · 耗时 ' + data.summary.elapsed + ' 秒';
   } catch(e) { status.textContent = '请求失败: ' + e.message; }
   finally { btn.textContent = '运行回测'; validateRunInputs(); }
 }
@@ -2043,13 +2060,18 @@ async function runBacktest() {
 function renderResults(data) {
   $id('results-placeholder').style.display = 'none';
   $id('results').style.display = 'block';
+  $id('tuner-kline-section').style.display = 'block';
   var s = data.summary;
   $id('m-annual').textContent = (s.annualReturn>0?'+':'') + s.annualReturn + '%';
   $id('m-total').textContent = (s.totalReturn>0?'+':'') + s.totalReturn + '%';
   $id('m-dd').textContent = s.maxDrawdown + '%';
   $id('m-sharpe').textContent = s.sharpe.toFixed(2);
   $id('m-sortino').textContent = s.sortino.toFixed(2);
-  $id('m-wr').textContent = s.winRate + '% / ' + s.payoffRatio.toFixed(2);
+  $id('m-wr').textContent = s.winRate + '%';
+  $id('m-payoff').textContent = s.payoffRatio.toFixed(2);
+  var ex = s.excessReturn || 0;
+  $id('m-excess').textContent = (ex > 0 ? '+' : '') + ex.toFixed(1) + '%';
+  $id('m-excess').className = 'value ' + (ex >= 0 ? 'green' : 'red');
   var rbPct = s.rebalanceDays > 0 ? Math.round(s.rebalanceCount / s.rebalanceDays * 100) : 0;
   $id('m-rb').textContent = rbPct + '%';
   $id('m-comm').textContent = (s.commissionPct || 0) + '%';
@@ -2380,6 +2402,13 @@ function renderTunerSnapshot(idx) {
     var code = codes[i];
     var d = detail[code];
     var name = (nameMap[code] || code).replace(/ETF$/i, '');
+    // Sector color dot
+    var sectorColor = '#6b7280', etfSector = '';
+    for (var si = 0; si < hmETFList.length; si++) {
+      if (hmETFList[si].code === code) { etfSector = hmETFList[si].sector; sectorColor = HM_SEC_COLOR[etfSector] || '#6b7280'; break; }
+    }
+    if (etfSector && sectorFilter.has(etfSector)) continue;
+    var sectorDot = '<span style=\"display:inline-block;width:12px;height:12px;border-radius:2px;background:' + sectorColor + ';margin-right:6px;vertical-align:middle;\"></span>';
     var score = d.score || 0;
     var pos = d.position || 0;
     var action = d.action || '';
@@ -2407,10 +2436,10 @@ function renderTunerSnapshot(idx) {
 
     // Row class
     var rowBg = isTop ? 'background:rgba(16,185,129,0.04);' : '';
-    var hotPrefix = isTop ? '<span style="color:#f59e0b;font-size:11px;">&#x1F525;</span> ' : '';
+    var hotSuffix = isTop ? ' <span style="color:#f59e0b;font-size:11px;">&#x1F525;</span>' : '';
 
     html += '<tr data-code="' + code + '" class="snap-row" style="border-bottom:1px solid #1e293b;cursor:pointer;' + rowBg + '" onclick="onSnapshotRowClick(\'' + code + '\')">' +
-      '<td style="padding:9px 8px;font-size:12px;white-space:nowrap;">' + hotPrefix + '<span style="color:#60a5fa;font-weight:600;">' + code + '</span> <span style="color:#94a3b8;font-size:12px;font-weight:600;">' + name + '</span></td>' +
+      '<td style="padding:9px 8px;font-size:12px;white-space:nowrap;">' + sectorDot + '<span style="color:#60a5fa;font-weight:600;">' + code + '</span> <span style="color:#94a3b8;font-size:12px;font-weight:600;">' + name + '</span>' + hotSuffix + '</td>' +
       '<td style="padding:9px 6px;text-align:center;font-size:12px;color:' + ((d.f1 || 50) >= 65 ? '#10b981' : (d.f1 || 50) <= 35 ? '#ef4444' : '#94a3b8') + ';">' + (d.f1 || 0).toFixed(0) + '</td>' +
       '<td style="padding:9px 6px;text-align:center;font-size:12px;color:' + ((d.f2 || 50) >= 65 ? '#10b981' : (d.f2 || 50) <= 35 ? '#ef4444' : '#94a3b8') + ';">' + (d.f2 != null ? d.f2.toFixed(0) : '-') + '</td>' +
       '<td style="padding:9px 6px;text-align:center;font-size:12px;color:#94a3b8;">' + (d.f3 || 0).toFixed(0) + '</td>' +
@@ -2427,18 +2456,39 @@ function renderTunerSnapshot(idx) {
 
   $id('tuner-snapshot-body').innerHTML = html;
 
-  // Footer summary
-  var footer = $id('tuner-snapshot-footer');
-  if (footer) {
+  // Subtitle: action counts
+  var subEl = $id('tuner-snapshot-subtitle');
+  if (subEl) {
     var parts = [];
     if (newCount > 0) parts.push('<span style="color:#10b981;">NEW ' + newCount + '</span>');
     if (adjUpCount > 0) parts.push('<span style="color:#10b981;">UP ⬆ ' + adjUpCount + '</span>');
     if (adjDownCount > 0) parts.push('<span style="color:#ef4444;">DOWN ⬇ ' + adjDownCount + '</span>');
     if (holdCount > 0) parts.push('<span style="color:#6b7280;">HOLD ' + holdCount + '</span>');
     if (outCount > 0) parts.push('<span style="color:#ef4444;">OUT ' + outCount + '</span>');
-    var summary = lastBacktestData && lastBacktestData.summary || {};
-    var note = isIntradayEstimateDate(sig.date) ? ' · <span style="color:#fbbf24;">今日信号含' + (summary.intradayTime ? ' ' + summary.intradayTime + ' ' : '') + '盘中价格/成交额估算</span>' : '';
-    footer.innerHTML = '&#x1F525; = 持仓标的 · 按综合分排序 · ' + parts.join(' · ') + note;
+    subEl.innerHTML = '点击左侧 NAV 切换调仓 · 点击表格行查看 K 线 · ' + parts.join(' · ') + ' · &#x1F525;=持仓';
+  }
+
+  // Footer: sector legend with toggle
+  var footer = $id('tuner-snapshot-footer');
+  if (footer && HM_SEC_ORDER.length > 0) {
+    var allOn = sectorFilter.size === 0;
+    var allOff = sectorFilter.size >= HM_SEC_ORDER.length;
+    var legHtml = '<span style="color:#6b7280;">扇区:</span> ' +
+      '<span onclick="sectorFilter.clear();renderTunerSnapshot(tunerSnapshotIdx)" style="cursor:pointer;color:#60a5fa;font-size:9px;margin:0 2px;">全选</span> ' +
+      '<span onclick="HM_SEC_ORDER.forEach(function(s){sectorFilter.add(s)});renderTunerSnapshot(tunerSnapshotIdx)" style="cursor:pointer;color:#6b7280;font-size:9px;margin:0 2px;">全不选</span> ' +
+      '<span onclick="HM_SEC_ORDER.forEach(function(s){sectorFilter.has(s)?sectorFilter.delete(s):sectorFilter.add(s)});renderTunerSnapshot(tunerSnapshotIdx)" style="cursor:pointer;color:#f59e0b;font-size:9px;margin:0 2px;">反选</span>' +
+      '<span style="margin:0 6px;">|</span>';
+    for (var si = 0; si < HM_SEC_ORDER.length; si++) {
+      var sec = HM_SEC_ORDER[si];
+      var color = HM_SEC_COLOR[sec] || '#6b7280';
+      var off = sectorFilter.has(sec);
+      legHtml += '<span onclick="toggleSector(\'' + sec + '\')" style="cursor:pointer;user-select:none;' +
+        (off ? 'opacity:0.25;' : '') + '">' +
+        '<span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:' + color +
+        ';margin-right:3px;vertical-align:middle;' + (off ? 'filter:grayscale(1);' : '') + '"></span>' +
+        '<span style="font-size:10px;' + (off ? 'text-decoration:line-through;' : '') + '">' + sec + '</span></span> ';
+    }
+    footer.innerHTML = legHtml;
   }
 
   // After table re-render, restore K-line for selected code (if any).
@@ -2462,6 +2512,12 @@ function renderTunerSnapshot(idx) {
 var currentKlineCode = null;
 var klineReplayChart = null;
 var klineFreq = 'daily';  // 'daily' | 'weekly'
+var sectorFilter = new Set();  // sectors to hide
+
+function toggleSector(sec) {
+  if (sectorFilter.has(sec)) sectorFilter.delete(sec); else sectorFilter.add(sec);
+  if (tunerSnapshotIdx >= 0) renderTunerSnapshot(tunerSnapshotIdx);
+}
 
 function switchKlineFreq(freq) {
   if (freq === klineFreq) return;
@@ -2516,12 +2572,60 @@ function onSnapshotRowClick(code) {
   loadKline(code, sig.date);
 }
 
+var currentContribCode = null;
+
 async function loadKline(code, date) {
-  var titleEl = $id('kline-title');
   var nameMap = window.etfNameMap || {};
   var name = nameMap[code] || code;
-  if (titleEl) titleEl.innerHTML = '<span style="color:#60a5fa;">' + code + '</span> ' + name + '  <span style="color:#6b7280;font-weight:normal;font-size:11px;">— 当前调仓 ' + date + '</span>';
+  var heading = $id('tuner-kline-heading');
+  if (heading) heading.innerHTML = '📈 <span style="color:#60a5fa;">' + code + '</span> ' + name;
   await loadTradeReplay(code);
+  renderContribution(code);
+}
+
+function fmtVal(v, unit, fallback) { return v != null ? v + unit : (fallback || '—'); }
+function fmtDate(d) { return d ? d.slice(5) : '—'; }  // MM-DD
+
+function renderContribution(code) {
+  if (currentContribCode === code) return;
+  currentContribCode = code;
+  var grid = $id('etf-contrib-grid');
+  var extra = $id('tuner-kline-subtitle');
+  if (!grid || !extra) return;
+  var contribs = (lastBacktestData && lastBacktestData.etfContributions) || {};
+  var c = contribs[code] || {};
+  grid.style.display = 'grid';
+  var has = c.selectedCount > 0;
+
+  var items = [
+    {l:'选中率', v:fmtVal(c.selectionRate,'%'), color:has&&c.selectionRate>=10?'#10b981':'#6b7280', tip:'Top-6出现次数÷总调仓信号数。>20%为核心品种'},
+    {l:'均权重', v:fmtVal(c.avgWeight,'%'), color:has&&c.avgWeight>=20?'#fbbf24':has&&c.avgWeight>=10?'#f59e0b':'#6b7280', tip:'入选时仓位%均值。反映策略对该ETF的配置力度'},
+    {l:'均持有', v:fmtVal(c.avgHoldDays,'天'), color:has&&c.avgHoldDays>=30?'#60a5fa':'', tip:'连续在仓的自然日数均值。>15d长期持有，<8d短线轮动'},
+    {l:'笔数', v:fmtVal(c.tradeCount,'笔'), color:has&&c.tradeCount>=50?'#10b981':'', tip:'FIFO平仓记录总数=交易频率'},
+    {l:'胜率', v:fmtVal(c.winRate,'%'), color:has&&c.winRate>=55?'#10b981':has&&c.winRate>=40?'#f59e0b':'#6b7280', tip:'盈利平仓÷总平仓。>55%为优。需结合赔率判断'},
+    {l:'赔率', v:c.payoffRatio!=null?c.payoffRatio.toFixed(2):'—', color:has&&c.payoffRatio>=2?'#10b981':has&&c.payoffRatio>=1?'#f59e0b':'', tip:'盈利均收益÷亏损均亏损。>2=赚一次够亏两次'},
+    {l:'交易盈亏', v:c.totalPnlPct!=null?(c.totalPnlPct>=0?'+':'')+c.totalPnlPct+'%':'—', color:has&&c.totalPnlPct>=0?'#10b981':has&&c.totalPnlPct<0?'#ef4444':'', tip:'所有平仓盈亏%之和（未加权仓位）。反映择时质量+品种回报率'},
+    {l:'份额', v:fmtVal(c.sectorShare,'%'), color:has&&c.sectorShare>=50?'#fbbf24':has&&c.sectorShare>=30?'#f59e0b':'#6b7280', tip:'同扇区内的选中次数占比。>50%=扇区主导'},
+    {l:'共现', v:c.topCoName||'—', color:'#60a5fa', tip:'最常同时入选Top-6的ETF。揭示组合搭配逻辑'},
+  ];
+  var html = '';
+  for (var i = 0; i < items.length; i++) {
+    var it = items[i];
+    var tipHtml = it.tip ? ' <i class="tip-icon" style="display:inline-block;width:12px;height:12px;line-height:12px;font-size:9px;border-radius:50%;background:#2a3a4a;color:#6b7280;text-align:center;cursor:help;font-style:normal;vertical-align:middle;">?<span class="tip-text">' + it.tip + '</span></i>' : '';
+    html += '<div id="contrib-item-' + i + '" style="background:#1a2332;border:1px solid #2a3a4a;border-radius:6px;padding:8px;text-align:center;line-height:1.3;">' +
+      '<div style="color:#6b7280;font-size:11px;">' + it.l + tipHtml + '</div>' +
+      '<div style="font-size:12px;font-weight:700;margin-top:2px;color:' + (it.color || '#94a3b8') + ';">' + it.v + '</div></div>';
+  }
+  grid.innerHTML = html;
+
+  var trendLabel = {rising:'↑', stable:'→', declining:'↓'}[c.trend]||c.trend;
+  var trendColor = c.trend==='rising'?'#10b981':c.trend==='declining'?'#ef4444':'#6b7280';
+  var obsTag = '';
+  if (c.observation) obsTag = ' · <span style="color:#f59e0b;">观察期 上市' + (c.tradingDays||0) + '天</span>';
+  extra.innerHTML =
+    '<span>' + (c.sector||'—') + '</span> · ' +
+    '<span>趋势 <b style="color:' + trendColor + ';">' + trendLabel + '</b></span>' +
+    (has ? '' : ' · <span style="color:#ef4444;">从未入选</span>') + obsTag;
 }
 
 /* ====== Trade Replay: full-period price + RSI + 成交额 + 买卖标记 ====== */
@@ -2802,8 +2906,8 @@ function renderTradeReplay(code, prices) {
       { scale:true, axisLabel:{color:'#6b7280',fontSize:9}, splitLine:{lineStyle:{color:'rgba(255,255,255,0.05)'}} },
       // grid 1 RSI
       { scale:true, gridIndex:1, axisLabel:{color:'#6b7280',fontSize:9}, splitLine:{show:false}, max:100, min:0, splitNumber:2 },
-      // grid 2 成交额
-      { scale:true, gridIndex:2, axisLabel:{color:'#6b7280',fontSize:9}, splitLine:{show:false}, splitNumber:2 },
+      // grid 2 成交额 (亿元)
+      { scale:true, gridIndex:2, axisLabel:{color:'#6b7280',fontSize:9, formatter:function(v){return (v/1e8).toFixed(1)+'亿'}}, splitLine:{show:false}, splitNumber:2 },
       // grid 0 持仓 (右)
       { gridIndex:0, position:'right', min:0, max:100, splitNumber:2,
         axisLabel:{show:false},
@@ -2823,7 +2927,6 @@ function renderTradeReplay(code, prices) {
     },
     dataZoom: [
       { type:'inside', xAxisIndex:[0,1,2], start:0, end:100 },
-      { type:'slider', xAxisIndex:[0,1,2], height:12, bottom:4, borderColor:'#2a3a4a', fillerColor:'rgba(59,130,246,0.15)', handleStyle:{color:'#3b82f6'}, textStyle:{color:'#6b7280',fontSize:9} },
     ],
     series: [
       {
@@ -3008,8 +3111,18 @@ window.addEventListener('load', async function() {
   var defaultPreset = PRESETS['preset1'] ? 'preset1' : Object.keys(PRESETS)[0];
   if (defaultPreset && CURRENT_PRESET !== defaultPreset) applyPreset(defaultPreset);
   var fromUrl = applyUrlParams();
-  // Default to heatmap view (overridden by URL autorun if present)
-  // No auto-run on page load — user clicks "运行回测" manually
+  // Restore cached backtest from last session
+  if (!fromUrl) {
+    try {
+      var cachedResp = await fetch('/api/last_result');
+      var cached = await cachedResp.json();
+      if (cached.cached && cached.params && cached.result) {
+        setParams(cached.params);
+        renderResults(cached.result);
+        switchRightView('results');
+      }
+    } catch(e) { console.warn('Cache restore skipped:', e); }
+  }
 });
 window.addEventListener('resize', () => {
   navChart && navChart.resize();
@@ -3055,8 +3168,13 @@ function initHeatmap() {
         if (secs.indexOf(e.sector) < 0) secs.push(e.sector);
       });
       HM_SEC_ORDER = secs;
-      var palette = ['#f59e0b','#a78bfa','#10b981','#3b82f6','#6366f1','#8b5cf6','#22d3ee','#06b6d4','#ef4444','#eab308','#ec4899','#f97316','#e11d48','#6b7280','#78716c'];
-      secs.forEach(function(s, i) { HM_SEC_COLOR[s] = palette[i % palette.length]; });
+      var secPalette = {
+        '科技': '#3b82f6', 'TMT': '#06b6d4', '新能源': '#10b981',
+        '医药': '#ec4899', '消费': '#f97316', '金融': '#eab308',
+        '资源周期': '#d97706', '传统': '#78716c', '制造': '#8b5cf6',
+        '宽基': '#94a3b8', '另类': '#a855f7'
+      };
+      secs.forEach(function(s) { HM_SEC_COLOR[s] = secPalette[s] || '#6b7280'; });
       // Sector legend
       var leg = $id('hm-sec-legend');
       leg.innerHTML = secs.map(function(s) { return '<span><span class="hm-sec-dot" style="background:' + HM_SEC_COLOR[s] + ';"></span>' + s + '</span>'; }).join('')

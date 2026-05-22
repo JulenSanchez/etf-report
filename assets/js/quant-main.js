@@ -118,7 +118,9 @@
       {id:"m-dd",      v:s.maxDrawdown.toFixed(1)+"%", cls:"red"},
       {id:"m-sharpe",  v:s.sharpe.toFixed(2), cls:"blue"},
       {id:"m-sortino", v:s.sortino.toFixed(2), cls:"blue"},
-      {id:"m-wr",      v:s.winRate.toFixed(1)+"% / "+(s.payoffRatio||0).toFixed(2), cls:s.winRate>=50?"green":""},
+      {id:"m-wr",      v:s.winRate.toFixed(1)+"%", cls:s.winRate>=50?"green":""},
+      {id:"m-payoff",  v:(s.payoffRatio||0).toFixed(2), cls:""},
+      {id:"m-excess",  v:(s.excessReturn>0?"+":"")+(s.excessReturn||0).toFixed(1)+"%", cls:s.excessReturn>=0?"green":"red"},
       {id:"m-rb",      v:(s.rebalanceDays>0?Math.round(s.rebalanceCount/s.rebalanceDays*100)+"%":"-"), cls:""},
       {id:"m-comm",    v:(s.commissionPct||0).toFixed(2)+"%", cls:""},
     ];

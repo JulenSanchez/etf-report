@@ -53,6 +53,7 @@ assets/js/quant_payload.js
 | 正式页量化展示 | `assets/js/quant-main.js` | `scripts/update_report.py` / `scripts/quant_build_payload.py` wrapper |
 | 长任务、启动、刷新、排障 | `runbooks/QUANT_RUNBOOK.md` | `docs/01-数据源与工具生态.md` |
 | 策略实验和历史结论 | `research/` | `docs/08-quant-research-memo.md` |
+| ETF 贡献指标定义与分析 | `docs/ETF_CONTRIBUTION_FRAMEWORK.md` | `scripts/quant_tuner.py` `_compute_etf_contributions()` |
 | 早期三因子方法论 | `docs/07-quant-methodology.md` | 仅作历史参考 |
 
 ## 4. 文件职责表
@@ -69,6 +70,9 @@ assets/js/quant_payload.js
 | `scripts/quant_build_payload.py` | 正式页 payload 兼容 CLI wrapper，调用 update_report 路径 | 改 payload CLI 入口 |
 | `assets/js/quant_payload.js` | 生成产物：`window.__QUANT_RUNTIME__` | 由脚本生成，不手改 |
 | `assets/js/quant-main.js` | 正式页量化板块渲染 | 改 index.html 量化展示 |
+| `scripts/fetch_etf_metadata.py` | 拉取全部 ETF 的规模(AUM)和前十大重仓股 → `data/quant/etf_metadata.json` | 新增/移除 ETF、定期更新持仓数据 |
+| `data/quant/etf_metadata.json` | ETF 元数据事实源（AUM + 成分股），Tuner 启动时加载 | 人工或脚本更新后自动生效 |
+| `docs/ETF_CONTRIBUTION_FRAMEWORK.md` | ETF 贡献分析框架：指标定义、分析流程、淘汰规则 | 改贡献计算逻辑或新增指标后同步 |
 | `docs/BACKTEST_ENGINE.md` | 回测引擎契约 | 改 `run_backtest()` 或核心算法后同步 |
 | `runbooks/QUANT_RUNBOOK.md` | 运维和排障手册 | 改启动、刷新、长任务、数据源规则后同步 |
 | `research/` | 实验记录和 promotion 证据 | 策略研究、参数优化、结论沉淀 |

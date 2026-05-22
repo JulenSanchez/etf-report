@@ -313,9 +313,10 @@ def update_single(etf: dict, full: bool = False, end_date: str = None):
         save_csv(df_weekly, weekly_path)
         return len(df_daily), len(df_weekly), "init"
 
-    # Freshness check: if CSV already has today's (or yesterday's) data, skip
+    # Freshness check: require data up to the latest-allowed close date
     last_dt = datetime.strptime(last_daily, "%Y-%m-%d").date()
-    if (datetime.now().date() - last_dt).days <= 1:
+    expected = datetime.strptime(_latest_allowed_date(), "%Y-%m-%d").date()
+    if last_dt >= expected:
         return 0, 0, "fresh"
 
     # Incremental: only fetch daily rows after last_date, then rebuild weekly from local daily.
@@ -420,7 +421,8 @@ def main():
     if not args.full and not patch_mode and FRESH_MARKER.exists():
         try:
             marker_date = FRESH_MARKER.read_text().strip()
-            if marker_date == datetime.now().strftime("%Y-%m-%d"):
+            expected = _latest_allowed_date()
+            if marker_date >= expected:
                 print(f"  All {len(universe)} ETFs already fresh ({marker_date}), skipping.\n")
                 print(f"=== Done: OK={len(universe)} (cached), FAIL=0 ===")
                 return
