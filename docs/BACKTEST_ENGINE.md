@@ -328,9 +328,19 @@ HS300 below MA -> ma_bear_pos
 
 ```text
 z_i = (score_i - mean(all_scores)) / std(all_scores)
-relative_weight_i = softmax(z_i * concentration)
+
+# 动态 C（c_sensitivity > 0 时生效）:
+dispersion = std(z_top6)           # Top-6 的 z-score 离散度
+c_mult = 1 + c_sensitivity × (dispersion − 0.5)
+effective_c = concentration × max(c_mult, 0.1)
+
+relative_weight_i = softmax(z_i * effective_c)
 target_position_i = relative_weight_i * total_target
 ```
+
+- `c_sensitivity = 0`: 禁用动态 C，等价于旧行为
+- `c_sensitivity = 1.0`: 离散度=0.5 时不变，强共识放大，弱共识缩小
+- 无 clamp —— 天然分布在安全区间
 
 再按 `position.discretize_step` 离散化。
 

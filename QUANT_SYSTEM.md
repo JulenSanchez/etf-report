@@ -107,7 +107,8 @@ docs/08-quant-research-memo.md
 
 ```text
 templates/tuner.html                  # 控件、getParams/setParams、URL 参数
-scripts/quant_contract.py              # 参数映射唯一契约
+templates/tuner.html                  # 导览 guide 块（guide-pos / guide-pipeline / guide-contract）同步更新
+scripts/quant_contract.py              # 参数映射唯一契约（preset_to_tuner_params / tuner_params_to_config_override / PARAM_BOUNDS / get_param_schema）
 scripts/quant_tuner.py                 # /api/presets、/api/run、/api/save 接线
 scripts/quant_backtest.py              # 是否消费该参数
 config/quant_universe.yaml             # preset 默认值
@@ -115,12 +116,14 @@ docs/BACKTEST_ENGINE.md                # 引擎语义
 tests/                                # 参数映射或引擎测试
 ```
 
-新增参数时，重点防止三处映射漂移：
+新增参数时，重点防止五处映射漂移：
 
 ```text
 YAML preset -> /api/presets -> 前端控件
 前端控件 -> /api/run -> config_override
 前端控件 -> /api/save -> YAML preset
+导览 guide 块（guide-pos / guide-pipeline / guide-contract）与控件/引擎同步
+参数契约 schema（get_param_schema / PARAM_BOUNDS）与控件/引擎同步
 ```
 
 ### 5.3 修改回测执行逻辑

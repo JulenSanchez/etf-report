@@ -417,6 +417,7 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
     max_holdings = position_cfg["max_holdings"]
     step = position_cfg["discretize_step"]
     concentration = position_cfg.get("concentration", 2.0)  # softmax concentration multiplier (higher=more concentrated)
+    c_sensitivity = position_cfg.get("c_sensitivity", 0.0)  # dynamic C sensitivity: c_mult = 1 + sens×(disp−0.5), 0=static
     f1_daily_ema = factor_cfg.get("f1_daily_ema", False)
     f1_daily_ma = factor_cfg.get("f1_daily_ma", False)
     f2_ma_period = factor_cfg.get("f2_ma_period")
@@ -698,7 +699,15 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
         sigma = max(composite.std(), 0.02)  # floor 防全同分数时除零
         z_scores = (top_n.values - mu) / sigma
 
-        exp_scores = np.exp(z_scores * concentration)
+        # Dynamic C: c_mult = 1 + sensitivity × (dispersion − 0.5)
+        if c_sensitivity > 0:
+            dispersion = max(float(z_scores.std()), 0.0)
+            c_mult = 1.0 + c_sensitivity * (dispersion - 0.5)
+            effective_c = concentration * max(c_mult, 0.1)  # floor to prevent zero
+        else:
+            effective_c = concentration
+
+        exp_scores = np.exp(z_scores * effective_c)
         softmax_w = exp_scores / exp_scores.sum()
         softmax_weights = pd.Series(softmax_w, index=top_n.index)
 

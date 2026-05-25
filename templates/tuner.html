@@ -32,6 +32,11 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
 .dual-range-wrap input[type=range]::-webkit-slider-runnable-track { background: transparent; border: none; }
 .dual-range-labels { display: flex; justify-content: space-between; align-items: center; font-size: 11px; margin-top: 4px; }
 .dual-range-labels .val { color: #60a5fa; font-weight: 600; font-family: monospace; }
+.btn-nudge { background: none; border: 1px solid transparent; color: #4b5563; cursor: pointer; font-size: 11px; padding: 1px 3px; border-radius: 3px; line-height: 1; }
+.btn-nudge:hover { border-color: #334155; color: #9ca3af; }
+.toggle-pill { font-size:10px; padding:2px 7px; border-radius:10px; cursor:pointer; user-select:none; border:1px solid #334155; color:#6b7280; background:transparent; }
+.toggle-pill:hover { border-color:#4b5563; color:#9ca3af; }
+.toggle-pill.on { background:rgba(59,130,246,0.12); border-color:#3b82f6; color:#60a5fa; }
 
 /* K-line Tab buttons */
 .kline-tab { padding: 5px 10px; font-size: 11px; background: transparent; border: none; color: #6b7280; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
@@ -52,6 +57,9 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
 .btn-refresh { padding: 10px 16px; background: transparent; border: 1px solid #f59e0b; color: #f59e0b; border-radius: 8px; font-size: 13px; cursor: pointer; white-space: nowrap; }
 .btn-refresh:hover { background: rgba(245,158,11,.1); }
 .btn-refresh:disabled { border-color: #374151; color: #6b7280; cursor: not-allowed; }
+.btn-period { padding:4px 8px; background:transparent; border:1px solid #334155; color:#9ca3af; border-radius:4px; font-size:11px; cursor:pointer; }
+.btn-period:hover { border-color:#60a5fa; color:#e0e0e0; }
+.btn-period.active { border-color:#3b82f6; color:#60a5fa; background:rgba(59,130,246,0.10); }
 .data-badge { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 10px; font-weight: 600; margin-left: 6px; }
 .data-badge.confirmed { background: #065f46; color: #34d399; }
 .data-badge.intraday { background: #713f12; color: #fbbf24; }
@@ -409,6 +417,10 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
       <div class="slider-label"><span class="name">仓位集中度 C</span><span class="val" id="v-conc">2.0</span></div>
       <input type="range" id="concentration" min="0" max="30" step="1" value="20" oninput="$id('v-conc').textContent=(this.value/10).toFixed(1)" aria-label="仓位集中度">
     </div>
+    <div class="slider-group" id="param-csensitivity" aria-label="动态C灵敏度">
+      <div class="slider-label"><span class="name">C 动态灵敏度</span><span class="val" id="v-csens">1.0</span></div>
+      <input type="range" id="c_sensitivity" min="0" max="200" step="2" value="200" oninput="$id('v-csens').textContent=(this.value/10).toFixed(1)" aria-label="动态C灵敏度">
+    </div>
     <div class="slider-group" id="param-rebalance" aria-label="调仓频率">
       <div class="slider-label"><span class="name">调仓频率</span><span class="val" id="v-freq">周调仓</span></div>
       <div class="btn-row" id="freq-group">
@@ -433,12 +445,12 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
 
   <section id="tuner-sec-period" aria-label="回测周期">
     <div class="section-head">回测周期</div>
-    <div class="btn-row" style="margin-bottom:4px;" id="period-span-btns">
+    <div class="btn-row" style="margin-bottom:6px;" id="period-span-btns">
       <button onclick="setPeriodSpan(1)" id="span-btn-1">1 年</button>
       <button class="active" onclick="setPeriodSpan(3)" id="span-btn-3">3 年</button>
       <button onclick="setPeriodSpan(6)" id="span-btn-6">6 年</button>
     </div>
-    <div class="dual-range-wrap">
+    <div class="dual-range-wrap" onmousedown="return preventTrackJump(event)" style="position:relative;">
       <div class="dual-range-track"></div>
       <div class="dual-range-fill" id="period-fill"></div>
       <input type="range" id="start_date_slider" min="0" max="1095" step="1" value="730" oninput="onPeriodSliderChange(event)" aria-label="回测起始日期">
@@ -449,21 +461,35 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
       <span style="color:#6b7280;font-size:10px;">跨度 <span id="v-period-span">--</span></span>
       <span class="val" id="v-end-date">--</span>
     </div>
+    <div style="display:flex;justify-content:space-between;margin-top:2px;">
+      <span style="display:flex;align-items:center;gap:1px;">
+        <button id="nudge-start-m30" onclick="nudgeDate('start',-30)" class="btn-nudge" title="-30天">◀◀</button>
+        <button id="nudge-start-m1"  onclick="nudgeDate('start',-1)" class="btn-nudge" title="-1天">◀</button>
+        <button id="nudge-start-p1"  onclick="nudgeDate('start',1)" class="btn-nudge" title="+1天">▶</button>
+        <button id="nudge-start-p30" onclick="nudgeDate('start',30)" class="btn-nudge" title="+30天">▶▶</button>
+      </span>
+      <span style="display:flex;align-items:center;gap:1px;">
+        <button id="nudge-end-m30" onclick="nudgeDate('end',-30)" class="btn-nudge" title="-30天">◀◀</button>
+        <button id="nudge-end-m1"  onclick="nudgeDate('end',-1)" class="btn-nudge" title="-1天">◀</button>
+        <button id="nudge-end-p1"  onclick="nudgeDate('end',1)" class="btn-nudge" title="+1天">▶</button>
+        <button id="nudge-end-p30" onclick="nudgeDate('end',30)" class="btn-nudge" title="+30天">▶▶</button>
+      </span>
+    </div>
   </section>
 
-    <div class="actions" id="tuner-sec-actions" aria-label="操作按钮">
+    <div id="tuner-sec-actions" aria-label="操作按钮" style="display:flex;flex-direction:column;gap:4px;">
       <button class="btn-run" id="btn-run" onclick="runBacktest()">运行回测</button>
-      <button class="btn-refresh" id="btn-refresh" onclick="refreshData()">刷新数据</button>
-      <button class="btn-save" onclick="saveYAML()">保存参数</button>
+      <div style="display:flex;gap:4px;align-items:center;">
+        <button class="btn-refresh" id="btn-refresh" onclick="refreshData()">刷新数据</button>
+        <button class="btn-save" onclick="saveYAML()">保存参数</button>
+        <span id="toggle-debug" onclick="var el=this;var chk=$id('chk-debug');chk.checked=!chk.checked;el.classList.toggle('on',chk.checked)" class="toggle-pill" title="回测调试快照">debug</span>
+        <span id="toggle-meta" onclick="var el=this;var chk=$id('chk-meta');chk.checked=!chk.checked;el.classList.toggle('on',chk.checked)" class="toggle-pill" title="刷新数据时顺带更新ETF元数据">元数据</span>
+        <input type="checkbox" id="chk-debug" style="display:none;">
+        <input type="checkbox" id="chk-meta" style="display:none;">
+              </div>
+      <div class="status" id="status" style="margin-top:2px;min-height:0;"></div>
     </div>
-    <div class="status" id="status"></div>
-    <div class="status" id="data-status" style="min-height:0"></div>
-    <label style="display:block;margin-top:4px;font-size:12px;color:#9ca3af;cursor:pointer;user-select:none;">
-      <input type="checkbox" id="chk-debug" style="vertical-align:middle;margin-right:3px;">debug
-    </label>
-    <label style="display:block;margin-top:2px;font-size:12px;color:#9ca3af;cursor:pointer;user-select:none;">
-      <input type="checkbox" id="chk-meta" style="vertical-align:middle;margin-right:3px;">ETF元数据
-    </label>
+    <div class="status" id="data-status" style="min-height:0;margin-top:2px;"></div>
 </div>
 
 <div class="panel-right" id="tuner-panel-right">
@@ -471,8 +497,8 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
   <!-- Right view switcher -->
   <div class="view-switch" id="right-view-switch" style="margin-bottom:14px;">
     <button onclick="switchRightView('guide')">参数原理</button>
-    <button onclick="switchRightView('results')">回测结果</button>
-    <button class="active" onclick="switchRightView('heatmap')">涨跌热力</button>
+    <button class="active" onclick="switchRightView('results')">回测结果</button>
+    <button onclick="switchRightView('heatmap')">涨跌热力</button>
   </div>
 
   <!-- ========== Guide View ========== -->
@@ -520,7 +546,7 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
         <p><b>Phase 3: 加权合成</b></p>
         <p>8. S = F<sub>1</sub>·w<sub>1</sub> + F<sub>2</sub>·w<sub>2</sub> + F<sub>3</sub>·w<sub>3</sub> + F<sub>7</sub>·w<sub>7</sub> + (R−1)·w<sub>6</sub></p>
         <p><b>Phase 4: 仓位分配</b></p>
-        <p>9. 取 S 的 Top-N 支 ETF → Z-score 标准化 → Softmax 分配权重 w<sub>i</sub></p>
+        <p>9. 取 S 的 Top-N 支 ETF → Z-score 标准化 → Softmax 分配权重 w<sub>i</sub>（C<sub>eff</sub> 由 <span class="param-hl">C 动态灵敏度</span> 根据 Top-6 分数离散度自适应调整：强共识放大 C，弱共识缩小 C）</p>
         <p>10. 总仓位由 <span class="param-hl">仓位控制</span> 决定（沪深300 周线 MA 二值信号），与综合分独立</p>
         <p><b>关键设计</b>：连续映射保留因子绝对水平。牛市因子普遍高 → S 普遍高 → MA 信号满仓；熊市因子普遍低 → S 低 + MA 信号降仓。仓位由市场趋势驱动（MA），非自身 NAV 回撤驱动，避免频繁误触发踏空。</p>
       </div>
@@ -745,12 +771,17 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
         <p><b>Step 1: Top-N 选股</b></p>
         <p>取综合分最高的 <span class="param-hl">最大持仓</span> 支 ETF（以当前滑块为准）。</p>
         <p><b>Step 2: Z-score 截面标准化</b></p>
-        <p>对全池子所有 ETF 的综合分算均值 μ 和标准差 σ，top-6 转为 Z-score：</p>
+        <p>对全池子所有 ETF 的综合分算均值 μ 和标准差 σ，每支 ETF 转为 Z-score：</p>
         <p><span class="tag">z<sub>i</sub> = (score<sub>i</sub> - μ) / σ</span></p>
-        <p>效果：牛市整体分高、熊市整体分低时，自适应校准；极端离群值不霸榜。</p>
+        <p>快照表格中"离散度"列即 z<sub>i</sub>：>1.5 为显著领先，0~1.5 为中等，<0 为低于池子平均。效果：牛市整体分高、熊市整体分低时，自适应校准；极端离群值不霸榜。</p>
+        <p>Top-6 的 z-score 标准差 σ<sub>top6</sub> 即为动态 C 的"共识度"信号。</p>
         <p><b>Step 3: Softmax 仓位分配</b></p>
-        <p>w<sub>i</sub> = <span class="formula"><span class="frac-top">e<sup>z<sub>i</sub>·C</sup></span><span class="frac-bot">Σ e<sup>z<sub>j</sub>·C</sup></span></span></p>
-        <p><span class="param-hl">仓位集中度 C</span> 控制分数差→仓位差的放大倍数：C 越大越集中。</p>
+        <p>w<sub>i</sub> = <span class="formula"><span class="frac-top">e<sup>z<sub>i</sub>·C<sub>eff</sub></sup></span><span class="frac-bot">Σ e<sup>z<sub>j</sub>·C<sub>eff</sub></sup></span></span></p>
+        <p><span class="param-hl">仓位集中度 C</span>（base）控制分数差→仓位差的基准放大倍数。</p>
+        <p><b>Step 3.5: 动态 C（共识感知）</b></p>
+        <p>当 Top-6 的 z-score 离散度大（强共识）→ 自动放大 C；离散度小（弱共识）→ 自动缩小 C：</p>
+        <p>C<sub>eff</sub> = C<sub>base</sub> × [1 + S × (σ<sub>top6</sub> − 0.5)]</p>
+        <p>其中 S = <span class="param-hl">C 动态灵敏度</span>。S=0 时禁用动态 C，等价于旧行为。σ<sub>top6</sub> = Top-6 的 z-score 标准差，反映"信号共识度"。</p>
         <p><b>Step 4: 总仓位</b></p>
         <p>MA趋势模式：沪深300在MA上方 → <span class="param-hl">MA上方仓位</span>，下方 → <span class="param-hl">MA下方仓位</span>。具体数值以当前 Preset/滑块为准。</p>
         <p><span class="tag">pos<sub>i</sub> = w<sub>i</sub> &times; total_pos</span></p>
@@ -765,7 +796,7 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
   </div>
 
   <!-- ========== Results View ========== -->
-  <div id="right-view-results" class="right-view">
+  <div id="right-view-results" class="right-view active">
     <div id="results-placeholder" class="placeholder-msg">
       调整左侧参数后，点击"运行回测"查看结果
     </div>
@@ -859,7 +890,7 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
                   <th style="text-align:center;padding:8px 4px;font-size:10px;color:#6b7280;border-bottom:1px solid #2a3a4a;">F6</th>
                    <th style="text-align:center;padding:8px 4px;font-size:10px;color:#6b7280;border-bottom:1px solid #2a3a4a;">F7</th>
                   <th style="text-align:center;padding:8px 3px;font-size:10px;color:#6b7280;border-bottom:1px solid #2a3a4a;">综合</th>
-                  <th style="text-align:center;padding:8px 3px;font-size:10px;color:#6b7280;border-bottom:1px solid #2a3a4a;">离散度</th>
+                  <th style="text-align:center;padding:8px 3px;font-size:10px;color:#6b7280;border-bottom:1px solid #2a3a4a;">离散度<i class="tip-icon">?<span class="tip-text">Z-score = (综合分 − 全池均值) ÷ 全池标准差。>1.5显著领先，0~1.5中等，<0低于平均。Top-6的Z-score标准差为动态C的共识信号。</span></i></th>
                   <th style="text-align:center;padding:8px 3px;font-size:10px;color:#6b7280;border-bottom:1px solid #2a3a4a;">仓位</th>
                   <th style="text-align:center;padding:8px 4px;font-size:10px;color:#6b7280;border-bottom:1px solid #2a3a4a;">动作</th>
                 </tr>
@@ -877,7 +908,7 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
   </div>
 
   <!-- ========== Heatmap View ========== -->
-  <div id="right-view-heatmap" class="right-view active">
+  <div id="right-view-heatmap" class="right-view">
     <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;">
       <span style="font-size:11px;color:#6b7280;">周期:</span>
       <div class="btn-row" style="gap:0;">
@@ -1505,6 +1536,30 @@ function syncWeights() {
   validateRunInputs();
 }
 
+function preventTrackJump(e) {
+  // Only block clicks on the track, not drags on the thumb
+  if (e.target.type === 'range') return true;
+  e.preventDefault();
+  return false;
+}
+
+function nudgeDate(which, days) {
+  var slider = $id(which + '_date_slider');
+  var val = parseInt(slider.value) + days;
+  var lo = parseInt(slider.min), hi = parseInt(slider.max);
+  slider.value = Math.max(lo, Math.min(hi, val));
+  // Ensure start <= end
+  var sVal = parseInt($id('start_date_slider').value);
+  var eVal = parseInt($id('end_date_slider').value);
+  if (sVal > eVal) {
+    if (which === 'start') $id('end_date_slider').value = sVal;
+    else $id('start_date_slider').value = eVal;
+  }
+  onPeriodSliderChange(null);
+}
+
+
+
 /* ====== Period sliders ====== */
 var PERIOD_SPAN = 3;  // years; 1, 3 or 6
 
@@ -1607,6 +1662,7 @@ function getParams() {
     max_holdings: parseInt($id('max_holdings').value),
     disc_step: parseInt($id('disc_step').value) / 100.0,
     concentration: parseFloat($id('concentration').value) / 10,
+    c_sensitivity: parseFloat($id('c_sensitivity').value) / 10,
     ema_period: parseInt($id('ema_period').value),
     vol_window: parseInt($id('vol_window').value),
     f1_sensitivity: parseFloat($id('f1_sensitivity').value),
@@ -1687,6 +1743,7 @@ function setParams(p) {
   if (p.rebalance_freq) setFreq(p.rebalance_freq);
   if (p.disc_step != null) { setSlider('disc_step', p.disc_step * 100); $id('v-step').textContent = (p.disc_step * 100) + '%'; }
   if (p.concentration != null) { setSlider('concentration', Math.round(p.concentration * 10)); $id('v-conc').textContent = p.concentration.toFixed(1); }
+  if (p.c_sensitivity != null) { setSlider('c_sensitivity', Math.round(p.c_sensitivity * 10)); $id('v-csens').textContent = p.c_sensitivity.toFixed(1); }
   if (p.max_holdings != null) { setSlider('max_holdings', p.max_holdings); $id('v-maxh').textContent = p.max_holdings + ' 支'; }
   if (p.conf_type) setConfType(p.conf_type);
   if (p.universe != null) setUniverseFromParam(p.universe);
@@ -2053,6 +2110,7 @@ async function runBacktest() {
     renderResults(data);
     switchRightView('results');
     status.textContent = '完成 ' + data.summary.startDate + ' → ' + data.summary.endDate + ' · 耗时 ' + data.summary.elapsed + ' 秒';
+    
   } catch(e) { status.textContent = '请求失败: ' + e.message; }
   finally { btn.textContent = '运行回测'; validateRunInputs(); }
 }
@@ -2278,6 +2336,8 @@ function renderNavChart(data) {
   });
 
 }
+
+
 
 // Update only the nav-chart markLine (selected date) — no full redraw
 function updateNavMarkLine() {
@@ -3548,7 +3608,7 @@ function updateHmSortUI() {
   $id('hm-sort-a').textContent = hmSortDir === 1 ? '↓ 降序' : '↑ 升序';
 }
 
-// Default to heatmap view on page load
+// Default to results view on page load (overridden by URL autorun)
 setTimeout(function() { initHeatmap(); }, 500);
 </script>
 <script src="/assets/js/debug-toolbar.js"></script>

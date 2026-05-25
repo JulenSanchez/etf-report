@@ -213,7 +213,7 @@ factors:
 presets:
   preset1:
     label: 趋势锚定
-    description: 日调仓，F1(50%)+F3(40%)+F7(10%)，F2=0，MA趋势仓位，44支ETF池。6Y基线+536.1%/年化+36.1%/MDD-17.1%/Sharpe=1.48/Sortino=2.07/Calmar=2.11（2020-05-20~2026-05-21）。浓度扫描C=0.5最优，EMA=5w。
+    description: 日调仓，F1(50%)+F3(40%)+F7(10%)，F2=0，MA趋势，44支ETF池，动态C(C=0.5,CS=10)。6Y基线+872.7%/年化+46.0%/MDD-17.9%/Sharpe=1.46/Calmar=2.57（2020-05-20~2026-05-22）。1Y/3Y/6Y全窗口MDD≤18%。
     scoring:
       weights:
         ema_deviation: 0.5
@@ -250,6 +250,7 @@ presets:
       max_holdings: 6
       discretize_step: 0.05
       concentration: 0.5
+      c_sensitivity: 10.0
       rebalance_freq: daily
       execution_timing: same_close
       score_band: 0.03
@@ -322,42 +323,60 @@ presets:
       log_return_deviation:
         window_days: 20
   preset3:
-    label: 动能保护
-    description: 日调仓，F1+F3+F6动能衰竭惩罚。MA趋势仓位控制。
+    label: 趋势锚定(静态)
+    description: 旧趋势锚定，C=0.5静态，CS=0。保留作为动态C的对照基线。
     scoring:
       weights:
-        ema_deviation: 0.3
+        ema_deviation: 0.5
         f2_daily_ma: 0.0
-        volume_ratio: 0.55
+        volume_ratio: 0.4
         valuation: 0.0
-        exhaustion_penalty: 0.15
-      bias_bonus: 0
+        exhaustion_penalty: 0.0
+        log_return_deviation: 0.1
+      bias_bonus: 0.0
       sensitivity:
         f1: 8.0
-        f3: 1.0
         f2: 8.0
+        f3: 1.5
+        f7_t: 15.0
+        f7_k: 3.5
     confidence:
       type: ma_trend
       ma_trend_period: 26
       ma_bull_pos: 1.0
       ma_bear_pos: 0.3
       ma_direction_confirm: true
+      dead_zone: 25
+      full_zone: 65
+      regime_base:
+        bull_trend: 0.95
+        choppy_range: 0.75
+        bear_trend: 0.35
+      regime_window: 8
+      regime_threshold: 0.03
+      breadth_weight: 0.2
+      clarity_threshold: 0.03
+      dd_sensitivity: 0.2
     position:
       max_holdings: 6
       discretize_step: 0.05
-      concentration: 2.0
+      concentration: 0.5
       rebalance_freq: daily
       execution_timing: same_close
       score_band: 0.03
       commission_rate: 0.00026
+      max_holdings_special: 8
+      weighting: arithmetic
     factors:
       ema:
-        period_weeks: 16
+        period_weeks: 5
       volume_ratio:
         window_days: 20
-      f6_rsi_thresh: 65.0
-      f6_drop_thresh: 0.02
+      f6_rsi_thresh: 80.0
+      f6_drop_thresh: 0.025
       f6_base_penalty: 0.15
+      log_return_deviation:
+        window_days: 20
   preset2:
     label: 波动探测
     description: 日调仓，F2日线MA偏离+F3自归一化量比+F7对数收益偏离。MA趋势仓位控制。

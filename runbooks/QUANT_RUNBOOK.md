@@ -64,9 +64,9 @@ python scripts/quant_data_fetcher.py --full        # 全量重拉，谨慎使用
 ### 1.5 跑一致性检查
 
 ```bash
-python scripts/quant_consistency_check.py --preset daily_aggressive --start 2025-01-01 --end 2026-05-19
-python scripts/quant_consistency_check.py --preset daily_aggressive_f6 --start 2025-01-01 --end 2026-05-19
-python scripts/quant_consistency_check.py --preset weekly_trend --start 2025-01-01 --end 2026-05-19
+python scripts/quant_consistency_check.py --preset preset1 --start 2025-01-01 --end 2026-05-19
+python scripts/quant_consistency_check.py --preset preset2 --start 2025-01-01 --end 2026-05-19
+python scripts/quant_consistency_check.py --preset preset3 --start 2025-01-01 --end 2026-05-19
 ```
 
 一致性检查对比：
@@ -105,7 +105,7 @@ Tuner contract: preset -> tuner params -> config_override -> run_backtest(...)
 2. 参数会写入 `config/quant_universe.yaml` 的目标 preset。
 3. 立刻运行：
    ```bash
-   python scripts/quant_consistency_check.py --preset daily_aggressive --start 2025-01-01 --end 2026-05-19
+   python scripts/quant_consistency_check.py --preset preset2 --start 2025-01-01 --end 2026-05-19
    ```
 4. 如参数作为研究结论沉淀，更新：
    ```text
@@ -119,7 +119,7 @@ Tuner contract: preset -> tuner params -> config_override -> run_backtest(...)
 
 ```bash
 python -m pytest tests/test_quant_contract.py tests/test_quant_backtest_execution.py tests/test_quant_consistency.py
-python scripts/quant_consistency_check.py --preset daily_aggressive --start 2025-01-01 --end 2026-05-19
+python scripts/quant_consistency_check.py --preset preset2 --start 2025-01-01 --end 2026-05-19
 ```
 
 若改动影响 `run_backtest()` 的语义，同时更新：
@@ -261,7 +261,7 @@ update_report.py -> generate_quant_baseline_payload()
 
 当前实现：
 
-1. 从 `config/quant_universe.yaml` 读取 `daily_aggressive`。
+1. 从 `config/quant_universe.yaml` 读取 `preset2`。
 2. 通过 `quant_contract.py` 转为 Tuner 参数。
 3. 调用 Tuner `/api/run` 生成 1 年 / 3 年回测结果。
 4. 写入 `assets/js/quant_payload.js`。
@@ -283,15 +283,15 @@ update_report.py -> generate_quant_baseline_payload()
 
 ```bash
 # 网格搜索（小空间穷举）
-python scripts/quant_optimizer.py --preset daily_aggressive --strategy grid \
+python scripts/quant_optimizer.py --preset preset2 --strategy grid \
   --params "w1=30,40,50 w3=30,40,50 score_band=0,1,2,3" --periods 1Y,3Y
 
 # 随机搜索（大空间探索）
-python scripts/quant_optimizer.py --preset daily_aggressive --strategy random \
+python scripts/quant_optimizer.py --preset preset2 --strategy random \
   --n-trials 200 --seed 42 --periods 1Y,3Y,6Y
 
 # 贝叶斯优化（智能搜索，需 optuna）
-python scripts/quant_optimizer.py --preset daily_aggressive --strategy bayesian \
+python scripts/quant_optimizer.py --preset preset2 --strategy bayesian \
   --n-trials 100 --auto-bounds --periods 1Y,3Y,6Y
 
 # 续跑
@@ -306,7 +306,7 @@ python scripts/quant_optimizer.py ... --resume
 
 ```powershell
 Start-Process -FilePath "python" `
-  -ArgumentList "scripts\quant_optimizer.py --preset daily_aggressive --strategy bayesian --n-trials 150 --auto-bounds --periods 1Y,3Y,6Y" `
+  -ArgumentList "scripts\quant_optimizer.py --preset preset2 --strategy bayesian --n-trials 150 --auto-bounds --periods 1Y,3Y,6Y" `
   -WorkingDirectory "C:\Users\julentan\StockMarket\.claude\skills\etf-report"
 ```
 
@@ -343,16 +343,16 @@ Start-Process -FilePath "python" `
 
 ```bash
 python -m pytest tests/test_quant_contract.py
-python scripts/quant_consistency_check.py --preset daily_aggressive --start 2025-01-01 --end 2026-05-19
+python scripts/quant_consistency_check.py --preset preset2 --start 2025-01-01 --end 2026-05-19
 ```
 
 ### 改成交口径 / 调仓逻辑后
 
 ```bash
 python -m pytest tests/test_quant_backtest_execution.py tests/test_quant_consistency.py
-python scripts/quant_consistency_check.py --preset daily_aggressive --start 2025-01-01 --end 2026-05-19
-python scripts/quant_consistency_check.py --preset daily_aggressive_f6 --start 2025-01-01 --end 2026-05-19
-python scripts/quant_consistency_check.py --preset weekly_trend --start 2025-01-01 --end 2026-05-19
+python scripts/quant_consistency_check.py --preset preset1 --start 2025-01-01 --end 2026-05-19
+python scripts/quant_consistency_check.py --preset preset2 --start 2025-01-01 --end 2026-05-19
+python scripts/quant_consistency_check.py --preset preset3 --start 2025-01-01 --end 2026-05-19
 ```
 
 ### 改正式页 payload 后

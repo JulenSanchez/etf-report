@@ -384,6 +384,61 @@ def _reload_csv_to_cache(cfg):
             CACHE["all_weekly"][code] = weekly
 
 
+def _fast_append_today_sina(cfg, today_str):
+    """Post-market fast path: batch-append today's OHLCV via Sina API (1 HTTP call).
+
+    Only safe when ALL CSVs already have data through yesterday — falls back
+    to normal incremental fetch if any gap > 1 day is detected.
+    Returns (ok, fail) on success, or (None, None) to signal fallback.
+    """
+    from quant_data_fetcher import get_last_date, append_csv, save_csv, DATA_DIR as QDATA_DIR
+    today_dt = datetime.strptime(today_str, "%Y-%m-%d").date()
+
+    # Check all CSVs are within 1 day of today
+    for etf in cfg["universe"]:
+        last = get_last_date(QDATA_DIR / f"{etf['code']}_daily.csv")
+        if last is None:
+            return None, None  # no CSV at all — need full fetch
+        last_dt = datetime.strptime(last, "%Y-%m-%d").date()
+        if (today_dt - last_dt).days > 2:  # more than 1 calendar day gap
+            return None, None
+
+    # Batch fetch realtime from Sina (all ETFs in one HTTP call)
+    rt_prices = _fetch_sina_realtime(cfg)
+    if not rt_prices:
+        return None, None
+
+    import pandas as _pd
+    ok, fail = 0, 0
+    for etf in cfg["universe"]:
+        code = etf["code"]
+        rt = rt_prices.get(code)
+        if not rt or rt["price"] <= 0:
+            fail += 1
+            continue
+
+        daily_path = QDATA_DIR / f"{code}_daily.csv"
+        weekly_path = QDATA_DIR / f"{code}_weekly.csv"
+
+        new_row = _pd.DataFrame([{
+            "date": today_str,
+            "open": rt["open"],
+            "close": rt["price"],
+            "high": rt["high"],
+            "low": rt["low"],
+            "volume": int(rt["volume"]),
+            "amount": rt["amount"],
+        }])
+        append_csv(new_row, daily_path)
+
+        full_daily = _pd.read_csv(daily_path)
+        weekly = rebuild_weekly_from_daily(full_daily)
+        save_csv(weekly, weekly_path)
+        ok += 1
+
+    return ok, fail
+
+
 def refresh_data():
     """Main refresh entry point. Called by /api/refresh_data.
 
@@ -413,20 +468,39 @@ def refresh_data():
     ok, fail = 0, 0
 
     # ── Incremental fetch (backfill historical gaps) ──
-    # Post-market / non-trading / pre-market: no end_date cap, safe to write CSV.
-    # Intraday: pass end_date=today_str so fetch_etf_kline excludes today's incomplete bar.
-    run_fetch = post_market or not trading or pre_market
-    if run_fetch:
+    # Post-market: try fast Sina batch path first (1 call for all ETFs),
+    # fall back to per-ETF Tencent incremental if CSVs have gaps > 1 day.
+    # Non-trading / pre-market: normal incremental fetch.
+    # Intraday: skip CSV write, live data → cache only.
+    fast_ok, fast_fail = None, None
+    used_fast_path = False
+    if post_market:
+        print(f"  [Refresh] Post-market — trying Sina batch fast path...")
+        fast_ok, fast_fail = _fast_append_today_sina(cfg, today_str)
+        if fast_ok is not None:
+            ok, fail = fast_ok, fast_fail
+            used_fast_path = True
+            print(f"  [Refresh] Fast path: {ok} OK, {fail} fail (Sina batch, ~2s)")
+            from quant_data_fetcher import FRESH_MARKER as _FM
+            try:
+                _FM.parent.mkdir(parents=True, exist_ok=True)
+                _FM.write_text(today_str)
+            except Exception:
+                pass
+        else:
+            # Fallback: normal incremental fetch
+            print(f"  [Refresh] Fast path skipped (gap > 1 day) — falling back to incremental...")
+            ok, fail = _run_incremental_fetch(cfg)
+    elif not trading or pre_market:
         print(f"  [Refresh] Running incremental fetch...")
         ok, fail = _run_incremental_fetch(cfg)
     elif intraday:
-        # Intraday: skip CSV write. _latest_allowed_date() naturally excludes today.
-        # Live data goes into intraday cache only (populated below).
         ok, fail = 0, 0
         print(f"  [Refresh] Intraday — CSV write skipped (live data → cache only)")
         _reload_csv_to_cache(cfg)
 
-    gap_msg = f"CSV gap-fill | {ok} OK, {fail} fail" if run_fetch else ""
+    ran_fetch = (post_market and not used_fast_path) or not trading or pre_market
+    gap_msg = f"CSV gap-fill | {ok} OK, {fail} fail" if ran_fetch else ""
 
     _precompute_benchmarks()
     _precompute_valuation_scores()
@@ -437,7 +511,11 @@ def refresh_data():
     if post_market:
         CACHE["intraday_cache"] = {}
         CACHE["intraday_date"] = None
-        msg = f"{time_label} | {gap_msg}"
+        if used_fast_path:
+            _reload_csv_to_cache(cfg)  # refresh cache with newly appended CSVs
+            msg = f"{time_label} | Sina batch | {ok} OK, {fail} fail"
+        else:
+            msg = f"{time_label} | {gap_msg}"
         print(f"  [Refresh] Post-market — {msg}")
         return {
             "status": "confirmed",
