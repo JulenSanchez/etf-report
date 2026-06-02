@@ -35,15 +35,20 @@ def calc_rsi(close: pd.Series, period: int = 14) -> pd.Series:
     return rsi
 
 
-def factor_ema_deviation(weekly_df: pd.DataFrame, ema_period: int = 16) -> float:
+def factor_ema_deviation(weekly_df: pd.DataFrame, ema_period: int = 16,
+                         today_close: float = None) -> float:
     """
     F1: 周线 EMA 偏离度
     返回最新一周的 (close - EMA) / EMA × 100 (百分比)
+    若提供 today_close，则用它替代最后一根周K的收盘价（用于F1_daily实验）
     """
     if weekly_df is None or len(weekly_df) < ema_period:
         return np.nan
 
     close = weekly_df["close"].astype(float)
+    if today_close is not None and not np.isnan(today_close):
+        close = close.copy()
+        close.iloc[-1] = today_close
     ema = calc_ema(close, span=ema_period)
     deviation = (close.iloc[-1] - ema.iloc[-1]) / ema.iloc[-1] * 100
     return deviation
@@ -211,87 +216,12 @@ def factor_residual_momentum(weekly_df: pd.DataFrame,
     return float(residual_mom)
 
 
-def factor_exhaustion_penalty(daily_df: pd.DataFrame,
-                              rsi_period: int = 14,
-                              rsi_thresh: float = 80.0,
-                              drop_thresh: float = 0.025,
-                              vol_thresh: float = 1.5,
-                              vol_window: int = 20,
-                              decay_days: int = 3,
-                              base_penalty: float = 0.15) -> float:
-    """
-    F6：动能衰竭惩罚因子（Momentum Exhaustion Penalty）
-
-    逻辑：前一日RSI高位（≥rsi_thresh），当日出现放量下跌（跌幅≥drop_thresh
-    且量比≥vol_thresh），认为动能衰竭，返回惩罚乘数 [0, 1]。
-    1.0 = 无惩罚，0.0 = 最大惩罚。
-
-    衰减：触发后惩罚按 decay_days 线性衰减恢复（防止单日假信号永久打压）。
-    取最近 decay_days 内最强的一次惩罚后的剩余强度。
-
-    返回：penalty_multiplier ∈ [0.0, 1.0]
-      乘以综合分后得到惩罚后分数：score_penalized = score * penalty_multiplier
-    """
-    if daily_df is None or len(daily_df) < rsi_period + vol_window + 2:
-        return 1.0
-
-    df = daily_df.copy()
-    df = df.sort_values("date").reset_index(drop=True)
-
-    # RSI (use calc_rsi for consistency — Wilder's EMA, same as chart display)
-    rsi = calc_rsi(df["close"], period=rsi_period)
-
-    # 量比
-    vol_ma   = df["volume"].rolling(vol_window, min_periods=5).mean()
-    vol_ratio = df["volume"] / vol_ma
-
-    # 日涨跌
-    ret = df["close"].pct_change()
-
-    # 前日RSI
-    rsi_prev = rsi.shift(1)
-
-    # 触发条件
-    triggered = (
-        (rsi_prev >= rsi_thresh) &
-        (ret <= -drop_thresh) &
-        (vol_ratio >= vol_thresh)
-    )
-
-    # 只看最近 decay_days 日内是否触发（含今日）
-    n = len(df)
-    window_start = max(0, n - decay_days)
-    recent_triggers = triggered.iloc[window_start:]
-
-    if not recent_triggers.any():
-        return 1.0
-
-    # 最近触发距今的天数（0=今日触发，1=昨日触发…）
-    last_trigger_offset = None
-    for i in range(decay_days):
-        idx = n - 1 - i
-        if idx >= 0 and triggered.iloc[idx]:
-            last_trigger_offset = i
-            break
-
-    if last_trigger_offset is None:
-        return 1.0
-
-    # 惩罚强度：触发当日=base_penalty（最强），线性恢复到1.0
-    # offset=0 → base_penalty, offset=decay_days-1 → ~0.8
-    recovery = base_penalty + (1.0 - base_penalty) * (last_trigger_offset / decay_days)
-    return float(min(1.0, recovery))
-
-
 def compute_all_factors(daily_df: pd.DataFrame, weekly_df: pd.DataFrame,
                         ema_period: int = 20,
                         vol_window: int = 20,
                         hs300_weekly: pd.DataFrame = None,
                         residual_reg_window: int = 12,
                         residual_mom_window: int = 12,
-                        f6_rsi_thresh: float = 80.0,
-                        f6_drop_thresh: float = 0.025,
-                        f6_base_penalty: float = 0.15,
                         f7_window: int = 20,
                         f7_lookback: int = 250,
                         f7_min_days: int = 60,
@@ -299,7 +229,7 @@ def compute_all_factors(daily_df: pd.DataFrame, weekly_df: pd.DataFrame,
     """
     计算一支 ETF 的全部因子 (F1-F7)
     返回 dict: {f1_ema_dev, f2_daily_ma, f3_volume_ratio (自归一化),
-                f5_volatility_z, f1_residual_mom, f6_exhaustion_penalty, f7_log_return_dev}
+                f5_volatility_z, f1_residual_mom, f7_log_return_dev}
     F2 为日线 MA 偏离度（占位，由 _precompute_factors 在实际回测中提供）。
     """
     f1 = factor_ema_deviation(weekly_df, ema_period)
@@ -310,11 +240,6 @@ def compute_all_factors(daily_df: pd.DataFrame, weekly_df: pd.DataFrame,
     f1r = factor_residual_momentum(weekly_df, hs300_weekly,
                                    reg_window=residual_reg_window,
                                    mom_window=residual_mom_window)
-    f6 = factor_exhaustion_penalty(daily_df, rsi_period=14,
-                                   vol_window=vol_window,
-                                   rsi_thresh=f6_rsi_thresh,
-                                   drop_thresh=f6_drop_thresh,
-                                   base_penalty=f6_base_penalty)
     f7 = factor_log_return_deviation(daily_df, window=f7_window,
                                       lookback=f7_lookback,
                                       min_days=f7_min_days,
@@ -327,7 +252,6 @@ def compute_all_factors(daily_df: pd.DataFrame, weekly_df: pd.DataFrame,
         "f3_volume_ratio": f3,
         "f5_volatility_z": f5,
         "f1_residual_mom": f1r,
-        "f6_exhaustion_penalty": f6,
         "f7_log_return_dev": f7,
     }
 

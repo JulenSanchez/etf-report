@@ -8,7 +8,7 @@ This module is the single place for converting between:
 from copy import deepcopy
 
 
-_WEIGHT_KEYS = ("w1", "w2", "w3", "w4", "w6", "w7")
+_WEIGHT_KEYS = ("w1", "w3", "w7")
 
 PARAM_SCHEMA = {
     "version": 1,
@@ -18,10 +18,7 @@ PARAM_SCHEMA = {
             "label": "因子权重",
             "params": [
                 {"key": "w1", "label": "F1 EMA 偏离度权重", "unit": "ui_percent", "engine_path": "scoring.weights.ema_deviation"},
-                {"key": "w2", "label": "F2 日线 MA 偏离权重", "unit": "ui_percent", "engine_path": "scoring.weights.f2_daily_ma"},
                 {"key": "w3", "label": "F3 自归一化量比权重", "unit": "ui_percent", "engine_path": "scoring.weights.volume_ratio"},
-                {"key": "w4", "label": "F4 估值权重", "unit": "ui_percent", "engine_path": "scoring.weights.valuation"},
-                {"key": "w6", "label": "F6 动能衰竭惩罚权重", "unit": "ui_percent", "engine_path": "scoring.weights.exhaustion_penalty"},
                 {"key": "w7", "label": "F7 对数收益偏离权重", "unit": "ui_percent", "engine_path": "scoring.weights.log_return_deviation"},
                 {"key": "bias", "label": "偏好加成", "unit": "score_points", "engine_path": "scoring.bias_bonus"},
             ],
@@ -31,7 +28,6 @@ PARAM_SCHEMA = {
             "label": "映射灵敏度",
             "params": [
                 {"key": "f1_sensitivity", "label": "F1 sigmoid 尺度", "unit": "raw", "engine_path": "scoring.sensitivity.f1"},
-                {"key": "f2_sensitivity", "label": "F2 sigmoid 尺度", "unit": "raw", "engine_path": "scoring.sensitivity.f2"},
                 {"key": "f3_sensitivity", "label": "F3 log-sigmoid 尺度", "unit": "raw", "engine_path": "scoring.sensitivity.f3"},
                 {"key": "f7_t", "label": "F7 幂次 t", "unit": "raw", "engine_path": "scoring.sensitivity.f7_t"},
                 {"key": "f7_k", "label": "F7 标准差倍数 k", "unit": "raw", "engine_path": "scoring.sensitivity.f7_k"},
@@ -68,11 +64,7 @@ PARAM_SCHEMA = {
             "label": "因子周期与阈值",
             "params": [
                 {"key": "ema_period", "label": "F1 EMA 周期", "unit": "weeks", "engine_path": "factors.ema.period_weeks"},
-                {"key": "f2_ma_period", "label": "F2 MA 周期", "unit": "days", "engine_path": "factors.f2_ma_period"},
                 {"key": "vol_window", "label": "F3 量比窗口", "unit": "days", "engine_path": "factors.volume_ratio.window_days"},
-                {"key": "f6_rsi_thresh", "label": "F6 RSI 触发门槛", "unit": "raw", "engine_path": "factors.f6_rsi_thresh"},
-                {"key": "f6_drop_thresh", "label": "F6 跌幅门槛", "unit": "ui_percent_to_ratio", "engine_path": "factors.f6_drop_thresh"},
-                {"key": "f6_base_penalty", "label": "F6 惩罚强度", "unit": "ratio", "engine_path": "factors.f6_base_penalty"},
                 {"key": "f7_window", "label": "F7 累计收益窗口", "unit": "days", "engine_path": "factors.log_return_deviation.window_days"},
             ],
         },
@@ -91,16 +83,12 @@ PARAM_SCHEMA = {
 # Types: continuous (float), integer (int), categorical (list), weight (0-100 int, group-sum=100), special (pass-through)
 PARAM_BOUNDS = {
     # scoring weights (UI percentage points, 0-100 int, must sum to 100)
-    "w1":  {"type": "weight",  "min": 0,  "max": 70, "step": 5},
-    "w2":  {"type": "weight",  "min": 0,  "max": 40, "step": 5},
-    "w3":  {"type": "weight",  "min": 0,  "max": 70, "step": 5},
-    "w4":  {"type": "weight",  "min": 0,  "max": 40, "step": 5},
-    "w6":  {"type": "weight",  "min": 0,  "max": 25, "step": 1},
+    "w1":  {"type": "weight",  "min": 0,  "max": 70, "step": 1},
+    "w3":  {"type": "weight",  "min": 0,  "max": 70, "step": 1},
     "w7":  {"type": "weight",  "min": 0,  "max": 25, "step": 1},
     "bias": {"type": "continuous", "min": 0.0, "max": 10.0},
     # sensitivity
     "f1_sensitivity": {"type": "continuous", "min": 2.0, "max": 16.0},
-    "f2_sensitivity": {"type": "continuous", "min": 2.0, "max": 16.0},
     "f3_sensitivity": {"type": "continuous", "min": 0.2, "max": 4.0},
     "f7_t":           {"type": "continuous", "min": 1.0, "max": 25.0},
     "f7_k":           {"type": "continuous", "min": 1.0, "max": 6.0},
@@ -122,11 +110,7 @@ PARAM_BOUNDS = {
     "score_band":       {"type": "continuous", "min": 0, "max": 15},
     # factors
     "ema_period":       {"type": "integer", "min": 8, "max": 40},
-    "f2_ma_period":     {"type": "integer", "min": 5, "max": 60},
     "vol_window":       {"type": "integer", "min": 5, "max": 60},
-    "f6_rsi_thresh":    {"type": "continuous", "min": 55, "max": 90},
-    "f6_drop_thresh":   {"type": "continuous", "min": 0.5, "max": 8.0},
-    "f6_base_penalty":  {"type": "continuous", "min": 0.05, "max": 0.50},
     "f7_window":        {"type": "integer", "min": 5, "max": 40},
     # universe
     "universe": {"type": "special"},
@@ -263,19 +247,14 @@ def tuner_params_to_config_override(params):
         "scoring": {
             "weights": {
                 "ema_deviation": _as_float(params.get("w1"), 35.0) / 100.0,
-                "f2_daily_ma": _as_float(params.get("w2"), 0.0) / 100.0,
                 "volume_ratio": _as_float(params.get("w3"), 50.0) / 100.0,
-                "valuation": _as_float(params.get("w4"), 0.0) / 100.0,
-                "volatility": _as_float(params.get("w5"), 0.0) / 100.0,
-                "residual_momentum": _as_float(params.get("w1r"), 0.0) / 100.0,
-                "exhaustion_penalty": _as_float(params.get("w6"), 0.0) / 100.0,
+                "residual_momentum": _as_float(params.get("w1r"), 0.0) / 100.0,  # DEPRECATED
                 "log_return_deviation": _as_float(params.get("w7"), 0.0) / 100.0,
             },
             "bias_bonus": _as_float(params.get("bias"), 0.0),
             "sensitivity": {
                 "f1": _as_float(params.get("f1_sensitivity"), 8.0),
                 "f3": _as_float(params.get("f3_sensitivity"), 1.0),
-                "f2": _as_float(params.get("f2_sensitivity"), 8.0),
                 "f1_residual": _as_float(params.get("f1r_sensitivity"), 5.0),
                 "f7_t": _as_float(params.get("f7_t"), 7.0),
                 "f7_k": _as_float(params.get("f7_k"), 3.0),
@@ -293,8 +272,8 @@ def tuner_params_to_config_override(params):
         "position": {
             "max_holdings": _as_int(params.get("max_holdings"), 6),
             "discretize_step": _as_float(params.get("disc_step"), 0.05),
-            "concentration": _as_float(params.get("concentration"), 2.0),
-            "c_sensitivity": _as_float(params.get("c_sensitivity"), 0.0),
+            "concentration": _as_float(params.get("concentration"), 20.0) / 10.0,
+            "c_sensitivity": _as_float(params.get("c_sensitivity"), 0.0) / 10.0,
             "rebalance_freq": params.get("rebalance_freq", "W-FRI"),
             "execution_timing": params.get("execution_timing", "same_close"),
             "score_band": _as_float(params.get("score_band"), 0.0) / 100.0,
@@ -303,16 +282,12 @@ def tuner_params_to_config_override(params):
         "factors": {
             "ema": {"period_weeks": _as_int(params.get("ema_period"), 20)},
             "volume_ratio": {"window_days": _as_int(params.get("vol_window"), 20)},
-            "f6_rsi_thresh": _as_float(params.get("f6_rsi_thresh"), 80.0),
-            "f6_drop_thresh": _as_float(params.get("f6_drop_thresh"), 2.5) / 100.0,
-            "f6_base_penalty": _as_float(params.get("f6_base_penalty"), 0.15),
             "log_return_deviation": {
                 "window_days": _as_int(params.get("f7_window"), 20),
                 "lookback_days": 250,
                 "min_days": 60,
                 "sigma_floor": 0.01,
             },
-            "f2_ma_period": _as_int(params.get("f2_ma_period"), 25),
         },
     }
 
@@ -360,9 +335,7 @@ def preset_to_tuner_params(preset_key, preset_cfg, global_conf=None):
         "label": preset_cfg.get("label", preset_key),
         "description": preset_cfg.get("description", ""),
         "w1": int(w.get("ema_deviation", 0.30) * 100),
-        "w2": int(w.get("f2_daily_ma", 0) * 100),
         "w3": int(w.get("volume_ratio", 0.30) * 100),
-        "w4": int(w.get("valuation", 0.15) * 100),
         "bias": scoring.get("bias_bonus", 4.0),
         "conf_type": pc.get("type", "regime"),
         "dead_zone": pc.get("dead_zone", global_conf.get("dead_zone", 25)),
@@ -387,25 +360,19 @@ def preset_to_tuner_params(preset_key, preset_cfg, global_conf=None):
         "ma_direction_confirm": pc.get("ma_direction_confirm", global_conf.get("ma_direction_confirm", True)),
         "max_holdings": position.get("max_holdings", 6),
         "disc_step": position.get("discretize_step", 0.05),
-        "concentration": position.get("concentration", 2.0),
-        "c_sensitivity": position.get("c_sensitivity", 0.0),
+        "concentration": position.get("concentration", 2.0) * 10,
+        "c_sensitivity": position.get("c_sensitivity", 0.0) * 10,
         "ema_period": factors.get("ema", {}).get("period_weeks", 20),
-        "f2_sensitivity": sensitivity.get("f2", 8.0),
         "vol_window": factors.get("volume_ratio", {}).get("window_days", 20),
         "f1_sensitivity": sensitivity.get("f1", 8.0),
         "f3_sensitivity": sensitivity.get("f3", 1.0),
         "rebalance_freq": position.get("rebalance_freq", "W-FRI"),
         "execution_timing": position.get("execution_timing", "same_close"),
-        "score_band": int(position.get("score_band", 0) * 100),
-        "w6": int(w.get("exhaustion_penalty", 0) * 100),
+        "score_band": round(position.get("score_band", 0) * 100, 1),
         "w7": int(w.get("log_return_deviation", 0) * 100),
         "f7_t": sensitivity.get("f7_t", 7.0),
         "f7_k": sensitivity.get("f7_k", 3.0),
         "f7_window": factors.get("log_return_deviation", {}).get("window_days", 20),
-        "f2_ma_period": factors.get("f2_ma_period", 25),
-        "f6_rsi_thresh": factors.get("f6_rsi_thresh", 80.0),
-        "f6_drop_thresh": factors.get("f6_drop_thresh", 0.025) * 100,
-        "f6_base_penalty": factors.get("f6_base_penalty", 0.15),
     }
 
 

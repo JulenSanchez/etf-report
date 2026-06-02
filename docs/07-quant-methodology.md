@@ -1,6 +1,6 @@
 # 量化打分系统方法论
 
-> 历史文档：本文描述早期 REQ-177 M5.1 的三因子 / 25 支 ETF / 截面标准化版本，不作为当前量化系统事实源。当前系统入口见 `../QUANT_SYSTEM.md`，当前参数事实源见 `../config/quant_universe.yaml`，当前回测引擎契约见 `BACKTEST_ENGINE.md`。
+> ⚠️ 历史文档：本文描述早期 REQ-177 M5.1 的三因子 / 25 支 ETF / 截面标准化版本，不作为当前量化系统事实源。文中 F2 已于 2026-05 退役，当前活跃因子为 F1/F3/F7，公式见 `BACKTEST_ENGINE.md`。当前系统入口见 `../QUANT_SYSTEM.md`。
 >
 > REQ-177 M5.1 · 三因子 ETF 轮动策略 · 25 支选股池
 

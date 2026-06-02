@@ -34,6 +34,9 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
 .dual-range-labels .val { color: #60a5fa; font-weight: 600; font-family: monospace; }
 .btn-nudge { background: none; border: 1px solid transparent; color: #4b5563; cursor: pointer; font-size: 11px; padding: 1px 3px; border-radius: 3px; line-height: 1; }
 .btn-nudge:hover { border-color: #334155; color: #9ca3af; }
+th[data-sort] { user-select: none; }
+th[data-sort]:hover { color: #e0e0e0; }
+.snap-sort-arrow { display: inline-block; width: 12px; }
 .toggle-pill { font-size:10px; padding:2px 7px; border-radius:10px; cursor:pointer; user-select:none; border:1px solid #334155; color:#6b7280; background:transparent; }
 .toggle-pill:hover { border-color:#4b5563; color:#9ca3af; }
 .toggle-pill.on { background:rgba(59,130,246,0.12); border-color:#3b82f6; color:#60a5fa; }
@@ -118,13 +121,21 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
 .metric-card { background: #1a2332; border: 1px solid #2a3a4a; border-radius: 8px; padding: 10px; text-align: center; position: relative; display:flex; flex-direction:column; justify-content:center; }
 .metric-card .label { font-size: 11px; color: #6b7280; display:flex; align-items:center; justify-content:center; gap:3px; }
 .metric-card .value { font-size: 18px; font-weight: 700; }
+/* Flip card for Sortino/Sharpe */
+.flip-card { perspective: 600px; cursor: pointer; }
+.flip-inner { position: relative; width: 100%; height: 100%; transition: transform 0.4s; transform-style: preserve-3d; }
+.flip-card.flipped .flip-inner { transform: rotateY(180deg); }
+.flip-front, .flip-back { backface-visibility: hidden; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+.flip-front { height: 100%; }
+.flip-back { position: absolute; top: 0; left: 0; right: 0; bottom: 0; transform: rotateY(180deg); padding: 10px; }
+.flip-icon { position: absolute; top: 4px; right: 6px; font-size: 12px; color: #4b5563; z-index: 2; line-height: 1; }
 .param-hl { color: #fbbf24; font-weight: 600; }
 .formula { display: inline-block; vertical-align: middle; text-align: center; line-height: 1.2; margin: 0 1px; font-family: 'Segoe UI', system-ui, sans-serif; }
 .formula .frac-top { display: block; border-bottom: 1px solid #94a3b8; padding: 0 5px 1px; }
 .formula .frac-bot { display: block; padding: 0 5px; }
 .green { color: #10b981; } .red { color: #ef4444; } .blue { color: #3b82f6; } .orange { color: #f59e0b; }
 .hide-scrollbar::-webkit-scrollbar { display: none; }
-.tip-icon { display: inline-block; width: 12px; height: 12px; line-height: 12px; font-size: 9px; border-radius: 50%; background: #2a3a4a; color: #6b7280; text-align: center; cursor: help; font-style: normal; }
+.tip-icon { display: inline-block; position: relative; width: 12px; height: 12px; line-height: 12px; font-size: 9px; border-radius: 50%; background: #2a3a4a; color: #6b7280; text-align: center; cursor: help; font-style: normal; }
 .tip-icon:hover .tip-text { display: block; }
 .tip-text { display: none; position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(100% + 6px); background: #1e293b; border: 1px solid #3b4a5a; border-radius: 6px; padding: 8px 10px; font-size: 11px; color: #c0c8d4; text-transform: none; line-height: 1.5; white-space: normal; min-width: 180px; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,.4); }
 
@@ -139,12 +150,15 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
 .placeholder-msg { text-align: center; color: #4b5563; margin-top: 100px; font-size: 14px; }
 
 /* Strategy preset cards - 2 per row grid */
-.preset-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 14px; }
-.preset-card { background: #1a2332; border: 1px solid #2a3a4a; border-radius: 6px; padding: 8px 10px; cursor: pointer; transition: border-color 0.2s, background 0.2s; text-align: center; }
-.preset-card:hover { border-color: #3b82f6; }
-.preset-card.active { border-color: #3b82f6; background: #1e293b; }
-.preset-card h4 { font-size: 11px; color: #f0f0f0; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.preset-card .pw { font-size: 11px; color: #60a5fa; font-family: monospace; }
+.preset-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 4px; }
+.school-group { margin-bottom: 4px; padding: 4px 8px; border-left: 3px solid #1e293b; border-radius: 0 4px 4px 0; }
+.school-group:has(.preset-card.active) { border-left-color: #3b82f6; }
+.school-row { display: flex; align-items: center; gap: 6px; }
+.school-header { font-size: 11px; font-weight: 600; color: #94a3b8; white-space: nowrap; width: 175px; }
+.preset-card { background: #1a2332; border: 1px solid #2a3a4a; border-radius: 5px; padding: 5px 10px; cursor: pointer; transition: all 0.15s; text-align: center; min-width: 28px; }
+.preset-card:hover { border-color: #60a5fa; background: #1e2d3d; }
+.preset-card.active { border-color: #3b82f6; background: #1e3050; box-shadow: 0 0 6px rgba(59,130,246,0.2); }
+.preset-card h4 { font-size: 12px; color: #e0e0e0; margin: 0; }
 
 /* Locked parameter row — same layout as slider-group but no slider */
 .param-locked { display: flex; align-items: center; gap: 6px; font-size: 12px; padding: 4px 0 2px; margin-bottom: 6px; }
@@ -201,9 +215,39 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
 .hm-date-cell.sort-asc { color: #f59e0b; font-weight: 700; background: #1e293b; }
 .hm-date-cell.sort-desc { color: #f59e0b; font-weight: 700; background: #1e293b; }
 .hm-sec-dot { width: 8px; height: 8px; border-radius: 2px; display: inline-block; flex-shrink: 0; }
+
+/* ── Shortcuts overlay ── */
+#shortcuts-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 10000;
+  display: none; align-items: center; justify-content: center; }
+#shortcuts-overlay.show { display: flex; }
+#shortcuts-card { background: #111827; border: 1px solid #1e293b; border-radius: 12px;
+  padding: 28px 32px 24px; min-width: 320px; max-width: 380px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+#shortcuts-card h3 { margin: 0 0 18px; font-size: 15px; color: #e0e0e0; font-weight: 600; }
+.shortcut-row { display: flex; align-items: center; margin-bottom: 12px; }
+.shortcut-row:last-child { margin-bottom: 0; }
+.shortcut-key { display: inline-block; min-width: 28px; height: 26px; line-height: 26px;
+  text-align: center; background: #1e293b; border: 1px solid #334155; border-radius: 5px;
+  color: #93c5fd; font-family: 'Cascadia Code', 'Fira Code', monospace; font-size: 13px;
+  font-weight: 600; padding: 0 6px; margin-right: 12px; }
+.shortcut-desc { color: #9ca3af; font-size: 13px; }
+.shortcut-hint { margin-top: 18px; padding-top: 12px; border-top: 1px solid #1e293b;
+  color: #4b5563; font-size: 11px; text-align: center; }
 </style>
 </head>
 <body>
+
+<div id="shortcuts-overlay" onclick="if(event.target===this)toggleShortcuts()">
+  <div id="shortcuts-card">
+    <h3>Keyboard Shortcuts</h3>
+    <div class="shortcut-row"><span class="shortcut-key">1</span><span class="shortcut-desc">Preset 3 — 赌徒</span></div>
+    <div class="shortcut-row"><span class="shortcut-key">2</span><span class="shortcut-desc">Preset 2 — 禅修者</span></div>
+    <div class="shortcut-row"><span class="shortcut-key">3</span><span class="shortcut-desc">Preset 1 — 精算师</span></div>
+    <div class="shortcut-row"><span class="shortcut-key">R</span><span class="shortcut-desc">Run Backtest</span></div>
+    <div class="shortcut-row"><span class="shortcut-key">S</span><span class="shortcut-desc">Save YAML</span></div>
+    <div class="shortcut-hint">Press ? or ESC to close</div>
+  </div>
+</div>
 
 <div id="tuner-loading">
   <div class="spinner"></div>
@@ -217,7 +261,7 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
   <!-- Preset cards -->
   <section id="tuner-sec-presets" aria-label="策略Preset">
     <div class="section-head">策略 Preset</div>
-    <div class="preset-row" id="preset-cards">
+    <div id="preset-cards">
       <!-- Dynamically rendered from /api/presets -->
     </div>
     <div class="preset-row" style="margin-top:6px; gap:6px; align-items:center;">
@@ -249,12 +293,12 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
     <!-- F1 -->
     <div class="slider-group" id="param-w1" aria-label="F1权重">
       <div class="slider-label"><span class="name">F1 EMA 偏离度</span><span class="val" id="v-w1">40%</span></div>
-      <input type="range" id="w1" min="0" max="100" step="5" value="40" oninput="syncWeights()" aria-label="F1 EMA偏离度权重">
+      <input type="range" id="w1" min="0" max="100" step="1" value="40" oninput="syncWeights()" aria-label="F1 EMA偏离度权重">
     </div>
     <div class="factor-sub">
       <div class="slider-group" id="param-ema" aria-label="EMA周期">
         <div class="slider-label"><span class="name">EMA 周期</span><span class="val" id="v-ema">16 周</span></div>
-        <input type="range" id="ema_period" min="5" max="20" step="1" value="16" oninput="$id('v-ema').textContent=this.value+' 周'" aria-label="EMA周期">
+        <input type="range" id="ema_period" min="3" max="30" step="1" value="16" oninput="$id('v-ema').textContent=this.value+' 周'" aria-label="EMA周期">
       </div>
       <div class="slider-group" id="param-f1s" aria-label="F1 sigmoid">
         <div class="slider-label"><span class="name">sigmoid 尺度</span><span class="val" id="v-f1s">8.0</span></div>
@@ -263,90 +307,27 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
       <label style="margin-top:6px;font-size:11px;color:#9ca3af;cursor:pointer;user-select:none;display:block;">
     </div>
 
-    <!-- F2 日线 MA 偏离度 -->
-    <div class="slider-group" id="param-w2" aria-label="F2权重">
-      <div class="slider-label"><span class="name">F2 日线 MA 偏离</span><span class="val" id="v-w2">0%</span></div>
-      <input type="range" id="w2" min="0" max="100" step="5" value="0" oninput="syncWeights()" aria-label="F2权重">
-    </div>
-    <div class="factor-sub">
-      <div class="slider-group" id="param-f2ma" aria-label="F2 MA周期">
-        <div class="slider-label"><span class="name">MA 周期</span><span class="val" id="v-f2ma">80 日</span></div>
-        <input type="range" id="f2_ma_period" min="10" max="100" step="5" value="25" oninput="$id('v-f2ma').textContent=this.value+' 日'" aria-label="F2 MA周期">
-      </div>
-      <div class="slider-group" id="param-f2s" aria-label="F2 sigmoid">
-        <div class="slider-label"><span class="name">sigmoid 尺度</span><span class="val" id="v-f2s">8.0</span></div>
-        <input type="range" id="f2_sensitivity" min="3" max="15" step="0.5" value="8" oninput="$id('v-f2s').textContent=parseFloat(this.value).toFixed(1)" aria-label="F2 sigmoid尺度">
-      </div>
-    </div>
-
     <!-- F3 -->
     <div class="slider-group" id="param-w3" aria-label="F3权重">
       <div class="slider-label"><span class="name">F3 自归一化量比</span><span class="val" id="v-w3">60%</span></div>
-      <input type="range" id="w3" min="0" max="100" step="5" value="60" oninput="syncWeights()" aria-label="F3方向性量比权重">
+      <input type="range" id="w3" min="0" max="100" step="1" value="60" oninput="syncWeights()" aria-label="F3方向性量比权重">
     </div>
     <div class="factor-sub">
       <div class="slider-group" id="param-vol" aria-label="量比窗口">
         <div class="slider-label"><span class="name">量比窗口</span><span class="val" id="v-vol">20 日</span></div>
-        <input type="range" id="vol_window" min="5" max="40" step="5" value="20" oninput="$id('v-vol').textContent=this.value+' 日'" aria-label="量比窗口">
+        <input type="range" id="vol_window" min="5" max="60" step="1" value="20" oninput="$id('v-vol').textContent=this.value+' 日'" aria-label="量比窗口">
       </div>
       <div class="slider-group" id="param-f3s" aria-label="F3指数尺度">
         <div class="slider-label"><span class="name">指数尺度</span><span class="val" id="v-f3s">1.0</span></div>
-        <input type="range" id="f3_sensitivity" min="0.5" max="3.0" step="0.1" value="1.0" oninput="$id('v-f3s').textContent=parseFloat(this.value).toFixed(1)" aria-label="F3指数尺度">
+        <input type="range" id="f3_sensitivity" min="0.5" max="8.0" step="0.1" value="1.0" oninput="$id('v-f3s').textContent=parseFloat(this.value).toFixed(1)" aria-label="F3指数尺度">
       </div>
     </div>
 
-    <!-- F4 -->
-    <div class="param-locked" id="param-w4" aria-label="F4权重">
-      <span class="pk">F4 估值因子 <span class="pt">🔒</span></span>
-      <span class="pv">0%</span>
-    </div>
-    <div class="factor-sub">
-      <div class="param-locked" style="opacity:0.45;">
-        <span class="pk" style="font-style:italic;">估值数据源接入后开放</span>
-      </div>
-    </div>
-
-    <!-- F5 -->
-    <div class="param-locked" id="param-w5" aria-label="F5权重">
-      <span class="pk">F5 残差动量 <span class="pt">🔒</span></span>
-      <span class="pv">0%</span>
-    </div>
-    <div class="factor-sub">
-      <div class="param-locked" style="opacity:0.45;">
-        <span class="pk" style="font-style:italic;">因子稳定性验证后开放</span>
-      </div>
-    </div>
-
-    <!-- F4 -->
-    <div class="slider-group" id="param-w4" aria-label="F4权重">
-      <div class="slider-label"><span class="name">F4 估值</span><span class="val" id="v-w4">0%</span></div>
-      <input type="range" id="w4" min="0" max="40" step="5" value="0" oninput="syncWeights()" aria-label="F4估值权重">
-    </div>
-
-    <!-- F6 -->
-    <div class="slider-group" id="param-w6" aria-label="F6权重">
-      <div class="slider-label"><span class="name">F6 动能衰竭惩罚</span><span class="val" id="v-w6">0%</span></div>
-      <input type="range" id="w6" min="0" max="30" step="5" value="0" oninput="syncWeights()" aria-label="F6动能衰竭惩罚权重">
-    </div>
-    <div class="factor-sub">
-      <div class="slider-group" id="param-f6-rsi">
-        <div class="slider-label"><span class="name">RSI 触发门槛</span><span class="val" id="v-f6-rsi">80</span></div>
-        <input type="range" id="f6_rsi_thresh" min="70" max="95" step="1" value="80" oninput="$id('v-f6-rsi').textContent=this.value" aria-label="F6 RSI触发门槛">
-      </div>
-      <div class="slider-group" id="param-f6-drop">
-        <div class="slider-label"><span class="name">跌幅门槛</span><span class="val" id="v-f6-drop">2.5%</span></div>
-        <input type="range" id="f6_drop_thresh" min="1" max="5" step="0.5" value="2.5" oninput="$id('v-f6-drop').textContent=parseFloat(this.value).toFixed(1)+'%'" aria-label="F6跌幅门槛">
-      </div>
-      <div class="slider-group" id="param-f6-penalty">
-        <div class="slider-label"><span class="name">惩罚强度</span><span class="val" id="v-f6-penalty">0.15</span></div>
-        <input type="range" id="f6_base_penalty" min="0.05" max="0.50" step="0.05" value="0.15" oninput="$id('v-f6-penalty').textContent=parseFloat(this.value).toFixed(2)" aria-label="F6惩罚强度">
-      </div>
-    </div>
 
     <!-- F7 -->
     <div class="slider-group" id="param-w7" aria-label="F7权重">
       <div class="slider-label"><span class="name">F7 对数收益偏离</span><span class="val" id="v-w7">0%</span></div>
-      <input type="range" id="w7" min="0" max="30" step="5" value="0" oninput="syncWeights()" aria-label="F7对数收益偏离权重">
+      <input type="range" id="w7" min="0" max="30" step="1" value="0" oninput="syncWeights()" aria-label="F7对数收益偏离权重">
     </div>
     <div class="factor-sub">
       <div class="slider-group" id="param-f7-t">
@@ -359,7 +340,7 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
       </div>
       <div class="slider-group" id="param-f7-window">
         <div class="slider-label"><span class="name">累计收益窗口</span><span class="val" id="v-f7-window">20 日</span></div>
-        <input type="range" id="f7_window" min="5" max="60" step="5" value="20" oninput="$id('v-f7-window').textContent=this.value+' 日'" aria-label="F7累计对数收益窗口">
+        <input type="range" id="f7_window" min="5" max="60" step="1" value="20" oninput="$id('v-f7-window').textContent=this.value+' 日'" aria-label="F7累计对数收益窗口">
       </div>
     </div>
 
@@ -373,10 +354,6 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
       <div class="slider-label"><span class="name">信心函数</span><span class="val" id="v-conf-type">MA趋势</span></div>
       <div class="btn-row" id="conf-type-group">
         <button onclick="setConfType('ma_trend')" class="active">MA趋势</button>
-        <button onclick="setConfType('regime')">市场状态</button>
-        <button onclick="setConfType('dd_trigger')">回撤触发</button>
-        <button onclick="setConfType('momentum_crash')">动量崩溃</button>
-        <button onclick="setConfType('always_full')">始终满仓</button>
       </div>
     </div>
     <div id="ma-trend-params" class="factor-sub">
@@ -415,7 +392,7 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
     </div>
     <div class="slider-group" id="param-concentration" aria-label="仓位集中度">
       <div class="slider-label"><span class="name">仓位集中度 C</span><span class="val" id="v-conc">2.0</span></div>
-      <input type="range" id="concentration" min="0" max="30" step="1" value="20" oninput="$id('v-conc').textContent=(this.value/10).toFixed(1)" aria-label="仓位集中度">
+      <input type="range" id="concentration" min="0" max="30" step="0.1" value="20" oninput="$id('v-conc').textContent=(this.value/10).toFixed(2)" aria-label="仓位集中度">
     </div>
     <div class="slider-group" id="param-csensitivity" aria-label="动态C灵敏度">
       <div class="slider-label"><span class="name">C 动态灵敏度</span><span class="val" id="v-csens">1.0</span></div>
@@ -438,7 +415,7 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
       </div>
       <div class="slider-group" id="param-score-band" aria-label="分数带">
         <div class="slider-label"><span class="name">分数带</span><span class="val" id="v-score-band">0%</span></div>
-        <input type="range" id="score_band" min="0" max="20" step="1" value="0" oninput="$id('v-score-band').textContent=this.value+'%'" aria-label="分数带">
+        <input type="range" id="score_band" min="0" max="20" step="0.5" value="0" oninput="$id('v-score-band').textContent=parseFloat(this.value).toFixed(1)+'%'" aria-label="分数带">
       </div>
     </div>
   </section>
@@ -482,11 +459,13 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
       <div style="display:flex;gap:4px;align-items:center;">
         <button class="btn-refresh" id="btn-refresh" onclick="refreshData()">刷新数据</button>
         <button class="btn-save" onclick="saveYAML()">保存参数</button>
-        <span id="toggle-debug" onclick="var el=this;var chk=$id('chk-debug');chk.checked=!chk.checked;el.classList.toggle('on',chk.checked)" class="toggle-pill" title="回测调试快照">debug</span>
-        <span id="toggle-meta" onclick="var el=this;var chk=$id('chk-meta');chk.checked=!chk.checked;el.classList.toggle('on',chk.checked)" class="toggle-pill" title="刷新数据时顺带更新ETF元数据">元数据</span>
-        <input type="checkbox" id="chk-debug" style="display:none;">
-        <input type="checkbox" id="chk-meta" style="display:none;">
-              </div>
+        <span style="display:grid;grid-template-columns:1fr 1fr;gap:2px 4px;">
+          <span id="toggle-debug" onclick="var el=this;var chk=$id('chk-debug');chk.checked=!chk.checked;el.classList.toggle('on',chk.checked)" class="toggle-pill" title="回测调试快照">debug</span>
+          <span id="toggle-meta" onclick="var el=this;var chk=$id('chk-meta');chk.checked=!chk.checked;el.classList.toggle('on',chk.checked)" class="toggle-pill" title="刷新数据时顺带更新ETF元数据">元数据</span>
+        </span>
+      </div>
+      <input type="checkbox" id="chk-debug" style="display:none;">
+      <input type="checkbox" id="chk-meta" style="display:none;">
       <div class="status" id="status" style="margin-top:2px;min-height:0;"></div>
     </div>
     <div class="status" id="data-status" style="min-height:0;margin-top:2px;"></div>
@@ -535,16 +514,14 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
       <div class="guide-block-body">
         <p>每个调仓日，对标的池内全部 ETF 执行以下流水线：</p>
         <p><b>Phase 1: 因子计算</b></p>
-        <p>1. d₁ = 周线 EMA 偏离%（F1），d₂ = 日线 MA 偏离%（F2），r = 方向性量比（F3）</p>
-        <p>2. Z = N日累计对数收益的滚动 Z-score（F7），R = 动能衰竭惩罚保留率（F6）</p>
+        <p>1. d₁ = 周线 EMA 偏离%（F1），r = 方向性量比（F3）</p>
+        <p>2. Z = N日累计对数收益的滚动 Z-score（F7）</p>
         <p><b>Phase 2: 连续映射</b>（每支 ETF 独立，不做截面排名）</p>
         <p>3. d₁ → F<sub>1</sub> = <span class="formula"><span class="frac-top">1</span><span class="frac-bot">1 + e<sup>−d₁/σ₁</sup></span></span>（sigmoid，σ₁ = <span class="param-hl">F1 sigmoid 尺度</span>）</p>
-        <p>4. d₂ → F<sub>2</sub> = <span class="formula"><span class="frac-top">1</span><span class="frac-bot">1 + e<sup>−d₂/σ₂</sup></span></span>（sigmoid，σ₂ = <span class="param-hl">F2 sigmoid 尺度</span>）</p>
-        <p>5. r → F<sub>3</sub> = <span class="formula"><span class="frac-top">1</span><span class="frac-bot">1 + e<sup>−ln(r)/σ₃</sup></span></span>（log-sigmoid，σ₃ = <span class="param-hl">F3 指数尺度</span>）</p>
+        <p>4. r → F<sub>3</sub> = <span class="formula"><span class="frac-top">1</span><span class="frac-bot">1 + e<sup>−ln(r)/σ₃</sup></span></span>（log-sigmoid，σ₃ = <span class="param-hl">F3 指数尺度</span>）</p>
         <p>6. Z → F<sub>7</sub> = 分段幂函数（|Z|≤k 幂次加速，|Z|>k 切线外延，k = <span class="param-hl">标准差倍数</span>，t = <span class="param-hl">幂次</span>）</p>
-        <p>7. R → F6<sub>score</sub> = R − 1.0 ∈ [−0.85, 0]（触发后线性衰减，见 F6 曲线）</p>
         <p><b>Phase 3: 加权合成</b></p>
-        <p>8. S = F<sub>1</sub>·w<sub>1</sub> + F<sub>2</sub>·w<sub>2</sub> + F<sub>3</sub>·w<sub>3</sub> + F<sub>7</sub>·w<sub>7</sub> + (R−1)·w<sub>6</sub></p>
+        <p>7. S = F<sub>1</sub>·w<sub>1</sub> + F<sub>2</sub>·w<sub>2</sub> + F<sub>3</sub>·w<sub>3</sub> + F<sub>7</sub>·w<sub>7</sub></p>
         <p><b>Phase 4: 仓位分配</b></p>
         <p>9. 取 S 的 Top-N 支 ETF → Z-score 标准化 → Softmax 分配权重 w<sub>i</sub>（C<sub>eff</sub> 由 <span class="param-hl">C 动态灵敏度</span> 根据 Top-6 分数离散度自适应调整：强共识放大 C，弱共识缩小 C）</p>
         <p>10. 总仓位由 <span class="param-hl">仓位控制</span> 决定（沪深300 周线 MA 二值信号），与综合分独立</p>
@@ -574,31 +551,6 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
           <div id="f1-curve" style="width:100%;aspect-ratio:16/9;background:#0f1419;border:1px solid #1e293b;border-radius:6px;"></div>
         </div>
         <p>与截面标准化的核心区别：sigmoid 保留绝对偏离水平。全市场-10%时F<sub>1</sub>≈0.13（低分），全市场+10%时≈0.87（高分），仓位控制可以识别牛熊。</p>
-      </div>
-    </div>
-
-    <!-- F2 -->
-    <div class="guide-block" id="guide-f2" aria-label="F2 日线MA偏离度">
-      <div class="guide-block-header" onclick="toggleGuide('guide-f2')">
-        <span class="g-icon">&#127919;</span>
-        <span class="g-title">F2 日线 MA 偏离度</span>
-        <span class="g-tag" style="color:#60a5fa;">w2</span>
-        <span class="g-chevron">&#9654;</span>
-      </div>
-      <div class="guide-block-body">
-        <p><b>设计理念</b></p>
-        <p>F2 与 F1 同为趋势偏离因子，区别在于 F1 用周线 EMA（慢），F2 用日线 MA（快）。
-          F1 提供中长期趋势方向，F2 提供短期趋势动量——二者可同时使用，综合判断趋势的可持续性。</p>
-
-        <p><b>计算公式</b></p>
-        <p>取最近 <span class="param-hl">MA 周期</span> 个交易日的收盘价的简单移动平均：</p>
-        <p>MA = <span class="formula"><span class="frac-top">1</span><span class="frac-bot">N</span></span> Σ<sub>i=0</sub><sup>N−1</sup> close<sub>t−i</sub></p>
-        <p>d₂ = <span class="formula"><span class="frac-top">close − MA</span><span class="frac-bot">MA</span></span> × 100（偏离百分比）</p>
-
-        <p><b>映射：sigmoid</b></p>
-        <p>与 F1 相同：F<sub>2</sub> = <span class="formula"><span class="frac-top">1</span><span class="frac-bot">1 + e<sup>−d₂/σ₂</sup></span></span>，σ₂ = <span class="param-hl">F2 sigmoid 尺度</span></p>
-        <p><span class="param-hl">F2 sigmoid 尺度</span> 控制敏感度：小值更敏感，大值更迟钝。当前值以左侧滑块为准。</p>
-
       </div>
     </div>
 
@@ -633,64 +585,8 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
       </div>
     </div>
 
-    <!-- F4 -->
-    <div class="guide-block" id="guide-f4" aria-label="F4估值因子">
-      <div class="guide-block-header" onclick="toggleGuide('guide-f4')">
-        <span class="g-icon">&#128176;</span>
-        <span class="g-title">F4 估值因子</span>
-        <span class="g-tag" style="color:#60a5fa;">w4</span>
-        <span class="g-chevron">&#9654;</span>
-      </div>
-      <div class="guide-block-body">
-        <p><b>Step 1: 取当前估值</b></p>
-        <p>每支 ETF 有一个主指标（PE-TTM 或 PB），从 csindex 拉取完整历史序列（2010~至今，1400~4000 行/支）。启动时一次性预计算，回测中不再联网。</p>
-        <p><b>Step 2: 算历史百分位</b></p>
-        <p><span class="tag">百分位 = 历史数据中 &le; 当前值的占比 &times; 100</span></p>
-        <p><b>Step 3: 逆向映射</b></p>
-        <p><span class="tag">F4<sub>raw</sub> = 100 - 百分位</span>。越低估 → 百分位越低 → 分数越高</p>
-        <p>举例：有色 PE=25，历史 3000 日中 300 个 &le;25 → 百分位 10% → F4<sub>raw</sub> = 90</p>
-        <p><b>Step 4: 连续映射（替代截面标准化）</b></p>
-        <p>F4<sub>raw</sub> 已是 0-100（100 - 历史百分位），直接归一化到 [0, 1]：</p>
-        <p><span class="tag">F<sub>4</sub> = F4<sub>raw</sub> / 100</span> → [0, 1]</p>
-        <p>不再做"排名的排名"（历史百分位 → 截面排名 = 双重排名）。全市场一起低估（熊市底部）→ F4<sub>raw</sub> 普遍高（80+）→ 综合分普遍高 → MA趋势仓位控制给高仓位。这才是连续映射的核心价值：保留绝对水平，让仓位控制识别市场状态。</p>
-        <p>每日更新一次（非实时），波动慢。数据源：csindex 历史PE/PB + X6 东方财富BPS反推。</p>
-      </div>
-    </div>
-
     </div><!-- /guide-col-left -->
     <div class="guide-col">
-
-    <!-- F6 -->
-    <div class="guide-block" id="guide-f6" aria-label="F6动能衰竭惩罚">
-      <div class="guide-block-header" onclick="toggleGuide('guide-f6')">
-        <span class="g-icon">&#9889;</span>
-        <span class="g-title">F6 动能衰竭惩罚</span>
-        <span class="g-tag" style="color:#f59e0b;">w6</span>
-        <span class="g-chevron">&#9654;</span>
-      </div>
-      <div class="guide-block-body">
-        <p><b>设计理念</b></p>
-        <p>F6 专门识别"高位过热后放量下跌"：它不是奖励强势，而是在动能衰竭时给 ETF 扣分，避免刚出现高位破位的标的继续排在前面。</p>
-        <p><b>Step 1: 计算触发条件</b></p>
-        <p>同时满足三件事才触发：</p>
-        <ul>
-          <li>前一日 RSI ≥ <span class="param-hl">F6 RSI触发门槛</span>（当前滑块值），说明此前已过热</li>
-          <li>当日跌幅 ≥ <span class="param-hl">F6 跌幅门槛</span>（当前滑块值），说明价格开始破位</li>
-          <li>当日成交量 / <span class="param-hl">量比窗口</span>均量 ≥ 1.5，说明下跌伴随放量</li>
-        </ul>
-        <p><b>Step 2: 输出惩罚保留率</b></p>
-        <p><b>保留率衰减：</b>触发日保留率 = p（<span class="param-hl">F6 惩罚强度</span>），之后线性恢复：</p>
-        <p>R(d) = p + (1 − p) · <span class="formula"><span class="frac-top">d</span><span class="frac-bot">D</span></span>，其中 d = 已过天数，D = 衰减天数(3)，R ∈ [p, 1.0]</p>
-        <p><b>Step 3: 转成综合分扣分项</b></p>
-        <p>F6<sub>score</sub> = R − 1.0，无惩罚时 R=1 → 贡献 0；触发后 R=p → 贡献 p−1（如 p=0.15 时扣分 −0.85）</p>
-        <p>综合分扣分 = F6<sub>score</sub> · w<sub>6</sub> = (R − 1.0) · <span class="param-hl">F6 动能衰竭惩罚</span></p>
-        <p>快照表里的 F6 显示扣分百分比：0 代表无惩罚，-85 代表强惩罚。排序时使用的是上面的负值扣分。</p>
-        <p>下图展示一次触发后惩罚保留率随时间衰减（decay_days = 3）：</p>
-        <div style="max-width:520px;margin:6px 0 10px;">
-          <div id="f6-curve" style="width:100%;aspect-ratio:3/1;background:#0f1419;border:1px solid #1e293b;border-radius:6px;"></div>
-        </div>
-      </div>
-    </div>
 
     <!-- F7 -->
     <div class="guide-block" id="guide-f7" aria-label="F7对数收益偏离">
@@ -722,7 +618,7 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
         <p><b>无上限惩罚</b>：|Z| > k 后切线线性外延不截断，极端偏离可持续扣分/加分。</p>
         <p><b>Step 5: 加权合成</b></p>
         <p><span class="tag">综合分贡献 = F<sub>7</sub> &times; <span class="param-hl">F7 对数收益偏离</span>权重</span></p>
-        <p>F7 是加法因子：最终综合分 = F<sub>1</sub>×w<sub>1</sub> + F<sub>3</sub>×w<sub>3</sub> + F<sub>7</sub>×w<sub>7</sub>（+ F6 惩罚项若启用）。与 F6 的减法扣分不同，F7 是双向连续调节。</p>
+        <p>F7 是加法因子：最终综合分 = F<sub>1</sub>×w<sub>1</sub> + F<sub>3</sub>×w<sub>3</sub> + F<sub>7</sub>×w<sub>7</sub>。F7 是双向连续调节。</p>
         <p>下图展示不同 (t, k) 下 Z → F<sub>7</sub> 的映射曲线（虚线 = ±k 切线切换点）：</p>
         <div style="max-width:520px;margin:6px 0 10px;">
           <div id="f7-curve" style="width:100%;aspect-ratio:16/9;background:#0f1419;border:1px solid #1e293b;border-radius:6px;"></div>
@@ -816,8 +712,8 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
                 <div class="metric-card" id="metric-excess" aria-label="超额收益"><div class="label">超额收益<i class="tip-icon">?<span class="tip-text">策略总收益 − 同期沪深300总收益。正值表示跑赢大盘。</span></i></div><div class="value" id="m-excess">-</div></div>
                 <div class="metric-card" id="metric-winrate" aria-label="胜率"><div class="label">胜率<i class="tip-icon">?<span class="tip-text">逐笔配对胜率 = 盈利交易笔数 ÷ 已平仓交易总数。FIFO配对，期末按收盘价虚拟平仓。</span></i></div><div class="value" id="m-wr">-</div></div>
                 <div class="metric-card" id="metric-payoff" aria-label="赔率"><div class="label">赔率<i class="tip-icon">?<span class="tip-text">盈亏比 = 盈利交易平均收益% ÷ 亏损交易平均亏损%（取绝对值）。>1 表示赚一次够亏一次以上。</span></i></div><div class="value" id="m-payoff">-</div></div>
-                <div class="metric-card" id="metric-sharpe" aria-label="Sharpe"><div class="label">Sharpe<i class="tip-icon">?<span class="tip-text">风险调整收益指标 = (年化收益 - 无风险利率) / 收益率标准差。>1 为优，>2 为极优</span></i></div><div class="value blue" id="m-sharpe">-</div></div>
-                <div class="metric-card" id="metric-sortino" aria-label="Sortino"><div class="label">Sortino<i class="tip-icon">?<span class="tip-text">下行风险调整收益 = (年化收益 - 无风险利率) / 下行标准差。只惩罚亏损波动，比 Sharpe 更宽容上涨波动</span></i></div><div class="value blue" id="m-sortino">-</div></div>
+                <div class="metric-card flip-card" id="metric-sortino-sharpe" onclick="flipSortinoSharpe()"><span class="flip-icon">↻</span><div class="flip-inner"><div class="flip-front"><div class="label">Sortino<i class="tip-icon">?<span class="tip-text">下行风险调整收益 = (年化收益 - 无风险利率) / 下行标准差。只惩罚亏损波动，比 Sharpe 更宽容上涨波动</span></i></div><div class="value blue" id="m-sortino">-</div></div><div class="flip-back"><div class="label">Sharpe<i class="tip-icon">?<span class="tip-text">风险调整收益指标 = (年化收益 - 无风险利率) / 收益率标准差。>1 为优，>2 为极优</span></i></div><div class="value blue" id="m-sharpe">-</div></div></div></div>
+                <div class="metric-card" id="metric-calmar" aria-label="Calmar"><div class="label">Calmar<i class="tip-icon">?<span class="tip-text">年化收益 ÷ 最大回撤绝对值。衡量"冒一单位回撤能赚多少"。>2 为优</span></i></div><div class="value blue" id="m-calmar">-</div></div>
                 <div class="metric-card" id="metric-dd" aria-label="最大回撤"><div class="label">最大回撤</div><div class="value red" id="m-dd">-</div></div>
                 <div class="metric-card" id="metric-rebalance" aria-label="换仓率"><div class="label">换仓率<i class="tip-icon">?<span class="tip-text">实际发生换仓的调仓日 ÷ 总调仓日数。低比率说明策略稳定、持仓延续性强。</span></i></div><div class="value" id="m-rb">-</div></div>
                 <div class="metric-card" id="metric-commission" aria-label="交易佣金"><div class="label">交易佣金</div><div class="value" id="m-comm">-</div></div>
@@ -883,15 +779,14 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
             <table id="tuner-snapshot-table" style="width:100%;border-collapse:collapse;">
               <thead id="tuner-snapshot-thead" style="position:sticky;top:0;z-index:1;background:#1a2332;">
                 <tr>
-                  <th style="text-align:left;padding:8px 4px;font-size:10px;color:#6b7280;border-bottom:1px solid #2a3a4a;">ETF</th>
-                  <th style="text-align:center;padding:8px 4px;font-size:10px;color:#6b7280;border-bottom:1px solid #2a3a4a;">F1</th>
-                  <th style="text-align:center;padding:8px 4px;font-size:10px;color:#6b7280;border-bottom:1px solid #2a3a4a;">F2</th>
-                  <th style="text-align:center;padding:8px 4px;font-size:10px;color:#6b7280;border-bottom:1px solid #2a3a4a;">F3</th>
-                  <th style="text-align:center;padding:8px 4px;font-size:10px;color:#6b7280;border-bottom:1px solid #2a3a4a;">F6</th>
-                   <th style="text-align:center;padding:8px 4px;font-size:10px;color:#6b7280;border-bottom:1px solid #2a3a4a;">F7</th>
-                  <th style="text-align:center;padding:8px 3px;font-size:10px;color:#6b7280;border-bottom:1px solid #2a3a4a;">综合</th>
-                  <th style="text-align:center;padding:8px 3px;font-size:10px;color:#6b7280;border-bottom:1px solid #2a3a4a;">离散度<i class="tip-icon">?<span class="tip-text">Z-score = (综合分 − 全池均值) ÷ 全池标准差。>1.5显著领先，0~1.5中等，<0低于平均。Top-6的Z-score标准差为动态C的共识信号。</span></i></th>
-                  <th style="text-align:center;padding:8px 3px;font-size:10px;color:#6b7280;border-bottom:1px solid #2a3a4a;">仓位</th>
+                  <th data-sort="code" onclick="onSnapSort('code')" style="cursor:pointer;text-align:left;padding:8px 4px;font-size:10px;border-bottom:1px solid #2a3a4a;">ETF<span class="snap-sort-arrow" id="sort-ar-code"></span></th>
+                  <th style="text-align:center;padding:8px 3px;font-size:10px;color:#6b7280;border-bottom:1px solid #2a3a4a;">因子驱动</th>
+                  <th data-sort="f1" onclick="onSnapSort('f1')" style="cursor:pointer;text-align:center;padding:8px 4px;font-size:10px;border-bottom:1px solid #2a3a4a;">F1<span class="snap-sort-arrow" id="sort-ar-f1"></span></th>
+                  <th data-sort="f3" onclick="onSnapSort('f3')" style="cursor:pointer;text-align:center;padding:8px 4px;font-size:10px;border-bottom:1px solid #2a3a4a;">F3<span class="snap-sort-arrow" id="sort-ar-f3"></span></th>
+                  <th data-sort="f7" onclick="onSnapSort('f7')" style="cursor:pointer;text-align:center;padding:8px 4px;font-size:10px;border-bottom:1px solid #2a3a4a;">F7<span class="snap-sort-arrow" id="sort-ar-f7"></span></th>
+                  <th data-sort="score" onclick="onSnapSort('score')" style="cursor:pointer;text-align:center;padding:8px 3px;font-size:10px;border-bottom:1px solid #2a3a4a;">综合<span class="snap-sort-arrow" id="sort-ar-score"></span></th>
+                  <th data-sort="z" onclick="onSnapSort('z')" style="cursor:pointer;text-align:center;padding:8px 3px;font-size:10px;border-bottom:1px solid #2a3a4a;">离散度<span class="snap-sort-arrow" id="sort-ar-z"></span><i class="tip-icon">?<span class="tip-text">Z-score = (综合分 − 全池均值) ÷ 全池标准差。>1.5显著领先，0~1.5中等，<0低于平均。Top-6的Z-score标准差为动态C的共识信号。</span></i></th>
+                  <th data-sort="pos" onclick="onSnapSort('pos')" style="cursor:pointer;text-align:center;padding:8px 3px;font-size:10px;border-bottom:1px solid #2a3a4a;">仓位<span class="snap-sort-arrow" id="sort-ar-pos"></span></th>
                   <th style="text-align:center;padding:8px 4px;font-size:10px;color:#6b7280;border-bottom:1px solid #2a3a4a;">动作</th>
                 </tr>
               </thead>
@@ -966,6 +861,7 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
   </div>
 
 </div>
+
 </div><!-- /#tuner-panels -->
 
 <script>
@@ -996,10 +892,7 @@ function toggleGuide(id) {
   if (id === 'guide-f3' && el.classList.contains('open') && !f3Chart) {
     setTimeout(renderF3GuideChart, 50);
   }
-  if (id === 'guide-f6' && el.classList.contains('open') && !f6Chart) {
-    setTimeout(renderF6GuideChart, 50);
-  }
-  if (id === 'guide-f7' && el.classList.contains('open') && !f7Chart) {
+    if (id === 'guide-f7' && el.classList.contains('open') && !f7Chart) {
     setTimeout(renderF7GuideChart, 50);
   }
 }
@@ -1248,82 +1141,6 @@ function renderF3GuideChart() {
   return f3Chart;
 }
 
-/* ====== F6 惩罚保留率衰减曲线 ====== */
-var f6Chart = null;
-
-function renderF6GuideChart() {
-  if (f6Chart) { f6Chart.dispose(); f6Chart = null; }
-  var dom = $id('f6-curve');
-  if (!dom) return;
-  f6Chart = echarts.init(dom);
-  var decayDays = 3;
-  var penalties = [
-    { bp: 0.10, color: '#f472b6', label: 'bp=0.10 (重度)' },
-    { bp: 0.15, color: '#f59e0b', label: 'bp=0.15 (参考)', annotate: true },
-    { bp: 0.30, color: '#60a5fa', label: 'bp=0.30 (轻度)' },
-    { bp: 0.50, color: '#a78bfa', label: 'bp=0.50 (极轻)' },
-  ];
-  var dayLabels = [];
-  for (var d = 0; d <= decayDays; d++) dayLabels.push('触发+' + d + 'd');
-  var annotData6 = [];
-  var series = penalties.map(function(cfg) {
-    var data = [];
-    for (var d = 0; d <= decayDays; d++) {
-      var t = d / decayDays;
-      data.push(+(cfg.bp + (1.0 - cfg.bp) * t).toFixed(3));
-    }
-    if (cfg.annotate) {
-      annotData6 = [
-        { value: [0, data[0]], name: '触发日 n=0  R=p=' + cfg.bp.toFixed(2), symbolSize: 14, itemStyle: { color: '#ef4444' } },
-        { value: [3, data[3]], name: 'n=D 恢复完成 R=1', symbolSize: 14, itemStyle: { color: '#10b981' } },
-      ];
-    }
-    return {
-      type: 'line', name: cfg.label, data: data, showSymbol: true, symbolSize: 6,
-      lineStyle: { color: cfg.color, width: 2 },
-      itemStyle: { color: cfg.color },
-    };
-  });
-  if (annotData6.length > 0) {
-    series.push({
-      type: 'scatter', name: '', data: annotData6, z: 10,
-      label: { show: true, color: '#fff', fontSize: 11, fontWeight: 'bold', formatter: '{b}', position: 'top', distance: 8 },
-    });
-  }
-  f6Chart.setOption({
-    backgroundColor: 'transparent',
-    tooltip: {
-      trigger: 'axis',
-      backgroundColor: 'rgba(10,25,47,0.95)',
-      borderColor: 'rgba(245,158,11,0.2)',
-      textStyle: { color: '#e0e0e0', fontSize: 11 },
-      formatter: function(params) {
-        var s = params[0].axisValue;
-        params.forEach(function(p) { s += '<br/><span style="color:' + p.color + '">' + p.seriesName + '</span> = <b>' + p.value.toFixed(3) + '</b>'; });
-        return s;
-      },
-    },
-    legend: { data: penalties.map(function(c) { return c.label; }), top: 10, right: 6, textStyle: { color: '#9ca3af', fontSize: 9 }, itemWidth: 14, itemHeight: 8 },
-    grid: { left: 44, right: 12, top: 42, bottom: 36 },
-    xAxis: {
-      type: 'category', data: dayLabels, boundaryGap: false,
-      axisLabel: { color: '#6b7280', fontSize: 9 },
-      axisLine: { lineStyle: { color: '#4b5563' } },
-      axisTick: { show: true, lineStyle: { color: '#4b5563' } },
-      splitLine: { show: false },
-    },
-    yAxis: {
-      type: 'value', min: 0, max: 1.05,
-      axisLabel: { color: '#6b7280', fontSize: 9, formatter: function(v) { return (v * 100).toFixed(0) + '%'; } },
-      axisLine: { show: true, lineStyle: { color: '#4b5563' } },
-      splitLine: { lineStyle: { color: 'rgba(255,255,255,0.05)' } },
-      name: '惩罚保留率', nameTextStyle: { color: '#6b7280', fontSize: 9 },
-    },
-    series: series,
-  });
-  return f6Chart;
-}
-
 /* ====== F7 Z-score → F7 分段映射可视化 ====== */
 var f7Chart = null;
 
@@ -1436,7 +1253,11 @@ function switchRightView(view) {
   if (view === 'heatmap') {
     initHeatmap();
   }
+  
 }
+
+
+
 
 /* ====== Parameter helpers ====== */
 function setMH(n) {
@@ -1488,7 +1309,7 @@ function setMaDirConfirm(v) {
 }
 
 function getWeightTotal() {
-  return parseInt($id('w1').value) + parseInt($id('w2').value) + parseInt($id('w3').value) + parseInt($id('w6').value) + parseInt($id('w7').value);
+  return parseInt($id('w1').value) + parseInt($id('w3').value) + parseInt($id('w7').value);
 }
 
 function validateRunInputs() {
@@ -1522,12 +1343,8 @@ function validateBullBear() {
 }
 
 function syncWeights() {
-  var w2 = parseInt($id('w2').value);
   $id('v-w1').textContent = $id('w1').value + '%';
-  $id('v-w2').textContent = w2 + '%';
   $id('v-w3').textContent = $id('w3').value + '%';
-  $id('v-w4').textContent = $id('w4').value + '%';
-  $id('v-w6').textContent = $id('w6').value + '%';
   $id('v-w7').textContent = $id('w7').value + '%';
   var total = getWeightTotal();
   var te = $id('v-total');
@@ -1648,10 +1465,7 @@ function getParams() {
   return {
     // Active parameters (from UI controls)
     w1: parseInt($id('w1').value),
-    w2: parseInt($id('w2').value),
     w3: parseInt($id('w3').value),
-    w4: parseInt($id('w4').value),
-    w6: parseInt($id('w6').value),
     w7: parseInt($id('w7').value),
     bias: 0,  // 🔒: REQ-190 confirmed bias only hurts performance
     conf_type: confType,
@@ -1661,20 +1475,15 @@ function getParams() {
     ma_direction_confirm: maDirConfirm,
     max_holdings: parseInt($id('max_holdings').value),
     disc_step: parseInt($id('disc_step').value) / 100.0,
-    concentration: parseFloat($id('concentration').value) / 10,
-    c_sensitivity: parseFloat($id('c_sensitivity').value) / 10,
+    concentration: parseFloat($id('concentration').value),
+    c_sensitivity: parseFloat($id('c_sensitivity').value),
     ema_period: parseInt($id('ema_period').value),
     vol_window: parseInt($id('vol_window').value),
     f1_sensitivity: parseFloat($id('f1_sensitivity').value),
-    f2_sensitivity: parseFloat($id('f2_sensitivity').value),
-    f2_ma_period: parseInt($id('f2_ma_period').value),
     f3_sensitivity: parseFloat($id('f3_sensitivity').value),
     rebalance_freq: rebalanceFreq,
     execution_timing: executionTiming,
-    score_band: parseInt($id('score_band').value),  // 0-20，单位%
-    f6_rsi_thresh: parseInt($id('f6_rsi_thresh').value),
-    f6_drop_thresh: parseFloat($id('f6_drop_thresh').value),
-    f6_base_penalty: parseFloat($id('f6_base_penalty').value),
+    score_band: parseFloat($id('score_band').value),  // 0-20，单位%
     f7_t: parseFloat($id('f7_t').value),
     f7_k: parseFloat($id('f7_k').value),
     f7_window: parseInt($id('f7_window').value),
@@ -1717,10 +1526,7 @@ function setParams(p) {
   // Active parameters — set UI controls
   if (p.w1 != null) { setSlider('w1', p.w1); }
   if (p.w3 != null) { setSlider('w3', p.w3); }
-  if (p.w6 != null) { setSlider('w6', p.w6); }
   if (p.w7 != null) { setSlider('w7', p.w7); }
-  if (p.w2 != null) { setSlider('w2', p.w2); }
-  if (p.w4 != null) { setSlider('w4', p.w4); }
   syncWeights();
   if (p.ma_trend_period != null) { setSlider('ma_trend_period', p.ma_trend_period); $id('v-ma-period').textContent = p.ma_trend_period + ' 周'; }
   if (p.ma_bull_pos != null) { setSlider('ma_bull_pos', p.ma_bull_pos); $id('v-ma-bull').textContent = Math.round(p.ma_bull_pos * 100) + '%'; }
@@ -1730,20 +1536,15 @@ function setParams(p) {
   if (p.vol_window != null) { setSlider('vol_window', p.vol_window); $id('v-vol').textContent = p.vol_window + ' 日'; }
   if (p.execution_timing != null) { setExecutionTiming(p.execution_timing); }
   if (p.f1_sensitivity != null) { setSlider('f1_sensitivity', p.f1_sensitivity); $id('v-f1s').textContent = parseFloat(p.f1_sensitivity).toFixed(1); }
-  if (p.f2_sensitivity != null) { setSlider('f2_sensitivity', p.f2_sensitivity); $id('v-f2s').textContent = parseFloat(p.f2_sensitivity).toFixed(1); }
-  if (p.f2_ma_period != null) { setSlider('f2_ma_period', p.f2_ma_period); $id('v-f2ma').textContent = p.f2_ma_period + ' 日'; }
   if (p.f3_sensitivity != null) { setSlider('f3_sensitivity', p.f3_sensitivity); $id('v-f3s').textContent = parseFloat(p.f3_sensitivity).toFixed(1); }
-  if (p.score_band != null) { setSlider('score_band', p.score_band); $id('v-score-band').textContent = p.score_band + '%'; }
-  if (p.f6_rsi_thresh != null)  { setSlider('f6_rsi_thresh', p.f6_rsi_thresh); $id('v-f6-rsi').textContent = p.f6_rsi_thresh; }
-  if (p.f6_drop_thresh != null) { setSlider('f6_drop_thresh', p.f6_drop_thresh); $id('v-f6-drop').textContent = parseFloat(p.f6_drop_thresh).toFixed(1)+'%'; }
-  if (p.f6_base_penalty != null){ setSlider('f6_base_penalty', p.f6_base_penalty); $id('v-f6-penalty').textContent = parseFloat(p.f6_base_penalty).toFixed(2); }
+  if (p.score_band != null) { setSlider('score_band', p.score_band); $id('v-score-band').textContent = parseFloat(p.score_band).toFixed(1) + '%'; }
   if (p.f7_t != null) { setSlider('f7_t', p.f7_t); $id('v-f7-t').textContent = p.f7_t; }
   if (p.f7_k != null) { setSlider('f7_k', p.f7_k); $id('v-f7-k').textContent = parseFloat(p.f7_k).toFixed(2); }
   if (p.f7_window != null) { setSlider('f7_window', p.f7_window); $id('v-f7-window').textContent = p.f7_window + ' 日'; }
   if (p.rebalance_freq) setFreq(p.rebalance_freq);
   if (p.disc_step != null) { setSlider('disc_step', p.disc_step * 100); $id('v-step').textContent = (p.disc_step * 100) + '%'; }
-  if (p.concentration != null) { setSlider('concentration', Math.round(p.concentration * 10)); $id('v-conc').textContent = p.concentration.toFixed(1); }
-  if (p.c_sensitivity != null) { setSlider('c_sensitivity', Math.round(p.c_sensitivity * 10)); $id('v-csens').textContent = p.c_sensitivity.toFixed(1); }
+  if (p.concentration != null) { setSlider('concentration', p.concentration); $id('v-conc').textContent = (p.concentration / 10).toFixed(2); }
+  if (p.c_sensitivity != null) { setSlider('c_sensitivity', p.c_sensitivity); $id('v-csens').textContent = (p.c_sensitivity / 10).toFixed(1); }
   if (p.max_holdings != null) { setSlider('max_holdings', p.max_holdings); $id('v-maxh').textContent = p.max_holdings + ' 支'; }
   if (p.conf_type) setConfType(p.conf_type);
   if (p.universe != null) setUniverseFromParam(p.universe);
@@ -1767,6 +1568,7 @@ function drawConfChart() {
 /* ====== Strategy presets ====== */
 var PRESETS = {};
 var CURRENT_PRESET = null;  // currently selected preset key (or 'preset4')
+var snapshotSort = { col: 'score', dir: 'desc' };  // tri-state: col=null for default
 var PARAM_SCHEMA = null;
 
 /* ====== Universe selector ====== */
@@ -1878,32 +1680,54 @@ async function loadPresets() {
   } catch(e) { console.warn('Failed to load presets:', e); }
 }
 
+var SCHOOLS = [
+  {id:'gambler', name:'赌徒', target:'max AR', constraint:'MDD<20%', presets:['preset3','preset6'], def:'preset3'},
+  {id:'zen', name:'禅修者', target:'max Sharpe', constraint:'P90<35%', presets:['preset2'], def:'preset2'},
+  {id:'actuary', name:'精算师', target:'max SxC', constraint:'无', presets:['preset1'], def:'preset1'},
+];
+
 function renderPresetCards() {
   var container = $id('preset-cards');
   if (!container) return;
   container.innerHTML = '';
 
-  // Fixed display order
-  var order = ['preset1', 'preset2', 'preset3', 'preset4'];
-  order.forEach(function(key) {
-    var p = PRESETS[key];
-    if (!p) return;
-    var label = p.label || key;
-    // Strip legacy "（推荐）" suffix just in case
-    label = label.replace(/（推荐）/, '');
-    var card = document.createElement('div');
-    card.className = 'preset-card';
-    card.id = 'preset-' + key;
-    card.onclick = function() { applyPreset(key); };
-    card.innerHTML = '<h4>' + label + '</h4>';
-    container.appendChild(card);
+  SCHOOLS.forEach(function(school) {
+    var group = document.createElement('div');
+    group.className = 'school-group';
+    var row = document.createElement('div');
+    row.className = 'school-row';
+    var header = document.createElement('div');
+    header.className = 'school-header';
+    header.textContent = school.name + ' (max ' + school.target.split(' ')[1] + ', ' + school.constraint + ')';
+    row.appendChild(header);
+
+    school.presets.forEach(function(key) {
+      var p = PRESETS[key];
+      if (!p) return;
+      var label = (p.label || key).replace(/（推荐）/, '');
+      // Strip school name, keep only number suffix
+      var short = label.match(/\d+$/);
+      label = short ? short[0] : label;
+      var card = document.createElement('div');
+      card.className = 'preset-card';
+      card.id = 'preset-' + key;
+      card.onclick = function() { applyPreset(key); };
+      card.innerHTML = '<h4>' + label + '</h4>';
+      row.appendChild(card);
+    });
+    group.appendChild(row);
+    container.appendChild(group);
   });
 
-  // Auto-select first preset on init
-  if (!CURRENT_PRESET) {
-    applyPreset(order[0]);
+  // Auto-select default on first load only; subsequent reloads keep current preset.
+  if (!window._presetsFirstLoad && PRESETS && PRESETS['preset3']) {
+    window._presetsFirstLoad = true;
+    applyPreset('preset3');
   }
 }
+
+// Render skeleton immediately on page load (before API responds)
+renderPresetCards();
 
 function applyPreset(name) {
   CURRENT_PRESET = name;
@@ -2110,9 +1934,13 @@ async function runBacktest() {
     renderResults(data);
     switchRightView('results');
     status.textContent = '完成 ' + data.summary.startDate + ' → ' + data.summary.endDate + ' · 耗时 ' + data.summary.elapsed + ' 秒';
-    
-  } catch(e) { status.textContent = '请求失败: ' + e.message; }
+    } catch(e) { status.textContent = '请求失败: ' + e.message; }
   finally { btn.textContent = '运行回测'; validateRunInputs(); }
+}
+
+function flipSortinoSharpe() {
+  var card = document.getElementById('metric-sortino-sharpe');
+  if (card) card.classList.toggle('flipped');
 }
 
 function renderResults(data) {
@@ -2125,6 +1953,7 @@ function renderResults(data) {
   $id('m-dd').textContent = s.maxDrawdown + '%';
   $id('m-sharpe').textContent = s.sharpe.toFixed(2);
   $id('m-sortino').textContent = s.sortino.toFixed(2);
+  $id('m-calmar').textContent = (s.calmar||0).toFixed(2);
   $id('m-wr').textContent = s.winRate + '%';
   $id('m-payoff').textContent = s.payoffRatio.toFixed(2);
   var ex = s.excessReturn || 0;
@@ -2410,6 +2239,42 @@ async function saveYAML() {
   } catch(e) { $id('status').textContent = '保存出错: ' + e.message; }
 }
 
+/* ====== Snapshot Column Sort (tri-state: desc → asc → default) ====== */
+function onSnapSort(col) {
+  if (snapshotSort.col === col) {
+    if (snapshotSort.dir === 'desc') { snapshotSort.dir = 'asc'; }
+    else if (snapshotSort.dir === 'asc') { snapshotSort = { col: 'score', dir: 'desc' }; }
+  } else {
+    snapshotSort = { col: col, dir: 'desc' };
+  }
+  renderTunerSnapshot(tunerSnapshotIdx);
+}
+
+function updateSortArrows() {
+  var arrows = document.querySelectorAll('.snap-sort-arrow');
+  for (var i = 0; i < arrows.length; i++) { arrows[i].textContent = ''; arrows[i].style.color = ''; }
+  var activeId = 'sort-ar-' + snapshotSort.col;
+  var activeArrow = document.getElementById(activeId);
+  if (activeArrow) {
+    activeArrow.textContent = snapshotSort.dir === 'desc' ? ' ▼' : ' ▲';
+    activeArrow.style.color = '#60a5fa';
+    activeArrow.style.fontSize = '9px';
+  }
+}
+
+function getSnapSortVal(d, code, col) {
+  switch (col) {
+    case 'code': return code;
+    case 'f1': return d.f1 || 0;
+    case 'f3': return d.f3 || 0;
+    case 'f7': return (d.f7 != null ? d.f7 : 50);
+    case 'score': return d.score || 0;
+    case 'z': return d.z || 0;
+    case 'pos': return d.position || 0;
+    default: return 0;
+  }
+}
+
 /* ====== Snapshot Rendering (C方案风格) ====== */
 function renderTunerSnapshot(idx) {
   if (idx < 0 || idx >= tunerSignalHistory.length) return;
@@ -2450,7 +2315,15 @@ function renderTunerSnapshot(idx) {
   // Build table rows sorted by score desc
   var detail = sig.detail || {};
   var codes = Object.keys(detail);
-  codes.sort(function(a, b) { return (detail[b].score || 0) - (detail[a].score || 0); });
+  // Sort by snapshotSort state
+  var sortCol = snapshotSort.col, sortDir = snapshotSort.dir;
+  codes.sort(function(a, b) {
+    var va = getSnapSortVal(detail[a], a, sortCol);
+    var vb = getSnapSortVal(detail[b], b, sortCol);
+    if (typeof va === 'string') return sortDir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
+    return sortDir === 'asc' ? va - vb : vb - va;
+  });
+  updateSortArrows();
 
   var maxScore = 100;
   if (codes.length > 0 && detail[codes[0]]) maxScore = detail[codes[0]].score || 100;
@@ -2484,28 +2357,40 @@ function renderTunerSnapshot(idx) {
     // Score bar width
     var barW = Math.max(0, Math.min(100, Math.round(score / maxScore * 100)));
 
-    // Action badge
     var actionBadge = '';
-    if (action === 'new') actionBadge = '<span style="background:rgba(16,185,129,0.15);color:#10b981;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:600;vertical-align:middle;">NEW</span>';
-    else if (action === 'adj_up') actionBadge = '<span style="color:#10b981;font-size:10px;font-weight:600;vertical-align:middle;">UP</span><span style="color:#10b981;font-size:10px;vertical-align:middle;"> ⬆</span>';
-    else if (action === 'adj_down') actionBadge = '<span style="color:#ef4444;font-size:10px;font-weight:600;vertical-align:middle;">DOWN</span><span style="color:#ef4444;font-size:10px;vertical-align:middle;"> ⬇</span>';
-    else if (action === 'out') actionBadge = '<span style="background:rgba(239,68,68,0.15);color:#ef4444;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:600;vertical-align:middle;">OUT</span>';
-    else if (action === 'hold') actionBadge = '<span style="color:#4b5563;font-size:10px;vertical-align:middle;">HOLD</span>';
-
+    if (action === 'new') actionBadge = '<span style="color:#10b981;font-size:12px;font-weight:600;display:inline-block;line-height:1;">NEW</span>';
+    else if (action === 'adj_up') actionBadge = '<span style="color:#10b981;font-size:12px;font-weight:600;display:inline-block;line-height:1;">⬆ +' + (d.delta||0).toFixed(1) + '%</span>';
+    else if (action === 'adj_down') actionBadge = '<span style="color:#ef4444;font-size:12px;font-weight:600;display:inline-block;line-height:1;">⬇ ' + (d.delta||0).toFixed(1) + '%</span>';
+    else if (action === 'out') actionBadge = '<span style="color:#ef4444;font-size:12px;font-weight:600;display:inline-block;line-height:1;">OUT</span>';
+    else if (action === 'hold') actionBadge = '<span style="color:#4b5563;font-size:10px;display:inline-block;line-height:1;">HOLD</span>';
     // Score color based on value
 
     // Row class
     var rowBg = isTop ? 'background:rgba(16,185,129,0.04);' : '';
     var hotSuffix = isTop ? ' <span style="color:#f59e0b;font-size:11px;">&#x1F525;</span>' : '';
 
+    // Factor bar — weighted F1/F3/F7 contributions (REQ-233)
+    var w1=0.5, w3=0.4, w7=0.1;
+    var f1v = d.f1 || 50, f3v = d.f3 || 50, f7v = (d.f7 != null ? d.f7 : 50);
+    var c1 = f1v * w1, c3 = f3v * w3, c7 = f7v * w7, cTot = c1 + c3 + c7 || 1;
+    var p1 = Math.round(c1 / cTot * 100), p3 = Math.round(c3 / cTot * 100), p7 = 100 - p1 - p3;
+    if (p1 < 0) p1 = 0; if (p3 < 0) p3 = 0; if (p7 < 0) p7 = 0;
+    var f1r = d.f1_raw, f3r = d.f3_raw, f7r = d.f7_raw;
+    var fBarTT = 'F1: EMA' + (f1r>0?'+':'') + (f1r||0).toFixed(1) + '% → ' + (f1v-50).toFixed(0);
+      + ' | F3: 量比' + (f3r||1).toFixed(2) + ' → ' + f3v.toFixed(0) + '分'
+      + ' | F7: Z=' + (f7r||0).toFixed(2) + ' → ' + (f7v-50).toFixed(0);
+    var fBar = '<div style="display:inline-flex;gap:1px;width:56px;height:8px;border-radius:2px;overflow:hidden;" title="' + fBarTT + '">'
+      + '<span style="width:' + p1 + '%;height:100%;background:#3b82f6;border-radius:1px 0 0 1px;"></span>'
+      + '<span style="width:' + p3 + '%;height:100%;background:#06b6d4;"></span>'
+      + '<span style="width:' + p7 + '%;height:100%;background:#a855f7;border-radius:0 1px 1px 0;"></span></div>';
+
     html += '<tr data-code="' + code + '" class="snap-row" style="border-bottom:1px solid #1e293b;cursor:pointer;' + rowBg + '" onclick="onSnapshotRowClick(\'' + code + '\')">' +
       '<td style="padding:9px 8px;font-size:12px;white-space:nowrap;">' + sectorDot + '<span style="color:#60a5fa;font-weight:600;">' + code + '</span> <span style="color:#94a3b8;font-size:12px;font-weight:600;">' + name + '</span>' + hotSuffix + '</td>' +
-      '<td style="padding:9px 6px;text-align:center;font-size:12px;color:' + ((d.f1 || 50) >= 65 ? '#10b981' : (d.f1 || 50) <= 35 ? '#ef4444' : '#94a3b8') + ';">' + (d.f1 || 0).toFixed(0) + '</td>' +
-      '<td style="padding:9px 6px;text-align:center;font-size:12px;color:' + ((d.f2 || 50) >= 65 ? '#10b981' : (d.f2 || 50) <= 35 ? '#ef4444' : '#94a3b8') + ';">' + (d.f2 != null ? d.f2.toFixed(0) : '-') + '</td>' +
-      '<td style="padding:9px 6px;text-align:center;font-size:12px;color:#94a3b8;">' + (d.f3 || 0).toFixed(0) + '</td>' +
-      '<td style="padding:9px 6px;text-align:center;font-size:12px;color:' + (((d.f6 || 100) - 100) < 0 ? '#f59e0b' : '#94a3b8') + ';">' + ((d.f6 || 100) - 100).toFixed(0) + '</td>' +
+      '<td style="padding:9px 4px;text-align:center;vertical-align:middle;">' + fBar + '</td>' +
+      '<td style="padding:9px 6px;text-align:center;font-size:12px;color:' + ((d.f1 || 50) >= 65 ? '#10b981' : (d.f1 || 50) <= 35 ? '#ef4444' : '#94a3b8') + ';">' + ((d.f1||0)-50).toFixed(0) + '</td>' +
+      '<td style="padding:9px 6px;text-align:center;font-size:12px;color:#94a3b8;">' + ((d.f3||0)-50).toFixed(0) + '</td>' +
       '<td style="padding:9px 6px;text-align:center;font-size:12px;color:' + (d.f7 != null ? (d.f7 <= 20 ? '#ef4444' : d.f7 >= 80 ? '#10b981' : '#94a3b8') : '#4b5563') + ';">' + (d.f7 != null ? (d.f7 - 50).toFixed(0) : 'N/A') + '</td>' +
-      '<td style="padding:9px 3px;text-align:center;font-size:12px;font-weight:700;color:#94a3b8;">' + score.toFixed(1) + '</td>' +
+      '<td style="padding:9px 3px;text-align:center;font-size:12px;font-weight:700;color:#94a3b8;" title="F1=' + (d.f1||0).toFixed(0) + ' F3=' + (d.f3||0).toFixed(0) + ' F7=' + (d.f7!=null?d.f7.toFixed(0):'N/A') + ' | C_eff=' + ((sig.cEff||0.5).toFixed(1)) + (d.f1_raw!=null ? '&#10;F1_raw: EMA' + (d.f1_raw>0?'+':'') + d.f1_raw.toFixed(1) + '%' : '') + (d.f3_raw!=null ? ' F3_raw: 量比' + d.f3_raw.toFixed(2) : '') + (d.f7_raw!=null ? ' F7_raw: Z=' + d.f7_raw.toFixed(2) : '') + '">' + score.toFixed(1) + '</td>' +
       '<td style="padding:9px 6px;text-align:center;font-size:12px;color:' + (d.z > 1.5 ? '#10b981' : d.z > 0 ? '#94a3b8' : '#ef4444') + ';font-weight:600;">' + (d.z != null ? (d.z > 0 ? '+' : '') + d.z.toFixed(2) : '-') + '</td>' +
       '<td style="padding:9px 6px;text-align:center;font-size:12px;' +
   (pos >= 30 ? 'color:#fbbf24;font-weight:700;' : pos >= 20 ? 'color:#f59e0b;font-weight:700;' : pos >= 10 ? 'color:#d97706;font-weight:600;' : pos > 0 ? 'color:#b45309;font-weight:400;' : '') +
@@ -2521,11 +2406,16 @@ function renderTunerSnapshot(idx) {
   if (subEl) {
     var parts = [];
     if (newCount > 0) parts.push('<span style="color:#10b981;">NEW ' + newCount + '</span>');
-    if (adjUpCount > 0) parts.push('<span style="color:#10b981;">UP ⬆ ' + adjUpCount + '</span>');
-    if (adjDownCount > 0) parts.push('<span style="color:#ef4444;">DOWN ⬇ ' + adjDownCount + '</span>');
+    if (adjUpCount > 0) parts.push('<span style="color:#10b981;">⬆ ' + adjUpCount + '</span>');
+    if (adjDownCount > 0) parts.push('<span style="color:#ef4444;">⬇ ' + adjDownCount + '</span>');
     if (holdCount > 0) parts.push('<span style="color:#6b7280;">HOLD ' + holdCount + '</span>');
     if (outCount > 0) parts.push('<span style="color:#ef4444;">OUT ' + outCount + '</span>');
-    subEl.innerHTML = '点击左侧 NAV 切换调仓 · 点击表格行查看 K 线 · ' + parts.join(' · ') + ' · &#x1F525;=持仓';
+    var cEffStr = '';
+    if (sig.cEff != null && sig.cEff > 0) {
+      var baseC = (lastBacktestData && lastBacktestData.summary) ? 0.5 : 0.5; // preset1 default
+      cEffStr = ' · <span style=\"color:#f59e0b;\" title=\"有效C=baseC×c_mult。共识强时放大，弱时缩小\">C=' + sig.cEff.toFixed(1) + '</span>';
+    }
+    subEl.innerHTML = '点击左侧 NAV 切换调仓 · 点击表格行查看 K 线 · ' + parts.join(' · ') + cEffStr + ' · &#x1F525;=持仓';
   }
 
   // Footer: sector legend with toggle
@@ -3166,12 +3056,8 @@ window.addEventListener('load', async function() {
     leftPanel.addEventListener('input', function() { renderParamSchemaTable(); });
     leftPanel.addEventListener('change', function() { renderParamSchemaTable(); });
   }
-  await loadPresets();
-  // renderPresetCards() already auto-selects preset1; this is a safety net
-  var defaultPreset = PRESETS['preset1'] ? 'preset1' : Object.keys(PRESETS)[0];
-  if (defaultPreset && CURRENT_PRESET !== defaultPreset) applyPreset(defaultPreset);
   var fromUrl = applyUrlParams();
-  // Restore cached backtest from last session
+  // Restore cached backtest first (params may be stale — presets will overwrite)
   if (!fromUrl) {
     try {
       var cachedResp = await fetch('/api/last_result');
@@ -3183,14 +3069,34 @@ window.addEventListener('load', async function() {
       }
     } catch(e) { console.warn('Cache restore skipped:', e); }
   }
+  await loadPresets();
+  // renderPresetCards() already auto-selects preset1; this is a safety net
+  var defaultPreset = PRESETS['preset3'] ? 'preset3' : Object.keys(PRESETS)[0];
+  if (defaultPreset && CURRENT_PRESET !== defaultPreset) applyPreset(defaultPreset);
 });
 window.addEventListener('resize', () => {
   navChart && navChart.resize();
   ddChart && ddChart.resize();
   klineReplayChart && klineReplayChart.resize();
-  f2BullChart && f2BullChart.resize();
-  f2BearChart && f2BearChart.resize();
   hmChart && hmChart.resize();
+});
+/* ====== Keyboard shortcuts + help overlay ====== */
+function toggleShortcuts() {
+  var ov = document.getElementById('shortcuts-overlay');
+  ov.classList.toggle('show');
+}
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    var ov = document.getElementById('shortcuts-overlay');
+    if (ov.classList.contains('show')) { ov.classList.remove('show'); return; }
+  }
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) return;
+  if (e.key === '?') { e.preventDefault(); toggleShortcuts(); }
+  else if (e.key === '1') { e.preventDefault(); applyPreset('preset3'); }
+  else if (e.key === '2') { e.preventDefault(); applyPreset('preset2'); }
+  else if (e.key === '3') { e.preventDefault(); applyPreset('preset1'); }
+  else if (e.key === 'r' || e.key === 'R') { e.preventDefault(); runBacktest(); }
+  else if (e.key === 's' || e.key === 'S') { e.preventDefault(); saveYAML(); }
 });
 </script>
 <script>

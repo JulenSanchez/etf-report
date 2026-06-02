@@ -1,3 +1,15 @@
+# ETF 选股池
+#
+# 字段说明：
+#   code      必填，ETF 交易代码（6 位数字字符串，如 '513310'）
+#   name      必填，显示名称
+#   market    必填，交易所：sh=上交所 / sz=深交所
+#   sector    必填，扇区归属（用于热力图/快照配色和扇区过滤）
+#   bias      可选，true 表示该 ETF 在特定扇区有偏好加成（回测中给额外分数）
+#   qdii      可选，true 表示该 ETF 是 QDII 跨境品种，可能因额度耗尽/溢价过高被频繁临时停牌。
+#             标记后 Tuner 会启用 L1+L2 停牌检测，停牌时跳过盘中全日量估算。新增跨境 ETF 时必须标注。
+#             2026-06 现状：513310(中韩半导体)、159509(纳指科技)、159941(纳指) 均受 QDII 系统性危机影响。
+#
 universe:
 - code: '512400'
   name: 有色金属ETF
@@ -38,6 +50,7 @@ universe:
   name: 中韩半导体ETF
   market: sh
   sector: 科技
+  qdii: true
 - code: '562500'
   name: 机器人ETF
   market: sh
@@ -142,6 +155,7 @@ universe:
   name: 纳指ETF
   market: sz
   sector: 另类
+  qdii: true
 - code: '518880'
   name: 黄金ETF
   market: sh
@@ -150,14 +164,22 @@ universe:
   name: 日经ETF
   market: sh
   sector: 另类
+  qdii: true
 - code: '520870'
   name: 巴西ETF
   market: sh
   sector: 另类
+  qdii: true
+- code: '159561'
+  name: 德国ETF
+  market: sz
+  sector: 另类
+  qdii: true
 - code: '159509'
   name: 纳指科技ETF
   market: sz
   sector: 另类
+  qdii: true
 - code: '513050'
   name: 中概互联ETF
   market: sh
@@ -166,14 +188,17 @@ universe:
   name: 沙特ETF
   market: sz
   sector: 另类
+  qdii: true
 - code: '159518'
   name: 标普油气ETF
   market: sz
   sector: 另类
+  qdii: true
 - code: '159502'
   name: 标普生物ETF
   market: sz
   sector: 另类
+  qdii: true
 - code: '159985'
   name: 豆粕ETF
   market: sz
@@ -212,28 +237,24 @@ factors:
     window_days: 20
 presets:
   preset1:
-    label: 趋势锚定
-    description: 日调仓，F1(50%)+F3(40%)+F7(10%)，F2=0，MA趋势，44支ETF池，动态C(C=0.5,CS=10)。6Y基线+872.7%/年化+46.0%/MDD-17.9%/Sharpe=1.46/Calmar=2.57（2020-05-20~2026-05-22）。1Y/3Y/6Y全窗口MDD≤18%。
+    label: 精算师1
+    description: 精算师1：F1(57%)+F3(17%)+F7(26%)，C=0.78，CS=3.1。子参数TPE：MH=5，MA=39周，牛80%熊18%。等权S×C=46.6(+12%)，Sharpe=2.60。信仰：风险调整后收益最大化。
     scoring:
       weights:
-        ema_deviation: 0.5
-        f2_daily_ma: 0.0
-        volume_ratio: 0.4
-        valuation: 0.0
-        exhaustion_penalty: 0.0
-        log_return_deviation: 0.1
+        ema_deviation: 0.57
+        volume_ratio: 0.17
+        log_return_deviation: 0.26
       bias_bonus: 0.0
       sensitivity:
-        f1: 8.0
-        f2: 8.0
-        f3: 1.5
-        f7_t: 15.0
-        f7_k: 3.5
+        f1: 3.4
+        f3: 3.9
+        f7_t: 23.7
+        f7_k: 3.4
     confidence:
       type: ma_trend
-      ma_trend_period: 26
-      ma_bull_pos: 1.0
-      ma_bear_pos: 0.3
+      ma_trend_period: 39
+      ma_bull_pos: 0.8
+      ma_bear_pos: 0.18
       ma_direction_confirm: true
       dead_zone: 25
       full_zone: 65
@@ -247,36 +268,90 @@ presets:
       clarity_threshold: 0.03
       dd_sensitivity: 0.2
     position:
-      max_holdings: 6
-      discretize_step: 0.05
-      concentration: 0.5
-      c_sensitivity: 10.0
+      max_holdings: 5
+      discretize_step: 0.1
+      concentration: 0.78
+      c_sensitivity: 3.1
       rebalance_freq: daily
       execution_timing: same_close
-      score_band: 0.03
+      score_band: 0.028
       commission_rate: 0.00026
       max_holdings_special: 8
       weighting: arithmetic
     factors:
       ema:
-        period_weeks: 5
+        period_weeks: 4
       volume_ratio:
-        window_days: 20
+        window_days: 45
       f6_rsi_thresh: 80.0
       f6_drop_thresh: 0.025
       f6_base_penalty: 0.15
       log_return_deviation:
-        window_days: 20
+        window_days: 32
+  preset3:
+    label: 赌徒1
+    description: 赌徒1：F1(56%)+F3(24%)+F7(20%)，C=0.43，CS=6.0。子参数TPE：MH=5，MA=28w，熊仓50%。等权AR=108%(+16%)，Sharpe=2.50。
+    scoring:
+      weights:
+        ema_deviation: 0.56
+        volume_ratio: 0.24
+        residual_momentum: 0.0
+        log_return_deviation: 0.2
+      bias_bonus: 0.0
+      sensitivity:
+        f1: 9.0
+        f3: 2.3
+        f1_residual: 5.0
+        f7_t: 5.3
+        f7_k: 3.4
+    confidence:
+      type: ma_trend
+      ma_trend_period: 28
+      ma_bull_pos: 1.0
+      ma_bear_pos: 0.5
+      ma_direction_confirm: true
+      dead_zone: 25
+      full_zone: 65
+      regime_base:
+        bull_trend: 0.95
+        choppy_range: 0.75
+        bear_trend: 0.35
+      regime_window: 8
+      regime_threshold: 0.03
+      breadth_weight: 0.2
+      clarity_threshold: 0.03
+      dd_sensitivity: 0.2
+    position:
+      max_holdings: 5
+      discretize_step: 0.04
+      concentration: 0.43
+      c_sensitivity: 6.0
+      rebalance_freq: daily
+      execution_timing: same_close
+      score_band: 0.027999999999999997
+      commission_rate: 0.00026
+      max_holdings_special: 8
+      weighting: arithmetic
+    factors:
+      ema:
+        period_weeks: 4
+      volume_ratio:
+        window_days: 44
+      f6_rsi_thresh: 80.0
+      f6_drop_thresh: 0.025
+      f6_base_penalty: 0.15
+      log_return_deviation:
+        window_days: 34
+        lookback_days: 250
+        min_days: 60
+        sigma_floor: 0.01
   preset4:
     label: 集中趋势
     description: 日调仓，F1(50%)+F3(40%)+F7(10%)，F2=0。相比趋势锚定：持仓更集中(4支)+趋势信号更快(MA20w)+仓位集中度更高(C=1.0)。6Y+710.6%/年化+41.7%/MDD-17.3%/Sharpe=1.50（2020-05-22~2026-05-21，CLI实测）。
     scoring:
       weights:
         ema_deviation: 0.5
-        f2_daily_ma: 0.0
         volume_ratio: 0.4
-        valuation: 0.0
-        exhaustion_penalty: 0.0
         log_return_deviation: 0.1
       bias_bonus: 0.0
       sensitivity:
@@ -322,79 +397,23 @@ presets:
       f6_base_penalty: 0.15
       log_return_deviation:
         window_days: 20
-  preset3:
-    label: 趋势锚定(静态)
-    description: 旧趋势锚定，C=0.5静态，CS=0。保留作为动态C的对照基线。
-    scoring:
-      weights:
-        ema_deviation: 0.5
-        f2_daily_ma: 0.0
-        volume_ratio: 0.4
-        valuation: 0.0
-        exhaustion_penalty: 0.0
-        log_return_deviation: 0.1
-      bias_bonus: 0.0
-      sensitivity:
-        f1: 8.0
-        f2: 8.0
-        f3: 1.5
-        f7_t: 15.0
-        f7_k: 3.5
-    confidence:
-      type: ma_trend
-      ma_trend_period: 26
-      ma_bull_pos: 1.0
-      ma_bear_pos: 0.3
-      ma_direction_confirm: true
-      dead_zone: 25
-      full_zone: 65
-      regime_base:
-        bull_trend: 0.95
-        choppy_range: 0.75
-        bear_trend: 0.35
-      regime_window: 8
-      regime_threshold: 0.03
-      breadth_weight: 0.2
-      clarity_threshold: 0.03
-      dd_sensitivity: 0.2
-    position:
-      max_holdings: 6
-      discretize_step: 0.05
-      concentration: 0.5
-      rebalance_freq: daily
-      execution_timing: same_close
-      score_band: 0.03
-      commission_rate: 0.00026
-      max_holdings_special: 8
-      weighting: arithmetic
-    factors:
-      ema:
-        period_weeks: 5
-      volume_ratio:
-        window_days: 20
-      f6_rsi_thresh: 80.0
-      f6_drop_thresh: 0.025
-      f6_base_penalty: 0.15
-      log_return_deviation:
-        window_days: 20
   preset2:
-    label: 波动探测
-    description: 日调仓，F2日线MA偏离+F3自归一化量比+F7对数收益偏离。MA趋势仓位控制。
+    label: 禅修者1
+    description: 日调仓，F1(49%)+F3(32%)+F7(19%)，MA趋势(26周慢确认)，CS=0(静态均分，无动态集中)。TPE扩展参数等权Sharpe最优(2.30
+      vs 基线2.05,+12%)。F7权重翻倍引进反转维度辅助分散，P90单票25%极致分散。信仰：均衡即智慧。
     scoring:
       weights:
-        ema_deviation: 0.0
-        f2_daily_ma: 0.45
-        volume_ratio: 0.45
-        valuation: 0.0
-        exhaustion_penalty: 0.0
-        log_return_deviation: 0.1
+        ema_deviation: 0.49
+        volume_ratio: 0.32
+        residual_momentum: 0.0
+        log_return_deviation: 0.19
       bias_bonus: 0.0
       sensitivity:
-        f1: 8.0
-        f2: 8.0
-        f3: 1.5
-        f7_t: 15.0
-        f7_k: 3.5
+        f1: 4.0
+        f3: 1.4
+        f1_residual: 5.0
+        f7_t: 25.0
+        f7_k: 3.0
     confidence:
       type: ma_trend
       ma_trend_period: 26
@@ -415,7 +434,8 @@ presets:
     position:
       max_holdings: 6
       discretize_step: 0.05
-      concentration: 0.5
+      concentration: 0.35
+      c_sensitivity: 0.0
       rebalance_freq: daily
       execution_timing: same_close
       score_band: 0.03
@@ -431,5 +451,61 @@ presets:
       f6_drop_thresh: 0.025
       f6_base_penalty: 0.15
       log_return_deviation:
+        window_days: 29
+        lookback_days: 250
+        min_days: 60
+        sigma_floor: 0.01
+  preset6:
+    label: 赌徒2
+    description: 旧版赌徒(MH=6,MA=26w,mbear=0.3)。等权AR=93.0%，SxC=34.8，Sharpe=2.46。保守对照。
+    scoring:
+      weights:
+        ema_deviation: 0.56
+        volume_ratio: 0.24
+        residual_momentum: 0.0
+        log_return_deviation: 0.2
+      bias_bonus: 0.0
+      sensitivity:
+        f1: 4.7
+        f3: 6.2
+        f1_residual: 5.0
+        f7_t: 13.8
+        f7_k: 3.2
+    confidence:
+      type: ma_trend
+      ma_trend_period: 26
+      ma_bull_pos: 1.0
+      ma_bear_pos: 0.3
+      ma_direction_confirm: true
+      dead_zone: 25
+      full_zone: 65
+      regime_base:
+        bull_trend: 0.95
+        choppy_range: 0.75
+        bear_trend: 0.35
+      regime_window: 8
+      regime_threshold: 0.03
+      breadth_weight: 0.2
+      clarity_threshold: 0.03
+      dd_sensitivity: 0.2
+    position:
+      max_holdings: 6
+      discretize_step: 0.05
+      concentration: 0.43
+      c_sensitivity: 6.0
+      rebalance_freq: daily
+      execution_timing: same_close
+      score_band: 0.03
+      max_holdings_special: 8
+      weighting: arithmetic
+      commission_rate: 0.00026
+    factors:
+      ema:
+        period_weeks: 5
+      volume_ratio:
         window_days: 20
-      f2_ma_period: 15
+      log_return_deviation:
+        window_days: 34
+        lookback_days: 250
+        min_days: 60
+        sigma_floor: 0.01

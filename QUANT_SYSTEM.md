@@ -168,7 +168,35 @@ index.html 的量化 DOM
 docs/BACKTEST_ENGINE.md（若 payload 语义变化）
 ```
 
-## 6. 参数契约
+### 5.6 废弃一个 Tuner 参数或因子
+
+走 §5.2 的逆向流程，从所有映射层中移除：
+
+```text
+templates/tuner.html                  # 移除控件、getParams/setParams、导览 guide 块
+scripts/quant_contract.py              # 移除 schema 条目、PARAM_BOUNDS、preset_to_tuner_params
+scripts/quant_tuner.py                 # 若 /api/save 涉及该参数
+scripts/quant_backtest.py              # 若引擎消费该参数（权重归零即可，不删逻辑）
+config/quant_universe.yaml             # 所有 preset 中移除该参数
+docs/BACKTEST_ENGINE.md                # 移除相关章节
+tests/                                # 更新引用
+```
+
+**最后一步——确认零残留**：用被移除的参数名/ID/关键字对全项目做 grep，确保所有文件中不再有活动引用。F6 清退时漏掉这一步，导致 `$id('w6')` 等 JS 引用残留在 `getParams`/`setParams`/`getWeightTotal` 中，运行时 `parseInt(null)`=NaN 使权重校验失败，回测按钮被禁用。
+
+```bash
+grep -rn 'w6\|f6_\|F6' templates/ scripts/ config/ docs/ --include='*.html' --include='*.py' --include='*.yaml' --include='*.md'
+```
+
+**分支选择**：
+
+| 情况 | 动作 |
+|------|------|
+| 纯实验，无证据价值 | 直接删除所有痕迹 |
+| 有对比数据，可作为历史参考 | 代码保留（加 `# DEPRECATED` 注释），研究数据归档到 `research/strategy/{name}-retired/`，在 `research/strategy/README.md` 的 Tried & Failed 中记录 |
+| 被新因子替代 | 同"有对比数据"，额外在废弃因子的代码注释中注明替代者 |
+
+F6（动能衰竭惩罚）是典型的"被新因子替代 + 有对比数据"案例：F7 在组合策略中综合表现更优，代码保留，研究归档，UI/契约/schema 全部移除。详见 research/strategy/2026-05-28-research-archive.md。
 
 当前参数经过三层转换：
 
@@ -185,9 +213,8 @@ config/quant_universe.yaml presets
 
 | 参数类型 | YAML / 引擎 | Tuner UI | 注意 |
 |---|---:|---:|---|
-| 权重 `w1/w2/w3/w6/w7` | 0-1 | 0-100 | UI 传入后除以 100 |
+| 权重 `w1/w3/w7` | 0-1 | 0-100 | UI 传入后除以 100 |
 | `score_band` | 0-1 | 百分数 | 3% 在 YAML 是 `0.03` |
-| `f6_drop_thresh` | 0-1 | 百分数 | 2.5% 在 YAML 是 `0.025` |
 | `discretize_step` | 0-1 | 当前 UI 直接传小数 | 确认前端控件不要混用 5 与 0.05 |
 | `ma_bull_pos/ma_bear_pos` | 0-1 | 0-1 | 页面展示可转百分比 |
 | `f7_window` | 天数 | 天数 | 不是代码常量，来自 preset 或滑块 |
@@ -209,7 +236,7 @@ get_param_schema()
 | API | 方法 | 职责 | 主要消费者 |
 |---|---|---|---|
 | `/` | GET | 返回 `templates/tuner.html` | 浏览器 |
-| `/api/status` | GET | 返回 Tuner 是否 ready | Tuner loading |
+| `/api/data_status` | GET | 返回 Tuner ready 状态 / 数据新鲜度 | Tuner loading |
 | `/api/param_schema` | GET | 返回统一参数 schema（分组、单位、engine_path） | 前端说明 / 调试工具 / 文档校验 |
 | `/api/presets` | GET | YAML preset 转前端参数 | preset cards / 控件初始化 |
 | `/api/run` | POST | 前端参数转 config_override 并调用 `run_backtest()` | 运行回测 |
@@ -227,7 +254,7 @@ get_param_schema()
 | 改因子 | `pytest tests/test_quant_factors.py`，再跑一个短窗口回测 |
 | 改回测引擎 | 跑 CLI 回测 + Tuner `/api/run` 同参数对比 |
 | 改 Tuner 参数 | `pytest tests/test_quant_contract.py`，并确认 `/api/param_schema -> /api/presets -> UI -> /api/run -> /api/save -> /api/presets` 往返一致；如需当前策略摘要，由 AI 改参数时同步或用户显式要求更新 |
-| 改参数契约/回测/Tuner 接线 | `python scripts/quant_consistency_check.py --preset daily_aggressive --start 2025-01-01 --end 2026-05-19` |
+| 改参数契约/回测/Tuner 接线 | `python scripts/quant_consistency_check.py --preset preset2 --start 2025-01-01 --end 2026-05-19` |
 | 改正式页 payload | `python scripts/quant_build_payload.py` 后本地打开 `index.html` |
 | 改资产池 | `python scripts/quant_data_fetcher.py --code <新ETF>` 或按需全量/增量更新 |
 
@@ -243,7 +270,7 @@ Tuner contract: preset -> tuner params -> config_override -> run_backtest(...)
 常用命令：
 
 ```bash
-python scripts/quant_consistency_check.py --preset daily_aggressive --start 2025-01-01 --end 2026-05-19
+python scripts/quant_consistency_check.py --preset preset2 --start 2025-01-01 --end 2026-05-19
 ```
 
 如果这里 FAIL，说明 `quant_universe.yaml`、`quant_contract.py`、`quant_tuner.py` 或 `quant_backtest.py` 之间出现结果级漂移，应先修一致性再继续调参。

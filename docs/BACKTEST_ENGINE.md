@@ -23,7 +23,7 @@ def run_backtest(
     end_date: str = None,
     initial_capital: float = 1000000.0,
     rebalance_freq: str = None,
-    preset: str = "daily_aggressive",
+    preset: str = "preset3",  # 当前默认: 赌徒1
     execution_timing: str = None,
     universe_filter: list = None,
     preloaded: dict = None,
@@ -191,18 +191,9 @@ F1_raw = (close - EMA_N) / EMA_N * 100
 F1 = map_f1(F1_raw, sensitivity.f1)
 ```
 
-可选历史变体：`f1_daily_ema` / `f1_daily_ma`。
+可选历史变体：`f1_daily_ema` / `f1_daily_ma`（已证明劣于周线版，代码保留）。
 
-### 5.2 F2 — 日线 MA 偏离
-
-```text
-F2_raw = (close - MA_N) / MA_N * 100
-F2 = map_f1(F2_raw, sensitivity.f2)
-```
-
-当前是否生效由 preset 权重 `scoring.weights.f2_daily_ma` 决定。
-
-### 5.3 F3 — 自归一化方向性量比
+### 5.2 F3 — 自归一化方向性量比
 
 ```text
 vol_z[t] = volume_or_amount[t] / trailing_mean(volume_or_amount)
@@ -212,42 +203,22 @@ F3 = map_f3(F3_raw, sensitivity.f3)
 
 历史不足时可能回退或产生 NaN，具体以 `quant_backtest.py::_precompute_factors()` 为准。
 
-### 5.4 F4 — 估值因子
-
-估值因子仍保留接口：
-
-```text
-weights.valuation
-map_f4(...)
-market_regimes
-```
-
-当前是否影响结果由 preset 权重决定。若权重为 0，不参与综合分。
-
-### 5.5 F6 — 动能衰竭惩罚
-
-```text
-触发条件：前一日 RSI 达阈值 + 当日放量下跌达阈值
-输出：保留率，范围约 [base_penalty, 1.0]
-综合分贡献：(F6_retention - 1.0) * w6
-```
-
-无惩罚时贡献 0；触发后贡献负数。
-
-### 5.6 F7 — 对数收益偏离
+### 5.3 F7 — 对数收益偏离
 
 ```text
 log_return = ln(close[t] / close[t-1])
-cum_N = rolling_sum(log_return, N)
-Z = (cum_N - rolling_mean) / rolling_std
+cum_N = rolling_sum(log_return, window_days)
+Z = (cum_N - rolling_mean(cum_N, lookback)) / rolling_std(cum_N, lookback)
 F7 = map_f7(Z, t=f7_t, k=f7_k)
 ```
 
-`N` 来自：
+Z > 0 表示近期累计收益高于历史均值（趋势强），Z < 0 表示低于（超跌）。
+`f7_t` 控制陡度，`f7_k` 控制阈值。NaN 时 fallback 为 0.5。
 
-```text
-factors.log_return_deviation.window_days
-```
+### 5.4 已退役因子
+
+F2(日线 MA)、F4(估值)、F5(波动率)、F6(动能衰竭) 已于 2026-05~06 正式清退。
+代码保留（权重=0），不参与综合分。详见 `research/strategy/2026-05-28-research-archive.md`。
 
 ---
 
@@ -280,24 +251,16 @@ price_field = execution_price_field(execution_timing)
 对每支 ETF：
 
 1. 用执行日取成交价格。
-2. 用信号日查找预计算因子。
-3. F1/F3 必须有效，否则跳过该 ETF。
-4. F2/F6/F7 有默认或 NaN fallback。
+2. 用信号日二分查找预计算因子数组（`searchsorted`）。
+3. F1/F3/F7 任一为 NaN 则跳过该 ETF。
 
 ### 6.4 综合分
 
-当前综合分形态：
-
 ```text
-composite = F1*w1 + F2*w2 + F3*w3 + F4*w4 + F7*w7 + (F6-1)*w6 + bias
+composite = F1*w1 + F3*w3 + F7*w7 + bias
 ```
 
-其中：
-
-```text
-F6 无惩罚时 F6-1 = 0
-F7 NaN 时 fallback 为 0.5
-```
+F2/F4/F5/F6 已退役，权重恒为 0。F7 NaN 时 fallback 为 0.5。
 
 ### 6.5 Top-N 与分数带
 
@@ -320,7 +283,7 @@ HS300 below MA -> ma_bear_pos
 只有“价格在 MA 上/下方”和“MA 方向”一致时才切换；否则维持上次状态。
 ```
 
-旧信心函数分支仍保留，但不是当前主线。
+非 MA 趋势的信心函数（regime/dd_trigger/momentum_crash）已从 Tuner UI 移除，引擎代码保留但不推荐使用。
 
 ### 6.7 仓位分配
 
@@ -338,7 +301,7 @@ relative_weight_i = softmax(z_i * effective_c)
 target_position_i = relative_weight_i * total_target
 ```
 
-- `c_sensitivity = 0`: 禁用动态 C，等价于旧行为
+- `c_sensitivity = 0`: 禁用动态 C，所有 ETF 使用相同 concentration 参数
 - `c_sensitivity = 1.0`: 离散度=0.5 时不变，强共识放大，弱共识缩小
 - 无 clamp —— 天然分布在安全区间
 
@@ -407,14 +370,11 @@ nav
 每个元素代表一个调仓信号，常用字段包括：
 
 ```text
-date
-scores
-top6 / topN
-positions
-avg_confidence
-total_target
-regime
-execution_timing
+date / signal_date    — 信号日和实际执行日
+positions             — {code: target_weight}  目标仓位
+detail                — {code: {f1, f3, f7, score, z, position, price, ...}}  逐ETF因子明细
+regime                — "ma_above" / "ma_below"
+execution_timing      — "same_close" / "next_open"
 ```
 
 Tuner 和 payload 会把它序列化为前端可消费格式。
@@ -470,9 +430,10 @@ python -m pytest tests/test_quant_consistency.py
 ### 10.2 结果级一致性检查
 
 ```bash
-python scripts/quant_consistency_check.py --preset daily_aggressive --start 2025-01-01 --end 2026-05-19
-python scripts/quant_consistency_check.py --preset daily_aggressive_f6 --start 2025-01-01 --end 2026-05-19
-python scripts/quant_consistency_check.py --preset weekly_trend --start 2025-01-01 --end 2026-05-19
+# 检查三派 CLI vs Tuner 一致性
+python scripts/quant_consistency_check.py --preset preset3 --start 2026-05-01 --end 2026-06-01  # 赌徒1
+python scripts/quant_consistency_check.py --preset preset2 --start 2026-05-01 --end 2026-06-01  # 禅修者1
+python scripts/quant_consistency_check.py --preset preset1 --start 2026-05-01 --end 2026-06-01  # 精算师1
 ```
 
 检查内容：

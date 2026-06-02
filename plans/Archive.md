@@ -16,6 +16,7 @@
 | v3.0.0 | 2026-05-08 | REQ-173, REQ-183, REQ-185, REQ-186, REQ-187, REQ-189, REQ-190, REQ-192, REQ-193 | 量化回测大版本：策略参数优化(MA26/B30/DirON Calmar 1.55)、量化正式页UI改造(2:1布局+K线replay+markLine)、日调仓+佣金模拟、残差动量/后视镜因子归零验证、开发环境便携化(batchfiles+rules bundle+repo公开) |
 | v3.1.0 | 2026-05-12 | REQ-195, REQ-197, REQ-191 | next_open实盘成交口径、标的池筛选(universe filter + chip picker UI + URL深链接)、纳指ETF(159941)+黄金ETF(518880)新增(sector=另类,25→27支)、依赖文档完善、绝对路径清理 |
 | v3.2.0 | 2026-05-22 | REQ-213~221 | ETF池扩容(40→44)+扇区重划、逐笔配对胜率+赔率、ETF贡献度评估系统(9指标+分析框架)、盘中CSV修复、回测持久化缓存、超额收益+10卡指标、Tuner UI综合优化、扇区语义配色、ETF元数据(规模+Top10持仓)、BUG-027/028 |
+| v3.4.0 | 2026-06-02 | REQ-252~267 | QDII停牌感知(L1+L2)+全日量估算修正+push停牌标注、德国(159561)入池(44→45)、AUDIT_RUNBOOK v4.0(代码审计层)、Tuner快捷键面板(?唤起)+键盘快捷键(1/2/3/R/S)、Sina多日批量补拉+空洞检测+反爬间隔、收盘前信号推送(Server酱→微信)、三派TPE收敛(精算师SxC=33.6/禅修者Sharpe=2.30/赌徒AR=93%)、回测并行化(ProcessPoolExecutor)、F2/F4/F5全量清退、信心函数仅保留MA趋势、人设系统基建(重命名+宣言+调研)、C/CS缩放bug修复、赌徒TPE v2+v3、PARAM_BOUNDS+前端解锁、Optimizer bug修复、REQ-265(QDII停牌v1)/REQ-269(流派定制池)前期调研 |
 
 
 

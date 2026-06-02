@@ -170,7 +170,7 @@ python scripts/quant_tuner.py
 | 定位 | 开发调试工具，不纳入 `index.html` 静态页面 |
 | Git | 正常提交，属于项目 feature（`scripts/quant_tuner.py`） |
 | 数据 | 启动时一次性预加载资产池 ETF 历史数据 + 估值/市场状态缓存，回测过程无网络请求 |
-| 可调参数 | 因子权重(F1/F2/F3/F4/F6/F7) / MA Trend 仓位控制 / 持仓数 / 集中度 / 离散化 / 因子周期 / 标的池筛选 |
+| 可调参数 | 因子权重(F1/F3/F7) / MA Trend 仓位控制 / 持仓数 / 集中度 / 离散化 / 因子周期 / 标的池筛选（F2/F4/F5/F6已于2026-05退役） |
 | 保存 | "保存参数"按钮直接写回 `config/quant_universe.yaml` |
 
 调参完成后：关闭 Flask → 执行 `python scripts/quant_build_payload.py` 重新生成正式 payload。

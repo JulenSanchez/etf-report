@@ -16,7 +16,7 @@
 以下命令默认在技能根目录执行：
 
 ```bash
-C:/Users/julentan/StockMarket/.claude/skills/etf-report
+cd /path/to/etf-report
 ```
 
 ### 1.1 启动 Tuner
@@ -61,7 +61,24 @@ python scripts/quant_data_fetcher.py --code 512400 # 只更新单支 ETF
 python scripts/quant_data_fetcher.py --full        # 全量重拉，谨慎使用
 ```
 
-### 1.5 跑一致性检查
+### 1.5 强制重拉特定日期数据
+
+当怀疑某几天的 CSV 数据有问题（如盘中价被错误写入），先删后拉：
+
+```bash
+# 预览（不执行）
+python scripts/strip_csv_dates.py --dry-run 2026-06-01 2026-06-02
+
+# 删除 6/1~6/2 的行
+python scripts/strip_csv_dates.py 2026-06-01 2026-06-02
+
+# 然后刷新
+# 在 Tuner 页面点「刷新数据」或 POST /api/refresh_data
+```
+
+原理：`refresh_data` 发现 CSV 缺数据 → 自动走增量拉取路径补全。
+
+### 1.6 跑一致性检查
 
 ```bash
 python scripts/quant_consistency_check.py --preset preset1 --start 2025-01-01 --end 2026-05-19

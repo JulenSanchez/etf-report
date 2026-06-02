@@ -224,7 +224,7 @@ def _is_post_market(now=None):
 
 def _fetch_sina_realtime(cfg):
     """Fetch real-time quotes for all ETFs from Sina API. One HTTP request, ~2s.
-    Returns dict: {code: {name, open, prev_close, price, high, low, volume, amount}}
+    Returns dict: {code: {name, open, prev_close, price, high, low, volume, amount, possibly_halted}}
     """
     symbols = []
     code_list = []
@@ -257,15 +257,21 @@ def _fetch_sina_realtime(cfg):
         if not code:
             continue
         try:
+            opn = float(data[1]) if data[1] else 0
+            prev = float(data[2]) if data[2] else 0
+            price = float(data[3]) if data[3] else 0
+            vol = int(float(data[8])) if data[8] else 0
             results[code] = {
                 "name": data[0],
-                "open": float(data[1]) if data[1] else 0,
-                "prev_close": float(data[2]) if data[2] else 0,
-                "price": float(data[3]) if data[3] else 0,
+                "open": opn,
+                "prev_close": prev,
+                "price": price,
                 "high": float(data[4]) if data[4] else 0,
                 "low": float(data[5]) if data[5] else 0,
-                "volume": int(float(data[8])) if data[8] else 0,
+                "volume": vol,
                 "amount": float(data[9]) if data[9] else 0,
+                # L1 halt detection: open==prev_close and zero volume → hasn't started trading
+                "possibly_halted": (opn > 0 and abs(opn - prev) < 0.001 and vol == 0),
             }
         except (ValueError, IndexError):
             continue
@@ -384,30 +390,9 @@ def _reload_csv_to_cache(cfg):
             CACHE["all_weekly"][code] = weekly
 
 
-def _fast_append_today_sina(cfg, today_str):
-    """Post-market fast path: batch-append today's OHLCV via Sina API (1 HTTP call).
-
-    Only safe when ALL CSVs already have data through yesterday — falls back
-    to normal incremental fetch if any gap > 1 day is detected.
-    Returns (ok, fail) on success, or (None, None) to signal fallback.
-    """
-    from quant_data_fetcher import get_last_date, append_csv, save_csv, DATA_DIR as QDATA_DIR
-    today_dt = datetime.strptime(today_str, "%Y-%m-%d").date()
-
-    # Check all CSVs are within 1 day of today
-    for etf in cfg["universe"]:
-        last = get_last_date(QDATA_DIR / f"{etf['code']}_daily.csv")
-        if last is None:
-            return None, None  # no CSV at all — need full fetch
-        last_dt = datetime.strptime(last, "%Y-%m-%d").date()
-        if (today_dt - last_dt).days > 2:  # more than 1 calendar day gap
-            return None, None
-
-    # Batch fetch realtime from Sina (all ETFs in one HTTP call)
-    rt_prices = _fetch_sina_realtime(cfg)
-    if not rt_prices:
-        return None, None
-
+def _sina_batch_append(cfg, date_str, rt_prices):
+    """Append one day's Sina realtime data to all ETF CSVs."""
+    from quant_data_fetcher import append_csv, save_csv, DATA_DIR as QDATA_DIR
     import pandas as _pd
     ok, fail = 0, 0
     for etf in cfg["universe"]:
@@ -416,27 +401,81 @@ def _fast_append_today_sina(cfg, today_str):
         if not rt or rt["price"] <= 0:
             fail += 1
             continue
-
         daily_path = QDATA_DIR / f"{code}_daily.csv"
         weekly_path = QDATA_DIR / f"{code}_weekly.csv"
-
         new_row = _pd.DataFrame([{
-            "date": today_str,
-            "open": rt["open"],
-            "close": rt["price"],
-            "high": rt["high"],
-            "low": rt["low"],
-            "volume": int(rt["volume"]),
-            "amount": rt["amount"],
+            "date": date_str, "open": rt["open"], "close": rt["price"],
+            "high": rt["high"], "low": rt["low"],
+            "volume": int(rt["volume"]), "amount": rt["amount"],
         }])
         append_csv(new_row, daily_path)
-
         full_daily = _pd.read_csv(daily_path)
         weekly = rebuild_weekly_from_daily(full_daily)
         save_csv(weekly, weekly_path)
         ok += 1
-
     return ok, fail
+
+
+def _fast_append_today_sina(cfg, today_str):
+    """Post-market fast path: batch-append today's (and any missing days) OHLCV via Sina.
+
+    If gap ≤ 1 trading day: single Sina call for today (~2s).
+    If gap > 1 day: one Sina call per missing trading day, capped at 30 days.
+    Falls back to incremental fetch only if gap > 30 trading days.
+    Returns (ok, fail) on success, or (None, None) to signal fallback.
+    """
+    from quant_data_fetcher import get_last_date, DATA_DIR as QDATA_DIR
+    from trading_calendar import is_trading_day as _is_td
+    from datetime import timedelta as _td
+    today_dt = datetime.strptime(today_str, "%Y-%m-%d").date()
+
+    def _trading_days_between(d1, d2):
+        n = 0; d = d1 + _td(days=1)
+        while d < d2:
+            if _is_td(d): n += 1
+            d += _td(days=1)
+        return n
+
+    # Find the earliest last date across all CSVs, AND check for holes
+    min_last = today_dt
+    import pandas as _pd
+    for etf in cfg["universe"]:
+        df = _pd.read_csv(QDATA_DIR / f"{etf['code']}_daily.csv")
+        if len(df) == 0: return None, None
+        dates = _pd.to_datetime(df["date"]).dt.date.values
+        last_dt = dates[-1]
+        if last_dt < min_last: min_last = last_dt
+        # Check for holes: any consecutive pair with >1 trading day gap
+        for i in range(len(dates)-1):
+            hole_td = _trading_days_between(dates[i], dates[i+1])
+            if hole_td > 0:
+                # There's a hole before dates[i+1] — extend min_last to cover it
+                hole_start = dates[i]
+                if hole_start < min_last: min_last = hole_start
+
+    tdb = _trading_days_between(min_last, today_dt)
+    if tdb > 30:
+        return None, None
+
+    # Collect all missing trading days (including today)
+    missing = []
+    d = min_last + _td(days=1)
+    while d <= today_dt:
+        if _is_td(d): missing.append(d.strftime("%Y-%m-%d"))
+        d += _td(days=1)
+
+    total_ok, total_fail = 0, 0
+    for i, date_str in enumerate(missing):
+        if i > 0:
+            time.sleep(2)
+        print(f"  [Refresh] Sina batch for {date_str}...")
+        rt = _fetch_sina_realtime(cfg)
+        if not rt:
+            print(f"  [Refresh] Sina failed for {date_str}, falling back")
+            return None, None
+        ok, fail = _sina_batch_append(cfg, date_str, rt)
+        total_ok += ok; total_fail += fail
+    return total_ok, total_fail
 
 
 def refresh_data():
@@ -546,19 +585,46 @@ def refresh_data():
     if not rt_prices:
         return {"status": "error", "message": f"{time_label} | Sina API failed", "date": today_str, "time": time_label}
 
+    # Build quick lookup: QDII ETF codes + their previous intraday cache
+    qdii_codes = {e["code"] for e in cfg["universe"] if e.get("qdii")}
+    prev_ic = CACHE.get("intraday_cache", {})
+
     updated = 0
+    halted_count = 0
     for etf in cfg["universe"]:
         code = etf["code"]
         rt = rt_prices.get(code)
         if not rt or rt["price"] <= 0:
             continue
 
+        is_qdii = code in qdii_codes
         vol = rt["volume"]
         amt = rt["amount"]
-        if vol > 0:
+
+        # ── Halt detection for QDII ETFs ──
+        halted = False
+        if is_qdii:
+            # L1: morning halt — open==prev_close and no volume (from Sina)
+            if rt.get("possibly_halted"):
+                halted = True
+            # L2: afternoon halt — same price & volume as previous refresh (stale data)
+            elif code in prev_ic:
+                prev = prev_ic[code]
+                if (prev.get("halted") and
+                    abs(rt["price"] - prev["close"]) < 0.001 and
+                    vol == prev.get("raw_volume", 0)):
+                    halted = True  # persisted halt
+
+        # ── Estimate EOD volume (skip if halted) ──
+        raw_vol = vol
+        raw_amt = amt
+        if not halted and vol > 0:
             vol = _estimate_eod_volume(vol, now)
             if amt > 0:
                 amt = _estimate_eod_volume(int(amt), now)
+
+        if halted:
+            halted_count += 1
 
         CACHE["intraday_cache"][code] = {
             "date": today_str,
@@ -569,12 +635,16 @@ def refresh_data():
             "low": rt["low"],
             "volume": vol,
             "amount": amt,
+            "raw_volume": raw_vol,     # pre-estimation volume (for L2 halt detection)
+            "raw_amount": raw_amt,     # pre-estimation amount
+            "halted": halted,
         }
         updated += 1
 
     CACHE["intraday_date"] = today_str
     vol_note = " (vol est. EOD)" if _trading_elapsed_minutes(now) < TOTAL_TRADING_MINUTES else ""
-    msg = f"{time_label} | Intraday | {updated} ETFs{vol_note} | {gap_msg}"
+    halt_note = f" | {halted_count} halted" if halted_count > 0 else ""
+    msg = f"{time_label} | Intraday | {updated} ETFs{vol_note}{halt_note} | {gap_msg}"
     print(f"  [Refresh] {msg}")
 
     return {
@@ -583,6 +653,7 @@ def refresh_data():
         "count": updated,
         "date": today_str,
         "time": time_label,
+        "haltedCount": halted_count,
     }
 
 
@@ -1204,6 +1275,7 @@ def run_tuner_backtest(params):
                 had_action = True
             elif cur_pos > 0 and prev_pos > 0 and abs(cur_pos - prev_pos) > 0.01:
                 d["action"] = "adj_up" if cur_pos > prev_pos else "adj_down"
+                d["delta"] = round(cur_pos - prev_pos, 1)
                 had_action = True
             elif cur_pos > 0 and prev_pos > 0:
                 d["action"] = "hold"
@@ -1217,6 +1289,21 @@ def run_tuner_backtest(params):
             actual_rebalance_count += 1
 
         sig_date = s["date"]
+        # Compute C_eff for this rebalance
+        pos_cfg = config_override.get("position", {})
+        base_c = float(pos_cfg.get("concentration", 2.0))
+        cs_val = float(pos_cfg.get("c_sensitivity", 0.0))
+        c_eff = base_c
+        if cs_val > 0:
+            all_scores = np.array(list(s["scores"].values()))
+            top6_scores = np.array([s["scores"][c] for c in s.get("top6", []) if c in s["scores"]])
+            if len(all_scores) > 5 and len(top6_scores) > 1:
+                mu, sigma = float(all_scores.mean()), max(float(all_scores.std()), 0.02)
+                z_top6 = (top6_scores - mu) / sigma
+                disp = float(z_top6.std())
+                c_mult = 1.0 + cs_val * (disp - 0.5)
+                c_eff = round(base_c * max(c_mult, 0.1), 2)
+
         enriched_history.append({
             "date": sig_date.strftime("%Y-%m-%d") if hasattr(sig_date, "strftime") else str(sig_date)[:10],
             "signalDate": s.get("signal_date", sig_date).strftime("%Y-%m-%d") if hasattr(s.get("signal_date", sig_date), "strftime") else str(s.get("signal_date", sig_date))[:10],
@@ -1230,6 +1317,7 @@ def run_tuner_backtest(params):
             "totalPosition": round(sum(s.get("positions", {}).values()) * 100, 1),
             "cashPct": round((1.0 - sum(s.get("positions", {}).values())) * 100, 1),
             "regime": s.get("regime", ""),
+            "cEff": c_eff,
         })
 
     # Detect intraday estimate: last NAV date matches intraday cache date
@@ -1289,6 +1377,7 @@ def run_tuner_backtest(params):
             "intradayDate": ic_date if has_intraday else None,
             "intradayTime": ic_time if has_intraday else None,
             "intradayCount": len(CACHE.get("intraday_cache", {})) if has_intraday else 0,
+            "haltedEtfs": [code for code, v in CACHE.get("intraday_cache", {}).items() if v.get("halted")],
         },
         "nav": {
             "dates": nav_date_strs,
@@ -1386,6 +1475,102 @@ def api_run():
             json.dump(cache, f, ensure_ascii=False, default=str)
     except Exception:
         pass
+    return jsonify(result)
+
+
+@app.route("/api/debug_data_state")
+def api_debug_data_state():
+    """Debug: show data state — CSV row counts, intraday cache status."""
+    ic = CACHE.get("intraday_cache", {})
+    ic_date = CACHE.get("intraday_date", "")
+    # Sample first 3 ETFs
+    samples = {}
+    for i, (code, df) in enumerate(CACHE["all_daily"].items()):
+        if i >= 3: break
+        dates = df["date"].astype(str).values
+        samples[code] = {"rows": len(df), "first": dates[0][:10], "last": dates[-1][:10]}
+    merged_samples = {}
+    if ic:
+        for i, code in enumerate(CACHE["all_daily"]):
+            if i >= 3: break
+            df = _get_daily_with_cache(code)
+            dates = df["date"].astype(str).values
+            merged_samples[code] = {"rows": len(df), "first": dates[0][:10], "last": dates[-1][:10]}
+    return jsonify({
+        "intraday_cache_etfs": len(ic),
+        "intraday_date": ic_date,
+        "csv_samples": samples,
+        "merged_samples": merged_samples,
+    })
+
+
+# ── REQ-263a: snapshot intraday cache to disk ──
+SNAPSHOT_DIR = SKILL_DIR / "data" / "intraday_snapshots"
+
+@app.route("/api/snapshot_intraday", methods=["POST"])
+def api_snapshot_intraday():
+    guard = _require_ready()
+    if guard:
+        return guard
+    label = request.args.get("label", datetime.now().strftime("%H%M"))
+    today_str = datetime.now().strftime("%Y-%m-%d")
+    ic = CACHE.get("intraday_cache", {})
+    if not ic:
+        return jsonify({"ok": False, "error": "No intraday cache available"})
+    SNAPSHOT_DIR.mkdir(parents=True, exist_ok=True)
+    filename = f"{today_str}_{label}.json"
+    path = SNAPSHOT_DIR / filename
+    # Convert numpy/pandas types to native Python
+    data = {"date": today_str, "time": label, "entries": {}}
+    for code, row in ic.items():
+        entry = {}
+        for k, v in row.items():
+            entry[k] = float(v) if hasattr(v, "item") else v
+        data["entries"][code] = entry
+    with path.open("w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, default=str)
+    return jsonify({"ok": True, "file": filename, "etfs": len(ic)})
+
+
+# ── REQ-263b: backtest using saved intraday snapshot as today's close ──
+@app.route("/api/backtest_with_snapshot", methods=["POST"])
+def api_backtest_with_snapshot():
+    guard = _require_ready()
+    if guard:
+        return guard
+    params = request.json or {}
+    snapshot_file = params.get("snapshot", "")
+    if not snapshot_file:
+        return jsonify({"error": "Missing 'snapshot' parameter"}), 400
+    path = SNAPSHOT_DIR / snapshot_file
+    if not path.exists():
+        return jsonify({"error": f"Snapshot not found: {snapshot_file}"}), 404
+    with path.open("r", encoding="utf-8") as f:
+        snap = json.load(f)
+
+    # Save original daily data, then patch with snapshot
+    _orig_daily = dict(CACHE["all_daily"])
+    import pandas as _pd
+    snap_date = snap["date"]
+    for code, entry in snap["entries"].items():
+        if code not in _orig_daily:
+            continue
+        df = _orig_daily[code].copy()
+        # Find or create row for snapshot date
+        mask = df["date"].astype(str).str[:10] == snap_date
+        if mask.any():
+            idx = df[mask].index[0]
+            df.at[idx, "close"] = entry.get("close", df.at[idx, "close"])
+            if "volume" in entry:
+                df.at[idx, "volume"] = entry["volume"]
+            if "amount" in entry:
+                df.at[idx, "amount"] = entry["amount"]
+        CACHE["all_daily"][code] = df
+
+    try:
+        result = run_tuner_backtest(params)
+    finally:
+        CACHE["all_daily"] = _orig_daily
     return jsonify(result)
 
 
@@ -1616,6 +1801,7 @@ def api_data_status():
                 csv_latest = ds
 
     today = datetime.now().strftime("%Y-%m-%d")
+    halted_codes = [code for code, v in ic.items() if v.get("halted")]
     return jsonify({
         "ready": CACHE.get("ready", False),
         "csvLatestDate": csv_latest,
@@ -1624,6 +1810,7 @@ def api_data_status():
         "intradayCacheTime": ic_time,
         "intradayCacheCount": len(ic),
         "isPostMarket": _is_post_market(),
+        "haltedEtfs": halted_codes,
     })
 
 

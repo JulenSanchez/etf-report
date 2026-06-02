@@ -22,7 +22,7 @@ SKILL_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(SKILL_DIR / "scripts"))
 
 from quant_factors import (
-    compute_all_factors, factor_exhaustion_penalty,
+    compute_all_factors,
     map_f1, map_f3, map_f4, map_f7,
     confidence_function, regime_confidence, infer_regime_from_nav, dd_trigger_confidence, momentum_crash_confidence, ma_trend_confidence,
 )
@@ -358,12 +358,19 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
     config_override: 可选配置覆盖字典，在 preset 加载后应用:
         {"scoring": {...}, "confidence": {...}, "position": {...}, "factors": {...}}
     """
+    def _deep_merge(base, override):
+        for k, v in override.items():
+            if k in base and isinstance(v, dict) and isinstance(base[k], dict):
+                _deep_merge(base[k], v)
+            else:
+                base[k] = v
+
     cfg = load_config(preset=preset)
     if config_override:
         for section, values in config_override.items():
             if section in cfg:
-                if isinstance(values, dict):
-                    cfg[section].update(values)
+                if isinstance(values, dict) and isinstance(cfg.get(section), dict):
+                    _deep_merge(cfg[section], values)
                 else:
                     cfg[section] = values
     if universe_filter:
@@ -474,20 +481,15 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
     hs300_above_ma_map = {}
     hs300_ma_rising_map = {}
     if conf_type == "ma_trend":
-        if preloaded and preloaded.get("hs300_above_ma"):
-            hs300_above_ma_map = preloaded["hs300_above_ma"]
-            hs300_ma_rising_map = preloaded.get("hs300_ma_rising", {})
-            print(f"  HS300 MA{ma_trend_period}: {len(hs300_above_ma_map)} days preloaded")
-        else:
-            try:
-                hs = load_hs300_daily_cached()
-                weekly = build_hs300_weekly(hs)
-                ma_cache = build_ma_trend_cache(hs, weekly, ma_trend_period) or {}
-                hs300_above_ma_map = ma_cache.get("above", {})
-                hs300_ma_rising_map = ma_cache.get("ma_rising", {})
-                print(f"  HS300 MA{ma_trend_period}: {len(hs300_above_ma_map)} days loaded")
-            except Exception as e:
-                print(f"  [WARN] HS300 MA{ma_trend_period} failed: {e}")
+        try:
+            hs = load_hs300_daily_cached()
+            weekly = build_hs300_weekly(hs)
+            ma_cache = build_ma_trend_cache(hs, weekly, ma_trend_period) or {}
+            hs300_above_ma_map = ma_cache.get("above", {})
+            hs300_ma_rising_map = ma_cache.get("ma_rising", {})
+            print(f"  HS300 MA{ma_trend_period}: {len(hs300_above_ma_map)} days loaded")
+        except Exception as e:
+            print(f"  [WARN] HS300 MA{ma_trend_period} failed: {e}")
 
     # 确定回测日期范围
     all_dates_set = set()
@@ -885,6 +887,10 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
             _f6_col = factors_df.get("f6_exhaustion_penalty")
             _f6_d = _f6_col.to_dict() if _f6_col is not None else {}
             _has_f7 = "f7_log_return_dev" in factors_df.columns and w7 > 0
+            # Raw factor values for attribution (REQ-233)
+            _f1_raw = factors_df["f1_ema_dev"].to_dict()
+            _f3_raw = factors_df["f3_volume_ratio"].to_dict()
+            _f7_raw = factors_df["f7_log_return_dev"].to_dict() if _has_f7 else {}
             detail = {}
             for code in factors_df.index:
                 raw_score = composite.get(code, 0)
@@ -900,6 +906,9 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
                     "confidence": round(float(total_target) * 100, 0),
                     "position": round(_pos_d.get(code, 0) * 100, 1),
                     "price": round(float(prices_today.get(code, 0)), 3),
+                    "f1_raw": round(float(_f1_raw.get(code, 0)), 2),
+                    "f3_raw": round(float(_f3_raw.get(code, 1.0)), 2),
+                    "f7_raw": round(float(_f7_raw.get(code, 0)), 2) if _has_f7 else None,
                 }
             signal_history[-1]["detail"] = detail
 
