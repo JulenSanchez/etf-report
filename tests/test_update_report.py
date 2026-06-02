@@ -4,6 +4,8 @@ import textwrap
 from datetime import datetime
 from types import SimpleNamespace
 
+import pytest
+
 
 
 def test_load_quant_preset_params_uses_shared_contract(tmp_path, load_module):
@@ -16,20 +18,17 @@ def test_load_quant_preset_params_uses_shared_contract(tmp_path, load_module):
               dead_zone: 25
               full_zone: 65
             presets:
-              daily_aggressive:
+              preset2:
                 label: 波动探测
                 scoring:
                   weights:
-                    ema_deviation: 0.0
-                    f2_daily_ma: 0.45
-                    volume_ratio: 0.45
+                    ema_deviation: 0.3
+                    volume_ratio: 0.60
                     valuation: 0.0
-                    exhaustion_penalty: 0.0
                     log_return_deviation: 0.1
                   bias_bonus: 0.0
                   sensitivity:
                     f1: 8.0
-                    f2: 8.0
                     f3: 1.5
                     f7_t: 15.0
                     f7_k: 3.5
@@ -64,8 +63,8 @@ def test_load_quant_preset_params_uses_shared_contract(tmp_path, load_module):
 
     params = module.load_quant_preset_params(str(config_path))
 
-    assert params["w2"] == 45
-    assert params["w3"] == 45
+    assert params["w1"] == 30
+    assert params["w3"] == 60
     assert params["w7"] == 10
     assert params["disc_step"] == 0.05
     assert params["execution_timing"] == "same_close"
@@ -81,13 +80,12 @@ def test_build_quant_payload_config_section_uses_shared_contract(load_module):
     yr1 = section["yr1"]
     yr3 = section["yr3"]
 
-    assert yr1["scoring"]["weights"]["f2_daily_ma"] == 0.45
+    assert yr1["scoring"]["weights"]["volume_ratio"] == pytest.approx(0.45)
     assert yr1["scoring"]["weights"]["log_return_deviation"] == 0.1
     assert yr1["position"]["discretize_step"] == 0.05
     assert yr1["position"]["execution_timing"] == "same_close"
     assert yr1["position"]["concentration"] == 0.0
     assert yr1["position"]["score_band"] == 0.03
-    assert yr1["factors"]["f6_drop_thresh"] == 0.025
     assert yr1["factors"]["log_return_deviation"]["window_days"] == 20
     assert yr3 == yr1
     assert yr3 is not yr1

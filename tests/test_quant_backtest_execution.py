@@ -28,6 +28,6 @@ def test_get_execution_date_next_open_returns_none_without_future_date():
     assert get_execution_date(pd.Timestamp("2026-05-19"), dates, "next_open") is None
 
 
-def test_daily_aggressive_default_execution_timing_is_same_close():
-    cfg = load_config("daily_aggressive")
+def test_preset2_default_execution_timing_is_same_close():
+    cfg = load_config("preset2")
     assert cfg["position"]["execution_timing"] == "same_close"

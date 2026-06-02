@@ -10,7 +10,7 @@ import pytest
 
 SKILL_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(SKILL_DIR / "scripts"))
-from quant_factors import factor_exhaustion_penalty, factor_log_return_deviation, map_f7
+from quant_factors import factor_log_return_deviation, map_f7
 
 
 def make_rw(n=300, seed=42, start_price=10.0):
@@ -128,41 +128,6 @@ def test_map_f7_sensitivity():
     assert map_f7(-2.0, k=5.0) < map_f7(-2.0, k=3.0)
 
 
-# ── factor_exhaustion_penalty ────────────────────────────
-
-
-def make_exhaustion_df(extra_tail=None, trigger_volume=1000.0):
-    n = 80
-    dates = pd.date_range("2024-01-01", periods=n, freq="B")
-    close = np.linspace(10.0, 18.0, n)
-    volume = np.full(n, 100.0)
-    close[-1] = close[-2] * 0.95
-    volume[-1] = trigger_volume
-    df = pd.DataFrame({"date": dates, "close": close, "volume": volume})
-    if extra_tail:
-        for close_mul, vol in extra_tail:
-            next_date = df["date"].iloc[-1] + pd.offsets.BDay(1)
-            df = pd.concat([df, pd.DataFrame([{
-                "date": next_date,
-                "close": float(df["close"].iloc[-1] * close_mul),
-                "volume": vol,
-            }])], ignore_index=True)
-    return df
-
-
-def test_f6_triggers_on_high_rsi_high_volume_drop():
-    df = make_exhaustion_df(trigger_volume=1000.0)
-    penalty = factor_exhaustion_penalty(df, rsi_thresh=70, drop_thresh=0.025, vol_thresh=1.5, base_penalty=0.15)
-    assert penalty == pytest.approx(0.15, abs=1e-6)
-
-
-def test_f6_does_not_trigger_without_volume_confirmation():
-    df = make_exhaustion_df(trigger_volume=100.0)
-    penalty = factor_exhaustion_penalty(df, rsi_thresh=70, drop_thresh=0.025, vol_thresh=1.5, base_penalty=0.15)
-    assert penalty == pytest.approx(1.0, abs=1e-6)
-
-
-def test_f6_penalty_decays_after_trigger():
-    df = make_exhaustion_df(extra_tail=[(1.01, 100.0)], trigger_volume=1000.0)
-    penalty = factor_exhaustion_penalty(df, rsi_thresh=70, drop_thresh=0.025, vol_thresh=1.5, decay_days=3, base_penalty=0.15)
-    assert penalty == pytest.approx(0.15 + 0.85 / 3, abs=1e-6)
+# ── F6 (factor_exhaustion_penalty): removed in REQ-255 ──
+# Function was retired along with momentum exhaustion logic.
+# Tests removed. See Archive.md REQ-255 for rationale.

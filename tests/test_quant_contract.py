@@ -10,12 +10,10 @@ import quant_contract as qc
 
 
 def sample_params(**overrides):
+    """Test params using only active keys (w2/w4/w6/f2/f6 removed in REQ-255/256)."""
     params = {
         "w1": 30,
-        "w2": 10,
-        "w3": 45,
-        "w4": 0,
-        "w6": 5,
+        "w3": 60,
         "w7": 10,
         "bias": 0,
         "conf_type": "ma_trend",
@@ -34,15 +32,10 @@ def sample_params(**overrides):
         "ema_period": 16,
         "vol_window": 20,
         "f1_sensitivity": 8.0,
-        "f2_sensitivity": 8.0,
         "f3_sensitivity": 1.0,
         "f7_t": 15.0,
         "f7_k": 3.5,
         "f7_window": 20,
-        "f2_ma_period": 30,
-        "f6_rsi_thresh": 65.0,
-        "f6_drop_thresh": 2.0,
-        "f6_base_penalty": 0.15,
     }
     params.update(overrides)
     return params
@@ -73,15 +66,12 @@ def test_tuner_params_to_config_override_unit_conversions():
     override = qc.tuner_params_to_config_override(sample_params())
 
     assert override["scoring"]["weights"]["ema_deviation"] == pytest.approx(0.30)
-    assert override["scoring"]["weights"]["f2_daily_ma"] == pytest.approx(0.10)
-    assert override["scoring"]["weights"]["volume_ratio"] == pytest.approx(0.45)
-    assert override["scoring"]["weights"]["exhaustion_penalty"] == pytest.approx(0.05)
+    assert override["scoring"]["weights"]["volume_ratio"] == pytest.approx(0.60)
     assert override["scoring"]["weights"]["log_return_deviation"] == pytest.approx(0.10)
 
     assert override["position"]["score_band"] == pytest.approx(0.03)
     assert override["position"]["execution_timing"] == "next_open"
     assert override["position"]["discretize_step"] == pytest.approx(0.05)
-    assert override["factors"]["f6_drop_thresh"] == pytest.approx(0.02)
     assert override["factors"]["log_return_deviation"]["window_days"] == 20
 
 
@@ -92,30 +82,25 @@ def test_preset_to_tuner_params_round_trip_core_fields():
         "scoring": {
             "weights": {
                 "ema_deviation": 0.3,
-                "f2_daily_ma": 0.1,
-                "volume_ratio": 0.45,
+                "volume_ratio": 0.60,
                 "valuation": 0,
-                "exhaustion_penalty": 0.05,
                 "log_return_deviation": 0.1,
             },
             "bias_bonus": 0,
-            "sensitivity": {"f1": 8, "f2": 8, "f3": 1.0, "f7_t": 15, "f7_k": 3.5},
+            "sensitivity": {"f1": 8, "f3": 1.0, "f7_t": 15, "f7_k": 3.5},
         },
         "confidence": {"type": "ma_trend", "ma_bull_pos": 1.0, "ma_bear_pos": 0.3, "ma_trend_period": 26},
         "position": {"max_holdings": 6, "discretize_step": 0.05, "concentration": 2.0, "rebalance_freq": "daily", "execution_timing": "next_open", "score_band": 0.03},
-        "factors": {"ema": {"period_weeks": 16}, "volume_ratio": {"window_days": 20}, "log_return_deviation": {"window_days": 20}, "f2_ma_period": 30, "f6_drop_thresh": 0.02},
+        "factors": {"ema": {"period_weeks": 16}, "volume_ratio": {"window_days": 20}, "log_return_deviation": {"window_days": 20}},
     }
 
     params = qc.preset_to_tuner_params("test", preset, {"dead_zone": 25, "full_zone": 65})
 
     assert params["label"] == "测试策略"
     assert params["w1"] == 30
-    assert params["w2"] == 10
-    assert params["w3"] == 45
-    assert params["w6"] == 5
+    assert params["w3"] == 60
     assert params["w7"] == 10
     assert params["score_band"] == 3
-    assert params["f6_drop_thresh"] == pytest.approx(2.0)
     assert params["execution_timing"] == "next_open"
 
 
@@ -126,11 +111,10 @@ def test_param_schema_contains_all_core_tuner_params():
     assert schema["version"] == 1
     for key in sample_params().keys():
         if key not in {"debug"}:
-            assert key in keys
+            assert key in keys, f"Missing key in schema: {key}"
 
     assert "execution_timing" in keys
     assert "score_band" in keys
-    assert "f6_drop_thresh" in keys
     assert "f7_window" in keys
 
 
