@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Pre-close push: fetch intraday, run backtest via Tuner API, push top-10 to WeChat via ServerChan."""
-import sys, os, time, requests, yaml
-from datetime import datetime, timedelta
+"""Pre-close push: auto-start Tuner → refresh intraday → backtest → push top-10 to WeChat via Server酱."""
+import sys, os, time, subprocess, requests, yaml
+from datetime import datetime
 
 SKILL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(SKILL_DIR, "scripts"))
@@ -9,20 +9,98 @@ from trading_calendar import is_trading_day
 
 TUNER_URL = "http://localhost:5179"
 DEFAULT_PRESET = "preset3"
+TUNER_STARTUP_TIMEOUT = 60  # max seconds to wait for Tuner
 
-# ── Trading day check ──
+def log(msg):
+    """Timestamped console output."""
+    print(f"[{datetime.now():%H:%M:%S}] {msg}", flush=True)
+
+def _tuner_ready():
+    """Check if Tuner is responding."""
+    try:
+        r = requests.get(f"{TUNER_URL}/api/data_status", timeout=3)
+        return r.status_code == 200
+    except Exception:
+        return False
+
+def _ensure_tuner():
+    """Ensure Tuner is running. Start it if not, wait for readiness."""
+    if _tuner_ready():
+        log("Tuner: already running")
+        return True
+
+    log("Tuner: not running — starting...")
+    tuner_script = os.path.join(SKILL_DIR, "scripts", "quant_tuner.py")
+    subprocess.Popen(
+        ["python", tuner_script],
+        cwd=SKILL_DIR,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0,
+    )
+
+    # Wait for Tuner to become ready
+    waited = 0
+    while waited < TUNER_STARTUP_TIMEOUT:
+        time.sleep(2)
+        waited += 2
+        if _tuner_ready():
+            log(f"Tuner: ready after {waited}s")
+            return True
+        if waited % 10 == 0:
+            log(f"Tuner: waiting... ({waited}s)")
+
+    log("ERROR: Tuner failed to start within 60s")
+    return False
+
+# ═══════════════════════════════════════════════════════════════
+# Stage 0: Pre-flight checks
+# ═══════════════════════════════════════════════════════════════
+log("=" * 50)
+log("Stage 0: Pre-flight checks")
+now = datetime.now()
+
 if not is_trading_day():
-    print("[SKIP] Not a trading day")
+    log("SKIP: Not a trading day")
     sys.exit(0)
+log(f"Trading day: YES ({now:%Y-%m-%d})")
 
-# ── Secrets ──
 with open(os.path.join(SKILL_DIR, "config", "secrets.yaml"), "r", encoding="utf-8") as f:
     sec = yaml.safe_load(f) or {}
 sendkey = sec.get("publish", {}).get("serverchan", {}).get("sendkey", "")
 if not sendkey:
-    print("[ERROR] ServerChan sendkey not configured"); sys.exit(1)
+    log("ERROR: Server酱 sendkey not configured in secrets.yaml")
+    sys.exit(1)
+log("Server酱 sendkey: configured")
 
-# ── ETF names ──
+# ═══════════════════════════════════════════════════════════════
+# Stage 1: Ensure Tuner is running
+# ═══════════════════════════════════════════════════════════════
+log("=" * 50)
+log("Stage 1: Ensure Tuner")
+if not _ensure_tuner():
+    sys.exit(1)
+
+# ═══════════════════════════════════════════════════════════════
+# Stage 2: Refresh intraday data
+# ═══════════════════════════════════════════════════════════════
+log("=" * 50)
+log("Stage 2: Refresh intraday data")
+
+r = requests.post(f"{TUNER_URL}/api/refresh_data", timeout=60)
+status = r.json()
+log(f"  Status: {status.get('status', '?')} | {status.get('count', 0)} ETFs")
+halted = status.get("haltedCount", 0)
+if halted:
+    log(f"  Halted ETFs detected: {halted}")
+
+# ═══════════════════════════════════════════════════════════════
+# Stage 3: Load preset + build params
+# ═══════════════════════════════════════════════════════════════
+log("=" * 50)
+log("Stage 3: Load preset params")
+
+# ETF name map for display
 with open(os.path.join(SKILL_DIR, "config", "quant_universe.yaml"), "r", encoding="utf-8") as f:
     cfg = yaml.safe_load(f)
 etf_names = {e["code"]: e.get("name", e["code"]) for e in cfg.get("universe", [])}
@@ -31,29 +109,11 @@ qdii_codes = {e["code"] for e in cfg.get("universe", []) if e.get("qdii")}
 def short(code):
     return etf_names.get(code, code).replace("ETF", "")
 
-# ── Tuner ──
-now = datetime.now()
-print(f"[{now:%H:%M:%S}] Tuner check...")
-try:
-    r = requests.get(f"{TUNER_URL}/api/data_status", timeout=5)
-    if r.status_code != 200:
-        print("[ERROR] Tuner not ready"); sys.exit(1)
-except Exception as e:
-    print(f"[ERROR] Tuner unreachable: {e}"); sys.exit(1)
-
-# ── Refresh ──
-print(f"[{datetime.now():%H:%M:%S}] Refresh...")
-r = requests.post(f"{TUNER_URL}/api/refresh_data", timeout=60)
-print(f"  {r.json().get('status', '?')}")
-
-print(f"[{datetime.now():%H:%M:%S}] Wait 10s...")
-time.sleep(10)
-
-# ── Params (start fixed to May 1) ──
 r = requests.get(f"{TUNER_URL}/api/presets", timeout=10)
 p = r.json()[DEFAULT_PRESET]
 end = now.strftime("%Y-%m-%d")
 start = f"{now.year}-05-01"
+log(f"  Preset: {DEFAULT_PRESET} | Window: {start} ~ {end}")
 
 params = {
     "w1": p.get("w1", 50), "w3": p.get("w3", 30), "w7": p.get("w7", 20),
@@ -69,20 +129,33 @@ params = {
     "start_date": start, "end_date": end, "universe": "", "debug": False,
 }
 
-# ── Backtest ──
-print(f"[{datetime.now():%H:%M:%S}] Backtest ({start}~{end})...")
+# ═══════════════════════════════════════════════════════════════
+# Stage 4: Run backtest
+# ═══════════════════════════════════════════════════════════════
+log("=" * 50)
+log("Stage 4: Run backtest")
+log(f"  {start} ~ {end} ({DEFAULT_PRESET})")
+
 r = requests.post(f"{TUNER_URL}/api/run", json=params, timeout=180)
 result = r.json()
 if "error" in result:
-    print(f"[ERROR] {result['error']}"); sys.exit(1)
+    log(f"ERROR: {result['error']}")
+    sys.exit(1)
 
-# ── Top-10 + actions ──
+s = result["summary"]
+log(f"  Total: {s['totalReturn']:+.1f}% | Annual: {s['annualReturn']:+.1f}% | Sharpe: {s['sharpe']:.2f}")
+log(f"  WinRate: {s['winRate']}% | MDD: {s['maxDrawdown']:.1f}% | Elapsed: {s['elapsed']}s")
+
+# ═══════════════════════════════════════════════════════════════
+# Stage 5: Build signal table
+# ═══════════════════════════════════════════════════════════════
+log("=" * 50)
+log("Stage 5: Build signal table")
+
 history = result["signalHistory"]
 latest = history[-1]
 detail = latest.get("detail", {})
 positions = latest.get("positions", {})
-
-# Previous positions for action delta
 prev_positions = history[-2].get("positions", {}) if len(history) >= 2 else {}
 
 rows = []
@@ -107,10 +180,16 @@ for c, d in detail.items():
 rows.sort(key=lambda x: -x[1])
 top10 = rows[:10]
 
-# ── Build Markdown table ──
+# ═══════════════════════════════════════════════════════════════
+# Stage 6: Push to WeChat
+# ═══════════════════════════════════════════════════════════════
+log("=" * 50)
+log("Stage 6: Push to WeChat")
+
 now = datetime.now()
 session = "上午" if now.hour < 13 else "下午"
-# Check for halted QDII ETFs
+
+# Halt check
 halted_codes = []
 try:
     r_status = requests.get(f"{TUNER_URL}/api/data_status", timeout=5)
@@ -122,7 +201,7 @@ except Exception:
 halt_note = ""
 if halted_codes:
     names = [short(c) for c in halted_codes]
-    halt_note = f" | ⚠️停牌: {', '.join(names)}"
+    halt_note = f" | 停牌: {', '.join(names)}"
 
 md_lines = [
     f"策略: 赌徒  |  {now:%H:%M}{halt_note}",
@@ -134,18 +213,21 @@ for i, (c, s, pct, act) in enumerate(top10, 1):
     ps = f"**{pct:.0f}%**" if pct > 0 else "-"
     md_lines.append(f"| {i} | {short(c)} | {s:.1f} | {ps} | {act} |")
 
-content = "\n".join(md_lines)
-
+content_str = "\n".join(md_lines)
 title = f"{now:%m/%d} {session}收盘前 | 赌徒{halt_note}"
-print(title)
-print(content)
 
-# ── Push ──
+print(title)
+print(content_str)
+
 r = requests.post(f"https://sctapi.ftqq.com/{sendkey}.send",
-                  data={"title": title, "desp": content}, timeout=10)
+                  data={"title": title, "desp": content_str}, timeout=10)
 resp = r.json()
 if resp.get("code") == 0:
     pushid = resp.get("data", {}).get("pushid", "?")
-    print(f"\n[OK] Push sent (id={pushid})")
+    log(f"Push sent OK (id={pushid})")
 else:
-    print(f"\n[ERROR] {resp}"); sys.exit(1)
+    log(f"ERROR: Push failed — {resp}")
+    sys.exit(1)
+
+log("=" * 50)
+log("Done.")
