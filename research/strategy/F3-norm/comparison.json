@@ -1,0 +1,82 @@
+{
+  "F7_F3_1Y": {
+    "elapsed": 16.4,
+    "rebalanceCount": 117,
+    "totalReturn": 114.7,
+    "annualReturn": 114.7,
+    "maxDrawdown": -12.0,
+    "sharpe": 3.35,
+    "sortino": 4.6,
+    "commissionPct": 1.24
+  },
+  "F7_F3_3Y": {
+    "elapsed": 28.9,
+    "rebalanceCount": 279,
+    "totalReturn": 135.58,
+    "annualReturn": 33.02,
+    "maxDrawdown": -16.3,
+    "sharpe": 1.48,
+    "sortino": 2.04,
+    "commissionPct": 2.85
+  },
+  "F7_F3-N_1Y": {
+    "elapsed": 15.8,
+    "rebalanceCount": 117,
+    "totalReturn": 115.08,
+    "annualReturn": 115.08,
+    "maxDrawdown": -12.0,
+    "sharpe": 3.36,
+    "sortino": 4.62,
+    "commissionPct": 1.27
+  },
+  "F7_F3-N_3Y": {
+    "elapsed": 30.7,
+    "rebalanceCount": 279,
+    "totalReturn": 136.88,
+    "annualReturn": 33.27,
+    "maxDrawdown": -16.31,
+    "sharpe": 1.49,
+    "sortino": 2.05,
+    "commissionPct": 2.86
+  },
+  "F6_F3_1Y": {
+    "elapsed": 16.1,
+    "rebalanceCount": 136,
+    "totalReturn": 88.64,
+    "annualReturn": 88.64,
+    "maxDrawdown": -11.91,
+    "sharpe": 2.89,
+    "sortino": 4.23,
+    "commissionPct": 1.59
+  },
+  "F6_F3_3Y": {
+    "elapsed": 29.0,
+    "rebalanceCount": 322,
+    "totalReturn": 109.91,
+    "annualReturn": 28.01,
+    "maxDrawdown": -15.17,
+    "sharpe": 1.28,
+    "sortino": 1.78,
+    "commissionPct": 3.28
+  },
+  "F6_F3-N_1Y": {
+    "elapsed": 16.8,
+    "rebalanceCount": 136,
+    "totalReturn": 91.8,
+    "annualReturn": 91.8,
+    "maxDrawdown": -12.25,
+    "sharpe": 2.97,
+    "sortino": 4.29,
+    "commissionPct": 1.6
+  },
+  "F6_F3-N_3Y": {
+    "elapsed": 28.9,
+    "rebalanceCount": 322,
+    "totalReturn": 108.98,
+    "annualReturn": 27.82,
+    "maxDrawdown": -14.91,
+    "sharpe": 1.27,
+    "sortino": 1.75,
+    "commissionPct": 3.25
+  }
+}

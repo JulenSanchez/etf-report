@@ -13,7 +13,10 @@ data/
 outputs/
 _working/
 .backup/
-research/
+# research: 提交结论文档，排除可重新生成的中间数据（详见 research/README.md）
+research/**/*.csv
+research/**/*.db
+research/**/__pycache__/
 .tuner_ready_to_bind
 config/quant_user_overrides.yaml
 

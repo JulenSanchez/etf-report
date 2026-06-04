@@ -1,0 +1,188 @@
+{
+  "1yr": {
+    "daily_Top1": {
+      "annual": 1080779.8,
+      "mdd": 0.0,
+      "calmar": 10807798.49,
+      "sharpe": 25.85
+    },
+    "daily_Top6": {
+      "annual": 13965.3,
+      "mdd": -1.0,
+      "calmar": 13965.29,
+      "sharpe": 23.03
+    },
+    "weekly_Top1_hindsight": {
+      "annual": 3107.3,
+      "mdd": -0.0,
+      "calmar": 31073.44,
+      "sharpe": 13.74
+    },
+    "weekly_Top6_hindsight": {
+      "annual": 529.7,
+      "mdd": -1.7,
+      "calmar": 311.57,
+      "sharpe": 11.68
+    },
+    "weekly_Top6_hindsight_nocash": {
+      "annual": 529.7,
+      "mdd": -1.7,
+      "calmar": 311.57,
+      "sharpe": 11.68
+    },
+    "weekly_Top6_lagged": {
+      "annual": 22.6,
+      "mdd": -10.6,
+      "calmar": 2.13,
+      "sharpe": 1.25
+    },
+    "weekly_Top6_lagged_nocash": {
+      "annual": 22.6,
+      "mdd": -10.6,
+      "calmar": 2.13,
+      "sharpe": 1.25
+    },
+    "always_full": {
+      "annual": 103.0,
+      "mdd": -13.01,
+      "calmar": 7.92,
+      "sharpe": 2.94
+    },
+    "momentum_crash": {
+      "annual": 96.25,
+      "mdd": -12.28,
+      "calmar": 7.83,
+      "sharpe": 3.04
+    },
+    "ma_trend(bear=30%)": {
+      "annual": 94.0,
+      "mdd": -13.01,
+      "calmar": 7.23,
+      "sharpe": 2.87
+    }
+  },
+  "2yr": {
+    "daily_Top1": {
+      "annual": 381981.8,
+      "mdd": 0.0,
+      "calmar": 3819818.09,
+      "sharpe": 21.1
+    },
+    "daily_Top6": {
+      "annual": 8761.8,
+      "mdd": -2.0,
+      "calmar": 4380.91,
+      "sharpe": 17.96
+    },
+    "weekly_Top1_hindsight": {
+      "annual": 1961.9,
+      "mdd": -0.0,
+      "calmar": 19618.5,
+      "sharpe": 10.32
+    },
+    "weekly_Top6_hindsight": {
+      "annual": 443.8,
+      "mdd": -1.7,
+      "calmar": 261.05,
+      "sharpe": 7.68
+    },
+    "weekly_Top6_hindsight_nocash": {
+      "annual": 414.6,
+      "mdd": -5.1,
+      "calmar": 81.29,
+      "sharpe": 7.06
+    },
+    "weekly_Top6_lagged": {
+      "annual": 16.4,
+      "mdd": -10.6,
+      "calmar": 1.55,
+      "sharpe": 0.79
+    },
+    "weekly_Top6_lagged_nocash": {
+      "annual": 14.2,
+      "mdd": -14.2,
+      "calmar": 1.0,
+      "sharpe": 0.7
+    },
+    "always_full": {
+      "annual": 51.91,
+      "mdd": -16.11,
+      "calmar": 3.22,
+      "sharpe": 1.66
+    },
+    "momentum_crash": {
+      "annual": 43.34,
+      "mdd": -17.96,
+      "calmar": 2.41,
+      "sharpe": 1.58
+    },
+    "ma_trend(bear=30%)": {
+      "annual": 39.87,
+      "mdd": -15.64,
+      "calmar": 2.55,
+      "sharpe": 1.52
+    }
+  },
+  "3yr": {
+    "daily_Top1": {
+      "annual": 231352.8,
+      "mdd": -0.1,
+      "calmar": 2313527.94,
+      "sharpe": 21.33
+    },
+    "daily_Top6": {
+      "annual": 6650.4,
+      "mdd": -2.0,
+      "calmar": 3325.19,
+      "sharpe": 17.66
+    },
+    "weekly_Top1_hindsight": {
+      "annual": 1572.5,
+      "mdd": -0.0,
+      "calmar": 15724.78,
+      "sharpe": 9.95
+    },
+    "weekly_Top6_hindsight": {
+      "annual": 390.9,
+      "mdd": -1.7,
+      "calmar": 229.95,
+      "sharpe": 7.35
+    },
+    "weekly_Top6_hindsight_nocash": {
+      "annual": 366.6,
+      "mdd": -5.1,
+      "calmar": 71.87,
+      "sharpe": 6.8
+    },
+    "weekly_Top6_lagged": {
+      "annual": 2.1,
+      "mdd": -30.9,
+      "calmar": 0.07,
+      "sharpe": 0.2
+    },
+    "weekly_Top6_lagged_nocash": {
+      "annual": 3.4,
+      "mdd": -25.5,
+      "calmar": 0.13,
+      "sharpe": 0.26
+    },
+    "always_full": {
+      "annual": 26.91,
+      "mdd": -27.35,
+      "calmar": 0.98,
+      "sharpe": 1.04
+    },
+    "momentum_crash": {
+      "annual": 25.38,
+      "mdd": -20.39,
+      "calmar": 1.24,
+      "sharpe": 1.1
+    },
+    "ma_trend(bear=30%)": {
+      "annual": 22.36,
+      "mdd": -15.64,
+      "calmar": 1.43,
+      "sharpe": 1.05
+    }
+  }
+}

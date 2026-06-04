@@ -184,12 +184,31 @@ _precompute_factors(...)
 
 ### 5.1 F1 — EMA 偏离
 
-默认形态：周线 EMA 偏离。
+默认形态：周线 EMA 偏离。**周线数据来自 CSV 快照，不合并 intraday cache。**
 
 ```text
 F1_raw = (close - EMA_N) / EMA_N * 100
 F1 = map_f1(F1_raw, sensitivity.f1)
 ```
+
+**查表语义**（`searchsorted` + `side="right"`）：
+
+对回测日 D，查 D 在周线日期序列中的插入位置（第一个 > D 的索引），取前一位置的 bar 的 F1 值。即：**使用日期 <= D 的最新周 bar**。
+
+```
+例：周线日期 = [..., "05/29", "06/02"]，回测日 = 6/2
+  searchsorted("06/02", side=right) → idx=321（末尾之后，06/02 == 最后元素）
+  f1_idx = 320 → 命中 06/02 那周的 bar
+
+例：回测日 = 6/1
+  searchsorted("06/01", side=right) → idx=320（06/01 < 06/02）
+  f1_idx = 319 → 命中 05/29 那周的 bar
+```
+
+**关键性质**：
+- 周内盘中，CSV 可能没有当前周的 bar（CSV 只在盘后更新）。此时所有当周日期都命中上周末的同一 bar，F1 在周内**不变**。
+- 周线**只用 CSV 快照**，不随 intraday cache 重建。若重建，当前周的最后一天会漂移，导致 searchsorted 命中不同周——这是 BUG-029 的根因，见 `plans/BUG-029.md`。
+- F1 使用的周 bar 可能是"不完整周"（如周二时该周仅 2 个交易日），close 即为该周最后一个已确认交易日的收盘价。
 
 可选历史变体：`f1_daily_ema` / `f1_daily_ma`（已证明劣于周线版，代码保留）。
 

@@ -388,88 +388,6 @@ def patch_range(etf: dict, start_date: str, end_date: str):
     return len(df_new), new_weekly, "patch"
 
 
-def _try_sina_fast_path(universe):
-    """Try to batch-append today's OHLCV to all CSVs via Sina API (1 HTTP call).
-    Returns number of ETFs updated, or None if fallback needed."""
-    import pandas as _pd
-    today_str = datetime.now().strftime("%Y-%m-%d")
-    today_dt = datetime.now().date()
-
-    # Check all CSVs are within 1 day of today (single-day gap only)
-    for etf in universe:
-        code = etf["code"]
-        last = get_last_date(DATA_DIR / f"{code}_daily.csv")
-        if last is None:
-            return None
-        last_dt = datetime.strptime(last, "%Y-%m-%d").date()
-        if (today_dt - last_dt).days > 2:
-            return None
-
-    # Batch fetch from Sina
-    import requests as _req
-    import re as _re
-    symbols = [f"{etf.get('market','sz')}{etf['code']}" for etf in universe]
-    url = f"https://hq.sinajs.cn/list={','.join(symbols)}"
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-        "Referer": "https://finance.sina.com.cn/",
-    }
-    try:
-        resp = _req.get(url, headers=headers, timeout=10)
-        resp.encoding = "gbk"
-    except Exception:
-        return None
-
-    rt = {}
-    lines = resp.text.strip().split("\n")
-    for i, line in enumerate(lines):
-        if "=" not in line:
-            continue
-        m = _re.search(r'"([^"]*)"', line)
-        if not m:
-            continue
-        data = m.group(1).split(",")
-        if len(data) < 10:
-            continue
-        code = universe[i]["code"] if i < len(universe) else None
-        if not code:
-            continue
-        try:
-            rt[code] = {
-                "open": float(data[1]) if data[1] else 0,
-                "price": float(data[3]) if data[3] else 0,
-                "high": float(data[4]) if data[4] else 0,
-                "low": float(data[5]) if data[5] else 0,
-                "volume": int(float(data[8])) if data[8] else 0,
-                "amount": float(data[9]) if data[9] else 0,
-            }
-        except (ValueError, IndexError):
-            continue
-
-    if len(rt) < len(universe) * 0.8:  # require 80%+ coverage
-        return None
-
-    ok = 0
-    for etf in universe:
-        code = etf["code"]
-        r = rt.get(code)
-        if not r or r["price"] <= 0:
-            continue
-        daily_path = DATA_DIR / f"{code}_daily.csv"
-        new_row = _pd.DataFrame([{
-            "date": today_str, "open": r["open"], "close": r["price"],
-            "high": r["high"], "low": r["low"],
-            "volume": r["volume"], "amount": r["amount"],
-        }])
-        append_csv(new_row, daily_path)
-        full_daily = _pd.read_csv(daily_path)
-        weekly = rebuild_weekly_from_daily(full_daily)
-        save_csv(weekly, DATA_DIR / f"{code}_weekly.csv")
-        ok += 1
-
-    return ok if ok > 0 else None
-
-
 def main():
     load_trading_calendar()
     parser = argparse.ArgumentParser(description="ETF K-line data fetcher (Tencent Finance qfq)")
@@ -498,19 +416,6 @@ def main():
     else:
         mode_label = "incremental"
     print(f"=== ETF K-line fetch ({mode_label}) · {len(universe)} ETFs ===\n")
-
-    # Post-market fast path: try Sina batch API for single-day append (~2s vs ~60s)
-    if not args.full and not patch_mode:
-        fast_ok = _try_sina_fast_path(universe)
-        if fast_ok is not None:
-            print(f"  Fast path (Sina batch): {fast_ok} ETFs updated, ~2s")
-            try:
-                FRESH_MARKER.parent.mkdir(parents=True, exist_ok=True)
-                FRESH_MARKER.write_text(datetime.now().strftime("%Y-%m-%d"))
-            except Exception:
-                pass
-            print(f"\n=== Done: OK={fast_ok} (Sina batch), FAIL=0 ===")
-            return
 
     # Global freshness check: skip entire loop if already updated today
     if not args.full and not patch_mode and FRESH_MARKER.exists():

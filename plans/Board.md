@@ -4,12 +4,11 @@
 
 | 字段 | 值 |
 |------|------|
-| **当前版本** | **v3.4.0** (2026-06-02 发布) |
-| **发布日期** | 2026-06-02 |
+| **当前版本** | **v3.5.0-dev** (2026-06-03 起) |
+| **发布日期** | — |
 | **三派终局** | 精算师1(57/17/26,C=0.78,CS=3.1,MH=5,MA=39w,S×C=46.6)、禅修者1(49/32/19,C=0.35,CS=0,Sharpe=2.31)、禅修者2(37/51/12,C=0.26,CS=0,Sharpe=2.20)、赌徒1(56/24/20,C=0.43,CS=6.0,AR=93.0%) |
 | **下一目标版本** | **v4.0.0** (多主体策略治理) |
-| **本次发布** | QDII停牌感知(L1+L2)、Sina批量补拉、收盘前推送(Server酱)、Tuner快捷键面板、德国入池、AUDIT_RUNBOOK v4.0、三派TPE收敛、因子清退(F2/F4/F5)、人设系统基建、参数契约完善 |
-| **待办** | 禅修者2竞争观察 / 可选扩展参数探索 / v4架构设计 / REQ-265 L2实测 |
+| **待办** | v4开发线(REQ-270~272) |
 | **池子** | 45支（+德国159561，2026-06-02） |
 
 
@@ -18,9 +17,7 @@
 
 ## in_progress (开发中)
 
-| ID | 标题 | 优先级 | 目标版本 | 最后活动 | 备注 |
-|----|------|--------|---------|---------|------|
-| REQ-265 | QDII跨境ETF(513310/159509/159941)停牌→盘中决策时间调整 | 🟠 P1 | v4.0.0 | 2026-06-02 | v1完成: L1+L2停牌感知+跳过全日量估算+push停牌标注。待交易时段实测L2效果。详见 plans/REQ-265.md |
+_（无进行中需求）_
 
 ## v4.0.0 规划 → 见 `plans/V4_ROADMAP.md`
 
@@ -41,6 +38,26 @@
 
 ## done (已完成，待发布)
 
+| ID | 标题 | 完成日期 | 备注 |
+|----|------|---------|------|
+| REQ-273 | 精算师退化快速诊断 | 2026-06-03 | 结论：未退化。市场状态依赖型策略。详见 research/ |
+| REQ-265 | QDII停牌→盘中决策时间调整 | 2026-06-04 | L2实测完成。今日无QDII停牌，但推送全流程跑通（intraday refresh → backtest → push），停牌感知逻辑就绪。 |
+
+## 2026-06-04 轻任务记录
+
+| 简述 | 涉及文件 |
+|------|---------|
+| Sina 单日快速通道恢复（仅 post-market 1 日 gap，走交易日历判断） | `quant_tuner.py` |
+| Sina 多日批量补拉 + 空洞检测彻底清退（bug：多日填重复数据） | `quant_tuner.py`, `quant_data_fetcher.py` |
+| `_Avoid_` 术语表（6类30+术语）+ ADR 三条件门控 + 技能闭环审计规范 | `SKILL.md`, `DESIGN.md`, `runbooks/AUDIT_RUNBOOK.md` |
+| CONTRIBUTING.md 分拆删除（内容融入 SKILL/DESIGN/PLAN/README） | `CONTRIBUTING.md`→删除, 4文件更新 |
+| F7 双重角色研究（head-to-head + 黑洞螺旋 + PULL-IN/PUSH-OUT） | `research/strategy/f7-dual-role/` |
+| Matt Pocock Skills 调研 | `docs/MATT_POCOCK_SKILLS.md` |
+| 养殖行业近一月研报采集 | — |
+| `preclose_push.py` `_tuner_ready()` 修复 + 防御性兜底 | `preclose_push.py` |
+| intraday refresh 缺失 ETF 重试逻辑 | `quant_tuner.py` |
+| Tuner 前端回测周期 slider 恢复 | `tuner.html` |
+
 _（本轮 v3.4.0 发布内容已归档至 Archive.md）_
 
 
@@ -49,7 +66,10 @@ _（本轮 v3.4.0 发布内容已归档至 Archive.md）_
 
 | ID | 标题 | 优先级 | 目标版本 | 备注 |
 |----|------|--------|---------|------|
-| REQ-269 | 按流派分析负贡献ETF→定制回测池 | 🟠 High | v4.0.0 | 前期调研完成。赌徒排除worst15后总收益+152%、Sharpe+0.10。详见 plans/REQ-269.md |
+| REQ-270 | **v4 人设仪表盘** — 独立页面 `dashboard.html` + payload 管线 | 🔴 P0 | v4.0.0 | 三 Tab 各自人设视角，哲学驱动组织。v4 旗舰交付。详见 plans/REQ-270.md |
+| REQ-271 | **回测工作台并行化** — ProcessPoolExecutor + 共享数据层 + 缓存 | 🔴 P0 | v4.0.0 | v4 基础设施前提。详见 plans/REQ-271.md |
+| REQ-272 | **版本演化协议** — 软分叉 + 会话内裁决 + 策略版本记录 | 🟠 P1 | v4.0.0 | 依赖 REQ-271 + REQ-270。详见 plans/REQ-272.md |
+| REQ-269 | 按流派分析负贡献ETF→定制回测池 | ⏸️ 搁置 | — | Phase 1 完成（三流派独立分析）。用户暂不改选股池，搁置。详见 plans/REQ-269.md |
 | REQ-204 | 核心量化模块测试覆盖补全 | 🟠 High | v4.0.0 | 核心模块零测试覆盖 |
 | REQ-194 | 统一数据获取管线 | 🟠 High | v4.0.0 | 合并多个数据脚本为统一入口 |
 | REQ-159 | editorial 国内政策源增强 | 🟢 Low | - | |
@@ -113,6 +133,7 @@ _（本轮 v3.4.0 发布内容已归档至 Archive.md）_
 | BUG-026 | `is_last` 残量回收无视 total_target 上限 → 熊市现金被花光 | 🔴 Critical | fixed | v3.2.0-dev | REQ-205 | 2026-05-18 | 第一 pass `buy_value=cash`→修了；第二 pass 用 `cash2` 变量名不同 → 漏修。修复: `min(cash, max(diff,0))` + 共用函数 | v3.2.0 |
 | BUG-027 | setSlider `removeAttribute('step')` → 浏览器默认 step=1 → 滑块锁死 0%/100% | 🟡 Medium | fixed | v3.2.0-dev | ma_bull/ma_bear 滑块 | 2026-05-21 | HTML 规范: range input 无 step 属性时默认值=1。修复: `el.step='any'` 代替 `removeAttribute` | v3.2.0 |
 | BUG-028 | 中概互联(513050) `--full` 分页 bug → CSV 仅 2017-2019 数据 → 不进因子计算 | 🟡 Medium | fixed | v3.2.0-dev | REQ-214 池子扩容 | 2026-05-22 | `fetch_etf_kline` full 模式后处理丢失中间页数据。手动分页重建 2264 行 CSV。后续 full fetch 仍可能有此问题，需统一修复。 | v3.2.0 |
+| BUG-029 | F1 lookahead: intraday 数据合并 → rebuild_weekly → 周bar日期漂移 → searchsorted 命中不同周 | 🔴 Critical | fixed | v3.4.0 | REQ-265 | 2026-06-03 | `_get_weekly_with_cache()` 用含未来日期的日线重建周线→当周bar的date从6/2滑到6/3→searchsorted跳回前一周→F1读了完全不同的值。修复：all_weekly永不用intraday重建。详见 plans/BUG-029.md | v3.5.0-dev |
 
 
 
@@ -129,13 +150,13 @@ _（本轮 v3.4.0 发布内容已归档至 Archive.md）_
 
 ## ID 计数器
 
-**下一个需求 ID**: REQ-270
+**下一个需求 ID**: REQ-274
 
 
 
 
 
-**下一个 Bug ID**: BUG-029
+**下一个 Bug ID**: BUG-030
 
 
 

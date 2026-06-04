@@ -1,0 +1,111 @@
+{
+  "3Y": [
+    {
+      "checkpoint": "924政策脉冲",
+      "start": "2024-09-15",
+      "end": "2024-11-15",
+      "days": 38,
+      "f7_return": 24.78,
+      "f6_return": 21.22,
+      "f7_mdd": -8.33,
+      "f6_mdd": -11.72,
+      "f7_avg_holdings": 6.0,
+      "f6_avg_holdings": 6.0,
+      "f7_volatility": 2.68,
+      "f6_volatility": 2.91,
+      "winner": "F7"
+    },
+    {
+      "checkpoint": "2026-01双顶",
+      "start": "2025-12-15",
+      "end": "2026-02-15",
+      "days": 43,
+      "f7_return": 19.04,
+      "f6_return": 13.31,
+      "f7_mdd": -6.36,
+      "f6_mdd": -7.43,
+      "f7_avg_holdings": 6.0,
+      "f6_avg_holdings": 6.0,
+      "f7_volatility": 1.81,
+      "f6_volatility": 1.83,
+      "winner": "F7"
+    },
+    {
+      "checkpoint": "2026-04通信顶",
+      "start": "2026-03-15",
+      "end": "2026-05-01",
+      "days": 33,
+      "f7_return": 2.98,
+      "f6_return": 3.45,
+      "f7_mdd": -3.02,
+      "f6_mdd": -2.21,
+      "f7_avg_holdings": 6.0,
+      "f6_avg_holdings": 6.0,
+      "f7_volatility": 0.87,
+      "f6_volatility": 0.8,
+      "winner": "F6"
+    },
+    {
+      "checkpoint": "2024-02微盘崩",
+      "start": "2024-01-15",
+      "end": "2024-03-15",
+      "days": 39,
+      "f7_return": 1.0,
+      "f6_return": 2.38,
+      "f7_mdd": -2.69,
+      "f6_mdd": -2.45,
+      "f7_avg_holdings": 6.0,
+      "f6_avg_holdings": 6.0,
+      "f7_volatility": 0.57,
+      "f6_volatility": 0.65,
+      "winner": "F6"
+    },
+    {
+      "checkpoint": "2025两会行情",
+      "start": "2025-02-01",
+      "end": "2025-04-01",
+      "days": 40,
+      "f7_return": 4.14,
+      "f6_return": 0.13,
+      "f7_mdd": -6.05,
+      "f6_mdd": -6.14,
+      "f7_avg_holdings": 6.0,
+      "f6_avg_holdings": 6.0,
+      "f7_volatility": 1.7,
+      "f6_volatility": 1.47,
+      "winner": "F7"
+    }
+  ],
+  "1Y": [
+    {
+      "checkpoint": "2026-01双顶",
+      "start": "2025-12-15",
+      "end": "2026-02-15",
+      "days": 43,
+      "f7_return": 19.03,
+      "f6_return": 11.1,
+      "f7_mdd": -6.36,
+      "f6_mdd": -9.02,
+      "f7_avg_holdings": 6.0,
+      "f6_avg_holdings": 6.0,
+      "f7_volatility": 1.81,
+      "f6_volatility": 1.88,
+      "winner": "F7"
+    },
+    {
+      "checkpoint": "2026-04通信顶",
+      "start": "2026-03-15",
+      "end": "2026-05-01",
+      "days": 33,
+      "f7_return": 2.93,
+      "f6_return": 3.06,
+      "f7_mdd": -3.02,
+      "f6_mdd": -2.38,
+      "f7_avg_holdings": 5.9,
+      "f6_avg_holdings": 5.9,
+      "f7_volatility": 0.85,
+      "f6_volatility": 0.8,
+      "winner": "F6"
+    }
+  ]
+}

@@ -16,10 +16,15 @@ def log(msg):
     print(f"[{datetime.now():%H:%M:%S}] {msg}", flush=True)
 
 def _tuner_ready():
-    """Check if Tuner is responding."""
+    """Check if Tuner is responding AND fully loaded (presets available)."""
     try:
-        r = requests.get(f"{TUNER_URL}/api/data_status", timeout=3)
-        return r.status_code == 200
+        r = requests.get(f"{TUNER_URL}/api/presets", timeout=5)
+        if r.status_code != 200:
+            return False
+        data = r.json()
+        # Real presets (not _universe_options) must be present
+        presets = [k for k in data.keys() if not k.startswith("_")]
+        return len(presets) > 0
     except Exception:
         return False
 
@@ -110,7 +115,18 @@ def short(code):
     return etf_names.get(code, code).replace("ETF", "")
 
 r = requests.get(f"{TUNER_URL}/api/presets", timeout=10)
-p = r.json()[DEFAULT_PRESET]
+presets = r.json()
+available = [k for k in presets.keys() if not k.startswith("_")]
+if DEFAULT_PRESET not in presets:
+    log(f"ERROR: preset '{DEFAULT_PRESET}' not found in Tuner response")
+    log(f"  Available presets: {available}")
+    log(f"  Falling back to first available: {available[0] if available else 'NONE'}")
+    if not available:
+        log("FATAL: No presets available from Tuner")
+        sys.exit(1)
+    p = presets[available[0]]
+else:
+    p = presets[DEFAULT_PRESET]
 end = now.strftime("%Y-%m-%d")
 start = f"{now.year}-05-01"
 log(f"  Preset: {DEFAULT_PRESET} | Window: {start} ~ {end}")

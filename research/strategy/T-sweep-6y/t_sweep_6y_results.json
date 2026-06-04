@@ -1,0 +1,47 @@
+[
+  {
+    "T": 0.5,
+    "total_return": 292.22,
+    "annual_return": 25.48,
+    "max_drawdown": -22.74,
+    "calmar": 1.12,
+    "sharpe": 1.03,
+    "sortino": 1.45,
+    "avg_holdings": 4.2,
+    "trade_count": 306,
+    "total_commission": 79744.0,
+    "start_date": "2020-05-08",
+    "end_date": "2026-05-15",
+    "trading_days": 1459
+  },
+  {
+    "T": 1.0,
+    "total_return": 280.21,
+    "annual_return": 24.83,
+    "max_drawdown": -20.52,
+    "calmar": 1.21,
+    "sharpe": 1.08,
+    "sortino": 1.51,
+    "avg_holdings": 5.2,
+    "trade_count": 305,
+    "total_commission": 69555.0,
+    "start_date": "2020-05-08",
+    "end_date": "2026-05-15",
+    "trading_days": 1459
+  },
+  {
+    "T": 1.5,
+    "total_return": 250.78,
+    "annual_return": 23.17,
+    "max_drawdown": -17.03,
+    "calmar": 1.36,
+    "sharpe": 1.07,
+    "sortino": 1.46,
+    "avg_holdings": 5.5,
+    "trade_count": 305,
+    "total_commission": 63872.0,
+    "start_date": "2020-05-08",
+    "end_date": "2026-05-15",
+    "trading_days": 1459
+  }
+]

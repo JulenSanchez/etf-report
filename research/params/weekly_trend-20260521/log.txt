@@ -1,0 +1,13 @@
+[11:45:51] Optimizer start: preset=weekly_trend strategy=bayesian metric=calmar
+[11:45:51]   periods=[('1Y', '2025-05-21', '2026-05-21'), ('3Y', '2023-05-22', '2026-05-21'), ('6Y', '2020-05-22', '2026-05-21')] seed=42
+[11:45:51]   output=C:\Users\julentan\StockMarket\.claude\skills\etf-report\research\params\weekly_trend-20260521
+[11:45:51] Computing baseline ...
+[11:47:15]   baseline 1Y: calmar=12.3220 sharpe=3.2225 annual=142.00%
+[11:47:15]   baseline 3Y: calmar=1.5826 sharpe=1.3885 annual=40.29%
+[11:47:15]   baseline 6Y: calmar=1.4839 sharpe=1.3335 annual=37.77%
+[11:47:15] Param space: 11 params
+[11:47:16] Bayesian: 80 trials (Optuna TPE)
+[13:01:08] Generating report (80 trials) ...
+[13:01:08] DONE. Results in C:\Users\julentan\StockMarket\.claude\skills\etf-report\research\params\weekly_trend-20260521
+[13:01:08]   Best: calmar=1.0497
+[13:01:08]   Params: {"concentration": 1.5, "conf_type": "momentum_crash", "ema_period": 9, "max_holdings": 3, "score_band": 0, "w1": 49, "w2": 1, "w3": 38, "w4": 1, "w6": 0, "w7": 11}

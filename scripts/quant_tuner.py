@@ -21,7 +21,7 @@ import sys
 import threading
 import time
 from copy import deepcopy
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import numpy as np
@@ -391,7 +391,7 @@ def _reload_csv_to_cache(cfg):
 
 
 def _sina_batch_append(cfg, date_str, rt_prices):
-    """Append one day's Sina realtime data to all ETF CSVs."""
+    """Append one day's Sina realtime data to all ETF CSVs (single-day only)."""
     from quant_data_fetcher import append_csv, save_csv, DATA_DIR as QDATA_DIR
     import pandas as _pd
     ok, fail = 0, 0
@@ -414,68 +414,6 @@ def _sina_batch_append(cfg, date_str, rt_prices):
         save_csv(weekly, weekly_path)
         ok += 1
     return ok, fail
-
-
-def _fast_append_today_sina(cfg, today_str):
-    """Post-market fast path: batch-append today's (and any missing days) OHLCV via Sina.
-
-    If gap ≤ 1 trading day: single Sina call for today (~2s).
-    If gap > 1 day: one Sina call per missing trading day, capped at 30 days.
-    Falls back to incremental fetch only if gap > 30 trading days.
-    Returns (ok, fail) on success, or (None, None) to signal fallback.
-    """
-    from quant_data_fetcher import get_last_date, DATA_DIR as QDATA_DIR
-    from trading_calendar import is_trading_day as _is_td
-    from datetime import timedelta as _td
-    today_dt = datetime.strptime(today_str, "%Y-%m-%d").date()
-
-    def _trading_days_between(d1, d2):
-        n = 0; d = d1 + _td(days=1)
-        while d < d2:
-            if _is_td(d): n += 1
-            d += _td(days=1)
-        return n
-
-    # Find the earliest last date across all CSVs, AND check for holes
-    min_last = today_dt
-    import pandas as _pd
-    for etf in cfg["universe"]:
-        df = _pd.read_csv(QDATA_DIR / f"{etf['code']}_daily.csv")
-        if len(df) == 0: return None, None
-        dates = _pd.to_datetime(df["date"]).dt.date.values
-        last_dt = dates[-1]
-        if last_dt < min_last: min_last = last_dt
-        # Check for holes: any consecutive pair with >1 trading day gap
-        for i in range(len(dates)-1):
-            hole_td = _trading_days_between(dates[i], dates[i+1])
-            if hole_td > 0:
-                # There's a hole before dates[i+1] — extend min_last to cover it
-                hole_start = dates[i]
-                if hole_start < min_last: min_last = hole_start
-
-    tdb = _trading_days_between(min_last, today_dt)
-    if tdb > 30:
-        return None, None
-
-    # Collect all missing trading days (including today)
-    missing = []
-    d = min_last + _td(days=1)
-    while d <= today_dt:
-        if _is_td(d): missing.append(d.strftime("%Y-%m-%d"))
-        d += _td(days=1)
-
-    total_ok, total_fail = 0, 0
-    for i, date_str in enumerate(missing):
-        if i > 0:
-            time.sleep(2)
-        print(f"  [Refresh] Sina batch for {date_str}...")
-        rt = _fetch_sina_realtime(cfg)
-        if not rt:
-            print(f"  [Refresh] Sina failed for {date_str}, falling back")
-            return None, None
-        ok, fail = _sina_batch_append(cfg, date_str, rt)
-        total_ok += ok; total_fail += fail
-    return total_ok, total_fail
 
 
 def refresh_data():
@@ -505,41 +443,48 @@ def refresh_data():
     intraday = trading and not pre_market and not post_market
 
     ok, fail = 0, 0
+    ran_fetch = False
+    used_sina = False
 
-    # ── Incremental fetch (backfill historical gaps) ──
-    # Post-market: try fast Sina batch path first (1 call for all ETFs),
-    # fall back to per-ETF Tencent incremental if CSVs have gaps > 1 day.
-    # Non-trading / pre-market: normal incremental fetch.
-    # Intraday: skip CSV write, live data → cache only.
-    fast_ok, fast_fail = None, None
-    used_fast_path = False
+    # ── Single-day Sina fast path (post-market only, gap = exactly 1 trading day) ──
     if post_market:
-        print(f"  [Refresh] Post-market — trying Sina batch fast path...")
-        fast_ok, fast_fail = _fast_append_today_sina(cfg, today_str)
-        if fast_ok is not None:
-            ok, fail = fast_ok, fast_fail
-            used_fast_path = True
-            print(f"  [Refresh] Fast path: {ok} OK, {fail} fail (Sina batch, ~2s)")
-            from quant_data_fetcher import FRESH_MARKER as _FM
-            try:
-                _FM.parent.mkdir(parents=True, exist_ok=True)
-                _FM.write_text(today_str)
-            except Exception:
-                pass
-        else:
-            # Fallback: normal incremental fetch
-            print(f"  [Refresh] Fast path skipped (gap > 1 day) — falling back to incremental...")
-            ok, fail = _run_incremental_fetch(cfg)
-    elif not trading or pre_market:
+        from quant_data_fetcher import get_last_date, DATA_DIR as QDATA_DIR
+        prev_td = last_trading_day(now)  # last trading day before today (handles weekends)
+        all_yesterday = True
+        for etf in cfg["universe"]:
+            last = get_last_date(QDATA_DIR / f"{etf['code']}_daily.csv")
+            if last is None or last < prev_td:
+                all_yesterday = False
+                break
+        if all_yesterday:
+            print(f"  [Refresh] Post-market — trying Sina single-day fast path...")
+            rt = _fetch_sina_realtime(cfg)
+            if rt:
+                ok, fail = _sina_batch_append(cfg, today_str, rt)
+                if fail == 0:
+                    used_sina = True
+                    _reload_csv_to_cache(cfg)
+                    print(f"  [Refresh] Sina fast path: {ok} OK, ~2s")
+                else:
+                    print(f"  [Refresh] Sina fast path partial: {ok} OK, {fail} fail — falling back")
+            else:
+                print(f"  [Refresh] Sina API failed — falling back to incremental")
+
+    # ── Incremental fetch (Tencent per-ETF, fallback or non-post-market) ──
+    if not used_sina and (post_market or not trading or pre_market):
         print(f"  [Refresh] Running incremental fetch...")
         ok, fail = _run_incremental_fetch(cfg)
+        ran_fetch = True
     elif intraday:
-        ok, fail = 0, 0
         print(f"  [Refresh] Intraday — CSV write skipped (live data → cache only)")
         _reload_csv_to_cache(cfg)
 
-    ran_fetch = (post_market and not used_fast_path) or not trading or pre_market
-    gap_msg = f"CSV gap-fill | {ok} OK, {fail} fail" if ran_fetch else ""
+    if used_sina:
+        gap_msg = f"Sina batch | {ok} OK, {fail} fail"
+    elif ran_fetch:
+        gap_msg = f"CSV gap-fill | {ok} OK, {fail} fail"
+    else:
+        gap_msg = ""
 
     _precompute_benchmarks()
     _precompute_valuation_scores()
@@ -550,11 +495,7 @@ def refresh_data():
     if post_market:
         CACHE["intraday_cache"] = {}
         CACHE["intraday_date"] = None
-        if used_fast_path:
-            _reload_csv_to_cache(cfg)  # refresh cache with newly appended CSVs
-            msg = f"{time_label} | Sina batch | {ok} OK, {fail} fail"
-        else:
-            msg = f"{time_label} | {gap_msg}"
+        msg = f"{time_label} | {gap_msg}"
         print(f"  [Refresh] Post-market — {msg}")
         return {
             "status": "confirmed",
@@ -584,6 +525,22 @@ def refresh_data():
     rt_prices = _fetch_sina_realtime(cfg)
     if not rt_prices:
         return {"status": "error", "message": f"{time_label} | Sina API failed", "date": today_str, "time": time_label}
+
+    # Retry missing ETFs (transient API glitches — single ETF may fail parsing in batch call)
+    missing = [e for e in cfg["universe"] if e["code"] not in rt_prices or rt_prices[e["code"]]["price"] <= 0]
+    if missing:
+        print(f"  [Refresh] {len(missing)} ETFs missing from first fetch, retrying...")
+        time.sleep(2)
+        # Build a minimal cfg with only the missing ETFs
+        retry_cfg = dict(cfg)
+        retry_cfg["universe"] = missing
+        retry_rt = _fetch_sina_realtime(retry_cfg)
+        for code, data in retry_rt.items():
+            if data.get("price", 0) > 0:
+                rt_prices[code] = data
+        still_missing = [e["code"] for e in missing if e["code"] not in rt_prices or rt_prices[e["code"]]["price"] <= 0]
+        if still_missing:
+            print(f"  [Refresh] Still missing after retry: {still_missing}")
 
     # Build quick lookup: QDII ETF codes + their previous intraday cache
     qdii_codes = {e["code"] for e in cfg["universe"] if e.get("qdii")}
@@ -1087,12 +1044,16 @@ def run_tuner_backtest(params):
     # ── Prepare preloaded data ──
     all_daily = dict(CACHE["all_daily"])
     all_weekly = dict(CACHE["all_weekly"])
+    # Merge intraday cache into daily data ONLY (for execution price lookup).
+    # Weekly data stays as CSV-original — never rebuild from intraday.
+    # rebuild_weekly_from_daily() would shift the current week's bar date
+    # forward, causing searchsorted() to skip it for prior rebalance dates
+    # within the same week → different F1 value → lookahead bias.
     if CACHE.get("intraday_cache"):
         all_daily = {}
-        all_weekly = {}
         for code in CACHE["all_daily"]:
             all_daily[code] = _get_daily_with_cache(code)
-            all_weekly[code] = _get_weekly_with_cache(code)
+        # all_weekly stays as CSV snapshot — no intraday rebuild
 
     universe_filter, _universe_mode = _parse_universe_filter(params)
     if universe_filter is not None:

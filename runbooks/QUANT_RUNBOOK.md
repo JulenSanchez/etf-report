@@ -33,7 +33,7 @@ python scripts/quant_tuner.py
 ```powershell
 Start-Process -FilePath "python" `
   -ArgumentList "scripts\quant_tuner.py" `
-  -WorkingDirectory "C:\Users\julentan\StockMarket\.claude\skills\etf-report"
+  -WorkingDirectory "<技能根目录>"
 ```
 
 ### 1.3 检查 Tuner 状态
@@ -324,7 +324,7 @@ python scripts/quant_optimizer.py ... --resume
 ```powershell
 Start-Process -FilePath "python" `
   -ArgumentList "scripts\quant_optimizer.py --preset preset2 --strategy bayesian --n-trials 150 --auto-bounds --periods 1Y,3Y,6Y" `
-  -WorkingDirectory "C:\Users\julentan\StockMarket\.claude\skills\etf-report"
+  -WorkingDirectory "<技能根目录>"
 ```
 
 完成后检查 `research/params/{preset}-{date}/report.md` 查看结论。

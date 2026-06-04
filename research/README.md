@@ -4,6 +4,17 @@
 
 > 本目录记录研究过程、实验结果和 promotion 证据；当前生效参数始终以 `../config/quant_universe.yaml` 为准，工程入口见 `../QUANT_SYSTEM.md`。
 
+**与 plans/ 需求看板的分工**：research 是探索空间，plans 是交付空间。Promotion 闸门连接二者。
+
+| 场景 | research/ | plans/ (REQ) |
+|------|-----------|-------------|
+| "F7_k 最优值？" | ✅ 开实验 | — |
+| "把 YAML f7_k 改为 3.2" | — | ✅ 提 REQ（引用 research） |
+| "新因子有没有用？" | ✅ 开实验 | — |
+| "移除 Tuner F4 控件" | — | ✅ 提 REQ（引用结论） |
+| TPE 搜索 | ✅ 实验 | ✅ 轻量 REQ 落地 |
+| 结论已投产 | → 移入 `promoted/` | REQ→done→Archive |
+
 ## 反馈三角
 
 ```
@@ -52,10 +63,11 @@
 
 ## Promotion 闸门
 
-1. 新配置在 1Y/3Y 上跑基线回测
-2. 不低于当前生产配置 → 直接 promotion
+1. 新配置在 1Y/3Y/6Y 三窗口跑基线回测（等权）
+2. 不低于当前生产配置 → promotion
 3. 有退化 → 不阻塞升级，但写 trigger 到对应轨道的 TODO
-4. 在轨道 README 的 "Applied" 段记录：日期、变更、基线数据
+4. **Promotion 记录写入 `promoted/README.md`**（日期、结论、来源、对应 REQ、落地位置）
+5. 已投产的研究文档移入 `promoted/` 目录
 
 ## 自动化工具
 
@@ -72,22 +84,53 @@ python scripts/quant_optimizer.py --preset daily_aggressive --strategy bayesian 
 
 ```
 research/
-├── README.md           ← 本文件（治理框架）
+├── README.md           ← 本文件（治理框架 + plans边界规则 + Git提交规则）
+├── _template/          ← 新建研究项目时复制此骨架
+│   ├── README.md       ← 方法论 + 假说 + 结论
+│   └── results.json    ← 摘要指标（建议 < 200KB）
+├── promoted/           ← 已投产的研究结论（Promotion Log）
+│   ├── README.md       ← 投产记录表
+│   ├── persona-declarations-*.md
+│   └── persona-baseline-*.md
 ├── pool/               ← 标的池选择
 │   ├── README.md       ← 当前池子、候选列表、DEAD_ENDS
 │   └── ...
 ├── strategy/           ← 策略优化
 │   ├── README.md       ← 当前策略、历史探索、DEAD_ENDS
-│   ├── MA-TREND-OPT/   ← MA Trend 仓位参数优化 (2026-05)
+│   ├── dynamic-C/      ← CS 参数网格搜索
+│   ├── kelly/          ← 凯利 Bootstrap 分析
 │   ├── REQ-189/        ← 后视镜最优收益 (2026-05)
 │   └── ...
-├── params/             ← 参数优化
-│   ├── README.md       ← 当前最优参数、扫描历史、DEAD_ENDS
-│   ├── F7-optimization/        ← F7 因子历史优化
-│   ├── F7F6-joint-optimization/ ← F7+F6 联合优化 (2026-05)
-│   └── ...
-└── experiment_results.json  ← 早期实验汇总（待归入轨道）
+└── params/             ← 参数优化
+    ├── README.md       ← 当前最优参数、扫描历史、DEAD_ENDS
+    ├── F7-optimization/        ← F7 因子历史优化
+    └── ...
 ```
+
+### Git 提交规则（由 `.gitignore` 自动执行）
+
+| ✅ 提交 | ❌ 仅本地（脚本可重新生成） |
+|--------|---------------------------|
+| `README.md`（研究结论 + 方法论） | `*.csv`（NAV 曲线、回测输出） |
+| `results.json`（摘要指标） | `*.db`（Optuna 超参搜索缓存） |
+| 小型数据文件（< 200KB .json） | `__pycache__/` |
+| | `*.py` 研究脚本 |
+
+> 原则：研究目录自包含，但只有**研究结论**进仓库。中间产物由此处的 `.py` 脚本重新生成。`.gitignore` 是自动门禁，本段是说明。
+>
+> 新建研究项目：复制 `_template/` → `research/<新项目名>/`，写 `README.md` + `results.json`。
+
+### 本地数据保留规则
+
+CSV/DB 不进 Git，但本地是否保留取决于对应因子的状态：
+
+| 因子状态 | CSV/DB 中间数据 | 理由 |
+|---------|----------------|------|
+| 仍在活跃使用（F1/F3/F7） | ✅ 保留 | 新课题预研时可参考现有回测数据 |
+| 已退役（F2/F4/F5/F6） | ❌ 删除 | 框架已变，旧数据零参考价值 |
+| 框架大版本升级（v3→v4） | 按因子状态逐项判断 | 以当前 `quant_universe.yaml` 活跃因子清单为准 |
+
+> 清理时机：因子退役时、大版本发布后。手动执行，不需要每次提交都检查。
 
 ## 与需求看板的边界
 

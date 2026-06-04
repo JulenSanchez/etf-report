@@ -1,0 +1,89 @@
+{
+  "meta": {
+    "start": "2020-05-20",
+    "end": "2026-05-22",
+    "etf_count": 42,
+    "elapsed_sec": 3.2
+  },
+  "results": [
+    {
+      "name": "V1 daily+Top1",
+      "totalReturn": 3.4245788153135326e+24,
+      "annualReturn": 44979068.2,
+      "maxDrawdown": 0.0,
+      "tradingPeriods": 1455,
+      "finalNav": 3.4245788153135327e+22
+    },
+    {
+      "name": "V2 daily+Top6",
+      "totalReturn": 2987633990187551.5,
+      "annualReturn": 240009.1,
+      "maxDrawdown": 0.0,
+      "tradingPeriods": 1455,
+      "finalNav": 29876339901876.516
+    },
+    {
+      "name": "V3 weekly+Top1",
+      "totalReturn": 964202776226.4,
+      "annualReturn": 4505.4,
+      "maxDrawdown": 0.0,
+      "tradingPeriods": 313,
+      "finalNav": 9642027763.263655
+    },
+    {
+      "name": "V4 weekly+Top6",
+      "totalReturn": 153629191.7,
+      "annualReturn": 973.0,
+      "maxDrawdown": 0.0,
+      "tradingPeriods": 313,
+      "finalNav": 1536292.917444
+    },
+    {
+      "name": "V5 weekly+Top6_nocash",
+      "totalReturn": 92354926.1,
+      "annualReturn": 885.8,
+      "maxDrawdown": -1.8,
+      "tradingPeriods": 313,
+      "finalNav": 923550.260506
+    },
+    {
+      "name": "V6 lagged+Top6",
+      "totalReturn": 270.6,
+      "annualReturn": 24.4,
+      "maxDrawdown": -32.2,
+      "tradingPeriods": 313,
+      "finalNav": 3.705749
+    },
+    {
+      "name": "V7 lagged+Top6_nocash",
+      "totalReturn": 251.7,
+      "annualReturn": 23.3,
+      "maxDrawdown": -26.0,
+      "tradingPeriods": 313,
+      "finalNav": 3.51688
+    },
+    {
+      "name": "沪深300买入持有",
+      "annualReturn": 5.4,
+      "totalReturn": 23.1,
+      "maxDrawdown": 0,
+      "tradingPeriods": 1456
+    },
+    {
+      "name": "preset1 趋势锚定",
+      "annualReturn": 35.8,
+      "totalReturn": 528.0,
+      "maxDrawdown": -16.3,
+      "tradingPeriods": 1456
+    }
+  ],
+  "preset1": {
+    "name": "preset1 趋势锚定",
+    "annualReturn": 35.8,
+    "totalReturn": 528.0,
+    "maxDrawdown": -16.3,
+    "tradingPeriods": 1456
+  },
+  "info_efficiency_vs_V4": 3.68,
+  "info_efficiency_vs_V6": 146.7
+}

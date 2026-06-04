@@ -1,0 +1,6 @@
+{
+  "_note": "摘要指标。建议 < 200KB。CSV/DB 等大型中间数据由 .gitignore 自动排除。",
+  "experiment": "",
+  "date": "",
+  "metrics": {}
+}

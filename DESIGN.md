@@ -65,6 +65,11 @@ JSON Lines 格式，多级别（DEBUG/INFO/WARN/ERROR）。
 
 ## 设计决策 (ADR)
 
+> **写入门槛**：只有同时满足以下三条，才新增 ADR：
+> ① 难以逆转（落地后切换成本高）  ② 缺上下文会困惑（新人看不懂为什么不选替代方案）  ③ 存在真实取舍（两个方案各有代价，非明显优劣）
+>
+> 只满足 1-2 条 → 原因记在 changelog 或对应 REQ 里即可。
+
 | ADR | 决策 | 理由 |
 |-----|------|------|
 | 数据注入方式 | JavaScript 对象注入 | 最小改动，100% 样式保证，无额外依赖 |
@@ -127,6 +132,18 @@ handshares = (buy_value - commission) / price
 | 文件 | 范围 |
 |------|------|
 | `scripts/quant_backtest.py` | `_execute_rebalance()` 共用调仓函数 + `run_backtest()` 调用 |
+
+## 文档事实源优先级
+
+当多份文档对同一事实描述冲突时，按此顺序裁决：
+
+| 层级 | 文件 | 职责 |
+|------|------|------|
+| **1. 开发治理**（最高） | `PLAN.md`, `plans/Board.md`, `plans/REQ-*.md` | "现在项目是什么状态" |
+| **2. 对外公开** | `README.md`, `SKILL.md`, `WORKFLOW.md`, `DESIGN.md` | "怎么用" |
+| **3. 实现代码** | `scripts/*.py`, `config/*.yaml`, `tests/*.py` | "实际上怎么实现" |
+
+> 冲突时上层覆盖下层。对外文档不应反向覆盖开发治理文件的判断。
 
 ## 后续演进
 

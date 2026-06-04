@@ -1,0 +1,163 @@
+[
+  {
+    "type": "static",
+    "C": 0.1,
+    "CS": 0,
+    "total": 430.5,
+    "mdd": -15.8
+  },
+  {
+    "type": "static",
+    "C": 0.3,
+    "CS": 0,
+    "total": 437.4,
+    "mdd": -15.9
+  },
+  {
+    "type": "static",
+    "C": 0.5,
+    "CS": 0,
+    "total": 528.0,
+    "mdd": -16.3
+  },
+  {
+    "type": "static",
+    "C": 0.7,
+    "CS": 0,
+    "total": 543.1,
+    "mdd": -17.6
+  },
+  {
+    "type": "static",
+    "C": 1.0,
+    "CS": 0,
+    "total": 669.8,
+    "mdd": -18.4
+  },
+  {
+    "type": "static",
+    "C": 1.5,
+    "CS": 0,
+    "total": 793.9,
+    "mdd": -21.2
+  },
+  {
+    "type": "static",
+    "C": 2.0,
+    "CS": 0,
+    "total": 953.0,
+    "mdd": -24.5
+  },
+  {
+    "type": "static",
+    "C": 3.0,
+    "CS": 0,
+    "total": 961.7,
+    "mdd": -27.4
+  },
+  {
+    "type": "static",
+    "C": 5.0,
+    "CS": 0,
+    "total": 966.1,
+    "mdd": -33.3
+  },
+  {
+    "type": "dynamic",
+    "C": 0.5,
+    "CS": 0.5,
+    "total": 577.0,
+    "mdd": -16.6
+  },
+  {
+    "type": "dynamic",
+    "C": 0.5,
+    "CS": 1,
+    "total": 567.6,
+    "mdd": -16.7
+  },
+  {
+    "type": "dynamic",
+    "C": 0.5,
+    "CS": 2,
+    "total": 599.2,
+    "mdd": -17.9
+  },
+  {
+    "type": "dynamic",
+    "C": 0.5,
+    "CS": 3,
+    "total": 621.7,
+    "mdd": -18.3
+  },
+  {
+    "type": "dynamic",
+    "C": 0.5,
+    "CS": 5,
+    "total": 687.6,
+    "mdd": -18.7
+  },
+  {
+    "type": "dynamic",
+    "C": 0.5,
+    "CS": 7,
+    "total": 754.5,
+    "mdd": -19.0
+  },
+  {
+    "type": "dynamic",
+    "C": 0.5,
+    "CS": 10,
+    "total": 872.7,
+    "mdd": -17.9
+  },
+  {
+    "type": "dynamic",
+    "C": 0.5,
+    "CS": 15,
+    "total": 981.7,
+    "mdd": -18.8
+  },
+  {
+    "type": "dynamic",
+    "C": 0.5,
+    "CS": 20,
+    "total": 1099.9,
+    "mdd": -20.2
+  },
+  {
+    "type": "dynamic",
+    "C": 0.5,
+    "CS": 30,
+    "total": 1247.2,
+    "mdd": -20.9
+  },
+  {
+    "type": "dynamic",
+    "C": 0.3,
+    "CS": 10,
+    "total": 681.1,
+    "mdd": -17.2
+  },
+  {
+    "type": "dynamic",
+    "C": 0.3,
+    "CS": 20,
+    "total": 919.9,
+    "mdd": -17.9
+  },
+  {
+    "type": "dynamic",
+    "C": 0.7,
+    "CS": 10,
+    "total": 921.8,
+    "mdd": -19.1
+  },
+  {
+    "type": "dynamic",
+    "C": 0.7,
+    "CS": 20,
+    "total": 1276.2,
+    "mdd": -20.9
+  }
+]

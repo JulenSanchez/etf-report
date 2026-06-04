@@ -85,16 +85,20 @@ etf-report/
 │   ├── HEALTH_CHECK_USAGE.md
 │   └── HEALTH_CHECK_KNOWN_ISSUES.md
 ├── research/               ← 量化调研归档（按 REQ ID 组织，含索引）
+├── plans/                  ← 需求看板（Board/Backlog/Archive/REQ-*）
+├── runbooks/               ← 运行规程（QUANT/RELEASE/AUDIT）
 ├── .github/workflows/      ← CI 配置
-├── SKILL.md                ← AI 技能描述卡
+├── SKILL.md                ← AI 技能描述卡 + 术语表
 ├── README.md               ← 本文件
 ├── WORKFLOW.md             ← 执行手册
-├── DESIGN.md               ← 架构设计
+├── DESIGN.md               ← 架构设计 + 事实源优先级
+├── PLAN.md                 ← 需求管理入口 + 开发固定原则
 ├── QUANT_SYSTEM.md         ← 量化回测 / Tuner / preset 统一入口
+
 └── requirements.txt        ← Python 依赖
 ```
 
-运行后会在本地生成以下目录（不提交到 Git）：
+以下目录仅本地生成，不提交到 Git：
 
 | 目录 | 内容 |
 |------|------|
