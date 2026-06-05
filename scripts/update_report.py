@@ -1763,11 +1763,13 @@ def main(publish: bool = False):
         "html_target": working_html_file,
     })
     
-    # REQ-103: 事务管理 — 更新 HTML 前创建备份
-    from transaction import TransactionManager
-    tx = TransactionManager(SKILL_DIR)
-    backup_path = tx.backup()
-    
+    # 备份: 更新前保留当前 HTML（事务已简化，不再依赖独立 transaction 模块）
+    import shutil
+    backup_path = os.path.join(SKILL_DIR, "index.html.bak")
+    index_path = os.path.join(SKILL_DIR, "index.html")
+    if os.path.exists(index_path):
+        shutil.copy2(index_path, backup_path)
+
     try:
         # Step 1: 更新K线数据
         if not run_kline_update():
@@ -1821,13 +1823,15 @@ def main(publish: bool = False):
             
             if not result["passed"]:
                 logger.warn("HTML完整性验证失败，正在回滚")
-                tx.restore(backup_path)
+                if os.path.exists(backup_path):
+                    shutil.copy2(backup_path, os.path.join(SKILL_DIR, "index.html"))
                 return False
         except ImportError:
             logger.info("verify_html_integrity 模块未找到，跳过验证")
         
         # 清理旧备份
-        tx.cleanup()
+        if os.path.exists(backup_path):
+            os.remove(backup_path)
         
         # Step 7: 执行系统健康检查（REQ-106）
         logger.info("=" * 60)
@@ -1898,7 +1902,8 @@ def main(publish: bool = False):
         import traceback
         traceback.print_exc()
         logger.warn("正在从备份恢复")
-        tx.restore(backup_path)
+        if os.path.exists(backup_path):
+            shutil.copy2(backup_path, os.path.join(SKILL_DIR, "index.html"))
         return False
 
 
