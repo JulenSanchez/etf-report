@@ -135,7 +135,7 @@ Tuner contract: preset -> tuner params -> config_override -> run_backtest(...)
 必须至少执行：
 
 ```bash
-python -m pytest tests/test_quant_contract.py tests/test_quant_backtest_execution.py tests/test_quant_consistency.py
+python -m pytest tests/test_quant_contract.py tests/test_quant_backtest_execution.py tests/test_quant_consistency.py tests/test_quant_backtest_core.py tests/test_quant_data_cache.py
 python scripts/quant_consistency_check.py --preset preset2 --start 2025-01-01 --end 2026-05-19
 ```
 

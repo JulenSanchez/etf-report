@@ -75,6 +75,8 @@ assets/js/quant_payload.js
 | `docs/ETF_CONTRIBUTION_FRAMEWORK.md` | ETF 贡献分析框架：指标定义、分析流程、淘汰规则 | 改贡献计算逻辑或新增指标后同步 |
 | `docs/BACKTEST_ENGINE.md` | 回测引擎契约 | 改 `run_backtest()` 或核心算法后同步 |
 | `runbooks/QUANT_RUNBOOK.md` | 运维和排障手册 | 改启动、刷新、长任务、数据源规则后同步 |
+| `tests/test_quant_backtest_core.py` | 回测引擎结构、preset 差异、universe_filter、execution_timing 测试 | 改 `run_backtest()` 语义后同步 |
+| `tests/test_quant_data_cache.py` | 共享数据缓存加载、cache key、结果读写 | 改 `quant_data_cache.py` 后同步 |
 | `research/` | 实验记录和 promotion 证据 | 策略研究、参数优化、结论沉淀 |
 
 ## 5. 变更路由表
@@ -252,11 +254,12 @@ get_param_schema()
 |---|---|
 | 只改文档 | 检查交叉引用路径存在，确认事实源优先级不冲突 |
 | 改因子 | `pytest tests/test_quant_factors.py`，再跑一个短窗口回测 |
-| 改回测引擎 | 跑 CLI 回测 + Tuner `/api/run` 同参数对比 |
+| 改回测引擎 | 跑 CLI 回测 + Tuner `/api/run` 同参数对比；`pytest tests/test_quant_backtest_core.py` |
 | 改 Tuner 参数 | `pytest tests/test_quant_contract.py`，并确认 `/api/param_schema -> /api/presets -> UI -> /api/run -> /api/save -> /api/presets` 往返一致；如需当前策略摘要，由 AI 改参数时同步或用户显式要求更新 |
 | 改参数契约/回测/Tuner 接线 | `python scripts/quant_consistency_check.py --preset preset2 --start 2025-01-01 --end 2026-05-19` |
 | 改正式页 payload | `python scripts/quant_build_payload.py` 后本地打开 `index.html` |
 | 改资产池 | `python scripts/quant_data_fetcher.py --code <新ETF>` 或按需全量/增量更新 |
+| 改数据缓存/并行模块 | `pytest tests/test_quant_data_cache.py` |
 
 ### 8.1 回测一致性工具
 

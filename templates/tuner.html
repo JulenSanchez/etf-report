@@ -2216,6 +2216,8 @@ function renderDdChart(data) {
 // Set selected date (red line position), update snapshot to nearest prior signal
 function jumpToSnapshotByDate(clickDate) {
   currentSelectedDate = clickDate;
+  updateNavMarkLine();
+  updateTradeReplayMarkLine();
   var bestIdx = 0;
   for (var i = 0; i < tunerSignalHistory.length; i++) {
     if (tunerSignalHistory[i].date <= clickDate) bestIdx = i;
@@ -3060,6 +3062,7 @@ window.addEventListener('load', async function() {
       var cached = await cachedResp.json();
       if (cached.cached && cached.params && cached.result) {
         setParams(cached.params);
+        lastResult = cached.result;
         renderResults(cached.result);
         switchRightView('results');
       }
@@ -3093,6 +3096,19 @@ document.addEventListener('keydown', function(e) {
   else if (e.key === '3') { e.preventDefault(); applyPreset('preset1'); }
   else if (e.key === 'r' || e.key === 'R') { e.preventDefault(); runBacktest(); }
   else if (e.key === 's' || e.key === 'S') { e.preventDefault(); saveYAML(); }
+  else if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && currentSelectedDate && navDates.length) {
+    e.preventDefault();
+    var dates = navDates;
+    var idx = dates.indexOf(currentSelectedDate);
+    if (idx === -1) {
+      for (var i = 0; i < dates.length; i++) { if (dates[i] >= currentSelectedDate) { idx = i; break; } }
+    }
+    if (e.key === 'ArrowLeft' && idx > 0) { jumpToSnapshotByDate(dates[idx - 1]); }
+    else if (e.key === 'ArrowRight' && idx < dates.length - 1) { jumpToSnapshotByDate(dates[idx + 1]); }
+    else { return; }
+    updateNavMarkLine();
+    updateTradeReplayMarkLine();
+  }
 });
 </script>
 <script>
