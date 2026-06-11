@@ -161,12 +161,12 @@ universe:
   market: sh
   sector: 另类
 - code: '513880'
-  name: 日经ETF
+  name: 日经
   market: sh
   sector: 另类
   qdii: true
 - code: '520870'
-  name: 巴西ETF
+  name: 巴西
   market: sh
   sector: 另类
   qdii: true
@@ -190,7 +190,7 @@ universe:
   sector: 另类
   qdii: true
 - code: '159518'
-  name: 标普油气ETF
+  name: 标普油气
   market: sz
   sector: 另类
   qdii: true
@@ -279,6 +279,7 @@ presets:
       max_holdings_special: 8
       weighting: arithmetic
     factors:
+      f1_active_days: 1
       ema:
         period_weeks: 4
       volume_ratio:
@@ -333,6 +334,7 @@ presets:
       max_holdings_special: 8
       weighting: arithmetic
     factors:
+      f1_active_days: 1
       ema:
         period_weeks: 4
       volume_ratio:
@@ -388,6 +390,7 @@ presets:
       max_holdings_special: 8
       weighting: arithmetic
     factors:
+      f1_active_days: 1
       ema:
         period_weeks: 5
       volume_ratio:
@@ -443,6 +446,7 @@ presets:
       max_holdings_special: 8
       weighting: arithmetic
     factors:
+      f1_active_days: 1
       ema:
         period_weeks: 5
       volume_ratio:
@@ -500,6 +504,7 @@ presets:
       weighting: arithmetic
       commission_rate: 0.00026
     factors:
+      f1_active_days: 1
       ema:
         period_weeks: 5
       volume_ratio:

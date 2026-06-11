@@ -1,11 +1,6 @@
-# Backtest Engine Contract — 回测引擎契约
+# 回测引擎
 
-本文描述 `scripts/quant_backtest.py` 的当前工程契约。修改回测逻辑前先读本文，再按 `../QUANT_SYSTEM.md` 的变更路由执行。
-
-> 系统入口 / 文件职责 / 变更路由：`../QUANT_SYSTEM.md`  
-> 当前参数与资产池事实源：`../config/quant_universe.yaml`  
-> 参数转换契约：`../scripts/quant_contract.py`  
-> 运维命令：`../runbooks/QUANT_RUNBOOK.md`
+> 回测循环、仓位分配、信心函数、成交执行。因子定义见 ，系统架构见 。
 
 ---
 
@@ -171,73 +166,6 @@ benchmark_data.py::build_ma_trend_cache()
 Tuner 可提前构建并通过 `preloaded` 注入，CLI 则由回测引擎自行加载。
 
 ---
-
-## 5. 因子契约
-
-当前主回测使用预计算路径：
-
-```python
-_precompute_factors(...)
-```
-
-主循环不再每次现场重算完整因子，而是按调仓日二分查找预计算序列。
-
-### 5.1 F1 — EMA 偏离
-
-默认形态：周线 EMA 偏离。**周线数据来自 CSV 快照，不合并 intraday cache。**
-
-```text
-F1_raw = (close - EMA_N) / EMA_N * 100
-F1 = map_f1(F1_raw, sensitivity.f1)
-```
-
-**查表语义**（`searchsorted` + `side="right"`）：
-
-对回测日 D，查 D 在周线日期序列中的插入位置（第一个 > D 的索引），取前一位置的 bar 的 F1 值。即：**使用日期 <= D 的最新周 bar**。
-
-```
-例：周线日期 = [..., "05/29", "06/02"]，回测日 = 6/2
-  searchsorted("06/02", side=right) → idx=321（末尾之后，06/02 == 最后元素）
-  f1_idx = 320 → 命中 06/02 那周的 bar
-
-例：回测日 = 6/1
-  searchsorted("06/01", side=right) → idx=320（06/01 < 06/02）
-  f1_idx = 319 → 命中 05/29 那周的 bar
-```
-
-**关键性质**：
-- 周内盘中，CSV 可能没有当前周的 bar（CSV 只在盘后更新）。此时所有当周日期都命中上周末的同一 bar，F1 在周内**不变**。
-- 周线**只用 CSV 快照**，不随 intraday cache 重建。若重建，当前周的最后一天会漂移，导致 searchsorted 命中不同周——这是 BUG-029 的根因，见 `plans/BUG-029.md`。
-- F1 使用的周 bar 可能是"不完整周"（如周二时该周仅 2 个交易日），close 即为该周最后一个已确认交易日的收盘价。
-
-可选历史变体：`f1_daily_ema` / `f1_daily_ma`（已证明劣于周线版，代码保留）。
-
-### 5.2 F3 — 自归一化方向性量比
-
-```text
-vol_z[t] = volume_or_amount[t] / trailing_mean(volume_or_amount)
-F3_raw = mean(vol_z on up days) / mean(vol_z on down days)
-F3 = map_f3(F3_raw, sensitivity.f3)
-```
-
-历史不足时可能回退或产生 NaN，具体以 `quant_backtest.py::_precompute_factors()` 为准。
-
-### 5.3 F7 — 对数收益偏离
-
-```text
-log_return = ln(close[t] / close[t-1])
-cum_N = rolling_sum(log_return, window_days)
-Z = (cum_N - rolling_mean(cum_N, lookback)) / rolling_std(cum_N, lookback)
-F7 = map_f7(Z, t=f7_t, k=f7_k)
-```
-
-Z > 0 表示近期累计收益高于历史均值（趋势强），Z < 0 表示低于（超跌）。
-`f7_t` 控制陡度，`f7_k` 控制阈值。NaN 时 fallback 为 0.5。
-
-### 5.4 已退役因子
-
-F2(日线 MA)、F4(估值)、F5(波动率)、F6(动能衰竭) 已于 2026-05~06 正式清退。
-代码保留（权重=0），不参与综合分。详见 `research/strategy/2026-05-28-research-archive.md`。
 
 ---
 
@@ -491,7 +419,7 @@ scripts/quant_factors.py
 scripts/quant_backtest.py::_precompute_factors()
 scripts/quant_contract.py（如有参数）
 templates/tuner.html（如有控件/说明）
-docs/BACKTEST_ENGINE.md
+BACKTEST_ENGINE.md
 tests/test_quant_factors.py
 ```
 

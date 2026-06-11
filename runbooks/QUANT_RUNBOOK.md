@@ -1,53 +1,372 @@
-# Quant Runbook — 量化系统运维手册
+# 量化运维手册
 
-**版本**: 2.0  
-**最后更新**: 2026-05-20  
-**定位**: 本文只负责量化系统的本地运维：启动、刷新数据、检查状态、生成正式页 payload、跑一致性检查和排障。
-
-> 系统入口 / 文件职责 / 变更路由：`../QUANT_SYSTEM.md`  
-> 回测引擎契约：`../docs/BACKTEST_ENGINE.md`  
-> 当前参数与资产池事实源：`../config/quant_universe.yaml`  
-> 参数契约实现：`../scripts/quant_contract.py`
+> 系统设计见 ，因子/引擎细节见 。
 
 ---
 
-## 1. 快速命令
+## 一、系统边界与文件职责
 
-以下命令默认在技能根目录执行：
+## 1. 系统边界
+
+量化系统分为四条边界清晰的子系统：
+
+| 子系统 | 入口 | 职责 | 不负责 |
+|---|---|---|---|
+| 数据层 | `scripts/quant_data_fetcher.py` | 拉取 ETF K 线，维护 `data/quant/*.csv` | 解释策略、保存参数 |
+| 回测引擎 | `scripts/quant_backtest.py` | 唯一回测计算核心，输出 NAV 与 signal history | Flask、HTML、用户交互 |
+| 工坊 Tuner | `scripts/quant_tuner.py` + `templates/tuner.html` | 本地交互调参、运行回测、保存 preset | 定义真实回测逻辑 |
+| 橱窗正式页 | `scripts/update_report.py` + `assets/js/quant-main.js` | 生成并渲染静态量化结果 | 交互调参、写回 YAML |
+| 研究归档 | `research/` | 保存实验、证据、promotion 记录 | 作为当前参数事实源 |
+
+## 2. 当前架构图
+
+```text
+config/quant_universe.yaml
+  ├─ universe: ETF 池
+  └─ presets: 当前策略参数
+
+scripts/quant_data_fetcher.py
+  └─ data/quant/*.csv
+
+scripts/quant_backtest.py  ← 唯一回测引擎
+  ├─ CLI 直接调用
+  ├─ scripts/quant_tuner.py       ← 工坊：Flask + Tuner UI
+  └─ scripts/update_report.py ← 橱窗：assets/js/quant_payload.js
+     scripts/quant_build_payload.py 是兼容 wrapper，内部调用 update_report 路径
+
+assets/js/quant_payload.js
+  └─ index.html + assets/js/quant-main.js
+```
+
+## 3. 事实源优先级
+
+| 问题 | 第一事实源 | 第二事实源 |
+|---|---|---|
+| 当前 ETF 池 / preset 参数 | `config/quant_universe.yaml` | `research/params/README.md` 只看来源证据 |
+| 回测实际计算过程 | `scripts/quant_backtest.py` | `../design/backtest-engine.md` |
+| Tuner API 与缓存 | `scripts/quant_tuner.py` | `runbooks/QUANT_RUNBOOK.md` |
+| Tuner 前端控件和说明 | `templates/tuner.html` | 本文的参数契约章节 |
+| 正式页量化展示 | `assets/js/quant-main.js` | `scripts/update_report.py` / `scripts/quant_build_payload.py` wrapper |
+| 长任务、启动、刷新、排障 | `runbooks/QUANT_RUNBOOK.md` | `docs/01-数据源与工具生态.md` |
+| 策略实验和历史结论 | `research/` | `research/08-quant-research-memo.md` |
+| ETF 贡献指标定义与分析 | `../design/etf-contribution.md` | `scripts/quant_tuner.py` `_compute_etf_contributions()` |
+| 早期三因子方法论 | `research/07-quant-methodology.md` | 仅作历史参考 |
+
+## 4. 文件职责表
+
+| 文件 | 职责 | 修改触发 |
+|---|---|---|
+| `config/quant_universe.yaml` | 当前 ETF 池、preset、仓位、因子参数 | 改资产池、当前策略、Tuner 保存参数 |
+| `scripts/quant_factors.py` | 单因子原始值与映射函数 | 新增/修改 F1-F7 因子定义 |
+| `scripts/quant_backtest.py` | 唯一回测引擎、调仓、NAV、统计 | 改回测逻辑、仓位分配、执行时点 |
+| `scripts/quant_contract.py` | YAML preset ↔ Tuner params ↔ config_override 的参数契约 | 新增/修改 Tuner 参数 |
+| `scripts/quant_tuner.py` | Flask API、预加载缓存、调用参数契约和回测引擎 | 改 Tuner API、缓存、保存行为 |
+| `templates/tuner.html` | Tuner 控件、交互、用户帮助文案 | 改前端控件、参数说明、可视化 |
+| `scripts/update_report.py` | 正式页静态 payload 生成主路径 | 改正式页量化数据结构 |
+| `scripts/quant_build_payload.py` | 正式页 payload 兼容 CLI wrapper，调用 update_report 路径 | 改 payload CLI 入口 |
+| `assets/js/quant_payload.js` | 生成产物：`window.__QUANT_RUNTIME__` | 由脚本生成，不手改 |
+| `assets/js/quant-main.js` | 正式页量化板块渲染 | 改 index.html 量化展示 |
+| `scripts/fetch_etf_metadata.py` | 拉取全部 ETF 的规模(AUM)和前十大重仓股 → `data/quant/etf_metadata.json` | 新增/移除 ETF、定期更新持仓数据 |
+| `data/quant/etf_metadata.json` | ETF 元数据事实源（AUM + 成分股），Tuner 启动时加载 | 人工或脚本更新后自动生效 |
+| `../design/etf-contribution.md` | ETF 贡献分析框架：指标定义、分析流程、淘汰规则 | 改贡献计算逻辑或新增指标后同步 |
+| `../design/backtest-engine.md` | 回测引擎契约 | 改 `run_backtest()` 或核心算法后同步 |
+| `runbooks/QUANT_RUNBOOK.md` | 运维和排障手册 | 改启动、刷新、长任务、数据源规则后同步 |
+| `tests/test_quant_backtest_core.py` | 回测引擎结构、preset 差异、universe_filter、execution_timing 测试 | 改 `run_backtest()` 语义后同步 |
+| `tests/test_quant_data_cache.py` | 共享数据缓存加载、cache key、结果读写 | 改 `quant_data_cache.py` 后同步 |
+| `research/` | 实验记录和 promotion 证据 | 策略研究、参数优化、结论沉淀 |
+
+---
+
+## 二、变更路由
+
+## 5. 变更路由表
+
+**改动前先建基准。** 策略逻辑/参数/因子变更前，保存各 preset 的 NAV 序列、关键指标、ETF 因子样本。改动后对比确认无意外漂移。基准工具见 REQ-275。
+
+### 5.1 修改一个因子
+
+必须检查：
+
+```text
+scripts/quant_factors.py
+scripts/quant_backtest.py
+config/quant_universe.yaml
+templates/tuner.html
+scripts/quant_tuner.py
+../design/backtest-engine.md
+tests/test_quant_factors.py
+```
+
+如果影响当前策略结论，还要更新：
+
+```text
+research/strategy/README.md
+research/params/README.md
+research/08-quant-research-memo.md
+```
+
+### 5.2 新增一个 Tuner 参数
+
+必须检查：
+
+```text
+templates/tuner.html                  # 控件、getParams/setParams、URL 参数
+templates/tuner.html                  # 导览 guide 块（guide-pos / guide-pipeline / guide-contract）同步更新
+scripts/quant_contract.py              # 参数映射唯一契约（preset_to_tuner_params / tuner_params_to_config_override / PARAM_BOUNDS / get_param_schema）
+scripts/quant_tuner.py                 # /api/presets、/api/run、/api/save 接线
+scripts/quant_backtest.py              # 是否消费该参数
+config/quant_universe.yaml             # preset 默认值
+../design/backtest-engine.md                # 引擎语义
+tests/                                # 参数映射或引擎测试
+```
+
+新增参数时，重点防止五处映射漂移：
+
+```text
+YAML preset -> /api/presets -> 前端控件
+前端控件 -> /api/run -> config_override
+前端控件 -> /api/save -> YAML preset
+导览 guide 块（guide-pos / guide-pipeline / guide-contract）与控件/引擎同步
+参数契约 schema（get_param_schema / PARAM_BOUNDS）与控件/引擎同步
+```
+
+### 5.3 修改回测执行逻辑
+
+必须检查：
+
+```text
+scripts/quant_backtest.py
+../design/backtest-engine.md
+templates/tuner.html 的“参数原理”
+scripts/update_report.py payload helper
+scripts/quant_build_payload.py wrapper
+assets/js/quant-main.js（若展示结构受影响）
+tests/ 中相关回归测试
+```
+
+典型执行逻辑包括：预热、初始建仓、调仓日、执行价格、分数带、Top-N、仓位分配、交易顺序、NAV 统计。
+
+### 5.4 修改当前 preset 或资产池
+
+必须检查：
+
+```text
+config/quant_universe.yaml
+scripts/quant_data_fetcher.py（资产池变更时）
+research/params/README.md（参数来源）
+research/strategy/README.md（策略线描述）
+runbooks/QUANT_RUNBOOK.md（若运维摘要涉及当前策略）
+templates/tuner.html（不得残留硬编码默认值）
+```
+
+#### ETF 增/删/替 标准流程
+
+##### 核心原则
+
+1. **替换即原子事务**：改一个 YAML 条目 = 一次替换。要么完成（验证通过），要么回退（恢复旧条目）。不允许多支替换混在一起跑一次验证。
+2. **基准先于改动**：改 YAML 前必须先保存当前各 preset 的 6y 指标快照（TR/AR/Sharpe/Calmar/MDD）。没有基准不动配置。
+3. **同池验证**：A/B 对比必须在 ETF 数量完全相同的池上运行。严禁用 `universe_filter` 做 A/B 对比（它会 silently 丢弃不在 YAML 中的代码，导致两池 ETF 数量不同）。
+4. **数据交叉验证**：同指数/同赛道替换，必须检查新旧 ETF 在重叠日期上的价格比值稳定性。比值跳变 >5% 视为数据异常，必须排查。
+5. **量化门槛**：替换后各 preset 的 6y TR 不得低于替换前基线的 95%。任一 preset 跌破 → 回退。
+
+##### 增（新 ETF 入池）
+
+1. **事实确认**：AKShare 核验代码、全称、市场、类型、上市日期。
+2. **拉取 K 线**：`python scripts/quant_data_fetcher.py --code <code>`，确认日线 ≥ 250 行。
+3. **更新 metadata**：`python scripts/fetch_etf_metadata.py`，确认 top10 持仓已写入。
+4. **原子新增**：编辑 `config/quant_universe.yaml`，在对应 sector 下插入新条目。
+5. **回测验证**：跑 6y + smoke test（preset1 + preset3），确认无报错、TR 无意外漂移。
+6. **收口**：确认 Tuner 加载正常、`scan_etf_universe.py` 识别新 ETF。
+
+##### 删（ETF 退池）
+
+1. **事实确认**：确认退池原因（清盘/规模过小/数据不可用/策略淘汰）。
+2. **保存基准**：删前跑一次 6y 全 preset 快照。
+3. **原子删除**：编辑 `config/quant_universe.yaml`，删除对应条目。
+4. **回测验证**：跑 6y 确认无报错，记录 TR 变化。
+5. **收口**：全项目 `grep` 旧代码残留；Tuner 加载正常。
+
+##### 替（旧换新）
+
+**这是唯一正确的 A/B 对比流程。禁止跳步。**
+
+1. **保存基准**：改 YAML 前，跑一次当前池 6y 全 preset（至少 preset1+preset3），记录 TR/AR/Sharpe/Calmar/MDD。保存到 `_working/etf_replace_baseline_<旧code>_<新code>.json`。
+
+2. **事实确认**：AKShare 核验旧/新 ETF 代码、全称、市场、类型、跟踪指数。确认两者跟踪同一指数或同一赛道。记录映射。
+
+3. **静默拉取**：拉取新 ETF K 线。确认日线行数 ≥ 旧 ETF 日线行数（数据覆盖不能缩水）。上市时间显著晚于旧 ETF 的不替换，保留旧标的。
+
+4. **静默 metadata**：`python scripts/fetch_etf_metadata.py`，确认新 ETF 的 top10 持仓已写入。
+
+5. **数据交叉验证**（同指数替换必做）：
+   - 加载新旧 ETF 日线 CSV，找出重叠日期
+   - 计算每日价格比值 `ratio = new_close / old_close`
+   - 比值应在窄幅波动（std/mean < 3%）
+   - 单日比值跳变 >5% → **数据异常，中止替换，排查原因**
+   - 将交叉验证结果写入基准文件
+
+6. **原子替换**：编辑 `config/quant_universe.yaml`，删除旧条目、插入新条目。**注意**：`market` 字段以 AKShare 实际数据为准（新旧可能不同，如 sz↔sh）。
+
+7. **同池回测验证**（不可跳过，不可用 universe_filter 替代）：
+   - 直接跑替换后全池 6y（preset1 + preset3），不需要 universe_filter
+   - 对比步骤 1 的基准快照
+   - **量化门槛**：各 preset 6y TR ≥ 基线的 95%，AR/Sharpe/Calmar 无异常恶化
+   - 任一 preset 跌破门槛 → **立即回退 YAML，恢复旧条目**
+
+8. **收口**：
+   - `grep` 旧代码在项目中的残留
+   - 确认 Tuner 加载正常（`/api/presets` 返回 45 支）
+   - 确认 `scan_etf_universe.py` 识别新 ETF
+   - 若替换通过，将基准文件从 `_working/` 移到 `research/promoted/`
+
+##### 多支替换
+
+**一次只替换一支。** 多支替换必须串行，每支独立走完整「替」流程。前一支持续验证通过才能开始下一支。严禁 3 支一起改然后跑一次回测。
+
+### 5.5 修改正式页量化板块
+
+必须检查：
+
+```text
+scripts/update_report.py payload helper
+scripts/quant_build_payload.py wrapper
+assets/js/quant_payload.js（生成结果）
+assets/js/quant-main.js
+index.html 的量化 DOM
+../design/backtest-engine.md（若 payload 语义变化）
+```
+
+### 5.6 废弃一个 Tuner 参数或因子
+
+走 §5.2 的逆向流程，从所有映射层中移除：
+
+```text
+templates/tuner.html                  # 移除控件、getParams/setParams、导览 guide 块
+scripts/quant_contract.py              # 移除 schema 条目、PARAM_BOUNDS、preset_to_tuner_params
+scripts/quant_tuner.py                 # 若 /api/save 涉及该参数
+scripts/quant_backtest.py              # 若引擎消费该参数（权重归零即可，不删逻辑）
+config/quant_universe.yaml             # 所有 preset 中移除该参数
+../design/backtest-engine.md                # 移除相关章节
+tests/                                # 更新引用
+```
+
+**最后一步——确认零残留**：用被移除的参数名/ID/关键字对全项目做 grep，确保所有文件中不再有活动引用。F6 清退时漏掉这一步，导致 `$id('w6')` 等 JS 引用残留在 `getParams`/`setParams`/`getWeightTotal` 中，运行时 `parseInt(null)`=NaN 使权重校验失败，回测按钮被禁用。
 
 ```bash
-cd /path/to/etf-report
+grep -rn 'w6\|f6_\|F6' templates/ scripts/ config/ docs/ --include='*.html' --include='*.py' --include='*.yaml' --include='*.md'
 ```
 
-### 1.1 启动 Tuner
+**分支选择**：
 
-```bash
-python scripts/quant_tuner.py
-# 打开 http://localhost:5179
+| 情况 | 动作 |
+|------|------|
+| 纯实验，无证据价值 | 直接删除所有痕迹 |
+| 有对比数据，可作为历史参考 | 代码保留（加 `# DEPRECATED` 注释），研究数据归档到 `research/strategy/{name}-retired/`，在 `research/strategy/README.md` 的 Tried & Failed 中记录 |
+| 被新因子替代 | 同"有对比数据"，额外在废弃因子的代码注释中注明替代者 |
+
+F6（动能衰竭惩罚）是典型的"被新因子替代 + 有对比数据"案例：F7 在组合策略中综合表现更优，代码保留，研究归档，UI/契约/schema 全部移除。详见 research/strategy/2026-05-28-research-archive.md。
+
+当前参数经过三层转换：
+
+```text
+config/quant_universe.yaml presets
+  -> scripts/quant_contract.py 统一参数契约
+  -> scripts/quant_tuner.py /api/param_schema + /api/presets
+  -> templates/tuner.html 控件（schema 拉取失败不阻塞主流程）
+  -> scripts/quant_tuner.py /api/run config_override
+  -> scripts/quant_backtest.py run_backtest()
 ```
 
-### 1.2 独立进程启动 Tuner（Windows 推荐）
+单位约定：
 
-避免 IDE 会话关闭导致服务退出：
+| 参数类型 | YAML / 引擎 | Tuner UI | 注意 |
+|---|---:|---:|---|
+| 权重 `w1/w3/w7` | 0-1 | 0-100 | UI 传入后除以 100 |
+| `score_band` | 0-1 | 百分数 | 3% 在 YAML 是 `0.03` |
+| `discretize_step` | 0-1 | 当前 UI 直接传小数 | 确认前端控件不要混用 5 与 0.05 |
+| `ma_bull_pos/ma_bear_pos` | 0-1 | 0-1 | 页面展示可转百分比 |
+| `f7_window` | 天数 | 天数 | 不是代码常量，来自 preset 或滑块 |
+| `execution_timing` | `same_close` / `next_open` | 同左 | Tuner 和引擎必须一致支持 |
 
-```powershell
-Start-Process -FilePath "python" `
-  -ArgumentList "scripts\quant_tuner.py" `
-  -WorkingDirectory "<技能根目录>"
+`scripts/quant_contract.py` 集中维护：
+
+```text
+preset_to_tuner_params()
+tuner_params_to_config_override()
+tuner_params_to_preset_patch()
+validate_tuner_params()
+build_presets_response()
+get_param_schema()
 ```
 
-### 1.3 检查 Tuner 状态
+---
 
-```bash
-curl http://localhost:5179/api/data_status
-curl http://localhost:5179/api/param_schema
-curl http://localhost:5179/api/presets
-```
+## 三、API 契约
 
-关注：
+## 7. API 契约
 
-| 字段 | 含义 |
+| API | 方法 | 职责 | 主要消费者 |
+|---|---|---|---|
+| `/` | GET | 返回 `templates/tuner.html` | 浏览器 |
+| `/api/data_status` | GET | 返回 Tuner ready 状态 / 数据新鲜度 | Tuner loading |
+| `/api/param_schema` | GET | 返回统一参数 schema（分组、单位、engine_path） | 前端说明 / 调试工具 / 文档校验 |
+| `/api/presets` | GET | YAML preset 转前端参数 | preset cards / 控件初始化 |
+| `/api/run` | POST | 前端参数转 config_override 并调用 `run_backtest()` | 运行回测 |
+| `/api/save` | POST | 保存当前参数到 preset 或 override | 保存参数 |
+| `/api/kline` | GET | 单 ETF K 线复盘数据 | 快照 / K 线图 |
+| `/api/etf_prices` | GET | ETF 价格序列 | 辅助图表 |
+
+---
+
+## 四、验证守卫与一致性检查
+
+## 8. 验证守卫
+
+最小验证按变更类型选择：
+
+| 变更 | 最小验证 |
 |---|---|
+| 只改文档 | 检查交叉引用路径存在，确认事实源优先级不冲突 |
+| 改因子 | `pytest tests/test_quant_factors.py`，再跑一个短窗口回测 |
+| 改回测引擎 | 跑 CLI 回测 + Tuner `/api/run` 同参数对比；`pytest tests/test_quant_backtest_core.py` |
+| 改 Tuner 参数 | `pytest tests/test_quant_contract.py`，并确认 `/api/param_schema -> /api/presets -> UI -> /api/run -> /api/save -> /api/presets` 往返一致；如需当前策略摘要，由 AI 改参数时同步或用户显式要求更新 |
+| 改参数契约/回测/Tuner 接线 | `python scripts/quant_consistency_check.py --preset preset2 --start 2025-01-01 --end 2026-05-19` |
+| 改正式页 payload | `python scripts/quant_build_payload.py` 后本地打开 `index.html` |
+| 改资产池 | `python scripts/quant_data_fetcher.py --code <新ETF>` 或按需全量/增量更新 |
+| 改数据缓存/并行模块 | `pytest tests/test_quant_data_cache.py` |
+
+### 8.1 回测一致性工具
+
+`quant_consistency_check.py` 用于确认同一 preset 在两条路径下结果一致：
+
+```text
+Direct preset: run_backtest(preset=...)
+Tuner contract: preset -> tuner params -> config_override -> run_backtest(...)
+```
+
+常用命令：
+
+```bash
+python scripts/quant_consistency_check.py --preset preset2 --start 2025-01-01 --end 2026-05-19
+```
+
+如果这里 FAIL，说明 `quant_universe.yaml`、`quant_contract.py`、`quant_tuner.py` 或 `quant_backtest.py` 之间出现结果级漂移，应先修一致性再继续调参。
+
+## 9. 当前清理方向
+
+已知需要持续清理的方向：
+
+1. 历史文档中可能仍残留旧 25 支 ETF、F1-F5、旧 payload 路径等口径；若任务依赖当前状态，先回到本文和 `config/quant_universe.yaml` 核对。
+2. `research/07-quant-methodology.md` 是早期三因子方法论，不能作为当前系统事实源。
+3. `templates/tuner.html` 的参数原理说明已降级为帮助层；“策略视角”类静态建议已删除。当前值以左侧滑块和参数契约表为准。
+4. `scripts/quant_contract.py` 已承接 `/api/presets`、`/api/run`、`/api/save` 的核心参数映射；后续新增参数必须先改契约和测试。
+5. 回测引擎测试覆盖不足，后续优先补参数映射、执行时点、分数带、仓位分配测试。
+
+---
+
+## 五、运维操作
+
+---|---|
 | `ready` | Tuner 是否已完成预加载 |
 | `csvLatestDate` | `data/quant/*.csv` 最新日期 |
 | `intradayCacheDate` | 盘中实时缓存日期 |
@@ -142,7 +461,7 @@ python scripts/quant_consistency_check.py --preset preset2 --start 2025-01-01 --
 若改动影响 `run_backtest()` 的语义，同时更新：
 
 ```text
-docs/BACKTEST_ENGINE.md
+../design/backtest-engine.md
 QUANT_SYSTEM.md（如变更路由或契约变化）
 ```
 
@@ -386,3 +705,453 @@ python scripts/quant_data_fetcher.py --code 512400
 python scripts/quant_tuner.py
 # 打开 http://localhost:5179/api/data_status
 ```
+
+---
+
+## 六、日更参数速查
+
+## 目的
+
+这份文档只回答一件事：**哪些内容需要日更，靠什么命令刷新，改动会落到哪里。**
+
+默认从技能根目录执行：
+
+```bash
+python scripts/update_report.py
+```
+
+---
+
+## 每日会刷新的内容
+
+### 1. K 线数据
+
+- **文件**: `data/etf_full_kline_data.json`
+- **内容**: 日线、周线、MA 均线
+- **触发方式**: `python scripts/update_report.py` → Step 1
+
+### 2. 实时行情数据
+
+- **文件**: `data/etf_realtime_data.json`
+- **内容**: ETF 涨跌、成分股涨跌、交易量、时间戳
+- **触发方式**: `python scripts/update_report.py` → Step 2 / Step 3
+
+### 3. HTML 报告日期与页面数据
+
+- **文件**: 根目录 `index.html`
+- **内容**: 报告日期、数据截止、生成时间、页面数据块
+- **触发方式**: `python scripts/update_report.py` → HTML 更新阶段
+
+### 4. 解释层内容回填
+
+- **来源**: `config/editorial_content.yaml`
+- **页面结果**: 研究卡 / 宏观卡正文与逐条日期
+- **触发方式**: `python scripts/update_report.py` 读取配置后统一回填
+
+---
+
+## 通常不需要频繁改的内容
+
+### ETF 列表与基准指数
+
+- **位置**: `config/config.yaml`
+- **频率**: 按需
+- **场景**: 换标的、调基准、调整 ETF 池
+
+### API 配置
+
+- **位置**: `config/config.yaml`
+- **频率**: 按需
+- **场景**: API 变更、限流调整
+
+### 显示参数
+
+- **位置**: `config/config.yaml`
+- **频率**: 季度 / 半年级别
+- **场景**: 调整显示区间、均线预热期、视觉参数
+
+---
+
+## 日常维护节奏
+
+| 频率 | 操作 | 命令 |
+|------|------|------|
+| 每天 | 刷新报告主流程 | `python scripts/update_report.py` |
+| 每周 | 跑健康检查 | `python scripts/health_check.py` |
+| 按需 | 审查目录卫生 | `python scripts/audit_project.py --quick` |
+
+---
+
+## 影响路径
+
+```text
+config/*.yaml / data/*.json
+        ↓
+python scripts/update_report.py
+        ↓
+根目录 index.html + logs/*.jsonl
+```
+
+---
+
+## 最佳实践
+
+- **一次性输出**：统一放到本地临时目录（如 `_working/`），不提交到 Git
+- **正式运行数据**：只留在 `data/`、`logs/`
+- **根目录**：只保留源码、文档和主报告 `index.html`
+- **健康检查基线**：需要时用 `python scripts/health_check.py --json > _working/xxx.json`
+
+---
+
+**最后更新**: 2026-04-17
+
+---
+
+## 七、健康检查
+
+## 一、使用指南
+
+## 概述
+
+`health_check.py` 用于快速验证 `etf-report` 当前目录、数据、HTML、工作流和配置是否处于可运行状态。
+
+- **检查项数**: 26 项（6 大类别，含解释层鲜度检查）
+- **默认入口**: `python scripts/health_check.py`
+- **常见输出**: 终端彩色表格；可选 JSON / HTML
+- **目录约定**: 一次性导出建议写到本地临时目录（如 `_working/`，不提交到 Git）
+
+---
+
+## 快速开始
+
+### 基础检查
+
+```bash
+python scripts/health_check.py
+```
+
+### 生成 JSON 报告
+
+```bash
+python scripts/health_check.py --json > _working/health_check_baseline.json
+```
+
+### 常用变体
+
+```bash
+python scripts/health_check.py --strict
+python scripts/health_check.py --category E
+python scripts/health_check.py --html
+```
+
+---
+
+## 命令行选项
+
+| 选项 | 说明 | 示例 |
+|------|------|------|
+| `--json` | 输出 JSON 格式报告 | `python scripts/health_check.py --json` |
+| `--html` | 输出 HTML 可视化报告 | `python scripts/health_check.py --html` |
+| `--strict` | 严格模式（警告 = 失败） | `python scripts/health_check.py --strict` |
+| `--category A,B,C` | 只检查特定类别 | `python scripts/health_check.py --category A,B` |
+| `--verbose` | 输出详细日志 | `python scripts/health_check.py --verbose` |
+
+---
+
+## 返回码
+
+| 返回码 | 含义 | 说明 |
+|--------|------|------|
+| 0 | PASS | 无警告、无失败 |
+| 1 | WARN | 仅在 `--strict` 模式下，警告会返回 1 |
+| 2 | FAIL | 存在失败项 |
+
+---
+
+## 检查项结构
+
+### A 类：文件完整性（5 项）
+- `A1`: 根目录 `index.html` 是否存在
+- `A2`: `data/` 下 2 个必需 JSON 是否存在
+- `A3`: 5 个核心脚本是否存在
+- `A4`: HTML / K 线数据体积是否异常偏小
+- `A5`: 主 HTML 目录与关键文件是否可读写
+
+### B 类：数据有效性（6 项）
+- `B1`: JSON 可解析
+- `B2`: ETF 代码完整
+- `B3`: K 线结构完整
+- `B4`: 日期可提取
+- `B5`: 数据时效性
+- `B6`: 成分股数据数量
+
+### C 类：脚本依赖（5 项）
+- `C1`: Python 版本
+- `C2`: `requests` / `yaml` 导入
+- `C3`: 核心脚本导入链
+- `C4`: 新浪财经 API 可达性
+- `C5`: 技能根目录临时探针写入能力
+
+### D 类：HTML 结构（4 项）
+- `D1`: HTML 标签平衡
+- `D2`: 必需数据块（`klineData`）存在；`realtimeData` 为可选块
+- `D3`: ECharts 引入存在
+- `D4`: 关键样式类存在
+
+### E 类：工作流逻辑（4 项）
+- `E1`: `.backup/` 事务快照目录状态
+- `E2`: HTML 日期同步
+- `E3`: `update_report.py` 主流程函数完整性
+- `E4`: 解释层鲜度（按 `freshness_policy` 校验）
+
+### F 类：系统配置（2 项）
+- `F1`: ETF 成分股配置完整性
+- `F2`: 基准指数配置正确性
+
+---
+
+## 常见问题
+
+### Q1: D2 缺少 `klineData`
+
+**原因**: 页面未经过主流程刷新，或 HTML 被旧文件覆盖。
+
+**处理**:
+
+```bash
+python scripts/update_report.py
+```
+
+### Q2: B5 数据时效性出现 WARN
+
+**原因**: 非交易日或最新数据尚未刷新，常见于周末 / 节假日。
+
+**处理**: 在下一个交易日收盘后重新运行 `python scripts/update_report.py`。
+
+### Q3: E4 解释层鲜度出现 WARN / FAIL
+
+**原因**: `config/editorial_content.yaml` 中的 `content_date` 与 `freshness_policy` 不匹配。
+
+**处理**:
+- 日更内容优先使用 `manual_daily`
+- 编辑态内容可用 `sticky`
+- 修正后重新运行主流程
+
+### Q4: C2 库缺失
+
+```bash
+pip install requests pyyaml
+```
+
+---
+
+## 与主流程集成
+
+主流程 `python scripts/update_report.py` 末尾会自动执行健康检查，并把摘要写入终端与结构化日志。
+
+如需单独留一份 JSON 基线：
+
+```bash
+python scripts/health_check.py --json > _working/health_check_latest.json
+```
+
+---
+
+## 自动化示例
+
+### 定时任务（概念示例）
+
+```cron
+0 16 * * 1-5 python /path/to/etf-report/scripts/health_check.py --json > /path/to/etf-report/_working/health_check_latest.json
+```
+
+### 本地巡检
+
+```bash
+python scripts/health_check.py --category E
+python scripts/health_check.py --json > _working/report.json
+```
+
+---
+
+## 相关文档
+
+- [`scripts/health_check.py`](../scripts/health_check.py)
+- [`scripts/update_report.py`](../scripts/update_report.py)
+- [`WORKFLOW.md`](../WORKFLOW.md)
+- [`HEALTH_CHECK_KNOWN_ISSUES.md`](HEALTH_CHECK_KNOWN_ISSUES.md)
+
+---
+
+**最后更新**: 2026-04-17  
+**版本**: 1.1  
+**状态**: ✅ 完成
+
+
+---
+
+## 二、已知问题
+
+## 概述
+
+本文档记录 `REQ-106` 健康检查在当前版本中的常见失败/警告项，并说明其真实含义和处理方式。
+
+**文档版本**: 1.1  
+**最后更新**: 2026-04-13  
+**维护者**: req106-maintainer
+
+---
+
+## 当前判定口径
+
+- `C2` 检查的是 **Python 可导入模块名**，当前要求：`requests`、`yaml`
+- `D2` 检查的是 **HTML 中必需的数据块**，当前要求：`klineData`
+- `realtimeData` 已降级为**可选块**，缺失时仅在详情里体现，不再判定失败
+- `fund_flow_data.json` 为**预留数据文件**，当前主流程不再要求其存在
+
+---
+
+## 已知问题列表
+
+### 问题 1: 运行时依赖缺失 [C2 - FAIL]
+
+#### 症状
+
+```text
+[X] FAIL   | C2   | 必需库导入
+Details: {"missing": ["requests"]}
+```
+
+或：
+
+```text
+[X] FAIL   | C2   | 必需库导入
+Details: {"missing": ["yaml"]}
+```
+
+#### 根本原因
+
+- 当前 Python 环境未安装主流程实际依赖
+- `requests` 用于访问新浪财经 API
+- `yaml`（来自 `PyYAML`）用于加载配置文件
+
+#### 影响范围
+
+- **影响模块**: `update_report.py`、`fix_ma_and_benchmark.py`、`realtime_data_updater.py`
+- **功能影响**: 主流程无法稳定执行
+- **系统是否可用**: 不可用或部分不可用
+
+#### 解决方案
+
+```bash
+pip install requests pyyaml
+```
+
+#### 验证修复
+
+```bash
+python scripts/health_check.py --category C
+```
+
+预期看到：
+
+```text
+[OK] PASS   | C2   | 必需库导入
+```
+
+---
+
+### 问题 2: 缺少必需的 klineData 块 [D2 - FAIL]
+
+#### 症状
+
+```text
+[X] FAIL   | D2   | JavaScript 数据块
+Details: {"required_missing": ["klineData"]}
+```
+
+#### 根本原因
+
+- 根目录 `index.html` 未经过主更新流程刷新
+- 或者 HTML 被旧版本/错误文件覆盖
+- 或者手动编辑时误删了 `const klineData = {...}`
+
+#### 影响范围
+
+- **功能影响**: 图表主数据无法渲染
+- **页面渲染**: 页面可能打开，但核心图表/表格不完整
+- **系统是否可用**: 不可用
+
+#### 解决方案
+
+```bash
+python scripts/update_report.py
+```
+
+#### 说明
+
+- `realtimeData` 现在是可选块
+- 即使 `realtimeData` 缺失，只要 `klineData` 正常，`D2` 仍会通过
+
+#### 验证修复
+
+```bash
+python scripts/health_check.py --category D
+```
+
+---
+
+### 问题 3: 数据时效性警告 [B5 - WARN]
+
+#### 症状
+
+```text
+[!] WARN   | B5   | 数据时效性
+Details: {"latest_date": "2026-04-11", "age_days": 2}
+```
+
+#### 根本原因
+
+- 最新 K 线数据相对当前日期有延迟
+- 周末、节假日或非交易时段出现该警告通常是正常现象
+
+#### 影响范围
+
+- **数据新鲜度**: 一般
+- **图表显示**: 正常
+- **系统可用性**: 完全可用
+
+#### 解决方案
+
+- 如果当前是交易日收盘后，重新执行：
+
+```bash
+python scripts/update_report.py
+```
+
+- 如果当前是周末或假期，可以暂不处理
+
+---
+
+## 问题汇总表
+
+| ID | 问题 | 严重度 | 状态 | 解决难度 |
+|----|------|--------|------|--------|
+| C2 | 运行时依赖缺失 | 中 | ❌ FAIL | 低 |
+| D2 | klineData 缺失 | 高 | ❌ FAIL | 低 |
+| B5 | 数据时效性 | 低 | ⚠️ WARN | 低 |
+
+---
+
+## 快速排查顺序
+
+1. 先跑完整检查：`python scripts/health_check.py`
+2. 如果是 `C2`，先补依赖：`pip install requests pyyaml`
+3. 如果是 `D2`，重跑主流程：`python scripts/update_report.py`
+4. 如果只是 `B5`，结合交易日判断是否需要处理
+
+---
+
+**状态**: ✅ 已更新  
+**最后测试**: 2026-04-13  
+**下一步**: 随健康检查规则变更继续维护本文档

@@ -160,6 +160,7 @@ def fetch_etf_kline(code: str, market: str, period: str = "daily",
     import pandas as pd
 
     tx_code = f"{MARKET_PREFIX.get(market, 'sz')}{code}"
+    _orig_end_date = end_date  # save before pagination loop mutates it
 
     # Determine how many rows to fetch
     if start_date:
@@ -239,7 +240,7 @@ def fetch_etf_kline(code: str, market: str, period: str = "daily",
         df = df[df["date"] > cutoff].copy()
 
     # Only keep rows on or before the latest allowed close date (or explicit end_date)
-    latest = end_date if end_date else _latest_allowed_date()
+    latest = _orig_end_date if _orig_end_date else _latest_allowed_date()
     df = df[df["date"] <= pd.Timestamp(latest)].copy()
 
     # Final output: string dates

@@ -304,6 +304,18 @@ th[data-sort]:hover { color: #e0e0e0; }
         <div class="slider-label"><span class="name">sigmoid 尺度</span><span class="val" id="v-f1s">8.0</span></div>
         <input type="range" id="f1_sensitivity" min="3" max="15" step="0.5" value="8" oninput="$id('v-f1s').textContent=parseFloat(this.value).toFixed(1)" aria-label="F1 sigmoid尺度">
       </div>
+      <div class="slider-group" id="param-f1-active" aria-label="F1抢跑" style="margin-top:2px;">
+        <div class="slider-label"><span class="name">抢跑</span><span class="val" id="v-f1ad">周五</span></div>
+        <div class="btn-row" id="f1ad-group" style="gap:2px;">
+          <button onclick="toggleF1Day(16)" id="f1ad-mon">一</button>
+          <button onclick="toggleF1Day(8)" id="f1ad-tue">二</button>
+          <button onclick="toggleF1Day(4)" id="f1ad-wed">三</button>
+          <button onclick="toggleF1Day(2)" id="f1ad-thu">四</button>
+          <button onclick="toggleF1Day(1)" id="f1ad-fri" class="active">五</button>
+          <button onclick="setF1ActiveDays(31)" style="font-size:10px;">全选</button>
+          <button onclick="setF1ActiveDays(0)" style="font-size:10px;">全不选</button>
+        </div>
+      </div>
       <label style="margin-top:6px;font-size:11px;color:#9ca3af;cursor:pointer;user-select:none;display:block;">
     </div>
 
@@ -487,7 +499,7 @@ th[data-sort]:hover { color: #e0e0e0; }
       <span id="param-schema-badge" style="display:inline-block;margin-left:8px;color:#60a5fa;font-family:monospace;">schema: loading</span>
     </div>
 
-    <div class="guide-block open" id="guide-contract" aria-label="参数契约">
+    <div class="guide-block" id="guide-contract" aria-label="参数契约">
       <div class="guide-block-header" onclick="toggleGuide('guide-contract')">
         <span class="g-icon">&#128279;</span>
         <span class="g-title">参数契约</span>
@@ -652,6 +664,35 @@ th[data-sort]:hover { color: #e0e0e0; }
         </ul>
         <p><b>为什么不用NAV驱动（旧方案已移除）</b></p>
         <p>旧方案（regime / momentum_crash / quadratic）基于自身NAV回撤判断市场状态，问题在于：ETF组合的NAV波动与大盘并非同步，NAV回撤时可能大盘已企稳，NAV上涨时可能大盘已在崩盘。MA20是市场级信号，直接反映趋势，更可靠且不易误触发。</p>
+      </div>
+    </div>
+
+    <!-- F1 weekly mode -->
+    <div class="guide-block" id="guide-f1-zoh" aria-label="F1抢跑机制">
+      <div class="guide-block-header" onclick="toggleGuide('guide-f1-zoh')">
+        <span class="g-icon">&#9783;</span>
+        <span class="g-title">F1 阶梯波</span>
+        <span class="g-tag" style="color:#f59e0b;">design</span>
+        <span class="g-chevron">&#9654;</span>
+      </div>
+      <div class="guide-block-body">
+        <div style="font-size:12px;color:#9ca3af;line-height:1.8;">
+
+        <p>F1 全程统一公式：<b>F1(t) = (price(t) − EMA) / EMA</b>。三种模式的区别只在 <b>price(t) 冻结还是解冻</b>。灰线（Base）永远冻结——price(t) = 检查点常量，信号是阶梯波。蓝线（Friday）周一~周四冻结，<b>周五开盘时刻解冻</b>。紫线（Tue+Fri）周一保持、周二检查点、周三~四<b>冻结</b>（复用周二值）、周五检查点。绿线（Daily）永远解冻。多 bit 时中间日冻结是核心机制：不是"信号缺失"，而是主动拒绝低完整度估计。</p>
+
+        <div style="max-width:520px;margin:6px 0 10px;">
+          <div id="f1-zoh-curve" style="width:100%;aspect-ratio:16/9;background:#0f1419;border:1px solid #1e293b;border-radius:6px;"></div>
+        </div>
+
+        <table style="font-size:11px;color:#9ca3af;border-collapse:collapse;width:100%;margin-top:6px;">
+        <tr><td style="padding:2px 8px;"><span style=\"display:inline-block;width:16px;height:3px;background:#6b7280;vertical-align:middle;margin-right:4px;\"></span>冻结态</td><td style=\"color:#6b7280;\">price(t) 冻结为常量，F1 平线</td></tr>
+        <tr><td style=\"padding:2px 8px;\"><span style=\"display:inline-block;width:16px;height:3px;background:#60a5fa;vertical-align:middle;margin-right:4px;\"></span>Friday 解冻</td><td style=\"color:#6b7280;\">周五开盘时刻解冻，跳变后连续</td></tr>
+        <tr><td style=\"padding:2px 8px;\"><span style=\"display:inline-block;width:16px;height:3px;background:#a78bfa;vertical-align:middle;margin-right:4px;\"></span>Tue+Fri 冻结</td><td style=\"color:#6b7280;\">周二检查点后，周三~四冻结复用</td></tr>
+        <tr><td style=\"padding:2px 8px;\"><span style=\"display:inline-block;width:16px;height:3px;background:#22c55e;vertical-align:middle;margin-right:4px;\"></span>全程解冻</td><td style=\"color:#6b7280;\">price(t) 永远 = 市价，全程连续</td></tr>
+        <tr><td style=\"padding:2px 8px;\"><span style=\"display:inline-block;width:8px;height:8px;background:#f59e0b;border-radius:50%;vertical-align:middle;margin-right:4px;\"></span>检查点</td><td style=\"color:#6b7280;\">周五 15:10 CSV 更新，计算态的必经点</td></tr>
+        </table>
+
+        </div>
       </div>
     </div>
 
@@ -866,7 +907,7 @@ th[data-sort]:hover { color: #e0e0e0; }
 
 <script>
 var $id = id => document.getElementById(id);
-var maxHoldings = 6, discStep = 5, confType = 'ma_trend', rebalanceFreq = 'W-FRI', executionTiming = 'same_close';
+var maxHoldings = 6, discStep = 5, confType = 'ma_trend', rebalanceFreq = 'W-FRI', executionTiming = 'same_close', f1ActiveDays = 1;
 var navChart = null, ddChart = null;
 var lastResult = null;
 var lastBacktestData = null;  // last full backtest response for redraws
@@ -888,6 +929,9 @@ function toggleGuide(id) {
   }
   if (id === 'guide-f1' && el.classList.contains('open') && !f1Chart) {
     setTimeout(renderF1GuideChart, 50);
+  }
+  if (id === 'guide-f1-zoh' && el.classList.contains('open') && !f1ZohChart) {
+    setTimeout(renderF1ZOHChart, 50);
   }
   if (id === 'guide-f3' && el.classList.contains('open') && !f3Chart) {
     setTimeout(renderF3GuideChart, 50);
@@ -1057,6 +1101,125 @@ function renderF1GuideChart() {
     series: series,
   });
   return f1Chart;
+}
+
+/* ====== F1 阶梯波可视化 ====== */
+var f1ZohChart = null;
+
+function renderF1ZOHChart() {
+  if (f1ZohChart) { f1ZohChart.dispose(); f1ZohChart = null; }
+  var dom = $id('f1-zoh-curve');
+  if (!dom) return;
+  if (dom.offsetWidth === 0 || dom.offsetHeight === 0) return;
+  f1ZohChart = echarts.init(dom);
+
+  var DAYS=['一','二','三','四','五'];
+  var N=8;
+
+  // ==== REAL DATA: 515220 coal ETF, April 1-22 2026, 30-min K-line ====
+  // X-axis: tick 0=Apr1(Wed),1=Apr2(Thu),2=Apr3(Fri),3=Apr7(Tue),4=Apr8(Wed),
+  //   5=Apr9(Thu),6=Apr10(Fri),7=Apr13(Mon),8=Apr14(Tue),9=Apr15(Wed),
+  //   10=Apr16(Thu),11=Apr17(Fri),12=Apr20(Mon),13=Apr21(Tue),14=Apr22(Wed)
+
+  // Base split into 4 independent series — avoids ECharts step+null rendering bug
+  // Segments meet at exact tick boundaries — jump at shared point
+  var baseSegs=[
+    [[0,0.94],[2,0.94]],
+    [[2,-3.55],[6,-3.55]],
+    [[6,-2.01],[11,-2.01]],
+    [[11,-2.02],[13,-2.02]]
+  ];
+
+  // Blue hold = Mon-Thu only, Friday left for intraday
+  var friHoldSegs=[
+    [[0,0.94],[1,0.94]],
+    [[2,-3.55],[5,-3.55]],
+    [[6,-2.01],[10,-2.01]],
+    [[11,-2.02],[13,-2.02]]
+  ];
+var friIntraSegs=[
+  [[1.125,-2.17],[1.25,-2.36],[1.375,-2.15],[1.5,-3.3],[1.625,-3.35],[1.75,-3.6],[1.875,-3.6],[2,-3.55]],
+  [[5.125,-2.16],[5.25,-2.16],[5.375,-1.99],[5.5,-2.11],[5.625,-1.89],[5.75,-2.09],[5.875,-2.09],[6,-2.01]],
+  [[10.125,-1.85],[10.25,-1.9],[10.375,-1.88],[10.5,-1.72],[10.625,-1.8],[10.75,-1.8],[10.875,-1.75],[11,-2.02]]
+];
+
+  // Tue+Fri mode (ad=9): Mon hold, Tue checkpoint, Wed-Thu freeze, Fri checkpoint
+  var tfFreezeSegs=[
+    [[0,-2.17],[1,-2.17]],          // W14 Wed-Thu freeze at Tue checkpoint
+    [[3,-2.21],[5,-2.21]],          // W15 Wed-Thu freeze
+    [[8,-1.80],[10,-1.80]],         // W16 Wed-Thu freeze
+    // W17 freeze removed (no green line data past 13)
+  ];
+  var tfTueIntraSegs=[
+    [[2.125,-1.88],[2.25,-1.66],[2.375,-2.16],[2.5,-1.91],[2.625,-1.93],[2.75,-2.1],[2.875,-2.18],[3.0,-2.21]],
+    [[7.125,-1.78],[7.25,-1.85],[7.375,-1.75],[7.5,-1.79],[7.625,-1.81],[7.75,-1.81],[7.875,-1.81],[8.0,-1.80]],
+    [[12.125,-1.68],[12.25,-1.72],[12.375,-1.65],[12.5,-1.65],[12.625,-1.72],[12.75,-1.65],[12.875,-1.62],[13.0,-1.62]]
+  ];
+
+  // Tue+Fri Monday hold segments: connect Fri close to Mon, before Tue intraday
+  var tfMonHoldSegs=[
+    [[6,-2.01],[7,-2.01]],          // W16 Mon hold
+    [[11,-2.02],[12,-2.02]]         // W17 Mon hold
+  ];
+
+  var dailyData=[
+    [-0.875,-0.18],[-0.75,-0.1],[-0.625,-0.21],[-0.5,-0.23],[-0.375,-0.29],[-0.25,-0.1],[-0.125,0.03],[0.0,0.05],
+    [0.125,0.08],[0.25,0.21],[0.375,0.23],[0.5,0.21],[0.625,0.2],[0.75,0.12],[0.875,0.03],
+    [1.0,-1.88],[1.125,-2.17],[1.25,-2.36],[1.375,-2.15],[1.5,-3.3],[1.625,-3.35],[1.75,-3.6],[1.875,-3.6],
+    [2.125,-1.88],[2.25,-1.66],[2.375,-2.16],[2.5,-1.91],[2.625,-1.93],[2.75,-2.1],[2.875,-2.18],[3.0,-2.21],
+    [3.125,-1.95],[3.25,-2.02],[3.375,-2.15],[3.5,-2.3],[3.625,-2.28],[3.75,-2.23],[3.875,-2.03],[4.0,-2.26],
+    [4.125,-1.81],[4.25,-1.75],[4.375,-1.72],[4.5,-1.78],[4.625,-1.8],[4.75,-1.85],[4.875,-1.82],[5.0,-1.96],
+    [5.125,-2.16],[5.25,-2.16],[5.375,-1.99],[5.5,-2.11],[5.625,-1.89],[5.75,-2.09],[5.875,-2.09],
+    [6.125,-1.81],[6.25,-1.73],[6.375,-1.7],[6.5,-1.82],[6.625,-1.79],[6.75,-1.9],[6.875,-1.83],[7.0,-1.55],
+    [7.125,-1.78],[7.25,-1.85],[7.375,-1.75],[7.5,-1.79],[7.625,-1.81],[7.75,-1.81],[7.875,-1.81],[8.0,-1.8],
+    [8.125,-1.78],[8.25,-1.62],[8.375,-1.62],[8.5,-1.71],[8.625,-1.69],[8.75,-1.66],[8.875,-1.7],[9.0,-1.65],
+    [9.125,-1.81],[9.25,-1.77],[9.375,-1.68],[9.5,-1.66],[9.625,-1.58],[9.75,-1.69],[9.875,-1.63],[10.0,-1.75],
+    [10.125,-1.85],[10.25,-1.9],[10.375,-1.88],[10.5,-1.72],[10.625,-1.8],[10.75,-1.8],[10.875,-1.75],
+    [11.125,-1.62],[11.25,-1.62],[11.375,-1.72],[11.5,-1.82],[11.625,-1.72],[11.75,-1.68],[11.875,-1.69],[12.0,-1.86],
+    [12.125,-1.68],[12.25,-1.72],[12.375,-1.65],[12.5,-1.65],[12.625,-1.72],[12.75,-1.65],[12.875,-1.62],[13.0,-1.62]
+  ];
+
+  // Filter daily to visible range
+  dailyData = dailyData.filter(function(p){return p[0]>=0 && p[0]<=13;});
+
+  var option={
+    backgroundColor:'transparent',
+    legend:{data:['Base (ad=0)','Friday (ad=1)','Tue+Fri (ad=9)','Daily (ad=31)'],top:6,right:6,textStyle:{color:'#9ca3af',fontSize:9},itemWidth:16,itemHeight:3},
+    tooltip:{trigger:'axis',backgroundColor:'rgba(10,25,47,0.95)',borderColor:'rgba(59,130,246,0.2)',textStyle:{color:'#e0e0e0',fontSize:11},axisPointer:{type:'cross'},
+      formatter:function(ps){if(!ps||ps.length===0)return'';var rx=ps[0].axisValue,t=Math.round(rx);if(Math.abs(rx-t)>0.45)return'';if(t<0||t>13)return'';var dows=[2,3,4,1,2,3,4,0,1,2,3,4,0,1,2];var dow=dows[t]||0;var dates=['4/1','4/2','4/3','4/7','4/8','4/9','4/10','4/13','4/14','4/15','4/16','4/17','4/20','4/21'];var dates=['4/1','4/2','4/3','4/7','4/8','4/9','4/10','4/13','4/14','4/15','4/16','4/17','4/20','4/21'];var ds=t<15?dates[t]:'';var s=ds+' 周'+DAYS[dow]+' 收盘';ps.forEach(function(p){if(p.seriesName&&p.value[1]!=null){if(Math.abs(p.value[0]-t)<0.55)s+='<br/><span style=\"color:'+p.color+'\">'+p.seriesName+'</span> = <b>'+p.value[1].toFixed(2)+'%</b>';}});return s;}},
+    grid:{left:48,right:16,top:36,bottom:32},
+    xAxis:{type:'value',min:0,max:13,interval:1,axisLine:{lineStyle:{color:'#2a3a4a'}},axisTick:{show:true,lineStyle:{color:'#374151'}},axisLabel:{color:'#6b7280',fontSize:9,formatter:function(v){var t=Math.round(v);if(t<0||t>13)return'';var dates=['4/1','4/2','4/3','4/7','4/8','4/9','4/10','4/13','4/14','4/15','4/16','4/17','4/20','4/21'];return dates[t]||''||'';}},splitLine:{show:false}},
+    yAxis:{type:'value',axisTick:{inside:true},axisLabel:{color:'#6b7280',fontSize:9,formatter:function(v){return v.toFixed(1)+'%';}},splitLine:{lineStyle:{color:'rgba(255,255,255,0.05)'}},name:'F1',nameTextStyle:{color:'#6b7280',fontSize:9}},
+    series:[
+      {name:'Base (ad=0)',type:'line',data:baseSegs[0],step:'start',lineStyle:{color:'#6b7280',width:2.5},symbol:'none',z:1},
+      {name:'Base (ad=0)',type:'line',data:baseSegs[1],step:'start',lineStyle:{color:'#6b7280',width:2.5},symbol:'none',z:1,legendHoverLink:false},
+      {name:'Base (ad=0)',type:'line',data:baseSegs[2],step:'start',lineStyle:{color:'#6b7280',width:2.5},symbol:'none',z:1,legendHoverLink:false},
+      {name:'Base (ad=0)',type:'line',data:baseSegs[3],step:'start',lineStyle:{color:'#6b7280',width:2.5},symbol:'none',z:1,legendHoverLink:false},
+      {name:'Friday (ad=1)',type:'line',data:friHoldSegs[0],step:'start',lineStyle:{color:'#60a5fa',width:2},symbol:'none',z:2},
+      {name:'Friday (ad=1)',type:'line',data:friHoldSegs[1],step:'start',lineStyle:{color:'#60a5fa',width:2},symbol:'none',z:2,legendHoverLink:false},
+      {name:'Friday (ad=1)',type:'line',data:friHoldSegs[2],step:'start',lineStyle:{color:'#60a5fa',width:2},symbol:'none',z:2,legendHoverLink:false},
+      {name:'Friday (ad=1)',type:'line',data:friHoldSegs[3],step:'start',lineStyle:{color:'#60a5fa',width:2},symbol:'none',z:2,legendHoverLink:false},
+      {name:'Friday (ad=1)',type:'line',data:friIntraSegs[0],step:false,lineStyle:{color:'#60a5fa',width:2.5},symbol:'none',z:4,legendHoverLink:false},
+      {name:'Friday (ad=1)',type:'line',data:friIntraSegs[1],step:false,lineStyle:{color:'#60a5fa',width:2.5},symbol:'none',z:4,legendHoverLink:false},
+      {name:'Friday (ad=1)',type:'line',data:friIntraSegs[2],step:false,lineStyle:{color:'#60a5fa',width:2.5},symbol:'none',z:4,legendHoverLink:false},
+      {name:'Tue+Fri (ad=9)',type:'line',data:tfFreezeSegs[0],step:'start',lineStyle:{color:'#a78bfa',width:2},symbol:'none',z:3},
+      {name:'Tue+Fri (ad=9)',type:'line',data:tfFreezeSegs[1],step:'start',lineStyle:{color:'#a78bfa',width:2},symbol:'none',z:3,legendHoverLink:false},
+      {name:'Tue+Fri (ad=9)',type:'line',data:tfFreezeSegs[2],step:'start',lineStyle:{color:'#a78bfa',width:2},symbol:'none',z:3,legendHoverLink:false},
+      // tfFreezeSegs[3] removed (trim to x=13)
+      {name:'Tue+Fri (ad=9)',type:'line',data:tfTueIntraSegs[0],step:false,lineStyle:{color:'#a78bfa',width:2},symbol:'none',z:5,legendHoverLink:false},
+      {name:'Tue+Fri (ad=9)',type:'line',data:tfTueIntraSegs[1],step:false,lineStyle:{color:'#a78bfa',width:2},symbol:'none',z:5,legendHoverLink:false},
+      {name:'Tue+Fri (ad=9)',type:'line',data:tfTueIntraSegs[2],step:false,lineStyle:{color:'#a78bfa',width:2},symbol:'none',z:5,legendHoverLink:false},
+      {name:'Tue+Fri (ad=9)',type:'line',data:friIntraSegs[0],step:false,lineStyle:{color:'#a78bfa',width:2},symbol:'none',z:5,legendHoverLink:false},
+      {name:'Tue+Fri (ad=9)',type:'line',data:friIntraSegs[1],step:false,lineStyle:{color:'#a78bfa',width:2},symbol:'none',z:5,legendHoverLink:false},
+      {name:'Tue+Fri (ad=9)',type:'line',data:friIntraSegs[2],step:false,lineStyle:{color:'#a78bfa',width:2},symbol:'none',z:5,legendHoverLink:false},
+      {name:'Tue+Fri (ad=9)',type:'line',data:tfMonHoldSegs[0],step:'start',lineStyle:{color:'#a78bfa',width:2},symbol:'none',z:3,legendHoverLink:false},
+      {name:'Tue+Fri (ad=9)',type:'line',data:tfMonHoldSegs[1],step:'start',lineStyle:{color:'#a78bfa',width:2},symbol:'none',z:3,legendHoverLink:false},
+      {name:'Daily (ad=31)',type:'line',data:dailyData,step:false,lineStyle:{color:'#22c55e',width:1.2},symbol:'none',silent:true,z:3},
+      {name:'检查点',type:'scatter',data:[[2,-3.55],[3,-2.21],[6,-2.01],[8,-1.80],[11,-2.02]],symbolSize:10,itemStyle:{color:'#f59e0b',borderColor:'#1f2937',borderWidth:2},label:{show:true,position:'top',color:'#f59e0b',fontSize:9,formatter:function(p){return['W14F','W15T','W15F','W16T','W16F','W17T'][p.dataIndex];},distance:8},z:10},
+      {type:'line',name:'检查点',markLine:{silent:true,symbol:'none',lineStyle:{color:'rgba(255,255,255,0.06)'},data:[{yAxis:0}]},data:[],z:0},
+    ],
+  };
+  f1ZohChart.setOption(option);
 }
 
 /* ====== F3 r → F3 (log+sigmoid) 映射可视化 ====== */
@@ -1280,6 +1443,29 @@ function setFreq(f) {
   });
   renderParamSchemaTable();
 }
+function setF1ActiveDays(v) {
+  v = parseInt(v) || 0; f1ActiveDays = v;
+  updateF1DayButtons();
+}
+function toggleF1Day(bit) {
+  f1ActiveDays ^= bit;  // toggle the bit
+  updateF1DayButtons();
+}
+function updateF1DayButtons() {
+  var v = f1ActiveDays;
+  var dayNames = ['一','二','三','四','五'];
+  var dayBits = [16, 8, 4, 2, 1];
+  var selected = [];
+  for (var i = 0; i < 5; i++) {
+    var btn = $id('f1ad-' + ['mon','tue','wed','thu','fri'][i]);
+    if (btn) btn.classList.toggle('active', (v & dayBits[i]) !== 0);
+    if (v & dayBits[i]) selected.push(dayNames[i]);
+  }
+  // Display label
+  if (v === 31) $id('v-f1ad').textContent = '全选';
+  else if (v === 0) $id('v-f1ad').textContent = '全不选';
+  else $id('v-f1ad').textContent = selected.join('、');
+}
 function setExecutionTiming(t) {
   executionTiming = t;
   var label = t === 'next_open' ? '次日开盘' : '收盘成交(复盘)';
@@ -1483,6 +1669,7 @@ function getParams() {
     f3_sensitivity: parseFloat($id('f3_sensitivity').value),
     rebalance_freq: rebalanceFreq,
     execution_timing: executionTiming,
+    f1_active_days: f1ActiveDays,
     score_band: parseFloat($id('score_band').value),  // 0-20，单位%
     f7_t: parseFloat($id('f7_t').value),
     f7_k: parseFloat($id('f7_k').value),
@@ -1535,6 +1722,7 @@ function setParams(p) {
   if (p.ema_period != null) { setSlider('ema_period', p.ema_period); $id('v-ema').textContent = p.ema_period + ' 周'; }
   if (p.vol_window != null) { setSlider('vol_window', p.vol_window); $id('v-vol').textContent = p.vol_window + ' 日'; }
   if (p.execution_timing != null) { setExecutionTiming(p.execution_timing); }
+  if (p.f1_active_days != null) { setF1ActiveDays(p.f1_active_days); }
   if (p.f1_sensitivity != null) { setSlider('f1_sensitivity', p.f1_sensitivity); $id('v-f1s').textContent = parseFloat(p.f1_sensitivity).toFixed(1); }
   if (p.f3_sensitivity != null) { setSlider('f3_sensitivity', p.f3_sensitivity); $id('v-f3s').textContent = parseFloat(p.f3_sensitivity).toFixed(1); }
   if (p.score_band != null) { setSlider('score_band', p.score_band); $id('v-score-band').textContent = parseFloat(p.score_band).toFixed(1) + '%'; }
@@ -2123,9 +2311,55 @@ function renderNavChart(data) {
   if (hs300.length) series.push({name:'沪深300', type:'line', data:hs300, showSymbol:false, color:'#f59e0b', lineStyle:{width:1, color:'#f59e0b', type:'dashed'}});
   if (eqWeight.length) series.push({name:'等权持有', type:'line', data:eqWeight, showSymbol:false, color:'#8b5cf6', lineStyle:{width:1, color:'#8b5cf6', type:'dashed'}});
 
+  // === Reusable: build a heat-band markArea from signal-level data ===
+  // opts: {name, seriesName, getValue(sig), levels:[{max, color}], z}
+  function buildHeatBand(signals, dates, opts) {
+    var areas = [];
+    var levels = opts.levels || [];
+    for (var si = 0; si < signals.length - 1; si++) {
+      var v = opts.getValue(signals[si]);
+      var color = levels[0].color;
+      for (var li = 0; li < levels.length; li++) {
+        if (v <= levels[li].max) { color = levels[li].color; break; }
+      }
+      areas.push([
+        {xAxis: signals[si].date, itemStyle:{color:color}},
+        {xAxis: signals[si+1].date}
+      ]);
+    }
+    return {
+      name: opts.name, type:'line', data:[], showSymbol:false,
+      lineStyle:{width:0}, itemStyle:{color:'transparent'},
+      markArea:{silent:true, data:areas, label:{show:false}},
+      tooltip:{show:false}, z: opts.z || 0,
+    };
+  }
+
+  // Concentration heat band
+  if (tunerSignalHistory && tunerSignalHistory.length > 1) {
+    series.unshift(buildHeatBand(tunerSignalHistory, dates, {
+      name: '仓位集中度',
+      z: 0,
+      levels: [
+        {max:0.25, color:'rgba(34,197,94,0.08)'},
+        {max:0.50, color:'rgba(250,204,21,0.08)'},
+        {max:0.75, color:'rgba(249,115,22,0.10)'},
+        {max:1.00, color:'rgba(239,68,68,0.12)'},
+      ],
+      getValue: function(sig) {
+        var pos = sig.positions || {};
+        var maxSingle = 0;
+        for (var k in pos) { if (pos[k] > maxSingle) maxSingle = pos[k]; }
+        return maxSingle;
+      },
+    }));
+  }
+
+  // (Future) additional heat bands here — same buildHeatBand, different name + getValue + levels
+
   navChart.setOption({
     backgroundColor:'transparent',
-    tooltip:{trigger:'axis', axisPointer:{type:'cross'}, backgroundColor:'rgba(10,25,47,0.95)', borderColor:'rgba(59,130,246,0.2)', textStyle:{color:'#e0e0e0',fontSize:11},
+    tooltip:{trigger:'axis', triggerOn:'mousemove', axisPointer:{type:'cross', triggerOn:'mousemove'}, backgroundColor:'rgba(10,25,47,0.95)', borderColor:'rgba(59,130,246,0.2)', textStyle:{color:'#e0e0e0',fontSize:11},
       formatter: function(params) {
         if (!params || !params.length) return '';
         var html = '<div style="font-weight:600;margin-bottom:3px">' + params[0].axisValue + '</div>';
@@ -2151,7 +2385,7 @@ function renderNavChart(data) {
     xAxis:{type:'category', data:dates, boundaryGap:false, axisLabel:{fontSize:10, color:'#6b7280'}, axisLine:{lineStyle:{color:'#2a3a4a'}}},
     yAxis:{type:'value', scale:true, axisLabel:{fontSize:10, color:'#6b7280', formatter:'{value}%'}, splitLine:{lineStyle:{color:'rgba(255,255,255,0.06)'}}},
     series:series,
-    dataZoom:[{type:'inside', start:0, end:100}],
+    dataZoom:[{type:'inside', start:0, end:100, zoomOnMouseWheel:true}],
   }, true);
 
   // Click on NAV chart → switch snapshot (does NOT trigger kline-replay redraw)
@@ -2203,13 +2437,13 @@ function renderDdChart(data) {
 
   ddChart.setOption({
     backgroundColor:'transparent',
-    tooltip:{trigger:'axis', axisPointer:{type:'cross'}, backgroundColor:'rgba(10,25,47,0.95)', borderColor:'rgba(59,130,246,0.2)', textStyle:{color:'#e0e0e0',fontSize:11}, formatter:function(p){var item=(p||[]).find(function(x){return x.value != null;}) || p[0]; return item.axisValue + '<br/>回撤 <b style="color:#ef4444">' + item.value.toFixed(2) + '%</b>' + (intradayLastPoint && item.dataIndex === dates.length - 1 ? '<br/><span style="color:#f59e0b">盘中估算，仅供收盘前参考</span>' : '');}},
+    tooltip:{trigger:'axis', triggerOn:'mousemove', axisPointer:{type:'cross', triggerOn:'mousemove'}, backgroundColor:'rgba(10,25,47,0.95)', borderColor:'rgba(59,130,246,0.2)', textStyle:{color:'#e0e0e0',fontSize:11}, formatter:function(p){var item=(p||[]).find(function(x){return x.value != null;}) || p[0]; return item.axisValue + '<br/>回撤 <b style="color:#ef4444">' + item.value.toFixed(2) + '%</b>' + (intradayLastPoint && item.dataIndex === dates.length - 1 ? '<br/><span style="color:#f59e0b">盘中估算，仅供收盘前参考</span>' : '');}},
     axisPointer: { link: [{xAxisIndex:'all'}] },
     grid:{left:50, right:20, top:8, bottom:20},
     xAxis:{type:'category', data:dates, show:false},
     yAxis:{type:'value', scale:true, axisLabel:{fontSize:10, color:'#6b7280', formatter:'{value}%'}, splitLine:{lineStyle:{color:'rgba(255,255,255,0.06)'}}},
     series:ddSeries,
-    dataZoom:[{type:'inside', start:0, end:100}],
+    dataZoom:[{type:'inside', start:0, end:100, zoomOnMouseWheel:true}],
   }, true);
 }
 
@@ -3078,6 +3312,7 @@ window.addEventListener('resize', () => {
   ddChart && ddChart.resize();
   klineReplayChart && klineReplayChart.resize();
   hmChart && hmChart.resize();
+  f1ZohChart && f1ZohChart.resize();
 });
 /* ====== Keyboard shortcuts + help overlay ====== */
 function toggleShortcuts() {
@@ -3526,6 +3761,8 @@ function updateHmSortUI() {
   $id('hm-sort-a').textContent = hmSortDir === 1 ? '↓ 降序' : '↑ 升序';
 }
 
+// Lazy-init guide charts that start open
+setTimeout(function() { renderF1ZOHChart(); }, 300);
 // Default to results view on page load (overridden by URL autorun)
 setTimeout(function() { initHeatmap(); }, 500);
 </script>

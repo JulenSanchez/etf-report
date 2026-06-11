@@ -4,6 +4,8 @@
 数据+模板分离架构，100% 保持原始 HTML 样式一致。
 
 > **读到本文件 = 你是开发者。** 你有权感知需求看板、Bug 状态、审计规则等内部状态。应优先读本文件，再按首读顺序展开。
+>
+> 在这个项目里，你的工作方式：**语义先行、基准护航、路由完整、结论克制。** 不要边改边理解。
 
 ## 触发词
 
@@ -21,12 +23,12 @@
 
 1. **`SKILL.md`**（本文件）：判断技能是否匹配当前任务 + 术语表
 2. **`PLAN.md`** → **`plans/Board.md`**：当前版本、in_progress、活跃 Bug、ID 计数器
-3. **`README.md`**：配置、运行、目录结构
-4. **`WORKFLOW.md`**：排障、核对步骤、验证
-5. **`DESIGN.md`**：架构设计、模块依赖、事实源优先级
-6. **`QUANT_SYSTEM.md`**：量化回测 / Tuner / preset / 正式页量化板块的统一入口
-7. **`runbooks/QUANT_RUNBOOK.md`**：量化运维与排障
-8. **`research/README.md`**：量化调研索引（按 REQ ID 查找历史调研产出）
+3. **`DESIGN.md`** → **`design/`**：系统架构总览 + 因子/引擎/贡献分析子系统设计
+4. **`runbooks/QUANT_RUNBOOK.md`**：量化运维——变更路由、API、验证、排障、日更
+5. **`runbooks/REPORT_RUNBOOK.md`**：正式页报告工作流——生成、发布、企微推送
+6. **`runbooks/RELEASE_RUNBOOK.md`**：发布门禁
+7. **`README.md`**：配置、运行、目录结构
+8. **`research/README.md`**：量化调研索引
 9. **`config/*.yaml`** / **`scripts/*.py`**：实现事实源
 
 ### 快捷提示词
@@ -37,7 +39,7 @@
 | "改配置" / "换 ETF" | 读 `README.md` 配置部分 |
 | "发布" | 必须先读 `runbooks/RELEASE_RUNBOOK.md`（唯一门禁），勿直跳 README |
 | "做个健康检查" | 读 `WORKFLOW.md` |
-| "调参" / "量化调参" / "quant tuner" | 先读 `QUANT_SYSTEM.md`，再启动 `python scripts/quant_tuner.py` → http://localhost:5179 |
+| "调参" / "量化调参" / "quant tuner" | 先读 `DESIGN.md` + `runbooks/QUANT_RUNBOOK.md`，再启动 `python scripts/quant_tuner.py` → http://localhost:5179 |
 | "查看XX调研" / "后视镜调研" / "research" | 读 `research/README.md` 索引，定位对应 REQ 子目录 |
 | "推进需求" / "修 Bug" / "开发XX" | 读 `PLAN.md` → `plans/Board.md` → 补编号 → 改文件 |
 | "接发布链路" / "微信推送" | 读 `scripts/notifier.py` / `scripts/deployer.py` |
@@ -86,6 +88,21 @@
 | **top-6** | 综合分排名前 6 的 ETF，构成策略持仓 | 前6, 选股池 |
 | **position / 仓位** | 每支 ETF 的目标仓位权重（0-1），由综合分+信心函数+集中度参数共同决定 | 持仓, 权重, weight |
 
+### F1 因子专项
+
+| 术语 | 定义 | `_Avoid_` |
+|------|------|-----------|
+| **抢跑** | 用当日价格提前更新 F1，不等周线 CSV 发布。本质是用不完整信息做估计 | 解冻, unfreeze |
+| **检查点 / checkpoint** | 抢跑日收盘时刻的快照。用当日收盘价从 base EMA 滚一步得到 F1，保存为本周后续冻结日的复用值。数学上等价于"如果本周 bar 现在截止，它的 F1 会是多少" | bar_date, CSV 重建, 临时 bar |
+| **冻结 / freeze** | 两个检查点之间的交易日复用上一个检查点的 F1，不做任何计算。非"信号缺失"——是主动选择不更新一个低质量估计 | 平线, 不变, 保持 |
+| **hold / 保持** | 本周尚无检查点时，沿用上周最后一个完整周的 F1。等价于 freeze 在上周的检查点上 | 延迟, 滞后 |
+| **f1_active_days** | bitmask 0-31，控制哪些交易日触发检查点。1=周五、9=周二+周五、31=每日。本质是"信息完整度门槛"的量化表达 | 三模式, friday/monday/daily |
+| **信息完整度** | 当日已累积的本周交易日数 / 本周总交易日数。周五=5/5=无偏，周二=2/5=有偏 | 数据充分性 |
+| **信息新鲜度** | 距上次完整周 bar 的天数。上周五=-5天，本周二=0天。新鲜度和完整度是抢跑决策的两个正交维度 | 时效性, 及时性 |
+| **有偏估计** | 周中用不完整信息滚 EMA 得到的 F1。不是"错的"——是对真值的噪声近似。噪声随信息完整度上升而衰减，周五收盘时刻归零 | 不准, 假信号 |
+| **收敛** | 检查点日盘中，price(t) → 收盘价的过程中，F1(t) 连续逼近无偏值。收盘时刻达到——此时检查点 = 真值 | 趋近, 逼近 |
+| **无偏值** | 周五收盘时的 F1。信息完整度=5/5，与已完成周线 bar 的 EMA 完全一致。是下周 hold/freeze 的锚点 | 真值, 准确值, 真实F1 |
+
 ### F7 因子专项
 
 | 术语 | 定义 | `_Avoid_` |
@@ -132,6 +149,15 @@ https://julensanchez.github.io/etf-report/
 | 现象 | 可能原因 | AI 处置 |
 |------|---------|---------|
 | `ConnectionError` / `HTTPError 403/503` / `timeout` | 数据源被限流或 IP 封禁 | 告知用户当前数据源受限，建议等待 30 分钟后重试；不要反复重跑加剧封禁 |
+
+## 协作准则
+
+以下四条针对 etf-report 高频翻车点。
+
+1. **实现概念不准进入对话**——用术语表的词（`intraday`、`daily`、`checkpoint`），不用实现细节（`bar_date`、`+3 days`、`CSV 重建`）。术语表有 `_Avoid_` 列，先查再用。
+2. **改策略参数 = 跑全链路**——新增/改名任何参数，按 `QUANT_SYSTEM.md` §5.2 checklist 逐项核对。改完跑 smoke test + 至少一个 preset 的 6y 对比。
+3. **没有基准不动策略逻辑**——改动前保存 NAV 序列 + 各 preset 指标 + 关键 ETF 因子样本。改动后对比。基准不存在就先建基准（REQ-275）。
+4. **结论附验证范围**——"TR 恢复 741%" 必须说明窗口（6y/1y/smoke）、覆盖（是否含节假日短周）、对比基线。
 | `AKShare` 相关 `Exception` / `KeyError` 找不到字段 | AKShare 接口变更或数据源下线 | 读 `WORKFLOW.md` 排障节；核查 `scripts/fix_ma_and_benchmark.py` 和 `realtime_data_updater.py` 的数据源调用 |
 | 量化 CSV 相关 `No CSV data` / `FileNotFoundError` | `data/quant/` 为空（冷启动场景） | 运行 `python scripts/quant_tuner.py --auto` 触发冷启动（约 3-5 分钟），或手动 `python scripts/quant_data_fetcher.py --full` |
 | 腾讯 fqkline `code: 1, msg: param error` / `HTTP 403` | 量化数据源被封 | 详见 `runbooks/QUANT_RUNBOOK.md` §3.6；核心对策：减少请求频率、换 IP、等待 24-48h 解封 |

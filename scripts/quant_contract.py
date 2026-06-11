@@ -107,6 +107,7 @@ PARAM_BOUNDS = {
     "c_sensitivity":    {"type": "continuous", "min": 0.0, "max": 5.0},
     "rebalance_freq":   {"type": "categorical", "choices": ["W-FRI", "daily"]},
     "execution_timing": {"type": "categorical", "choices": ["same_close", "next_open"]},
+    "f1_active_days":   {"type": "integer", "min": 0, "max": 31},
     "score_band":       {"type": "continuous", "min": 0, "max": 15},
     # factors
     "ema_period":       {"type": "integer", "min": 8, "max": 40},
@@ -280,6 +281,7 @@ def tuner_params_to_config_override(params):
             "commission_rate": 0.00026,
         },
         "factors": {
+            "f1_active_days": _as_int(params.get("f1_active_days"), 0),
             "ema": {"period_weeks": _as_int(params.get("ema_period"), 20)},
             "volume_ratio": {"window_days": _as_int(params.get("vol_window"), 20)},
             "log_return_deviation": {
@@ -373,6 +375,7 @@ def preset_to_tuner_params(preset_key, preset_cfg, global_conf=None):
         "f7_t": sensitivity.get("f7_t", 7.0),
         "f7_k": sensitivity.get("f7_k", 3.0),
         "f7_window": factors.get("log_return_deviation", {}).get("window_days", 20),
+        "f1_active_days": factors.get("f1_active_days", 1),
     }
 
 

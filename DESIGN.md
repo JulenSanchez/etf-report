@@ -1,153 +1,97 @@
-# ETF 报告系统 — 架构设计
+# etf-report 系统设计
 
-**设计理念**: 数据驱动、配置化、可观察
+> 架构总览。子系统设计见 `design/`，运维手册见 `runbooks/`。
 
-## 架构概览
-
-```
-腾讯财经 API (K线主源) ─┐
-新浪财经 API (实时行情) ─┤→ 数据获取 → CSV 存储 → 多因子计算 → HTML 注入 → GitHub Pages / 企微
-AKShare (估值/企业行动) ─┘
-```
-
-六层结构：
-1. **数据获取层** — 腾讯财经 API（日/周 K 线，前复权）、新浪财经 API（实时行情 + 基准指数）、AKShare（中证指数 PE/PB 历史、基金拆分/折算）
-2. **数据处理层** — 份额变动自动识别、数据清洗（不复权场景）、MA/EMA 均线计算、基准对标、估值百分位
-3. **数据存储层** — `data/quant/*.csv`（每 ETF 日/周线独立文件）+ `data/valuation_history/` + `corporate_action_events.json` + `market_regimes.json`
-4. **量化引擎层** — F1-F7 七因子（EMA 偏离/RSI 自适应/量比/估值/波动率/动能衰竭/对数收益偏离）+ 信心函数（Regime/MA Trend/DD Trigger）+ 周度调仓回测
-5. **报告生成层** — JavaScript 对象注入 HTML + 量化 payload 独立 JS，100% 样式保证
-6. **调参工具层** — Quant Tuner（Flask localhost:5179），滑块调参 + 一键回测 + K 线复盘
-
-> 量化回测系统的详细入口、事实源优先级、Tuner/回测/preset/正式页的文件分工，统一见 `QUANT_SYSTEM.md`。本文只保留整体架构层面的摘要。
-
-## 核心设计原则
-
-### 数据+模板分离
-
-HTML 中的 `<script>const klineData = {...};</script>` 是数据容器。
-更新只需替换 JSON 值，不触碰 HTML/CSS。样式永不漂移。
-
-### 配置化管理
-
-所有参数集中在 `config/config.yaml`（330+ 行）和 `config/holdings.yaml`（60 个成分股）。
-新增 ETF：编辑 YAML，无需改代码。支持环境变量覆盖。
-
-优先级：环境变量 > 命令行参数 > config.yaml > 代码默认值。
-
-### 结构化日志
-
-JSON Lines 格式，多级别（DEBUG/INFO/WARN/ERROR）。
-终端彩色输出 + 文件输出。5 个脚本 100% 覆盖。
-
-### 健康检查
-
-26 项自动检查，集成在每次执行流程末尾，并额外覆盖解释层鲜度。非交易日或编辑态内容场景下出现少量 WARN 属正常。
-
-## 模块依赖
+## 一、系统架构
 
 ```
-数据管线（日更）:
-  config_manager.py → logger.py → update_report.py (主控)
-                                      ├─ fix_ma_and_benchmark.py → data_cleaning.py
-                                      ├─ realtime_data_updater.py
-                                      ├─ valuation_fetcher.py → valuation_engine.py + stock_bps_fetcher.py
-                                      ├─ editorial_fetcher.py + compliance_filter.py
-                                      └─ health_check.py + verify_html_integrity.py
-
-量化管线（回测 + Tuner）:
-  trading_calendar.py + benchmark_data.py + quant_data_utils.py
-      → quant_factors.py → quant_backtest.py
-              ├→ quant_tuner.py (Flask localhost:5179)
-              ├→ quant_build_payload.py (静态 payload)
-              └→ quant_data_fetcher.py (腾讯财经 K 线 CSV 增量更新)
+┌─────────────────────────────────────────────┐
+│                 正式页 (index.html)           │
+│         assets/js/quant-main.js              │
+│         assets/js/quant_payload.js           │
+└──────────────┬──────────────────────────────┘
+               │ 静态 payload
+┌──────────────▼──────────────────────────────┐
+│           scripts/update_report.py           │
+│           scripts/quant_build_payload.py     │
+└──────────────┬──────────────────────────────┘
+               │
+┌──────────────▼──────────────────────────────┐
+│              量化引擎                         │
+│  ┌─────────────────────────────────────┐    │
+│  │ scripts/quant_backtest.py            │    │
+│  │   唯一回测引擎                        │    │
+│  │   run_backtest() → (nav_df, signals) │    │
+│  └─────────────────────────────────────┘    │
+│  ┌──────────────┐ ┌──────────────────────┐  │
+│  │ quant_factors │ │ quant_contract      │  │
+│  │ 因子原始值     │ │ YAML↔Tuner↔引擎参数  │  │
+│  │ 映射函数       │ │ 三层转换契约         │  │
+│  └──────────────┘ └──────────────────────┘  │
+└──────────────┬──────────────────────────────┘
+               │
+┌──────────────▼──────────────────────────────┐
+│              工坊 Tuner                       │
+│     scripts/quant_tuner.py (Flask :5179)     │
+│     templates/tuner.html                     │
+└──────────────┬──────────────────────────────┘
+               │
+┌──────────────▼──────────────────────────────┐
+│              数据层                           │
+│  config/quant_universe.yaml  (ETF池+preset)  │
+│  data/quant/{code}_daily.csv (日线)          │
+│  data/quant/{code}_weekly.csv (周线)         │
+│  data/quant/etf_metadata.json (规模+持仓)     │
+└─────────────────────────────────────────────┘
 ```
 
+## 二、子系统设计
 
-## 设计决策 (ADR)
+| 子系统 | 设计文档 | 核心代码 |
+|--------|---------|---------|
+| 因子体系（F1/F3/F7） | `design/factors.md` | `scripts/quant_backtest.py:_precompute_factors()` |
+| 回测引擎（循环/仓位/信心/执行） | `design/backtest-engine.md` | `scripts/quant_backtest.py::run_backtest()` |
+| ETF 贡献分析 | `design/etf-contribution.md` | `scripts/quant_tuner.py:_compute_etf_contributions()` |
+| 参数契约 | `scripts/quant_contract.py` | 三层转换（YAML↔Tuner↔引擎） |
 
-> **写入门槛**：只有同时满足以下三条，才新增 ADR：
-> ① 难以逆转（落地后切换成本高）  ② 缺上下文会困惑（新人看不懂为什么不选替代方案）  ③ 存在真实取舍（两个方案各有代价，非明显优劣）
->
-> 只满足 1-2 条 → 原因记在 changelog 或对应 REQ 里即可。
+## 三、设计原则
 
-| ADR | 决策 | 理由 |
-|-----|------|------|
-| 数据注入方式 | JavaScript 对象注入 | 最小改动，100% 样式保证，无额外依赖 |
-| 配置格式 | YAML | 新增 ETF 从 4h → 15min，支持环境变量覆盖 |
-| 日志格式 | JSON Lines | 机器可解析，便于搜索和分析 |
-| 健康检查 | 26 项全量（含解释层鲜度） | 问题早期发现，自动化诊断 |
-| 量化因子 | F1-F7 七因子 + 信心函数 | 覆盖趋势/动量/量价/估值/波动率/衰竭/对数收益 |
-| 资产池 | 34 支 ETF，按扇区分类 | 权益宽基 + 行业 + 跨境 + 红利，可配置扩展 |
+### 唯一引擎
 
-## 调仓执行模型 (2026-05-18)
+`run_backtest()` 是回测的唯一计算入口。CLI、Tuner、正式页 payload 全部通过参数组合调用同一函数。不允许任何路径复制回测逻辑。
 
-量化引擎在每轮调仓中执行以下工序。买卖逻辑分布在 backtest 第一 pass 和 NA V 第二 pass 中，两 pass 行为一致。
-
-### 阶段顺序
+### 参数契约
 
 ```
-1. 全卖（掉出 Top-N）  → 回收现金
-2. 减仓（仍在 Top-N 但降权）→ 回收现金
-3. 加仓（仍在 Top-N 但增权）→ 消耗现金，最后一支吃残量
+config/quant_universe.yaml preset
+  → quant_contract.py (三层转换)
+  → Tuner API / CLI / 正式页
 ```
 
-阶段 1 和 2 都卖出，先执行确保现金池最大化。阶段 3 买入。
+所有参数映射集中在 `quant_contract.py`。新增参数必须改 contract、Tuner 控件、引擎消费、测试——四项对齐。
 
-### 买入顺序
+### 日调仓 + 分数带
 
-买入按以下键升序排列（小者先，大者最后）：
+当前所有 preset 使用日调仓（`rebalance_freq: daily`）。`score_band` 机制阻止小幅分数波动导致的频繁换仓。`same_close` 成交口径用于复盘回测。
 
-1. **目标仓位**（`target_position`，ASC）—— 小仓位先买
-2. **当日成交额**（`amount`，ASC）—— 同仓位下成交额小者先买
+### 三因子
 
-最后一支（最大仓位 + 最大成交额）吸收残留现金，**上限为自身目标仓位**（`max(diff, 0)`），不破坏 MA 趋势仓位控制的现金缓冲区。
+当前活跃因子 F1/F3/F7。F2/F4/F5/F6 已于 2026-05~06 退役（权重=0，代码保留）。
 
-### 买入量计算
+### 检查点/冻结模型（F1 抢跑）
 
-```python
-diff = target_value - current_value
-threshold = discretize_step * tradable_value * 0.5
+F1 的周线 EMA 偏离通过 bitmask `f1_active_days` 控制更新频率。核心是三分支状态机：检查点（滚 EMA）、冻结（复用上一个检查点）、hold（复用上周值）。详见 `design/factors.md`。
 
-if is_last and cash > threshold:
-    buy_value = min(cash, max(diff, 0))   # 吸残量，不超自身目标
-elif diff > threshold:
-    buy_value = min(diff, cash)           # 不超过 diff
-else:
-    continue
+## 四、运维手册
 
-handshares = (buy_value - commission) / price
-```
-
-### 确定性保证
-
-不依赖 `set` 迭代顺序。买卖逻辑封装在 `_execute_rebalance()` 共用函数中，第一 pass（信号生成）和第二 pass（逐日净值）调用同一实现。
-
-### 不处理的场景（已评估，当前无影响）
-
-- **ETF 全天停牌**：全 40 支 ETF 上市以来无停牌事件。若未来出现，应跳过当日打分、冻结目标仓位、标记 HOLD
-- **份额拆分/折算**：数据源为后复权，价格连续无跳变。若切换不复权源，需在 `corporate_action_events.json` 登记事件后由 `data_cleaning.py` 清洗
-
-### 相关代码
-
-| 文件 | 范围 |
+| 文档 | 内容 |
 |------|------|
-| `scripts/quant_backtest.py` | `_execute_rebalance()` 共用调仓函数 + `run_backtest()` 调用 |
+| `runbooks/QUANT_RUNBOOK.md` | 量化系统运维——启动、刷新、变更路由、排障 |
+| `runbooks/REPORT_RUNBOOK.md` | 正式页报告工作流——生成、发布、企微推送 |
+| `runbooks/RELEASE_RUNBOOK.md` | 发布门禁——验证、审计、GitHub Pages |
+| `runbooks/AUDIT_RUNBOOK.md` | 代码审计 |
+| `runbooks/HEALTH_CHECK.md` | 健康检查使用 + 已知问题 |
 
-## 文档事实源优先级
+## 五、基准数据
 
-当多份文档对同一事实描述冲突时，按此顺序裁决：
-
-| 层级 | 文件 | 职责 |
-|------|------|------|
-| **1. 开发治理**（最高） | `PLAN.md`, `plans/Board.md`, `plans/REQ-*.md` | "现在项目是什么状态" |
-| **2. 对外公开** | `README.md`, `SKILL.md`, `WORKFLOW.md`, `DESIGN.md` | "怎么用" |
-| **3. 实现代码** | `scripts/*.py`, `config/*.yaml`, `tests/*.py` | "实际上怎么实现" |
-
-> 冲突时上层覆盖下层。对外文档不应反向覆盖开发治理文件的判断。
-
-## 后续演进
-
-- 实盘调仓信号生成器（盘后一键输出调仓指令）
-- 统一数据获取管线（合并 quant_data_fetcher + fix_ma_and_benchmark + realtime_updater）
-- 参数网格搜索自动化（sweep_f7_full.py 替代废弃的 quant_param_search）
-- 测试覆盖补全（核心量化模块：backtest / tuner / build_payload）
+当前稳定基线：`research/baselines/current.json`（preset3 TR=818%，2026-06-10）。ETF 池变更时必须与此基线对比。

@@ -416,6 +416,47 @@ def _sina_batch_append(cfg, date_str, rt_prices):
     return ok, fail
 
 
+def _sina_batch_append(cfg, date_str, rt_prices):
+    """Append one day's Sina realtime data to all ETF CSVs (single-day only).
+    DESIGN PRINCIPLE: only call this post-market (>=15:10) with confirmed close data.
+    Refuses to write if current time < COOL_OFF_TIME as defense-in-depth.
+    Logs every write attempt for audit trail.
+    """
+    now = datetime.now()
+    if now.hour * 60 + now.minute < COOL_OFF_TIME:
+        print(f"  [Sina] REFUSED: intraday data must never touch CSV (current time < 15:10)")
+        return 0, len(cfg["universe"])
+    # Audit log: record every CSV write from Sina
+    import traceback
+    log_path = SKILL_DIR / "data" / "quant" / ".sina_write_log.txt"
+    stack = "".join(traceback.format_stack()[-6:-1])
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(log_path, "a", encoding="utf-8") as lf:
+        lf.write(f"[{now.isoformat()}] date={date_str} etfs={len(cfg['universe'])}\n{stack}\n")
+    from quant_data_fetcher import append_csv, save_csv, DATA_DIR as QDATA_DIR
+    import pandas as _pd
+    ok, fail = 0, 0
+    for etf in cfg["universe"]:
+        code = etf["code"]
+        rt = rt_prices.get(code)
+        if not rt or rt["price"] <= 0:
+            fail += 1
+            continue
+        daily_path = QDATA_DIR / f"{code}_daily.csv"
+        weekly_path = QDATA_DIR / f"{code}_weekly.csv"
+        new_row = _pd.DataFrame([{
+            "date": date_str, "open": rt["open"], "close": rt["price"],
+            "high": rt["high"], "low": rt["low"],
+            "volume": int(rt["volume"]), "amount": rt["amount"],
+        }])
+        append_csv(new_row, daily_path)
+        full_daily = _pd.read_csv(daily_path)
+        weekly = rebuild_weekly_from_daily(full_daily)
+        save_csv(weekly, weekly_path)
+        ok += 1
+    return ok, fail
+
+
 def refresh_data():
     """Main refresh entry point. Called by /api/refresh_data.
 
@@ -447,34 +488,39 @@ def refresh_data():
     used_sina = False
 
     # ── Single-day Sina fast path (post-market only, gap = exactly 1 trading day) ──
+    # DESIGN PRINCIPLE: intraday data must NEVER touch CSV. Only post-market confirmed close.
+    # The _is_post_market() guard is necessary but NOT sufficient — hard-check time explicitly.
     if post_market:
-        from quant_data_fetcher import get_last_date, DATA_DIR as QDATA_DIR
-        prev_td = last_trading_day(now)  # last trading day before today (handles weekends)
-        all_yesterday = True
-        for etf in cfg["universe"]:
-            last = get_last_date(QDATA_DIR / f"{etf['code']}_daily.csv")
-            if last is None or last < prev_td:
-                all_yesterday = False
-                break
-        if all_yesterday:
-            print(f"  [Refresh] Post-market — trying Sina single-day fast path...")
-            rt = _fetch_sina_realtime(cfg)
-            if rt:
-                ok, fail = _sina_batch_append(cfg, today_str, rt)
-                if fail == 0:
-                    used_sina = True
-                    _reload_csv_to_cache(cfg)
-                    print(f"  [Refresh] Sina fast path: {ok} OK, ~2s")
+        now_minutes = now.hour * 60 + now.minute
+        if now_minutes >= COOL_OFF_TIME:
+            from quant_data_fetcher import get_last_date, DATA_DIR as QDATA_DIR
+            prev_td = last_trading_day(now)
+            all_yesterday = True
+            for etf in cfg["universe"]:
+                last = get_last_date(QDATA_DIR / f"{etf['code']}_daily.csv")
+                if last is None or last < prev_td:
+                    all_yesterday = False
+                    break
+            if all_yesterday:
+                print(f"  [Refresh] Post-market — trying Sina single-day fast path...")
+                rt = _fetch_sina_realtime(cfg)
+                if rt:
+                    ok, fail = _sina_batch_append(cfg, today_str, rt)
+                    if fail == 0:
+                        used_sina = True
+                        _reload_csv_to_cache(cfg)
+                        print(f"  [Refresh] Sina fast path: {ok} OK, ~2s")
+                    else:
+                        print(f"  [Refresh] Sina fast path partial: {ok} OK, {fail} fail — falling back")
                 else:
-                    print(f"  [Refresh] Sina fast path partial: {ok} OK, {fail} fail — falling back")
-            else:
-                print(f"  [Refresh] Sina API failed — falling back to incremental")
+                    print(f"  [Refresh] Sina API failed — falling back to incremental")
 
     # ── Incremental fetch (Tencent per-ETF, fallback or non-post-market) ──
     if not used_sina and (post_market or not trading or pre_market):
         print(f"  [Refresh] Running incremental fetch...")
         ok, fail = _run_incremental_fetch(cfg)
         ran_fetch = True
+        _reload_csv_to_cache(cfg)  # reload cache after CSV updates
     elif intraday:
         print(f"  [Refresh] Intraday — CSV write skipped (live data → cache only)")
         _reload_csv_to_cache(cfg)

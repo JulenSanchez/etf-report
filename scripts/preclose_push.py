@@ -131,19 +131,15 @@ end = now.strftime("%Y-%m-%d")
 start = f"{now.year}-05-01"
 log(f"  Preset: {DEFAULT_PRESET} | Window: {start} ~ {end}")
 
-params = {
-    "w1": p.get("w1", 50), "w3": p.get("w3", 30), "w7": p.get("w7", 20),
-    "conf_type": "ma_trend", "ma_trend_period": p.get("ma_trend_period", 26),
-    "ma_bull_pos": p.get("ma_bull_pos", 1.0), "ma_bear_pos": p.get("ma_bear_pos", 0.3),
-    "ma_direction_confirm": True, "max_holdings": p.get("max_holdings", 6),
-    "disc_step": p.get("disc_step", 0.05), "concentration": p.get("concentration", 0.5),
-    "c_sensitivity": p.get("c_sensitivity", 0.0), "rebalance_freq": "daily",
-    "execution_timing": "same_close", "score_band": p.get("score_band", 3),
-    "f1_sensitivity": p.get("f1_sensitivity", 8.0), "f3_sensitivity": p.get("f3_sensitivity", 1.0),
-    "f7_t": p.get("f7_t", 15.0), "f7_k": p.get("f7_k", 3.5), "f7_window": p.get("f7_window", 20),
-    "ema_period": p.get("ema_period", 5), "vol_window": p.get("vol_window", 20),
-    "start_date": start, "end_date": end, "universe": "", "debug": False,
-}
+# Start from the full preset params (contract layer provides correct units + all keys).
+# Only override fields that preclose specifically needs to change.
+params = {k: v for k, v in p.items() if not k.startswith("_")}
+params.update({
+    "start_date": start,
+    "end_date": end,
+    "universe": "",
+    "debug": False,
+})
 
 # ═══════════════════════════════════════════════════════════════
 # Stage 4: Run backtest

@@ -236,35 +236,115 @@ def _precompute_factors(all_daily, all_weekly, ema_period, vol_window,
                          f7_window=20, f7_lookback=250, f7_min_days=60, f7_sigma_floor=0.01,
                          f3_norm_window=60, f1_daily_ema=False, f1_daily_ma=False,
                          f2_ma_period=None, f6_rsi_thresh=80.0, f6_drop_thresh=0.025,
-                         f6_vol_thresh=1.5, f6_decay_days=3, f6_base_penalty=0.15):
-    '''Precompute F1/F3/F6/F7/RSI series once — O(1) lookup per rebalance date.'''
+                         f6_vol_thresh=1.5, f6_decay_days=3, f6_base_penalty=0.15,
+                         f1_active_days=0):
+    '''Precompute F1/F3/F6/F7/RSI series once — O(1) lookup per rebalance date.
+
+    f1_active_days: bitmask (0-31) controlling when the current partial week is
+      allowed to be used as an extra bar in the weekly EMA.
+        bit 0 (1): ≥5 days (Fri)   bit 1 (2): ≥4 days (Thu)
+        bit 2 (4): ≥3 days (Wed)   bit 3 (8): ≥2 days (Tue)
+        bit 4 (16): ≥1 day (Mon)
+      0 = Base (never), 31 = Daily (any day).
+      The weekly CSV contains only complete weeks — partial bars are computed
+      on-the-fly from daily data.
+    '''
     import numpy as np
     from quant_factors import calc_ema as _ce
     out = {}
     f1_daily = f1_daily_ema or f1_daily_ma
     f2_window = f2_ma_period or (ema_period * 5)
+
+    # Bit → offset from last trading day of the ISO week.
+    # bit 0 (Fri) = 0 days before last, bit 1 (Thu) = 1 before last, etc.
+    # Actual threshold = total_trading_days_in_week - offset.
+    BIT_OFFSET = {1: 0, 2: 1, 4: 2, 8: 3, 16: 4}
+
+    # Trading calendar for total-trading-days-per-week computation
+    from trading_calendar import load_trading_calendar as _load_td
+    _td_list = _load_td()
+    _td_set = set(_td_list) if _td_list else set()
+
     for code, daily_df in all_daily.items():
         weekly_df = all_weekly.get(code)
-        daily_dates = daily_df["date"].values
-        weekly_dates = weekly_df["date"].values if weekly_df is not None else np.array([])
-        # F1: weekly EMA deviation (or daily EMA/MA if f1_daily_ema/f1_daily_ma)
-        span_daily = ema_period * 5
-        f1_val = np.full(len(daily_dates) if f1_daily else len(weekly_dates), np.nan, dtype=float)
-        if f1_daily_ma and len(daily_df) >= span_daily:
-            cd = daily_df["close"].astype(float)
-            ma = cd.rolling(window=span_daily).mean()
-            s = ((cd - ma) / ma * 100).astype(float).to_numpy()
-            f1_val[:len(s)] = s; f1_val[:span_daily-1] = np.nan
-        elif f1_daily_ema and len(daily_df) >= span_daily:
-            cd = daily_df["close"].astype(float)
-            ema = _ce(cd, span=span_daily)
-            s = ((cd - ema) / ema * 100).astype(float).to_numpy()
-            f1_val[:len(s)] = s; f1_val[:span_daily-1] = np.nan
-        elif not f1_daily and weekly_df is not None and len(weekly_df) >= ema_period:
-            cw = weekly_df["close"].astype(float)
-            ema = _ce(cw, span=ema_period)
-            s = ((cw - ema) / ema * 100).astype(float).to_numpy()
-            f1_val[:len(s)] = s; f1_val[:ema_period-1] = np.nan
+        daily_dates = pd.to_datetime(daily_df["date"]).values.astype('datetime64[ns]')
+        weekly_dates = pd.to_datetime(weekly_df["date"]).values.astype('datetime64[ns]') if weekly_df is not None else np.array([], dtype='datetime64[ns]')
+        weekly_closes = weekly_df["close"].astype(float).values if weekly_df is not None else np.array([])
+
+        # Precompute EMA on completed weekly closes (one-time, O(n))
+        alpha = 2.0 / (ema_period + 1)
+        ema_weekly = np.full(len(weekly_closes), np.nan)
+        if len(weekly_closes) >= ema_period:
+            cw_s = pd.Series(weekly_closes, dtype=float)
+            ema_weekly = _ce(cw_s, span=ema_period).values
+
+        # F1 per daily date. O(1) per day using EMA rolling.
+        f1_val = np.full(len(daily_dates), np.nan, dtype=float)
+        _daily_dt = pd.DatetimeIndex(daily_dates)
+        _weekly_dt = pd.DatetimeIndex(weekly_dates)
+        _daily_iso = _daily_dt.isocalendar()
+        _daily_week_str = _daily_iso.week.astype(str) + "-" + _daily_iso.year.astype(str)
+
+        # Precompute trading-day counts per ISO week from daily data.
+        # More reliable than the trading calendar for historical holidays.
+        _week_td_map = _daily_week_str.value_counts().to_dict()
+        # Last ISO week in the data is likely incomplete — its actual count
+        # would grow as data is added, making checkpoint conditions unstable.
+        # Clamp to 5 for the last week; complete short weeks are unaffected.
+        _last_week = _daily_week_str.iloc[-1]
+        _week_td_map[_last_week] = 5
+
+        # Per-ETF state: checkpoint value for the current ISO week, reset on week boundary.
+        checkpoint_f1 = None
+        prev_week = None
+
+        for i in range(len(daily_df)):
+            cur_week = _daily_week_str.iloc[i]
+
+            # ── Week boundary: reset checkpoint ──
+            if cur_week != prev_week:
+                checkpoint_f1 = None
+                prev_week = cur_week
+
+            # ── Base: last complete week ──
+            # Always use Monday of the current ISO week as reference.
+            # The last bar strictly before Monday is the last complete week.
+            iso_year, iso_week, _ = _daily_dt[i].isocalendar()
+            cur_week_monday = pd.Timestamp.fromisocalendar(iso_year, iso_week, 1)
+            w_end = _weekly_dt.searchsorted(cur_week_monday, side="right")
+            if w_end < ema_period: continue
+            w_last = w_end - 1
+            base_ema = ema_weekly[w_last]
+            base_close = weekly_closes[w_last]
+            if np.isnan(base_ema): continue
+
+            # ── Days elapsed in this ISO week ──
+            days_in_week = int((_daily_week_str[:i+1] == cur_week).sum())
+
+            # ── Total trading days in this ISO week (from daily data, not calendar) ──
+            total_td = _week_td_map.get(cur_week, 5)
+
+            # ── Is today a checkpoint day? ──
+            # A day is a checkpoint iff its bit is enabled AND
+            # days_in_week EXACTLY equals the threshold (not ">=").
+            is_checkpoint = False
+            if f1_active_days > 0:
+                for bit_val, offset in BIT_OFFSET.items():
+                    if (f1_active_days & bit_val) and (days_in_week == total_td - offset):
+                        is_checkpoint = True
+                        break
+
+            # ── Unified hold / compute / freeze ──
+            # All three branches use the same base (last complete week).
+            if is_checkpoint:
+                today_close = float(daily_df["close"].iloc[i])
+                ema_now = alpha * today_close + (1 - alpha) * base_ema
+                checkpoint_f1 = float((today_close - ema_now) / ema_now * 100)
+                f1_val[i] = checkpoint_f1
+            elif checkpoint_f1 is not None:
+                f1_val[i] = checkpoint_f1
+            else:
+                f1_val[i] = float((base_close - base_ema) / base_ema * 100)
         # F3: self-normalized volume ratio (60d baseline → 20d up/down comparison)
         f3_val = np.full(len(daily_dates), np.nan, dtype=float)
         if len(daily_df) >= f3_norm_window + vol_window + 1:
@@ -427,6 +507,7 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
     c_sensitivity = position_cfg.get("c_sensitivity", 0.0)  # dynamic C sensitivity: c_mult = 1 + sens×(disp−0.5), 0=static
     f1_daily_ema = factor_cfg.get("f1_daily_ema", False)
     f1_daily_ma = factor_cfg.get("f1_daily_ma", False)
+    f1_active_days = factor_cfg.get("f1_active_days", 0)
     f2_ma_period = factor_cfg.get("f2_ma_period")
     f6_rsi_thresh   = factor_cfg.get("f6_rsi_thresh", 80.0)
     f6_drop_thresh  = factor_cfg.get("f6_drop_thresh", 0.025)
@@ -509,6 +590,7 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
         f7_window=f7_window, f7_lookback=f7_lookback,
         f7_min_days=f7_min_days, f7_sigma_floor=f7_sigma_floor,
         f1_daily_ema=f1_daily_ema, f1_daily_ma=f1_daily_ma,
+        f1_active_days=f1_active_days,
         f2_ma_period=f2_ma_period,
         f6_rsi_thresh=f6_rsi_thresh,
         f6_drop_thresh=f6_drop_thresh,
@@ -599,7 +681,7 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
             weekly_end = np.searchsorted(fs["weekly_dates"], rb_np, side="right")
             if daily_end < 30 or weekly_end < factor_cfg["ema"]["period_weeks"]:
                 continue
-            f1_end = daily_end if (f1_daily_ema or f1_daily_ma) else weekly_end
+            f1_end = daily_end  # F1 is always per daily date now
             f1_val = fs["f1"][f1_end - 1] if f1_end > 0 else np.nan
             f3_val = fs["f3"][daily_end - 1] if daily_end > 0 else np.nan
             f7_val = fs["f7"][daily_end - 1] if daily_end > 0 else np.nan
