@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Pre-close push: auto-start Tuner → refresh intraday → backtest → push top-10 to WeChat via Server酱."""
+"""Pre-close push: auto-start Tuner → refresh intraday → backtest → push top-10 to WeChat via Server酱.
+   --refresh-only: stop after data refresh (post-market use, no backtest/push)."""
 import sys, os, time, subprocess, requests, yaml
 from datetime import datetime
 
@@ -8,6 +9,7 @@ sys.path.insert(0, os.path.join(SKILL_DIR, "scripts"))
 from trading_calendar import is_trading_day
 
 TUNER_URL = "http://localhost:5179"
+REFRESH_ONLY = "--refresh-only" in sys.argv
 DEFAULT_PRESET = "preset3"
 TUNER_STARTUP_TIMEOUT = 60  # max seconds to wait for Tuner
 
@@ -98,6 +100,10 @@ log(f"  Status: {status.get('status', '?')} | {status.get('count', 0)} ETFs")
 halted = status.get("haltedCount", 0)
 if halted:
     log(f"  Halted ETFs detected: {halted}")
+
+if REFRESH_ONLY:
+    log("--refresh-only: done after data refresh. Skipping backtest + push.")
+    sys.exit(0)
 
 # ═══════════════════════════════════════════════════════════════
 # Stage 3: Load preset + build params

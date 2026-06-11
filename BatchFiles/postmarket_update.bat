@@ -2,18 +2,18 @@
 chcp 65001 >nul 2>&1
 
 cd /d "%~dp0.."
-if not exist "scripts\quant_data_fetcher.py" (
-    echo [ERROR] Cannot find scripts\quant_data_fetcher.py
+if not exist "scripts\preclose_push.py" (
+    echo [ERROR] Cannot find scripts\preclose_push.py
     pause
     exit /b 1
 )
 
 echo ========================================
-echo   Post-Market Data Update - %date% %time%
+echo   Post-Market Data Refresh - %date% %time%
 echo ========================================
 echo.
 
-python scripts\quant_data_fetcher.py --incremental
+python scripts\preclose_push.py --refresh-only
 set EXITCODE=%ERRORLEVEL%
 
 echo.
