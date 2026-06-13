@@ -3,10 +3,9 @@
    --refresh-only: stop after data refresh (post-market use, no backtest/push)."""
 import sys, os, time, subprocess, requests, yaml
 from datetime import datetime
-from pathlib import Path
 
-PROJECT_ROOT = next(parent for parent in Path(__file__).resolve().parents if (parent / "config").is_dir() and (parent / "scripts").is_dir())
-sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
+SKILL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(SKILL_DIR, "scripts"))
 from trading_calendar import is_trading_day
 
 TUNER_URL = "http://localhost:5179"
@@ -38,10 +37,10 @@ def _ensure_tuner():
         return True
 
     log("Tuner: not running — starting...")
-    tuner_script = os.path.join(PROJECT_ROOT, "scripts", "quant_tuner.py")
+    tuner_script = os.path.join(SKILL_DIR, "scripts", "quant_tuner.py")
     subprocess.Popen(
         ["python", tuner_script],
-        cwd=PROJECT_ROOT,
+        cwd=SKILL_DIR,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
         creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0,
@@ -73,7 +72,7 @@ if not is_trading_day():
     sys.exit(0)
 log(f"Trading day: YES ({now:%Y-%m-%d})")
 
-with open(os.path.join(PROJECT_ROOT, "config", "secrets.yaml"), "r", encoding="utf-8") as f:
+with open(os.path.join(SKILL_DIR, "config", "secrets.yaml"), "r", encoding="utf-8") as f:
     sec = yaml.safe_load(f) or {}
 sendkey = sec.get("publish", {}).get("serverchan", {}).get("sendkey", "")
 if not sendkey:
@@ -113,7 +112,7 @@ log("=" * 50)
 log("Stage 3: Load preset params")
 
 # ETF name map for display
-with open(os.path.join(PROJECT_ROOT, "config", "quant_universe.yaml"), "r", encoding="utf-8") as f:
+with open(os.path.join(SKILL_DIR, "config", "quant_universe.yaml"), "r", encoding="utf-8") as f:
     cfg = yaml.safe_load(f)
 etf_names = {e["code"]: e.get("name", e["code"]) for e in cfg.get("universe", [])}
 qdii_codes = {e["code"] for e in cfg.get("universe", []) if e.get("qdii")}
