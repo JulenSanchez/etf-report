@@ -1,7 +1,7 @@
 # 量化信号推送 — 定时任务一键部署
 # 用法: 右键 → 使用 PowerShell 运行，或管理员终端: .\setup_quant_tasks.ps1
 
-$repoDir = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+$repoDir = Split-Path -Parent $PSScriptRoot
 $settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -MultipleInstances IgnoreNew
 
 $tasks = @(
