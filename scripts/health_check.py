@@ -104,22 +104,6 @@ def load_etf_codes() -> List[str]:
 ETF_CODES = load_etf_codes()
 
 
-
-def load_editorial_content() -> Dict:
-    if get_config is None:
-        return {}
-
-    try:
-        config = get_config()
-        if hasattr(config, "get_editorial_content"):
-            return config.get_editorial_content() or {}
-    except Exception:
-        return {}
-
-    return {}
-
-
-
 def _parse_iso_date(date_str: str):
     if not date_str or not isinstance(date_str, str):
         return None
@@ -128,22 +112,6 @@ def _parse_iso_date(date_str: str):
         return datetime.strptime(date_str[:10], "%Y-%m-%d").date()
     except ValueError:
         return None
-
-
-
-def _resolve_editorial_content_date(editorial_content: Dict, card_content: Dict) -> str:
-    if isinstance(card_content, dict):
-        content_date = card_content.get("content_date")
-        if isinstance(content_date, str) and content_date.strip():
-            return content_date.strip()
-
-    global_date = (editorial_content or {}).get("content_date")
-    if isinstance(global_date, str) and global_date.strip():
-        return global_date.strip()
-
-    return ""
-
-
 
 def _extract_data_cutoff_from_html(html_content: str) -> str:
     # 宽容匹配：允许 "数据截止:" 和日期之间存在少量 HTML 标签/空白（例如
@@ -941,81 +909,6 @@ class WorkflowChecker:
             result.error_message = str(e)
         return result
 
-    @staticmethod
-    def check_editorial_freshness() -> CheckResult:
-        result = CheckResult("E4", "解释层鲜度", "E")
-        try:
-            editorial_content = load_editorial_content()
-            if not editorial_content:
-                result.status = "WARN"
-                result.details = {"status": "未加载 editorial_content.yaml"}
-                return result
-
-            html_content = ""
-            if os.path.exists(HTML_FILE):
-                with open(HTML_FILE, 'r', encoding='utf-8') as f:
-                    html_content = f.read()
-
-            data_cutoff_date = _extract_data_cutoff_from_html(html_content)
-            cutoff_dt = _parse_iso_date(data_cutoff_date)
-            failures = []
-            warnings = []
-            checked = 0
-
-            def _check_entry(target_name: str, card_content: Dict):
-                nonlocal checked
-                checked += 1
-                policy = (card_content or {}).get("freshness_policy") or "sticky"
-                content_date = _resolve_editorial_content_date(editorial_content, card_content or {})
-                content_dt = _parse_iso_date(content_date)
-                delta_days = None if not content_dt or not cutoff_dt else abs((cutoff_dt - content_dt).days)
-
-                if not content_date:
-                    if policy == "daily":
-                        failures.append(f"{target_name}:未标注观点日期")
-                    else:
-                        warnings.append(f"{target_name}:未标注观点日期")
-                    return
-
-                if policy == "daily" and (delta_days is None or delta_days != 0):
-                    failures.append(f"{target_name}:{content_date}")
-                elif policy == "manual_daily" and (delta_days is None or delta_days != 0):
-                    warnings.append(f"{target_name}:{content_date}")
-                elif policy == "weekly" and (delta_days is None or delta_days > 7):
-                    warnings.append(f"{target_name}:{content_date}")
-
-            for code, card_group in (editorial_content.get("etf_cards") or {}).items():
-                _check_entry(f"research-{code}", card_group or {})
-
-            for card_id, card_content in (editorial_content.get("macro_cards") or {}).items():
-                _check_entry(card_id, card_content or {})
-
-            if failures:
-                result.status = "FAIL"
-                result.details = {
-                    "checked": checked,
-                    "data_cutoff_date": data_cutoff_date or "N/A",
-                    "failures": failures[:8],
-                    "warnings": warnings[:8],
-                }
-            elif warnings:
-                result.status = "WARN"
-                result.details = {
-                    "checked": checked,
-                    "data_cutoff_date": data_cutoff_date or "N/A",
-                    "warnings": warnings[:8],
-                }
-            else:
-                result.status = "PASS"
-                result.details = {
-                    "checked": checked,
-                    "data_cutoff_date": data_cutoff_date or "N/A",
-                }
-        except Exception as e:
-            result.status = "FAIL"
-            result.error_message = str(e)
-        return result
-
 class ConfigChecker:
 
     """系统配置检查"""
@@ -1238,7 +1131,6 @@ def run_all_checks(categories_filter=None):
         WorkflowChecker.check_transaction_management,
         WorkflowChecker.check_date_sync,
         WorkflowChecker.check_update_pipeline,
-        WorkflowChecker.check_editorial_freshness,
         # F: 系统配置
 
         ConfigChecker.check_holdings_config,

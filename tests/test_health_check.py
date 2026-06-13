@@ -123,30 +123,3 @@ def test_load_etf_codes_prefers_config(monkeypatch, load_module):
     assert module.load_etf_codes() == ["159865"]
 
 
-
-def test_check_editorial_freshness_warns_when_manual_daily_content_is_stale(tmp_path, monkeypatch, load_module):
-    module = load_module("health_check")
-    html_file = tmp_path / "index.html"
-    html_file.write_text('数据截止: 2026-04-10', encoding="utf-8")
-
-    fake_config = types.SimpleNamespace(
-        get_editorial_content=lambda: {
-            "content_date": "2026-04-09",
-            "etf_cards": {
-                "510000": {"freshness_policy": "manual_daily"},
-            },
-            "macro_cards": {
-                "domestic-policy-card": {"freshness_policy": "sticky", "content_date": "2026-04-01"},
-            },
-        }
-    )
-
-    monkeypatch.setattr(module, "HTML_FILE", str(html_file))
-    monkeypatch.setattr(module, "get_config", lambda: fake_config)
-
-    result = module.WorkflowChecker.check_editorial_freshness()
-
-    assert result.status == "WARN"
-    assert result.details["warnings"] == ["research-510000:2026-04-09"]
-
-
