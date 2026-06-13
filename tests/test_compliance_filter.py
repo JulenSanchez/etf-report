@@ -132,7 +132,7 @@ def test_write_audit_creates_two_files(tmp_path, monkeypatch, load_module):
 
     # 让 log 写到 tmp_path
     monkeypatch.setattr(module, "DEFAULT_LOG_DIR", str(tmp_path))
-    monkeypatch.setattr(module, "SKILL_DIR", str(tmp_path))
+    monkeypatch.setattr(module, "PROJECT_ROOT", str(tmp_path))
 
     rules = module.load_rules()
     # 手动修一下 runtime 的 template 路径让它相对 tmp_path
@@ -179,7 +179,7 @@ def test_block_rate_warn_threshold_respected(tmp_path, monkeypatch, capsys, load
     """拦截率超过阈值应在 stderr 输出 WARN。"""
     module = load_module("compliance_filter")
 
-    monkeypatch.setattr(module, "SKILL_DIR", str(tmp_path))
+    monkeypatch.setattr(module, "PROJECT_ROOT", str(tmp_path))
 
     rules = module.load_rules()
     rules.setdefault("runtime", {})

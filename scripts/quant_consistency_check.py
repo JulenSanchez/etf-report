@@ -14,13 +14,13 @@ import yaml
 
 sys.stdout.reconfigure(encoding="utf-8")
 
-SKILL_DIR = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(SKILL_DIR / "scripts"))
+PROJECT_ROOT = next(parent for parent in Path(__file__).resolve().parents if (parent / "config").is_dir() and (parent / "scripts").is_dir())
+sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
 
 import quant_contract as qc
 from quant_backtest import count_actual_rebalances, run_backtest
 
-CONFIG_PATH = SKILL_DIR / "config" / "quant_universe.yaml"
+CONFIG_PATH = PROJECT_ROOT / "config" / "quant_universe.yaml"
 
 
 def load_quant_config(path=CONFIG_PATH):

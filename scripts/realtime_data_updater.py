@@ -17,6 +17,9 @@ import time
 import re
 import os
 from datetime import datetime
+from pathlib import Path
+
+PROJECT_ROOT = next(parent for parent in Path(__file__).resolve().parents if (parent / "config").is_dir() and (parent / "scripts").is_dir())
 
 from logger import Logger
 
@@ -483,12 +486,8 @@ def main():
     """主函数"""
     import os
     
-    # 获取skill根目录（scripts的父目录）
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    skill_dir = os.path.dirname(script_dir)
-    
     # 定义文件路径
-    data_dir = os.path.join(skill_dir, "data")
+    data_dir = str(PROJECT_ROOT / "data")
     
     # 1. 获取所有实时数据
     all_data = fetch_all_realtime_data()

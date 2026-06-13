@@ -91,13 +91,13 @@ powershell -ExecutionPolicy Bypass -File batchfiles\setup_report_task.ps1
 | 图表不显示 | 检查 `data/etf_full_kline_data.json` 数据格式 |
 | 健康检查 FAIL | 查看具体失败项；少量 WARN 通常不影响 |
 | 发布失败 | 检查 `config/secrets.yaml`、SSH：`ssh -T git@github.com` |
-| 量化板块显示"建设中" | 量化回测仅在开发环境可用，见 `QUANT_RUNBOOK.md` |
+| 量化板块显示"建设中" | 量化回测仅在开发环境可用，见 `docs/ops/quant/overview.md` |
 
 ---
 
 ## 相关文档
 
-- 系统架构：`DESIGN.md`
-- 量化运维：`runbooks/QUANT_RUNBOOK.md`
-- 代码审计：`runbooks/AUDIT_RUNBOOK.md`
-- 发布门禁：`runbooks/RELEASE_RUNBOOK.md`
+- 系统架构：`docs/architecture.md`
+- 量化运维：`docs/ops/quant/overview.md`
+- 代码审计：`docs/ops/audit.md`
+- 发布门禁：`docs/ops/release.md`

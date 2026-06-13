@@ -16,8 +16,8 @@ from pathlib import Path
 
 sys.stdout.reconfigure(encoding="utf-8")
 
-SKILL_DIR = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(SKILL_DIR / "scripts"))
+PROJECT_ROOT = next(parent for parent in Path(__file__).resolve().parents if (parent / "config").is_dir() and (parent / "scripts").is_dir())
+sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
 
 from update_report import generate_quant_baseline_payload
 

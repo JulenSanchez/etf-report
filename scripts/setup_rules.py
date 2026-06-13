@@ -14,8 +14,8 @@ import os
 import sys
 import shutil
 
-SKILL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-RULES_SRC = os.path.join(SKILL_DIR, "rules")
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+RULES_SRC = os.path.join(PROJECT_ROOT, "rules")
 
 # Rule definitions: (filename_stem, scope, description)
 # scope: "project" = goes to workspace .codebuddy/rules/ or .claude/rules/
@@ -30,7 +30,7 @@ RULES = [
 def detect_ide():
     """Detect which IDE environment we're in."""
     # Check by looking at which config directory exists in the workspace
-    workspace = os.path.dirname(os.path.dirname(SKILL_DIR))
+    workspace = os.path.dirname(os.path.dirname(PROJECT_ROOT))
     cb_dir = os.path.join(workspace, ".codebuddy")
     claude_dir = os.path.join(workspace, ".claude")
 
@@ -80,7 +80,7 @@ def list_rules():
 
 def install_rules(dry_run=False):
     """Install rules to the detected IDE environments."""
-    workspace_dir = os.path.dirname(os.path.dirname(SKILL_DIR))
+    workspace_dir = os.path.dirname(os.path.dirname(PROJECT_ROOT))
     ides = detect_ide()
 
     if not ides:

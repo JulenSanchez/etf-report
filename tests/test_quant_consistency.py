@@ -4,8 +4,8 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-SKILL_DIR = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(SKILL_DIR / "scripts"))
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
 
 from quant_consistency_check import compare_summaries, summarize_result
 

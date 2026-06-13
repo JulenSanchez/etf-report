@@ -8,7 +8,7 @@ Coverage:
   - execution_timing (same_close vs next_open) affects results
   - return_details provides trade_log
 
-Referenced by: QUANT_SYSTEM.md (验证守卫), runbooks/QUANT_RUNBOOK.md (最小验证)
+Referenced by: docs/ops/quant/overview.md (验证守卫 / 最小验证)
 """
 import pytest, sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))

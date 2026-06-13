@@ -13,6 +13,9 @@ import yaml
 import requests
 from datetime import datetime
 from typing import Dict, Optional
+from pathlib import Path
+
+PROJECT_ROOT = next(parent for parent in Path(__file__).resolve().parents if (parent / "config").is_dir() and (parent / "scripts").is_dir())
 
 from logger import Logger
 from config_manager import get_config
@@ -161,8 +164,6 @@ def main(data_dir: str) -> bool:
     publish_config = config._config.get("publish", {})
     wecom_config = publish_config.get("wecom", {})
 
-    SKILL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
     if not wecom_config.get("enabled", False):
         logger.info("企微通知未启用，跳过")
         return True
@@ -170,7 +171,7 @@ def main(data_dir: str) -> bool:
     webhook_url = wecom_config.get("webhook_url", "")
     if not webhook_url:
         # 尝试从 secrets.yaml 读取（不会被提交到 git）
-        secrets_path = os.path.join(SKILL_DIR, "config", "secrets.yaml")
+        secrets_path = PROJECT_ROOT / "config" / "secrets.yaml"
         if os.path.exists(secrets_path):
             with open(secrets_path, "r", encoding="utf-8") as f:
                 secrets = yaml.safe_load(f) or {}
@@ -200,7 +201,6 @@ def main(data_dir: str) -> bool:
 
 if __name__ == "__main__":
     import sys
-    SKILL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    DATA_DIR = os.path.join(SKILL_DIR, "data")
-    success = main(DATA_DIR)
+    DATA_DIR = PROJECT_ROOT / "data"
+    success = main(str(DATA_DIR))
     sys.exit(0 if success else 1)

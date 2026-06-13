@@ -26,8 +26,8 @@ from typing import Iterator
 import numpy as np
 import pandas as pd
 
-SKILL_DIR = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(SKILL_DIR / "scripts"))
+PROJECT_ROOT = next(parent for parent in Path(__file__).resolve().parents if (parent / "config").is_dir() and (parent / "scripts").is_dir())
+sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
 
 try:
     import optuna
@@ -43,8 +43,8 @@ from quant_contract import (
 from quant_backtest import run_backtest, load_config as _load_backtest_config
 from quant_data_utils import load_etf_data as _load_etf_data
 
-DATA_DIR = SKILL_DIR / "data" / "quant"
-RESEARCH_DIR = SKILL_DIR / "research" / "params"
+DATA_DIR = PROJECT_ROOT / "data" / "quant"
+RESEARCH_DIR = PROJECT_ROOT / "research" / "params"
 
 # ── CLI defaults ────────────────────────────────────────────────────────
 METRIC_NAMES = ["calmar", "sharpe", "sortino", "annual_return", "total_return"]
@@ -285,10 +285,10 @@ class ParamSpace:
 # 3. BacktestRunner
 # ═══════════════════════════════════════════════════════════════════════════
 class BacktestRunner:
-    def __init__(self, preset: str, data_dir: Path, skill_dir: Path):
+    def __init__(self, preset: str, data_dir: Path, project_root: Path):
         self.preset = preset
         self.data_dir = data_dir
-        self.skill_dir = skill_dir
+        self.project_root = project_root
         self._preloaded = None
 
     def _ensure_preloaded(self):
@@ -678,7 +678,7 @@ def run(cfg: OptimizationConfig):
     log(f"  output={cfg.output_dir}")
 
     # ── Build runner and baseline ──
-    runner = BacktestRunner(cfg.preset, DATA_DIR, SKILL_DIR)
+    runner = BacktestRunner(cfg.preset, DATA_DIR, PROJECT_ROOT)
     log("Computing baseline ...")
     baseline_metrics = _run_baseline(runner, cfg)
     for bm in baseline_metrics:

@@ -39,9 +39,9 @@ from typing import Dict, List, Optional, Tuple
 import yaml
 
 
-SKILL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DEFAULT_RULES_PATH = os.path.join(SKILL_DIR, "config", "compliance_rules.yaml")
-DEFAULT_LOG_DIR = os.path.join(SKILL_DIR, "logs")
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DEFAULT_RULES_PATH = os.path.join(PROJECT_ROOT, "config", "compliance_rules.yaml")
+DEFAULT_LOG_DIR = os.path.join(PROJECT_ROOT, "logs")
 
 
 # ------------------------------------------------------------
@@ -229,10 +229,10 @@ def write_audit(
     )
 
     audit_path = os.path.join(
-        SKILL_DIR, audit_tpl.format(date=today)
+        PROJECT_ROOT, audit_tpl.format(date=today)
     )
     summary_path = os.path.join(
-        SKILL_DIR, summary_tpl.format(date=today)
+        PROJECT_ROOT, summary_tpl.format(date=today)
     )
     os.makedirs(os.path.dirname(audit_path), exist_ok=True)
 

@@ -41,9 +41,9 @@ def test_check_js_data_blocks_passes_when_only_kline_data_exists(tmp_path, monke
     html_file = tmp_path / "index.html"
     html_file.write_text('<script>const klineData = {"ok": true};</script>', encoding="utf-8")
 
-    # 将 SKILL_DIR 指向 tmp_path，确保 assets/js/runtime_payload.js 不存在，走回退分支
+    # 将 PROJECT_ROOT 指向 tmp_path，确保 assets/js/runtime_payload.js 不存在，走回退分支
     monkeypatch.setattr(module, "HTML_FILE", str(html_file))
-    monkeypatch.setattr(module, "SKILL_DIR", str(tmp_path))
+    monkeypatch.setattr(module, "PROJECT_ROOT", str(tmp_path))
 
     result = module.HTMLChecker.check_js_data_blocks()
 
@@ -70,7 +70,7 @@ def test_check_js_data_blocks_passes_when_runtime_payload_has_both_keys(tmp_path
     html_file.write_text('<script src="./assets/js/runtime_payload.js"></script>', encoding="utf-8")
 
     monkeypatch.setattr(module, "HTML_FILE", str(html_file))
-    monkeypatch.setattr(module, "SKILL_DIR", str(tmp_path))
+    monkeypatch.setattr(module, "PROJECT_ROOT", str(tmp_path))
 
     result = module.HTMLChecker.check_js_data_blocks()
 
@@ -104,7 +104,7 @@ def test_check_file_sizes_accepts_current_html_scale(tmp_path, monkeypatch, load
 
     monkeypatch.setattr(module, "HTML_FILE", str(html_file))
     monkeypatch.setattr(module, "DATA_DIR", str(data_dir))
-    monkeypatch.setattr(module, "SKILL_DIR", str(tmp_path))
+    monkeypatch.setattr(module, "PROJECT_ROOT", str(tmp_path))
 
     result = module.FileChecker.check_file_sizes()
 

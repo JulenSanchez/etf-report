@@ -36,6 +36,14 @@ from pathlib import Path
 from typing import Dict, List, Tuple, Any
 from html.parser import HTMLParser
 
+PROJECT_ROOT = next(parent for parent in Path(__file__).resolve().parents if (parent / "config").is_dir() and (parent / "scripts").is_dir())
+SRC_DIR = PROJECT_ROOT / "src"
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
+
+from etf_report.core.paths import DATA_DIR as PROJECT_DATA_DIR
+from etf_report.core.paths import INDEX_HTML, OUTPUTS_DIR as PROJECT_OUTPUTS_DIR, PROJECT_ROOT as PROJECT_ROOT_DIR
+
 try:
     from config_manager import get_config
 except Exception:
@@ -54,10 +62,10 @@ if sys.platform == "win32" and "pytest" not in sys.modules:
 # ============================================================
 
 WORK_DIR = os.path.dirname(os.path.abspath(__file__))
-SKILL_DIR = os.path.dirname(WORK_DIR)
-DATA_DIR = os.path.join(SKILL_DIR, "data")
-OUTPUTS_DIR = os.path.join(SKILL_DIR, "outputs")
-HTML_FILE = os.path.join(SKILL_DIR, "index.html")
+PROJECT_ROOT = str(PROJECT_ROOT_DIR)
+DATA_DIR = str(PROJECT_DATA_DIR)
+OUTPUTS_DIR = str(PROJECT_OUTPUTS_DIR)
+HTML_FILE = str(INDEX_HTML)
 
 
 # REQ-146 后 index.html 外链化，骨架+占位 ~87 KB。阈值 60 KB 作为"骨架破损"红线。
@@ -155,7 +163,6 @@ REQUIRED_SCRIPTS = [
     "update_report.py",
     "fix_ma_and_benchmark.py",
     "realtime_data_updater.py",
-    "transaction.py",
     "verify_html_integrity.py",
 ]
 
@@ -317,7 +324,7 @@ class FileChecker:
 
             # 检查 REQ-146 后抽离的 CSS/JS 关键外链资源与 runtime_payload.js（BUG-014）
             for rel_path, min_kb in REQUIRED_ASSET_FILES:
-                abs_path = os.path.join(SKILL_DIR, rel_path)
+                abs_path = os.path.join(PROJECT_ROOT, rel_path)
                 if not os.path.exists(abs_path):
                     issues.append(f"关键外链资源缺失: {rel_path}")
                     continue
@@ -663,7 +670,7 @@ class DependencyChecker:
     
     @staticmethod
     def check_write_permissions() -> CheckResult:
-        result = CheckResult("C5", "技能根目录可写", "C")
+        result = CheckResult("C5", "项目根目录可写", "C")
         try:
             html_dir = os.path.dirname(HTML_FILE)
             test_file = os.path.join(html_dir, ".health_check_test")
@@ -715,7 +722,7 @@ class HTMLChecker:
         result = CheckResult("D2", "JavaScript 数据块", "D")
         try:
             # 新架构：读 runtime_payload.js
-            payload_file = os.path.join(SKILL_DIR, "assets", "js", "runtime_payload.js")
+            payload_file = os.path.join(PROJECT_ROOT, "assets", "js", "runtime_payload.js")
             if os.path.exists(payload_file):
                 with open(payload_file, "r", encoding="utf-8") as f:
                     payload_content = f.read()
@@ -851,22 +858,16 @@ class WorkflowChecker:
     
     @staticmethod
     def check_transaction_management() -> CheckResult:
-        result = CheckResult("E1", "事务管理", "E")
+        result = CheckResult("E1", "备份与回滚", "E")
         try:
-            # 检查主备份目录 (.backup/ 在技能根目录)
-            skill_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            backups_dir = os.path.join(skill_root, ".backup")
-            if os.path.exists(backups_dir):
-                backups = [d for d in os.listdir(backups_dir) if os.path.isdir(os.path.join(backups_dir, d))]
-                if len(backups) > 0:
-                    result.status = "PASS"
-                    result.details = {"backups_count": len(backups)}
-                else:
-                    result.status = "WARN"
-                    result.details = {"status": "No backups found"}
+            index_path = os.path.join(PROJECT_ROOT, "index.html")
+            backup_path = os.path.join(PROJECT_ROOT, "index.html.bak")
+            if os.path.exists(index_path):
+                result.status = "PASS"
+                result.details = {"mode": "inline_backup", "backup_path": backup_path}
             else:
                 result.status = "FAIL"
-                result.details = {"error": "Backups directory not found"}
+                result.details = {"error": "index.html not found"}
         except Exception as e:
             result.status = "FAIL"
             result.error_message = str(e)
@@ -1183,7 +1184,7 @@ class JSONReporter:
             "environment": {
                 "python_version": f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
                 "platform": f"{platform.system()}-{platform.release()}",
-                "cwd": SKILL_DIR,
+                "cwd": PROJECT_ROOT,
             }
         }
 

@@ -50,9 +50,9 @@ def _latest_allowed_date() -> str:
         cool_off_minutes=COOL_OFF_MINUTES,
     )
 
-SKILL_DIR = Path(__file__).resolve().parent.parent
-CONFIG_PATH = SKILL_DIR / "config" / "quant_universe.yaml"
-DATA_DIR = SKILL_DIR / "data" / "quant"
+PROJECT_ROOT = next(parent for parent in Path(__file__).resolve().parents if (parent / "config").is_dir() and (parent / "scripts").is_dir())
+CONFIG_PATH = PROJECT_ROOT / "config" / "quant_universe.yaml"
+DATA_DIR = PROJECT_ROOT / "data" / "quant"
 FRESH_MARKER = DATA_DIR / ".fresh_today"
 
 # Tencent Finance K-line API

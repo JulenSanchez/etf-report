@@ -165,7 +165,32 @@ benchmark_data.py::build_ma_trend_cache()
 
 Tuner 可提前构建并通过 `preloaded` 注入，CLI 则由回测引擎自行加载。
 
----
+### 4.4 数据架构：筛选池 vs 量化池
+
+回测引擎只消费量化池数据。筛选工作流独立运行，不依赖量化池。
+
+| | 筛选池 (Screening) | 量化池 (Quant) |
+|---|---|---|
+| **范围** | 全市场 ~2000 ETF-likes | 45 支 `quant_universe.yaml` |
+| **目录** | `data/screening/` | `data/quant/` |
+| **依赖方向** | **不依赖量化池** | 可依赖筛选产出 |
+| **拉取工具** | `scan_etf_universe.py` | `quant_data_fetcher.py` |
+
+```text
+data/
+├── screening/          ← 筛选池 (全市场 API 缓存)
+│   ├── step2_amount.json      新浪 hq.sinajs.cn
+│   ├── step3_listing_dates.json      新浪 getKLineData
+│   ├── step3_aum.json         天天基金 fundf10.eastmoney.com
+│   └── step4_holdings.json     AKShare 前十大持仓
+│
+├── quant/              ← 量化池 (回测引擎输入)
+│   ├── {code}_daily.csv         腾讯 fqkline 日线(前复权)
+│   ├── {code}_weekly.csv        日线聚合周线
+│   └── etf_metadata.json        AKShare 规模+持仓
+```
+
+筛选脚本永不读取 `data/quant/`。详细 API 说明见 `design/data-architecture.md`。
 
 ---
 
@@ -359,7 +384,7 @@ config/quant_universe.yaml preset
 scripts/quant_contract.py
 templates/tuner.html
 tests/test_quant_contract.py
-QUANT_SYSTEM.md（如契约或路由变化）
+docs/ops/quant/overview.md（如契约或路由变化）
 ```
 
 ---
@@ -419,7 +444,7 @@ scripts/quant_factors.py
 scripts/quant_backtest.py::_precompute_factors()
 scripts/quant_contract.py（如有参数）
 templates/tuner.html（如有控件/说明）
-BACKTEST_ENGINE.md
+docs/architecture/design/backtest-engine.md
 tests/test_quant_factors.py
 ```
 
@@ -456,7 +481,7 @@ tests/test_update_report.py -k "quant_preset_params or quant_payload_config_sect
 
 | 内容 | 去哪里 |
 |---|---|
-| 系统总览、文件职责、变更路由 | `../QUANT_SYSTEM.md` |
-| 启动 Tuner、刷新数据、排障 | `../runbooks/QUANT_RUNBOOK.md` |
-| 当前最优参数和研究结论 | `../research/params/README.md` / `../research/strategy/README.md` |
+| 系统总览、文件职责、变更路由 | `../../architecture.md` / `../../ops/quant/overview.md` |
+| 启动 Tuner、刷新数据、排障 | `../../ops/quant/overview.md` |
+| 当前最优参数和研究结论 | `../../research/params/README.md` / `../../research/strategy/README.md` |
 | 历史方法论和研究备忘 | `07-quant-methodology.md` / `08-quant-research-memo.md` |

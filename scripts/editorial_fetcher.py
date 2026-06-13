@@ -37,6 +37,7 @@ import urllib.request
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple
+from pathlib import Path
 
 import yaml
 from bs4 import BeautifulSoup
@@ -47,9 +48,9 @@ if SCRIPT_DIR not in sys.path:
     sys.path.insert(0, SCRIPT_DIR)
 from compliance_filter import filter_batch, load_rules, write_audit  # noqa: E402
 
-SKILL_DIR = os.path.dirname(SCRIPT_DIR)
-DEFAULT_SOURCES_PATH = os.path.join(SKILL_DIR, "config", "editorial_sources.yaml")
-DEFAULT_RULES_PATH = os.path.join(SKILL_DIR, "config", "compliance_rules.yaml")
+PROJECT_ROOT = next(parent for parent in Path(__file__).resolve().parents if (parent / "config").is_dir() and (parent / "scripts").is_dir())
+DEFAULT_SOURCES_PATH = str(PROJECT_ROOT / "config" / "editorial_sources.yaml")
+DEFAULT_RULES_PATH = str(PROJECT_ROOT / "config" / "compliance_rules.yaml")
 
 
 # ============================================================
@@ -668,7 +669,7 @@ def main():
     parser.add_argument("--sources", default=DEFAULT_SOURCES_PATH)
     parser.add_argument("--rules", default=DEFAULT_RULES_PATH)
     parser.add_argument("--output",
-                        default=os.path.join(SKILL_DIR, "config", "editorial_content.yaml"),
+                        default=os.path.join(PROJECT_ROOT, "config", "editorial_content.yaml"),
                         help="写入目标（默认覆盖 editorial_content.yaml）")
     args = parser.parse_args()
 

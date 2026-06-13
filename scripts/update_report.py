@@ -28,8 +28,14 @@ import time
 import json
 import argparse
 from datetime import datetime
+from pathlib import Path
 
+PROJECT_ROOT_PATH = next(parent for parent in Path(__file__).resolve().parents if (parent / "config").is_dir() and (parent / "scripts").is_dir())
+SRC_DIR = PROJECT_ROOT_PATH / "src"
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
 
+from etf_report.core.paths import ASSETS_DIR, CONFIG_DIR, DATA_DIR as PROJECT_DATA_DIR, INDEX_HTML, OUTPUTS_DIR as PROJECT_OUTPUTS_DIR, PROJECT_ROOT as PROJECT_ROOT_DIR
 
 from logger import Logger
 
@@ -37,7 +43,7 @@ from config_manager import get_config
 
 # 工作目录
 WORK_DIR = os.path.dirname(os.path.abspath(__file__))
-SKILL_DIR = os.path.dirname(WORK_DIR)  # skill根目录
+PROJECT_ROOT = str(PROJECT_ROOT_DIR)
 os.chdir(WORK_DIR)
 
 # 配置管理器初始化
@@ -45,11 +51,10 @@ config = get_config()
 
 # 从配置加载文件路径
 files_config = config.get_files_config()
-DATA_DIR = os.path.join(SKILL_DIR, files_config.get('data_dir', 'data'))
-OUTPUTS_DIR = os.path.join(SKILL_DIR, files_config.get('outputs_dir', 'outputs'))
-ASSETS_JS_DIR = os.path.join(SKILL_DIR, "assets", "js")
-# HTML 文件在技能根目录
-HTML_FILE = os.path.join(SKILL_DIR, files_config.get('html_file', 'index.html'))
+DATA_DIR = str(PROJECT_DATA_DIR)
+OUTPUTS_DIR = str(PROJECT_OUTPUTS_DIR)
+ASSETS_JS_DIR = str(ASSETS_DIR / "js")
+HTML_FILE = str(INDEX_HTML)
 
 # 日志初始化
 logger = Logger(name="update_report", level="INFO", file_output=True)
@@ -132,7 +137,7 @@ def run_editorial_update():
         return True
 
     # 读取上一版，作为 fallback 基线
-    editorial_path = os.path.join(SKILL_DIR, "config", "editorial_content.yaml")
+    editorial_path = os.path.join(PROJECT_ROOT, "config", "editorial_content.yaml")
     previous = {}
     if os.path.exists(editorial_path):
         try:
@@ -513,7 +518,7 @@ def generate_quant_baseline_payload():
     payload_file = os.path.join(ASSETS_JS_DIR, "quant_payload.js")
 
     # ── 从 YAML 读取 preset1 参数 ─────────────────
-    QUANT_CONFIG = os.path.join(SKILL_DIR, "config", "quant_universe.yaml")
+    QUANT_CONFIG = os.path.join(PROJECT_ROOT, "config", "quant_universe.yaml")
     preset_params = {}
     try:
         preset_params = load_quant_preset_params(QUANT_CONFIG, "preset1")
@@ -1169,7 +1174,7 @@ def _replace_element_by_id(html_content, element_id, new_inner_html, class_name=
 def _get_editorial_content_path():
     files_config = config.get_files_config()
     editorial_filename = files_config.get('editorial_content_file', 'editorial_content.yaml')
-    return os.path.join(SKILL_DIR, 'config', editorial_filename)
+    return os.path.join(PROJECT_ROOT, 'config', editorial_filename)
 
 
 
@@ -1763,12 +1768,33 @@ def main(publish: bool = False):
         "html_target": working_html_file,
     })
     
-    # 备份: 更新前保留当前 HTML（事务已简化，不再依赖独立 transaction 模块）
+    # 备份: 优先使用 transaction 模块；不存在时回退为简单文件备份。
     import shutil
-    backup_path = os.path.join(SKILL_DIR, "index.html.bak")
-    index_path = os.path.join(SKILL_DIR, "index.html")
-    if os.path.exists(index_path):
-        shutil.copy2(index_path, backup_path)
+    backup_path = os.path.join(PROJECT_ROOT, "index.html.bak")
+    index_path = os.path.join(PROJECT_ROOT, "index.html")
+    tx = None
+    try:
+        from transaction import TransactionManager
+        tx = TransactionManager(PROJECT_ROOT)
+        backup_path = tx.backup()
+    except Exception:
+        if os.path.exists(index_path):
+            shutil.copy2(index_path, backup_path)
+
+    def restore_backup():
+        if tx is not None:
+            return tx.restore(backup_path)
+        if os.path.exists(backup_path):
+            shutil.copy2(backup_path, os.path.join(PROJECT_ROOT, "index.html"))
+            return True
+        return False
+
+    def cleanup_backup():
+        if tx is not None:
+            return tx.cleanup()
+        if os.path.exists(backup_path):
+            os.remove(backup_path)
+        return 0
 
     try:
         # Step 1: 更新K线数据
@@ -1823,15 +1849,13 @@ def main(publish: bool = False):
             
             if not result["passed"]:
                 logger.warn("HTML完整性验证失败，正在回滚")
-                if os.path.exists(backup_path):
-                    shutil.copy2(backup_path, os.path.join(SKILL_DIR, "index.html"))
+                restore_backup()
                 return False
         except ImportError:
             logger.info("verify_html_integrity 模块未找到，跳过验证")
         
         # 清理旧备份
-        if os.path.exists(backup_path):
-            os.remove(backup_path)
+        cleanup_backup()
         
         # Step 7: 执行系统健康检查（REQ-106）
         logger.info("=" * 60)
@@ -1881,7 +1905,7 @@ def main(publish: bool = False):
             # Step 8: GitHub Pages 部署
             try:
                 import deployer
-                deployer.main(SKILL_DIR, html_source_path=working_html_file)
+                deployer.main(PROJECT_ROOT, html_source_path=working_html_file)
             except ImportError:
                 logger.warn("deployer 模块未找到，跳过 GitHub 部署")
             except Exception as e:
@@ -1902,8 +1926,7 @@ def main(publish: bool = False):
         import traceback
         traceback.print_exc()
         logger.warn("正在从备份恢复")
-        if os.path.exists(backup_path):
-            shutil.copy2(backup_path, os.path.join(SKILL_DIR, "index.html"))
+        restore_backup()
         return False
 
 

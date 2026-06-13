@@ -30,8 +30,8 @@ import pandas as pd
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
 
-SKILL_DIR = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(SKILL_DIR / "scripts"))
+PROJECT_ROOT = next(parent for parent in Path(__file__).resolve().parents if (parent / "config").is_dir() and (parent / "scripts").is_dir())
+sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
 
 import yaml
 from quant_backtest import load_etf_data, DATA_DIR
@@ -42,7 +42,7 @@ DETECT_START = "2024-01-01"
 
 
 def load_universe():
-    with (SKILL_DIR / "config" / "quant_universe.yaml").open("r", encoding="utf-8") as f:
+    with (PROJECT_ROOT / "config" / "quant_universe.yaml").open("r", encoding="utf-8") as f:
         cfg = yaml.safe_load(f)
     return cfg["universe"]
 
@@ -234,7 +234,7 @@ def main():
         "regime_counts": {name: counts.get(name, 0) for name in REGIME_NAMES},
         "regimes": regimes,
     }
-    json_path = SKILL_DIR / "data" / "market_regimes.json"
+    json_path = PROJECT_ROOT / "data" / "market_regimes.json"
     with json_path.open("w", encoding="utf-8") as f:
         json.dump(out, f, ensure_ascii=False, indent=2)
     print(f"\n  JSON: {json_path}")
@@ -292,7 +292,7 @@ def main():
     md.append("> 这解释了 Phase 1 搜索中 F4 权重=0 最优的现象：过去 1 年窗口里 F4 有效天数太少。")
     md.append("> F4 不应被弃用，而应在 regime 切换到 bear_bottom / sector_rotation 时自动激活。")
 
-    md_path = SKILL_DIR / "data" / "market_regimes_report.md"
+    md_path = PROJECT_ROOT / "data" / "market_regimes_report.md"
     md_path.write_text("\n".join(md), encoding="utf-8")
     print(f"  Report: {md_path}")
 

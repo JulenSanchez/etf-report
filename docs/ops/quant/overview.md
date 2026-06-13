@@ -1,6 +1,6 @@
 # 量化运维手册
 
-> 系统设计见 ，因子/引擎细节见 。
+> 系统设计见 `../../architecture.md`，因子/引擎细节见 `../../architecture/design/`。
 
 ---
 
@@ -43,13 +43,13 @@ assets/js/quant_payload.js
 | 问题 | 第一事实源 | 第二事实源 |
 |---|---|---|
 | 当前 ETF 池 / preset 参数 | `config/quant_universe.yaml` | `research/params/README.md` 只看来源证据 |
-| 回测实际计算过程 | `scripts/quant_backtest.py` | `../design/backtest-engine.md` |
-| Tuner API 与缓存 | `scripts/quant_tuner.py` | `runbooks/QUANT_RUNBOOK.md` |
+| 回测实际计算过程 | `scripts/quant_backtest.py` | `../../architecture/design/backtest-engine.md` |
+| Tuner API 与缓存 | `scripts/quant_tuner.py` | `docs/ops/quant/overview.md` |
 | Tuner 前端控件和说明 | `templates/tuner.html` | 本文的参数契约章节 |
 | 正式页量化展示 | `assets/js/quant-main.js` | `scripts/update_report.py` / `scripts/quant_build_payload.py` wrapper |
-| 长任务、启动、刷新、排障 | `runbooks/QUANT_RUNBOOK.md` | `docs/01-数据源与工具生态.md` |
+| 长任务、启动、刷新、排障 | `docs/ops/quant/overview.md` | `docs/01-数据源与工具生态.md` |
 | 策略实验和历史结论 | `research/` | `research/08-quant-research-memo.md` |
-| ETF 贡献指标定义与分析 | `../design/etf-contribution.md` | `scripts/quant_tuner.py` `_compute_etf_contributions()` |
+| ETF 贡献指标定义与分析 | `../../architecture/design/etf-contribution.md` | `scripts/quant_tuner.py` `_compute_etf_contributions()` |
 | 早期三因子方法论 | `research/07-quant-methodology.md` | 仅作历史参考 |
 
 ## 4. 文件职责表
@@ -66,11 +66,11 @@ assets/js/quant_payload.js
 | `scripts/quant_build_payload.py` | 正式页 payload 兼容 CLI wrapper，调用 update_report 路径 | 改 payload CLI 入口 |
 | `assets/js/quant_payload.js` | 生成产物：`window.__QUANT_RUNTIME__` | 由脚本生成，不手改 |
 | `assets/js/quant-main.js` | 正式页量化板块渲染 | 改 index.html 量化展示 |
-| `scripts/fetch_etf_metadata.py` | 拉取全部 ETF 的规模(AUM)和前十大重仓股 → `data/quant/etf_metadata.json` | 新增/移除 ETF、定期更新持仓数据 |
-| `data/quant/etf_metadata.json` | ETF 元数据事实源（AUM + 成分股），Tuner 启动时加载 | 人工或脚本更新后自动生效 |
-| `../design/etf-contribution.md` | ETF 贡献分析框架：指标定义、分析流程、淘汰规则 | 改贡献计算逻辑或新增指标后同步 |
-| `../design/backtest-engine.md` | 回测引擎契约 | 改 `run_backtest()` 或核心算法后同步 |
-| `runbooks/QUANT_RUNBOOK.md` | 运维和排障手册 | 改启动、刷新、长任务、数据源规则后同步 |
+| `scripts/fetch_etf_metadata.py` | 拉取全部 ETF 的基金规模(AUM)和前十大重仓股 → `data/quant/etf_metadata.json` | 新增/移除 ETF、定期更新持仓数据 |
+| `data/quant/etf_metadata.json` | ETF 元数据事实源（基金规模 + 成分股），Tuner 启动时加载 | 人工或脚本更新后自动生效 |
+| `../../architecture/design/etf-contribution.md` | ETF 贡献分析框架：指标定义、分析流程、淘汰规则 | 改贡献计算逻辑或新增指标后同步 |
+| `../../architecture/design/backtest-engine.md` | 回测引擎契约 | 改 `run_backtest()` 或核心算法后同步 |
+| `docs/ops/quant/overview.md` | 运维和排障手册 | 改启动、刷新、长任务、数据源规则后同步 |
 | `tests/test_quant_backtest_core.py` | 回测引擎结构、preset 差异、universe_filter、execution_timing 测试 | 改 `run_backtest()` 语义后同步 |
 | `tests/test_quant_data_cache.py` | 共享数据缓存加载、cache key、结果读写 | 改 `quant_data_cache.py` 后同步 |
 | `research/` | 实验记录和 promotion 证据 | 策略研究、参数优化、结论沉淀 |
@@ -93,7 +93,7 @@ scripts/quant_backtest.py
 config/quant_universe.yaml
 templates/tuner.html
 scripts/quant_tuner.py
-../design/backtest-engine.md
+../../architecture/design/backtest-engine.md
 tests/test_quant_factors.py
 ```
 
@@ -116,7 +116,7 @@ scripts/quant_contract.py              # 参数映射唯一契约（preset_to_tu
 scripts/quant_tuner.py                 # /api/presets、/api/run、/api/save 接线
 scripts/quant_backtest.py              # 是否消费该参数
 config/quant_universe.yaml             # preset 默认值
-../design/backtest-engine.md                # 引擎语义
+../../architecture/design/backtest-engine.md                # 引擎语义
 tests/                                # 参数映射或引擎测试
 ```
 
@@ -136,7 +136,7 @@ YAML preset -> /api/presets -> 前端控件
 
 ```text
 scripts/quant_backtest.py
-../design/backtest-engine.md
+../../architecture/design/backtest-engine.md
 templates/tuner.html 的“参数原理”
 scripts/update_report.py payload helper
 scripts/quant_build_payload.py wrapper
@@ -155,7 +155,7 @@ config/quant_universe.yaml
 scripts/quant_data_fetcher.py（资产池变更时）
 research/params/README.md（参数来源）
 research/strategy/README.md（策略线描述）
-runbooks/QUANT_RUNBOOK.md（若运维摘要涉及当前策略）
+docs/ops/quant/overview.md（若运维摘要涉及当前策略）
 templates/tuner.html（不得残留硬编码默认值）
 ```
 
@@ -163,19 +163,19 @@ templates/tuner.html（不得残留硬编码默认值）
 
 ##### 核心原则
 
-1. **替换即原子事务**：改一个 YAML 条目 = 一次替换。要么完成（验证通过），要么回退（恢复旧条目）。不允许多支替换混在一起跑一次验证。
-2. **基准先于改动**：改 YAML 前必须先保存当前各 preset 的 6y 指标快照（TR/AR/Sharpe/Calmar/MDD）。没有基准不动配置。
+1. **逐支执行**：改一个池配置文件条目 = 一次替换。要么完成（验证通过），要么回退（恢复旧条目）。不允许多支替换混在一起跑一次验证。
+2. **基线先于改动**：改池配置文件前必须先保存当前精算师和赌徒的 6 年指标快照（总收益率/AR/Sharpe/Calmar/最大回撤）。没有基线不动配置。
 3. **同池验证**：A/B 对比必须在 ETF 数量完全相同的池上运行。严禁用 `universe_filter` 做 A/B 对比（它会 silently 丢弃不在 YAML 中的代码，导致两池 ETF 数量不同）。
 4. **数据交叉验证**：同指数/同赛道替换，必须检查新旧 ETF 在重叠日期上的价格比值稳定性。比值跳变 >5% 视为数据异常，必须排查。
-5. **量化门槛**：替换后各 preset 的 6y TR 不得低于替换前基线的 95%。任一 preset 跌破 → 回退。
+5. **验证标准**：替换后精算师和赌徒的 6 年总收益率不得低于替换前基线的 95%。任一跌破 → 回退。
 
 ##### 增（新 ETF 入池）
 
 1. **事实确认**：AKShare 核验代码、全称、市场、类型、上市日期。
 2. **拉取 K 线**：`python scripts/quant_data_fetcher.py --code <code>`，确认日线 ≥ 250 行。
-3. **更新 metadata**：`python scripts/fetch_etf_metadata.py`，确认 top10 持仓已写入。
+3. **更新元数据**：`python scripts/fetch_etf_metadata.py`，确认 top10 持仓已写入。
 4. **原子新增**：编辑 `config/quant_universe.yaml`，在对应 sector 下插入新条目。
-5. **回测验证**：跑 6y + smoke test（preset1 + preset3），确认无报错、TR 无意外漂移。
+5. **回测验证**：跑 6 年 + smoke test（精算师 + 赌徒），确认无报错、总收益率无意外漂移。
 6. **收口**：确认 Tuner 加载正常、`scan_etf_universe.py` 识别新 ETF。
 
 ##### 删（ETF 退池）
@@ -188,36 +188,66 @@ templates/tuner.html（不得残留硬编码默认值）
 
 ##### 替（旧换新）
 
+> ⛔ **执行前强制自检（逐条确认后才能动手）**：
+> 1. 旧/新 ETF 是否跟踪同一指数或属于同一赛道？（不是同一赛道 → 不替换，修分组）
+> 2. 我是否已读完下方 9 个步骤？
+> 3. 我之前是否跳过过任何一步？（如果是 → 先补上）
+> 4. 我是否准备用 `yaml.dump` 编辑 YAML？（如果是 → 停下来，用文本替换）
+> 5. 替换完成后我会重建周线并验证吗？
+
 **这是唯一正确的 A/B 对比流程。禁止跳步。**
 
-1. **保存基准**：改 YAML 前，跑一次当前池 6y 全 preset（至少 preset1+preset3），记录 TR/AR/Sharpe/Calmar/MDD。保存到 `_working/etf_replace_baseline_<旧code>_<新code>.json`。
+1. **保存基线**：改池配置文件前，跑一次当前池 6 年全策略（至少精算师+赌徒），记录总收益率/AR/Sharpe/Calmar/最大回撤。保存到 `_working/etf_replace_baseline_<旧code>_<新code>.json`。
 
 2. **事实确认**：AKShare 核验旧/新 ETF 代码、全称、市场、类型、跟踪指数。确认两者跟踪同一指数或同一赛道。记录映射。
 
-3. **静默拉取**：拉取新 ETF K 线。确认日线行数 ≥ 旧 ETF 日线行数（数据覆盖不能缩水）。上市时间显著晚于旧 ETF 的不替换，保留旧标的。
+3. **静默拉取**：拉取新 ETF K 线。必须满足：
+   - 日线行数 ≥ 旧 ETF 日线行数（数据覆盖不能缩水）
+   - 重叠日期 ≥ 旧 ETF 日期的 95%（不能有大量缺失）
+   - 单日涨跌幅 > 15% 的天数 = 0（排除数据源错误/异常拆分）
+   - 上市时间显著晚于旧 ETF 的不替换，保留旧标的
 
-4. **静默 metadata**：`python scripts/fetch_etf_metadata.py`，确认新 ETF 的 top10 持仓已写入。
+4. **静默拉元数据**：`python scripts/fetch_etf_metadata.py`，确认新 ETF 的 top10 持仓已写入。
 
 5. **数据交叉验证**（同指数替换必做）：
    - 加载新旧 ETF 日线 CSV，找出重叠日期
    - 计算每日价格比值 `ratio = new_close / old_close`
-   - 比值应在窄幅波动（std/mean < 3%）
-   - 单日比值跳变 >5% → **数据异常，中止替换，排查原因**
+   - 比值应满足：`std(ratio) / mean(ratio) < 3%`
+   - 不满足 → **中止替换，排查原因**
    - 将交叉验证结果写入基准文件
 
-6. **原子替换**：编辑 `config/quant_universe.yaml`，删除旧条目、插入新条目。**注意**：`market` 字段以 AKShare 实际数据为准（新旧可能不同，如 sz↔sh）。
+6. **原子替换**：编辑 `config/quant_universe.yaml`，删除旧条目、插入新条目。
+   - `market` 字段以 AKShare 实际数据为准（新旧可能不同，如 sz↔sh）
+   - `name` 使用短名（≤6 字，去掉"ETF"和基金公司后缀），保持与池内其他 ETF 一致的命名风格
+   - **必须保留 YAML 文件头部的注释**（字段说明等），禁止用 `yaml.dump` 覆盖全文件
+   - 若修改过程中误清注释，用 `git checkout` 恢复后重新编辑
 
-7. **同池回测验证**（不可跳过，不可用 universe_filter 替代）：
-   - 直接跑替换后全池 6y（preset1 + preset3），不需要 universe_filter
-   - 对比步骤 1 的基准快照
-   - **量化门槛**：各 preset 6y TR ≥ 基线的 95%，AR/Sharpe/Calmar 无异常恶化
-   - 任一 preset 跌破门槛 → **立即回退 YAML，恢复旧条目**
+7. **重建周线**：新 ETF 拉完日线后必须运行 `rebuild_weekly_from_daily()` 生成周线 CSV。步骤 3 已拉取日线，此步确保周线存在。
 
-8. **收口**：
+8. **同池回测验证**（不可跳过，不可用 universe_filter 替代）：
+   - 直接跑替换后全池 6 年（精算师 + 赌徒），不需要 universe_filter
+   - 对比步骤 1 的基线快照
+   - **验证标准**（全部满足才算通过）：
+     - 精算师和赌徒的 6 年总收益率 ≥ 基线的 95%
+     - 最大回撤恶化 ≤ 2 个百分点（如基线 -18% → 替换后不得低于 -20%）
+     - AR/Sharpe/Calmar 无异常恶化
+   - 任一 preset 任一条件不满足 → **立即回退 YAML，恢复旧条目**
+
+9. **收口**：
    - `grep` 旧代码在项目中的残留
    - 确认 Tuner 加载正常（`/api/presets` 返回 45 支）
    - 确认 `scan_etf_universe.py` 识别新 ETF
-   - 若替换通过，将基准文件从 `_working/` 移到 `research/promoted/`
+   - **写入替换记录**到 `research/promoted/YYYY-MM-DD_<名称>_替换.md`，记录：替换原因、新旧对比、回测指标变化
+   - 将基准文件从 `_working/` 移到 `research/promoted/`
+
+##### 回退（替换失败时）
+
+1. **确认失败原因**：检查步骤 5（交叉验证）或步骤 8（回测验证）的具体失败项。
+2. **原子回退**：编辑 `config/quant_universe.yaml`，恢复旧条目的 code/name/market。使用 `git checkout` 兜底。
+3. **验证回退**：跑一次 6 年确认总收益率回到替换前基线（偏差 < 1%）。
+4. **记录**：在 `research/promoted/` 中记录回退决定和原因（如"513350 标普油气：数据交叉验证失败，比值跳变 9.14%"）。
+5. **清理**：可选删除新 ETF 的日线/周线 CSV（保留也可，供后续再次评估）。
+6. **重要**：回退后必须确认定时任务（preclose_push）和 Tuner 都能正常工作。
 
 ##### 多支替换
 
@@ -233,7 +263,7 @@ scripts/quant_build_payload.py wrapper
 assets/js/quant_payload.js（生成结果）
 assets/js/quant-main.js
 index.html 的量化 DOM
-../design/backtest-engine.md（若 payload 语义变化）
+../../architecture/design/backtest-engine.md（若 payload 语义变化）
 ```
 
 ### 5.6 废弃一个 Tuner 参数或因子
@@ -246,7 +276,7 @@ scripts/quant_contract.py              # 移除 schema 条目、PARAM_BOUNDS、p
 scripts/quant_tuner.py                 # 若 /api/save 涉及该参数
 scripts/quant_backtest.py              # 若引擎消费该参数（权重归零即可，不删逻辑）
 config/quant_universe.yaml             # 所有 preset 中移除该参数
-../design/backtest-engine.md                # 移除相关章节
+../../architecture/design/backtest-engine.md                # 移除相关章节
 tests/                                # 更新引用
 ```
 
@@ -461,8 +491,8 @@ python scripts/quant_consistency_check.py --preset preset2 --start 2025-01-01 --
 若改动影响 `run_backtest()` 的语义，同时更新：
 
 ```text
-../design/backtest-engine.md
-QUANT_SYSTEM.md（如变更路由或契约变化）
+../../architecture/design/backtest-engine.md
+docs/ops/quant/overview.md（如变更路由或契约变化）
 ```
 
 ---
@@ -559,7 +589,7 @@ get_param_schema()
 scripts/quant_contract.py
 templates/tuner.html
 tests/test_quant_contract.py
-QUANT_SYSTEM.md（如契约说明变化）
+docs/ops/quant/overview.md（如契约说明变化）
 ```
 
 ### 4.3 端口冲突
@@ -643,7 +673,7 @@ python scripts/quant_optimizer.py ... --resume
 ```powershell
 Start-Process -FilePath "python" `
   -ArgumentList "scripts\quant_optimizer.py --preset preset2 --strategy bayesian --n-trials 150 --auto-bounds --periods 1Y,3Y,6Y" `
-  -WorkingDirectory "<技能根目录>"
+  -WorkingDirectory "<项目根目录>"
 ```
 
 完成后检查 `research/params/{preset}-{date}/report.md` 查看结论。
@@ -714,7 +744,7 @@ python scripts/quant_tuner.py
 
 这份文档只回答一件事：**哪些内容需要日更，靠什么命令刷新，改动会落到哪里。**
 
-默认从技能根目录执行：
+默认从项目根目录执行：
 
 ```bash
 python scripts/update_report.py
@@ -890,7 +920,7 @@ python scripts/health_check.py --html
 - `C2`: `requests` / `yaml` 导入
 - `C3`: 核心脚本导入链
 - `C4`: 新浪财经 API 可达性
-- `C5`: 技能根目录临时探针写入能力
+- `C5`: 项目根目录临时探针写入能力
 
 ### D 类：HTML 结构（4 项）
 - `D1`: HTML 标签平衡
@@ -1017,7 +1047,7 @@ powershell -ExecutionPolicy Bypass -File batchfiles\setup_quant_tasks.ps1
 
 ## 相关文档
 
-- 系统架构：`../DESIGN.md`
+- 系统架构：`../../architecture.md`
 - 正式页运维：`REPORT_RUNBOOK.md`
 - 发布门禁：`RELEASE_RUNBOOK.md`
 - 代码审计：`AUDIT_RUNBOOK.md`

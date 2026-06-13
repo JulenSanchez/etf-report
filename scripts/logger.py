@@ -27,6 +27,13 @@ from datetime import datetime
 from typing import Optional, Dict, Any, Callable
 from pathlib import Path
 
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+SRC_DIR = PROJECT_ROOT / "src"
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
+
+from etf_report.core.paths import LOG_DIR
+
 
 class Logger:
     """结构化日志记录器"""
@@ -79,10 +86,7 @@ class Logger:
         # 初始化文件输出
         if self.file_output:
             if log_dir is None:
-                # 默认日志目录：脚本所在目录的 logs/ 下
-                script_dir = os.path.dirname(os.path.abspath(__file__))
-                skill_dir = os.path.dirname(script_dir)
-                log_dir = os.path.join(skill_dir, "logs")
+                log_dir = str(LOG_DIR)
             
             self.log_dir = log_dir
             os.makedirs(self.log_dir, exist_ok=True)

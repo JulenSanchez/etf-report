@@ -4,11 +4,11 @@
 GitHub Pages 部署
 
 Step 8 of --publish mode:
-1. 将技能根目录的 index.html 复制到 GitHub Pages 仓库
+1. 将项目根目录的 index.html 复制到 GitHub Pages 仓库
 2. 在 GitHub Pages 仓库中 git add/commit/push
 
 架构说明：
-- 技能源码仓库: Claw/.codebuddy/skills/etf-report/ (push 源码改动)
+- 项目源码仓库: etf-report (push 源码改动)
 - Pages 部署仓库: github-pages/etf-report/ (push index.html 供 Pages 展示)
 """
 
@@ -84,21 +84,21 @@ def _get_repo_remote_url(repo_root: str, remote_name: str = "origin") -> str:
     return result.stdout.strip()
 
 
-def _resolve_source_repo_root(config: dict, skill_dir: str) -> str:
-    """解析源码仓目录；若配置已失效则回退到当前技能仓。"""
+def _resolve_source_repo_root(config: dict, project_root: str) -> str:
+    """解析源码仓目录；若配置已失效则回退到当前项目仓。"""
     configured_root = config.get("repo_root", "")
     if _is_git_repo(configured_root):
         return configured_root
 
     if configured_root:
-        logger.warn("源码仓 repo_root 无效，尝试回退到当前技能仓", {
+        logger.warn("源码仓 repo_root 无效，尝试回退到当前项目仓", {
             "configured_root": configured_root,
-            "skill_dir": skill_dir,
+            "project_root": project_root,
         })
 
-    if _is_git_repo(skill_dir):
-        logger.info("已回退到当前技能仓作为源码仓", {"repo_root": skill_dir})
-        return skill_dir
+    if _is_git_repo(project_root):
+        logger.info("已回退到当前项目仓作为源码仓", {"repo_root": project_root})
+        return project_root
 
     return configured_root
 
@@ -140,7 +140,7 @@ def _detect_pages_repo_conflict(
 
 def _deploy_to_source_repo(config: dict) -> bool:
 
-    """部署到技能源码仓库（提交 index.html + data 文件）
+    """部署到项目源码仓库（提交 index.html + data 文件）
 
     Args:
         config: publish.github 配置段
@@ -189,7 +189,7 @@ def _deploy_to_source_repo(config: dict) -> bool:
         logger.error("源码仓库 git commit 失败", {"stderr": result.stderr.strip()})
         return False
 
-    result = _run_git(repo_root, ["push", "--force-with-lease", "origin", branch])
+    result = _run_git(repo_root, ["push", "origin", branch])
     if result.returncode != 0:
         logger.error("源码仓库 git push 失败", {"stderr": result.stderr.strip()})
         return False
@@ -198,12 +198,12 @@ def _deploy_to_source_repo(config: dict) -> bool:
     return True
 
 
-def _deploy_to_pages_repo(config: dict, skill_dir: str, html_source_path: str = None) -> bool:
+def _deploy_to_pages_repo(config: dict, project_root: str, html_source_path: str = None) -> bool:
     """部署到 GitHub Pages 仓库（复制 index.html 并 push）
 
     Args:
         config: publish.github 配置段
-        skill_dir: 技能根目录（index.html 所在位置）
+        project_root: 项目根目录（index.html 所在位置）
     """
     pages_root = config.get("pages_repo_root", "")
     pages_branch = config.get("pages_branch", "main")
@@ -216,7 +216,7 @@ def _deploy_to_pages_repo(config: dict, skill_dir: str, html_source_path: str = 
     logger.info("部署到 GitHub Pages 仓库", {"path": pages_root})
 
     # 复制 index.html
-    src_html = html_source_path or os.path.join(skill_dir, "index.html")
+    src_html = html_source_path or os.path.join(project_root, "index.html")
     dst_html = os.path.join(pages_root, "index.html")
 
 
@@ -254,7 +254,7 @@ def _deploy_to_pages_repo(config: dict, skill_dir: str, html_source_path: str = 
         logger.error("Pages 仓库 git commit 失败", {"stderr": result.stderr.strip()})
         return False
 
-    result = _run_git(pages_root, ["push", "--force-with-lease", "origin", pages_branch])
+    result = _run_git(pages_root, ["push", "origin", pages_branch])
     if result.returncode != 0:
         logger.error("Pages 仓库 git push 失败", {"stderr": result.stderr.strip()})
         return False
@@ -263,12 +263,12 @@ def _deploy_to_pages_repo(config: dict, skill_dir: str, html_source_path: str = 
     return True
 
 
-def main(skill_dir: str, html_source_path: str = None) -> bool:
+def main(project_root: str, html_source_path: str = None) -> bool:
     """执行 GitHub 部署
 
     Args:
-        skill_dir: 技能根目录的绝对路径
-        html_source_path: 可选的发布 HTML 来源路径；为空时回退到技能根目录 index.html
+        project_root: 项目根目录的绝对路径
+        html_source_path: 可选的发布 HTML 来源路径；为空时回退到项目根目录 index.html
 
     Returns:
         True 表示成功，False 表示失败
@@ -287,11 +287,11 @@ def main(skill_dir: str, html_source_path: str = None) -> bool:
         return True
 
     source_config = dict(github_config)
-    source_repo_root = _resolve_source_repo_root(github_config, skill_dir)
+    source_repo_root = _resolve_source_repo_root(github_config, project_root)
     if source_repo_root:
         source_config["repo_root"] = source_repo_root
 
-    # 8a: 提交到源码仓库（当前 etf-report 技能仓）
+    # 8a: 提交到源码仓库（当前 etf-report 项目仓）
     ok1 = _deploy_to_source_repo(source_config)
 
     # 8b: 复制到独立 Pages 仓库并推送（仅限不同 remote / 分支）
@@ -305,7 +305,7 @@ def main(skill_dir: str, html_source_path: str = None) -> bool:
         logger.warn("检测到危险 Pages 仓配置，已跳过独立 Pages 推送", pages_conflict)
         ok2 = True
     else:
-        ok2 = _deploy_to_pages_repo(github_config, skill_dir, html_source_path=html_source_path)
+        ok2 = _deploy_to_pages_repo(github_config, project_root, html_source_path=html_source_path)
 
     if ok1 and ok2:
 
@@ -318,6 +318,6 @@ def main(skill_dir: str, html_source_path: str = None) -> bool:
 
 if __name__ == "__main__":
     import sys
-    SKILL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    success = main(SKILL_DIR)
+    PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    success = main(PROJECT_ROOT)
     sys.exit(0 if success else 1)

@@ -8,10 +8,11 @@ import pytest
 
 
 
-SKILL_ROOT = Path(__file__).resolve().parents[1]
-SCRIPTS_DIR = SKILL_ROOT / "scripts"
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+SRC_DIR = PROJECT_ROOT / "src"
+SCRIPTS_DIR = PROJECT_ROOT / "scripts"
 
-for path in (str(SCRIPTS_DIR), str(SKILL_ROOT)):
+for path in (str(SRC_DIR), str(SCRIPTS_DIR), str(PROJECT_ROOT)):
     if path not in sys.path:
         sys.path.insert(0, path)
 

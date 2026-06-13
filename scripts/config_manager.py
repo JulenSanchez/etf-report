@@ -12,9 +12,17 @@
 
 import yaml
 import os
+import sys
 from copy import deepcopy
 from typing import Any, Dict, List, Optional
 from pathlib import Path
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+SRC_DIR = PROJECT_ROOT / "src"
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
+
+from etf_report.core.paths import CONFIG_DIR
 
 
 
@@ -41,10 +49,7 @@ class ConfigManager:
     def _get_config_path(self, filename):
         """获取配置文件完整路径"""
         if self._config_dir is None:
-            # 默认: scripts目录的上级/config
-            script_dir = os.path.dirname(os.path.abspath(__file__))
-            skill_dir = os.path.dirname(script_dir)
-            self._config_dir = os.path.join(skill_dir, "config")
+            self._config_dir = str(CONFIG_DIR)
         
         return os.path.join(self._config_dir, filename)
 

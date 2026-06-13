@@ -8,8 +8,8 @@
 import sys, os, glob, argparse
 import pandas as pd
 
-SKILL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DATA_DIR = os.path.join(SKILL_DIR, "data", "quant")
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DATA_DIR = os.path.join(PROJECT_ROOT, "data", "quant")
 
 parser = argparse.ArgumentParser(description="Strip CSV rows by date range")
 parser.add_argument("dates", nargs="+", help="Date(s) to strip: single or start end")

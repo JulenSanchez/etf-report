@@ -6,8 +6,8 @@ import pandas as pd
 
 from trading_calendar import latest_allowed_close_date
 
-SKILL_DIR = Path(__file__).resolve().parent.parent
-DATA_DIR = SKILL_DIR / "data" / "quant"
+PROJECT_ROOT = next(parent for parent in Path(__file__).resolve().parents if (parent / "config").is_dir() and (parent / "scripts").is_dir())
+DATA_DIR = PROJECT_ROOT / "data" / "quant"
 HS300_CACHE_PATH = DATA_DIR / "hs300_daily.csv"
 
 

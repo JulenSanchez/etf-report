@@ -164,12 +164,12 @@ def test_fetch_for_etf_end_to_end(tmp_path, monkeypatch, load_module):
     module = load_module("editorial_fetcher")
 
     # 让审计文件写到 tmp
-    monkeypatch.setattr(module, "SKILL_DIR", str(tmp_path))
+    monkeypatch.setattr(module, "PROJECT_ROOT", str(tmp_path))
 
     # 给 compliance_filter 也指到 tmp
     from compliance_filter import load_rules  # type: ignore
     import compliance_filter  # type: ignore
-    monkeypatch.setattr(compliance_filter, "SKILL_DIR", str(tmp_path))
+    monkeypatch.setattr(compliance_filter, "PROJECT_ROOT", str(tmp_path))
 
     rules = module.load_rules()  # 用真实 rules
 

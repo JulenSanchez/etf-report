@@ -134,8 +134,8 @@ Step 6: 交叉元数据 → 成分股视角
 | 系统组件 | 本文角色 |
 |----------|---------|
 | `_compute_etf_contributions()` | 本文定义的所有指标的计算实现 |
-| `BACKTEST_ENGINE.md` | 定义 `trade_log` 和 `signalHistory` 的数据格式 |
-| `QUANT_SYSTEM.md` | 系统入口，指向本文作为贡献分析的事实源 |
+| `docs/architecture/design/backtest-engine.md` | 定义 `trade_log` 和 `signalHistory` 的数据格式 |
+| `docs/ops/quant/overview.md` | 系统入口，指向本文作为贡献分析的事实源 |
 | REQ-213 (`etf_metadata.json`) | 提供成分股数据，支撑第 6 步交叉分析 |
 | Tuner contrib-grid | 前端展示，8 列对应本文 8 指标 |
 

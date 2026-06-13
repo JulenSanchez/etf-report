@@ -34,8 +34,8 @@ except Exception:
 
 # 工作目录
 WORK_DIR = os.path.dirname(os.path.abspath(__file__))
-SKILL_DIR = os.path.dirname(WORK_DIR)  # skill 根目录
-HTML_FILE = os.path.join(SKILL_DIR, "index.html")
+PROJECT_ROOT = os.path.dirname(WORK_DIR)  # 项目根目录
+HTML_FILE = os.path.join(PROJECT_ROOT, "index.html")
 
 
 # 6 支 ETF 代码（优先从配置读取，便于后续替换 ETF 时只维护一份名单）
@@ -202,7 +202,7 @@ def _load_runtime_payload():
     const 迁移到此外置 JS；本函数供 check_json_data_blocks / check_etf_data_completeness
     在"HTML 无内联 const"新架构下使用。
     """
-    payload_file = os.path.join(SKILL_DIR, "assets", "js", "runtime_payload.js")
+    payload_file = os.path.join(PROJECT_ROOT, "assets", "js", "runtime_payload.js")
     if not os.path.exists(payload_file):
         return None
     try:

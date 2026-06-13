@@ -17,6 +17,7 @@ import time
 import re
 import os
 from datetime import datetime, timedelta
+from pathlib import Path
 
 import pandas as pd
 
@@ -25,6 +26,16 @@ from corporate_action_source import detect_corporate_action_events, save_detecte
 from data_cleaning import apply_share_change_events, normalize_corporate_action_events, run_data_cleaning_pipeline
 from config_manager import get_config
 from quant_data_fetcher import update_single as quant_update_single, DATA_DIR as QUANT_DATA_DIR
+
+PROJECT_ROOT = next(parent for parent in Path(__file__).resolve().parents if (parent / "config").is_dir() and (parent / "scripts").is_dir())
+
+
+def get_project_root():
+    current = Path(__file__).resolve()
+    for parent in current.parents:
+        if (parent / "config").is_dir() and (parent / "scripts").is_dir():
+            return parent
+    return current.parent.parent
 
 
 
@@ -135,17 +146,15 @@ def trim_incomplete_daily_bar(data, symbol, scale, now=None):
 
 
 
-def get_skill_data_dir():
+def get_project_data_dir():
 
-    """获取技能数据目录。"""
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    skill_dir = os.path.dirname(script_dir)
-    return os.path.join(skill_dir, FILES_CONFIG.get('data_dir', 'data'))
+    """获取项目数据目录。"""
+    return str(get_project_root() / FILES_CONFIG.get('data_dir', 'data'))
 
 
 def get_detected_corporate_action_file_path(data_dir=None):
     """获取自动识别事件文件路径。"""
-    return os.path.join(data_dir or get_skill_data_dir(), CORPORATE_ACTION_FILE)
+    return os.path.join(data_dir or get_project_data_dir(), CORPORATE_ACTION_FILE)
 
 
 def merge_data_cleaning_events(*event_groups):
@@ -684,13 +693,10 @@ def main():
     """主函数：获取数据并更新"""
     import os
     
-    # 获取skill根目录（scripts的父目录）
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    skill_dir = os.path.dirname(script_dir)
-    
     # 定义文件路径
-    data_dir = os.path.join(skill_dir, "data")
-    outputs_dir = os.path.join(skill_dir, "outputs")
+    project_root = get_project_root()
+    data_dir = str(project_root / "data")
+    outputs_dir = str(project_root / "outputs")
     
     # 确保目录存在
     os.makedirs(data_dir, exist_ok=True)

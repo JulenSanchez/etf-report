@@ -2,8 +2,8 @@
 from datetime import datetime, timedelta
 from pathlib import Path
 
-SKILL_DIR = Path(__file__).resolve().parent.parent
-DATA_DIR = SKILL_DIR / "data" / "quant"
+PROJECT_ROOT = next(parent for parent in Path(__file__).resolve().parents if (parent / "config").is_dir() and (parent / "scripts").is_dir())
+DATA_DIR = PROJECT_ROOT / "data" / "quant"
 
 _TRADING_DAYS = set()
 _TD_LIST = []

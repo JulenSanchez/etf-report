@@ -8,8 +8,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
-SKILL_DIR = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(SKILL_DIR / "scripts"))
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
 from quant_factors import factor_log_return_deviation, map_f7
 
 

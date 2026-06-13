@@ -15,14 +15,14 @@ import pandas as pd
 
 sys.stdout.reconfigure(encoding="utf-8")
 
-SKILL_DIR = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(SKILL_DIR / "scripts"))
+PROJECT_ROOT = next(parent for parent in Path(__file__).resolve().parents if (parent / "config").is_dir() and (parent / "scripts").is_dir())
+sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
 
 from quant_backtest import run_backtest, load_config
 from quant_data_utils import load_etf_data as _load_etf_data
 from benchmark_data import load_hs300_daily_cached, build_hs300_weekly, build_ma_trend_cache
 
-RESULTS_DIR = SKILL_DIR / "research" / "strategy" / "walkforward"
+RESULTS_DIR = PROJECT_ROOT / "research" / "strategy" / "walkforward"
 
 # Grid: C × CS
 C_VALUES = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
@@ -145,7 +145,7 @@ def preload_data(preset):
     """Load all ETF data once for reuse across grid searches."""
     cfg = load_config(preset=preset)
     universe = cfg["universe"]
-    data_dir = str(SKILL_DIR / "data" / "quant")
+    data_dir = str(PROJECT_ROOT / "data" / "quant")
 
     all_daily, all_weekly = {}, {}
     for etf in universe:

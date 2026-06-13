@@ -1,8 +1,8 @@
 # 08 - 量化研究备忘录
 
-> 本文是历史研究备忘录，记录策略演进经验和已验证/已放弃的想法，不作为当前工程事实源。当前系统入口见 `../QUANT_SYSTEM.md`，当前参数事实源见 `../config/quant_universe.yaml`，回测引擎契约见 `BACKTEST_ENGINE.md`。
+> 本文是历史研究备忘录，记录策略演进经验和已验证/已放弃的想法，不作为当前工程事实源。当前系统入口见 `../docs/ops/quant/overview.md`，当前参数事实源见 `../config/quant_universe.yaml`，回测引擎契约见 `../docs/architecture/design/backtest-engine.md`。
 >
-> 本文收拢原先散落在外部 memory 中的 etf-report 量化策略演进记录。后续 ETF/量化策略事实源优先写入技能内部的 `docs/`、`runbooks/`、`plans/`、`research/`，不要再依赖外部 memory。
+> 本文收拢原先散落在外部 memory 中的 etf-report 量化策略演进记录。后续 ETF/量化策略事实源优先写入项目内部的 `docs/`、`plans/`、`research/`，不要再依赖外部 memory。
 
 ---
 

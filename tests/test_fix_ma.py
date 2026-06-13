@@ -288,7 +288,7 @@ def test_main_writes_data_file_and_updates_js(tmp_path, monkeypatch, load_module
         "normalized": [float(i) for i in range(30)],
     }
 
-    monkeypatch.setattr(module, "fetch_kline_sina", lambda _symbol, scale=240, days=60: daily)
+    monkeypatch.setattr(module, "fetch_kline_from_csv", lambda _code, _market, _days: daily)
     monkeypatch.setattr(module, "fetch_index_data_sina", lambda _symbol, days=60: benchmark)
 
     result = module.main()
@@ -352,7 +352,7 @@ def test_main_falls_back_to_previous_data_when_fetch_fails(tmp_path, monkeypatch
         ],
     )
     monkeypatch.setattr(module.time, "sleep", lambda *_args, **_kwargs: None)
-    monkeypatch.setattr(module, "fetch_kline_sina", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(module, "fetch_kline_from_csv", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(module, "fetch_index_data_sina", lambda *_args, **_kwargs: None)
 
     result = module.main()

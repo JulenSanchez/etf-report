@@ -339,7 +339,7 @@ publish:
   github:
     enabled: true
     # 当前 etf-report 正式源码仓目录（GitHub Pages 直接服务该仓 main 分支）
-    # 空=自动回退到当前技能仓（由 deployer._resolve_source_repo_root 处理）
+    # 空=自动回退到当前项目仓（由 deployer._resolve_source_repo_root 处理）
     repo_root: ""
     # 源码推送分支
     branch: "main"

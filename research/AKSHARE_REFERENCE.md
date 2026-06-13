@@ -214,7 +214,7 @@
 
 当前项目里，`AKShare` 已经是正式数据源之一：
 - `scripts/corporate_action_source.py`：使用 `akshare.fund_cf_em()` 拉取基金拆分 / 份额折算事件
-- `DESIGN.md`：已把 `AKShare fund_cf_em` 记入主流程的数据获取层
+- `docs/architecture.md`：已把 `AKShare fund_cf_em` 记入主流程的数据获取层
 
 ---
 
@@ -433,8 +433,8 @@ row = {
 - `scripts/corporate_action_source.py`
 - `scripts/fix_ma_and_benchmark.py`
 - `tests/test_corporate_action_source.py`
-- `DESIGN.md`
-- `WORKFLOW.md`
+- `docs/architecture.md`
+- `docs/ops/report.md`
 
 
 ---

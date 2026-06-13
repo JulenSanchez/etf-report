@@ -8,9 +8,9 @@ from pathlib import Path
 from datetime import datetime
 from typing import Optional
 
-SKILL_DIR = Path(__file__).resolve().parent.parent
-DATA_DIR = SKILL_DIR / "data" / "quant"
-CACHE_DIR = SKILL_DIR / "data" / "backtest_cache"
+PROJECT_ROOT = next(parent for parent in Path(__file__).resolve().parents if (parent / "config").is_dir() and (parent / "scripts").is_dir())
+DATA_DIR = PROJECT_ROOT / "data" / "quant"
+CACHE_DIR = PROJECT_ROOT / "data" / "backtest_cache"
 
 from quant_data_utils import load_etf_data as _load_etf_csv
 from benchmark_data import load_hs300_daily_cached, build_hs300_weekly, build_ma_trend_cache

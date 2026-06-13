@@ -3,8 +3,8 @@ from pathlib import Path
 
 import pandas as pd
 
-SKILL_DIR = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(SKILL_DIR / "scripts"))
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
 
 from quant_backtest import execution_price_field, get_execution_date, load_config
 

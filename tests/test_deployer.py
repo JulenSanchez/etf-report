@@ -11,21 +11,21 @@ def test_normalize_remote_url_handles_https_and_ssh(load_module):
 
 
 
-def test_resolve_source_repo_root_falls_back_to_skill_dir(tmp_path, monkeypatch, load_module):
+def test_resolve_source_repo_root_falls_back_to_project_root(tmp_path, monkeypatch, load_module):
     module = load_module("deployer")
-    skill_dir = tmp_path / "skill"
-    skill_dir.mkdir()
+    project_root = tmp_path / "skill"
+    project_root.mkdir()
     missing_repo = tmp_path / "missing"
 
     monkeypatch.setattr(
         module,
         "_is_git_repo",
-        lambda path: os.path.abspath(path) == os.path.abspath(str(skill_dir)),
+        lambda path: os.path.abspath(path) == os.path.abspath(str(project_root)),
     )
 
-    resolved = module._resolve_source_repo_root({"repo_root": str(missing_repo)}, str(skill_dir))
+    resolved = module._resolve_source_repo_root({"repo_root": str(missing_repo)}, str(project_root))
 
-    assert resolved == str(skill_dir)
+    assert resolved == str(project_root)
 
 
 
@@ -59,9 +59,9 @@ def test_detect_pages_repo_conflict_detects_same_remote_and_branch(tmp_path, mon
 
 def test_main_skips_pages_deploy_when_pages_repo_points_to_same_remote(tmp_path, monkeypatch, load_module):
     module = load_module("deployer")
-    skill_dir = tmp_path / "skill"
-    skill_dir.mkdir()
-    source_repo_root = str(skill_dir)
+    project_root = tmp_path / "skill"
+    project_root.mkdir()
+    source_repo_root = str(project_root)
     deploy_calls = []
 
     monkeypatch.setattr(
@@ -82,7 +82,7 @@ def test_main_skips_pages_deploy_when_pages_repo_points_to_same_remote(tmp_path,
             }
         ),
     )
-    monkeypatch.setattr(module, "_resolve_source_repo_root", lambda config, skill_dir: source_repo_root)
+    monkeypatch.setattr(module, "_resolve_source_repo_root", lambda config, project_root: source_repo_root)
     monkeypatch.setattr(
         module,
         "_deploy_to_source_repo",
@@ -99,5 +99,5 @@ def test_main_skips_pages_deploy_when_pages_repo_points_to_same_remote(tmp_path,
 
     monkeypatch.setattr(module, "_deploy_to_pages_repo", fail_pages_deploy)
 
-    assert module.main(str(skill_dir), html_source_path=str(skill_dir / "index.html")) is True
+    assert module.main(str(project_root), html_source_path=str(project_root / "index.html")) is True
     assert deploy_calls == [("source", source_repo_root)]

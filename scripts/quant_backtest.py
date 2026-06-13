@@ -18,8 +18,8 @@ import yaml
 
 sys.stdout.reconfigure(encoding="utf-8")
 
-SKILL_DIR = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(SKILL_DIR / "scripts"))
+PROJECT_ROOT = next(parent for parent in Path(__file__).resolve().parents if (parent / "config").is_dir() and (parent / "scripts").is_dir())
+sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
 
 from quant_factors import (
     compute_all_factors,
@@ -29,9 +29,9 @@ from quant_factors import (
 from quant_data_utils import load_etf_data as _load_etf_data, get_price_on_date as _get_price_on_date
 from benchmark_data import load_hs300_daily_cached, build_hs300_weekly, build_ma_trend_cache
 
-CONFIG_PATH = SKILL_DIR / "config" / "quant_universe.yaml"
-DATA_DIR = SKILL_DIR / "data" / "quant"
-OUTPUT_DIR = SKILL_DIR / "data" / "quant_results"
+CONFIG_PATH = PROJECT_ROOT / "config" / "quant_universe.yaml"
+DATA_DIR = PROJECT_ROOT / "data" / "quant"
+OUTPUT_DIR = PROJECT_ROOT / "data" / "quant_results"
 
 
 def load_config(preset: str = "preset2"):
@@ -547,7 +547,7 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
     if preloaded and preloaded.get("market_regimes"):
         market_regimes = preloaded["market_regimes"]
     else:
-        regimes_path = SKILL_DIR / "data" / "market_regimes.json"
+        regimes_path = PROJECT_ROOT / "data" / "market_regimes.json"
         market_regimes = {}
         if regimes_path.exists():
             try:
@@ -1233,7 +1233,7 @@ def main():
 
     if args.debug and nav_df is not None:
         snaps = extra.get("debug_snapshots", [])
-        debug_path = SKILL_DIR / "data" / "debug_cli.json"
+        debug_path = PROJECT_ROOT / "data" / "debug_cli.json"
         debug_path.parent.mkdir(parents=True, exist_ok=True)
         with debug_path.open("w", encoding="utf-8") as f:
             json.dump({"count": len(snaps), "snapshots": snaps}, f, ensure_ascii=False, indent=2)

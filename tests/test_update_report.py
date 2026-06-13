@@ -631,7 +631,7 @@ def test_main_publish_success_runs_cleanup_and_publishers(tmp_path, monkeypatch,
     source_html.write_text("SOURCE-HTML", encoding="utf-8")
 
     class FakeTx:
-        def __init__(self, _skill_dir):
+        def __init__(self, _project_root):
             self.actions = []
             tx_instances.append(self)
 
@@ -698,7 +698,7 @@ def test_main_publish_success_runs_cleanup_and_publishers(tmp_path, monkeypatch,
     monkeypatch.setitem(
         sys.modules,
         "deployer",
-        SimpleNamespace(main=lambda skill_dir, html_source_path=None: publish_calls.append(("deployer", skill_dir, html_source_path))),
+        SimpleNamespace(main=lambda project_root, html_source_path=None: publish_calls.append(("deployer", project_root, html_source_path))),
     )
 
     assert module.main(publish=True) is True
@@ -722,7 +722,7 @@ def test_main_restores_backup_when_html_integrity_fails(monkeypatch, load_module
     tx_instances = []
 
     class FakeTx:
-        def __init__(self, _skill_dir):
+        def __init__(self, _project_root):
             self.actions = []
             tx_instances.append(self)
 
@@ -793,7 +793,7 @@ def test_main_returns_false_when_kline_update_fails(monkeypatch, load_module):
     tx_instances = []
 
     class FakeTx:
-        def __init__(self, _skill_dir):
+        def __init__(self, _project_root):
             self.actions = []
             tx_instances.append(self)
 
@@ -822,7 +822,7 @@ def test_main_returns_false_when_update_html_data_fails(monkeypatch, load_module
     tx_instances = []
 
     class FakeTx:
-        def __init__(self, _skill_dir):
+        def __init__(self, _project_root):
             self.actions = []
             tx_instances.append(self)
 
@@ -855,7 +855,7 @@ def test_main_continues_when_realtime_update_fails(monkeypatch, load_module):
     tx_instances = []
 
     class FakeTx:
-        def __init__(self, _skill_dir):
+        def __init__(self, _project_root):
             self.actions = []
             tx_instances.append(self)
 
@@ -914,9 +914,9 @@ def test_run_editorial_update_writes_new_yaml(tmp_path, monkeypatch, load_module
 
     module = load_module("update_report")
 
-    # 构造临时 SKILL_DIR 与 config 目录
-    skill_dir = tmp_path
-    config_dir = skill_dir / "config"
+    # 构造临时 PROJECT_ROOT 与 config 目录
+    project_root = tmp_path
+    config_dir = project_root / "config"
     config_dir.mkdir()
     editorial_path = config_dir / "editorial_content.yaml"
     editorial_path.write_text(
@@ -924,7 +924,7 @@ def test_run_editorial_update_writes_new_yaml(tmp_path, monkeypatch, load_module
         encoding="utf-8",
     )
 
-    monkeypatch.setattr(module, "SKILL_DIR", str(skill_dir))
+    monkeypatch.setattr(module, "PROJECT_ROOT", str(project_root))
 
     # mock editorial_fetcher 返回一个完整的新结果
     class FakeResult:
@@ -970,8 +970,8 @@ def test_run_editorial_update_falls_back_on_empty_etf(tmp_path, monkeypatch, loa
 
     module = load_module("update_report")
 
-    skill_dir = tmp_path
-    config_dir = skill_dir / "config"
+    project_root = tmp_path
+    config_dir = project_root / "config"
     config_dir.mkdir()
     editorial_path = config_dir / "editorial_content.yaml"
     # 上一版含 513120 的历史卡片
@@ -987,7 +987,7 @@ def test_run_editorial_update_falls_back_on_empty_etf(tmp_path, monkeypatch, loa
         encoding="utf-8",
     )
 
-    monkeypatch.setattr(module, "SKILL_DIR", str(skill_dir))
+    monkeypatch.setattr(module, "PROJECT_ROOT", str(project_root))
 
     # fetcher 返回 513120 的新结果为空（模拟港股成分股今天没新闻）
     class FakeResult:
@@ -1021,14 +1021,14 @@ def test_run_editorial_update_survives_fetcher_exception(tmp_path, monkeypatch, 
 
     module = load_module("update_report")
 
-    skill_dir = tmp_path
-    config_dir = skill_dir / "config"
+    project_root = tmp_path
+    config_dir = project_root / "config"
     config_dir.mkdir()
     editorial_path = config_dir / "editorial_content.yaml"
     original = "content_date: '2026-04-16'\netf_cards: {}\nmacro_cards: {}\n"
     editorial_path.write_text(original, encoding="utf-8")
 
-    monkeypatch.setattr(module, "SKILL_DIR", str(skill_dir))
+    monkeypatch.setattr(module, "PROJECT_ROOT", str(project_root))
 
     def _boom():
         raise RuntimeError("network down")
@@ -1049,11 +1049,11 @@ def test_run_editorial_update_survives_missing_module(tmp_path, monkeypatch, loa
     """editorial_fetcher 模块不存在时跳过但返回 True。"""
     module = load_module("update_report")
 
-    skill_dir = tmp_path
-    config_dir = skill_dir / "config"
+    project_root = tmp_path
+    config_dir = project_root / "config"
     config_dir.mkdir()
 
-    monkeypatch.setattr(module, "SKILL_DIR", str(skill_dir))
+    monkeypatch.setattr(module, "PROJECT_ROOT", str(project_root))
 
     # 让 import editorial_fetcher 失败
     import builtins

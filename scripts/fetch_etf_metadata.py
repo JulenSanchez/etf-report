@@ -20,9 +20,9 @@ import yaml
 
 sys.stdout.reconfigure(encoding="utf-8")
 
-SKILL_DIR = Path(__file__).resolve().parent.parent
-CONFIG_PATH = SKILL_DIR / "config" / "quant_universe.yaml"
-OUTPUT_PATH = SKILL_DIR / "data" / "quant" / "etf_metadata.json"
+PROJECT_ROOT = next(parent for parent in Path(__file__).resolve().parents if (parent / "config").is_dir() and (parent / "scripts").is_dir())
+CONFIG_PATH = PROJECT_ROOT / "config" / "quant_universe.yaml"
+OUTPUT_PATH = PROJECT_ROOT / "data" / "quant" / "etf_metadata.json"
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",

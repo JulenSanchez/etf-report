@@ -146,7 +146,7 @@ echo Staged files:
 git status --short
 
 echo.
-set /p CONFIRM="Proceed with commit and force push? (y/N): "
+set /p CONFIRM="Proceed with commit and push? (y/N): "
 if /i not "%CONFIRM%"=="y" (
     echo Aborted.
     git reset HEAD >nul 2>&1
@@ -162,7 +162,7 @@ if %errorlevel% neq 0 (
 
 echo.
 echo Pushing to origin/main...
-git push --force-with-lease origin main
+git push origin main
 if %errorlevel% neq 0 (
     echo [ERROR] Push failed!
     pause

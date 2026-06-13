@@ -31,8 +31,15 @@ import yaml
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
 
-SKILL_DIR = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(SKILL_DIR / "scripts"))
+PROJECT_ROOT_FALLBACK = next(parent for parent in Path(__file__).resolve().parents if (parent / "config").is_dir() and (parent / "scripts").is_dir())
+SRC_DIR = PROJECT_ROOT_FALLBACK / "src"
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
+
+from etf_report.core.paths import ASSETS_DIR, CONFIG_DIR, DATA_DIR, PROJECT_ROOT, SCRIPTS_DIR, TEMPLATES_DIR
+
+if str(SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_DIR))
 
 from quant_factors import calc_ema, calc_rsi
 from quant_data_utils import load_etf_data, rebuild_weekly_from_daily
@@ -40,8 +47,8 @@ from benchmark_data import load_hs300_daily_cached, build_hs300_pct, build_hs300
 from trading_calendar import load_trading_calendar, is_trading_day, last_trading_day
 import quant_contract as qc
 
-CONFIG_PATH = SKILL_DIR / "config" / "quant_universe.yaml"
-OVERRIDES_PATH = SKILL_DIR / "config" / "quant_user_overrides.yaml"
+CONFIG_PATH = CONFIG_DIR / "quant_universe.yaml"
+OVERRIDES_PATH = CONFIG_DIR / "quant_user_overrides.yaml"
 
 # ============================================================
 # Global preloaded data (loaded once at startup)
@@ -120,7 +127,7 @@ def _apply_cleaning_to_df(daily_df, cleaned):
 
 def _load_corporate_action_events():
     """Load auto-detected events file. Returns dict code→[events] or {}."""
-    path = SKILL_DIR / "data" / "corporate_action_events.json"
+    path = DATA_DIR / "corporate_action_events.json"
     if not path.exists():
         return {}
     try:
@@ -428,7 +435,7 @@ def _sina_batch_append(cfg, date_str, rt_prices):
         return 0, len(cfg["universe"])
     # Audit log: record every CSV write from Sina
     import traceback
-    log_path = SKILL_DIR / "data" / "quant" / ".sina_write_log.txt"
+    log_path = DATA_DIR / "quant" / ".sina_write_log.txt"
     stack = "".join(traceback.format_stack()[-6:-1])
     log_path.parent.mkdir(parents=True, exist_ok=True)
     with open(log_path, "a", encoding="utf-8") as lf:
@@ -785,7 +792,7 @@ def _precompute_valuation_scores():
         from valuation_engine import ValuationEngine
         engine = ValuationEngine()
         val_scores = {}
-        history_dir = SKILL_DIR / "data" / "valuation_history"
+        history_dir = DATA_DIR / "valuation_history"
 
         for etf_code in engine.list_etfs():
             cfg = engine.get_etf_config(etf_code)
@@ -838,7 +845,7 @@ def _load_market_regimes():
     Format: {"regimes": [{"date": "2024-01-02", "regime": "choppy_range"}, ...]}
     Stored as dict: date_str -> regime_str for fast lookup.
     """
-    path = SKILL_DIR / "data" / "market_regimes.json"
+    path = DATA_DIR / "market_regimes.json"
     if not path.exists():
         print("  [WARN] market_regimes.json not found, F4 will use default regime")
         CACHE["market_regimes"] = {}
@@ -856,7 +863,7 @@ def _load_market_regimes():
 
 def _load_etf_metadata():
     """Load ETF metadata (AUM + top10 holdings) from disk into CACHE."""
-    path = SKILL_DIR / "data" / "quant" / "etf_metadata.json"
+    path = DATA_DIR / "quant" / "etf_metadata.json"
     try:
         if path.exists():
             with path.open("r", encoding="utf-8") as f:
@@ -1340,7 +1347,7 @@ def run_tuner_backtest(params):
     if return_debug:
         import json as _json
         snaps = extra.get("debug_snapshots", [])
-        debug_path = SKILL_DIR / "data" / "debug_tuner.json"
+        debug_path = DATA_DIR / "debug_tuner.json"
         debug_path.parent.mkdir(parents=True, exist_ok=True)
         with debug_path.open("w", encoding="utf-8") as _f:
             _json.dump({"count": len(snaps), "snapshots": snaps}, _f, ensure_ascii=False, indent=2)
@@ -1426,9 +1433,6 @@ def gc_after_request(response):
         pass
     return response
 
-TEMPLATES_DIR = SKILL_DIR / "templates"
-
-
 @app.route("/")
 def index():
     return send_from_directory(TEMPLATES_DIR, "tuner.html")
@@ -1436,8 +1440,8 @@ def index():
 
 @app.route("/assets/<path:filepath>")
 def serve_assets(filepath):
-    """Serve static assets (CSS/JS) from the skill's assets directory."""
-    return send_from_directory(SKILL_DIR / "assets", filepath)
+    """Serve static assets (CSS/JS) from the project's assets directory."""
+    return send_from_directory(ASSETS_DIR, filepath)
 
 
 def _require_ready():
@@ -1447,7 +1451,7 @@ def _require_ready():
     return None
 
 
-_BACKTEST_CACHE_PATH = SKILL_DIR / "data" / "quant" / "cache" / "last_backtest.json"
+_BACKTEST_CACHE_PATH = DATA_DIR / "quant" / "cache" / "last_backtest.json"
 
 
 def _cache_version_hash():
@@ -1456,7 +1460,7 @@ def _cache_version_hash():
     h = hashlib.md5()
     for fname in ["quant_tuner.py", "quant_backtest.py", "quant_factors.py",
                   "quant_contract.py", "quant_data_utils.py"]:
-        fp = SKILL_DIR / "scripts" / fname
+        fp = SCRIPTS_DIR / fname
         if fp.exists():
             h.update(fp.read_bytes())
     return h.hexdigest()[:8]
@@ -1512,7 +1516,7 @@ def api_debug_data_state():
 
 
 # ── REQ-263a: snapshot intraday cache to disk ──
-SNAPSHOT_DIR = SKILL_DIR / "data" / "intraday_snapshots"
+SNAPSHOT_DIR = DATA_DIR / "intraday_snapshots"
 
 @app.route("/api/snapshot_intraday", methods=["POST"])
 def api_snapshot_intraday():
@@ -2009,7 +2013,7 @@ if __name__ == "__main__":
         try:
             from quant_data_fetcher import load_universe, get_last_date, update_single
             universe = load_universe()
-            csv_dir = Path(SKILL_DIR) / "data" / "quant"
+            csv_dir = DATA_DIR / "quant"
 
             # 统计缺失/过期数量
             missing = 0
@@ -2066,7 +2070,7 @@ if __name__ == "__main__":
         # then bind the port and start Flask.
         preload()
 
-        signal_path = SKILL_DIR / ".tuner_ready_to_bind"
+        signal_path = PROJECT_ROOT / ".tuner_ready_to_bind"
         signal_path.write_text("ready", encoding="utf-8")
 
         for _ in range(100):  # 10s timeout waiting for PowerShell to delete signal

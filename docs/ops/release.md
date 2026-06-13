@@ -3,16 +3,16 @@
 ## 定位
 
 1. **唯一门禁**：发布前到底要做什么，只由本文定义。
-2. **单一事实源**：`PLAN.md` 与 `.codebuddy/rules/etf-report.mdc` 只能引用本文，不能再各自维护一套并列的发布前检查。
-3. **治理文档**：本文位于技能根目录 `runbooks/RELEASE_RUNBOOK.md`，随仓库提交。治理文件（`plans/`、`runbooks/` 等）均纳入版本控制。
+2. **单一事实源**：发布检查只维护在本文，其他文档只链接本文。
+3. **治理文档**：本文位于 `docs/ops/release.md`，随仓库提交。治理文件（`plans/`、`docs/ops/` 等）均纳入版本控制。
 
 ## 提交边界速查
 
 | 类别 | 典型路径 | 是否可提交 | 原因 |
 |------|----------|------------|------|
-| 稳定文档 | `README.md`、`SKILL.md`、`WORKFLOW.md`、`DESIGN.md`、`docs/` 下稳定补充文档 | ✅ 可以 | 对外用户可见，且内容稳定、可复用 |
-| 实现与模板 | `scripts/`、`tests/`、`requirements.txt`、`config/*.example.yaml`、`config/holdings.yaml`、根目录 `index.html` | ✅ 按需 | 属于实际功能、测试、公开模板或发布产物 |
-| 治理文档 | `PLAN.md`、`plans/`、`statusbar.config.md`、`runbooks/` | ✅ 可以 | 治理文件纳入版本控制，便于跨机器同步与协作追溯 |
+| 稳定文档 | `README.md`、`docs/` 下稳定补充文档 | ✅ 可以 | 对外用户可见，且内容稳定、可复用 |
+| 实现与模板 | `scripts/`、`src/`、`tests/`、`requirements.txt`、`config/*.example.yaml`、`config/holdings.yaml`、根目录 `index.html` | ✅ 按需 | 属于实际功能、测试、公开模板或发布产物 |
+| 治理文档 | `PLAN.md`、`plans/`、`docs/ops/`、`docs/ai/` | ✅ 可以 | 治理文件纳入版本控制，便于跨机器同步与协作追溯 |
 | 运行时配置 | `config/config.yaml` | ✅ 可以 | 已移除本地绝对路径，内容可公开 |
 | 敏感配置 | `config/secrets.yaml` | ❌ 不可 | 含 API 密钥等敏感信息，.gitignore 必须覆盖 |
 | 运行产物与缓存 | `data/`、`logs/`、`_working/`、`.backup/`、`outputs/`、`research/` | ❌ 不可 | 运行缓存、日志、临时输出或备份，本地生成即可 |
@@ -21,7 +21,7 @@
 
 只有满足下面任一条件，文档才允许留在 `docs/`：
 
-1. 它是**根目录核心公开文档**（如 `README.md`、`WORKFLOW.md`）的稳定补充说明。
+1. 它是**根目录核心公开文档**（如 `README.md`）的稳定补充说明。
 2. 它是对外读者也需要长期查阅的**重要公开支线**，且不会随着某个单次需求关闭而失效。
 
 以下内容**不得**留在 `docs/`：
@@ -34,7 +34,7 @@
 
 - **需求草案 / 模板** → `plans/REQ-XXX.md`
 - **事件复盘** → `plans/BUG-XXX.md`
-- **开发者规程** → 技能根目录（`RELEASE_RUNBOOK.md`、`AUDIT_RUNBOOK.md`）
+- **开发者规程** → `docs/ops/`
 
 ## 发布前工作流
 
@@ -78,7 +78,7 @@
 - [ ] `.gitignore` 已覆盖 `config/secrets.yaml`、运行数据、日志、临时目录
 - [ ] 运行 `git ls-files config/secrets.yaml`，应返回空结果
 - [ ] 若发现 `secrets.yaml` 已被跟踪，立即执行 `git rm --cached` + `.gitignore` 修复 + `git filter-branch` 清历史
-- [ ] 治理文件（`plans/`、`runbooks/` 等）已合法跟踪，无需排除
+- [ ] 治理文件（`plans/`、`docs/ops/` 等）已合法跟踪，无需排除
 
 ### Phase 4: 分段暂存与提交审查
 

@@ -13,9 +13,11 @@
 
 ---
 
-> **工程文档不在此目录**：
-> - 量化回测引擎 → `BACKTEST_ENGINE.md`（技能根目录）
-> - ETF 贡献度分析 → `ETF_CONTRIBUTION_FRAMEWORK.md`
-> - 系统入口与变更路由 → `QUANT_SYSTEM.md`
-> - 运维文档 → `runbooks/`
-> - 工具调研与历史方法 → `research/`
+> **工程文档入口**：
+> - 系统架构 → `architecture.md`
+> - 量化回测引擎 → `architecture/design/backtest-engine.md`
+> - ETF 贡献度分析 → `architecture/design/etf-contribution.md`
+> - 量化运维 → `ops/quant/overview.md`
+> - 正式页运维 → `ops/report.md`
+> - 发布门禁 → `ops/release.md`
+> - 工具调研与历史方法 → `../research/`
