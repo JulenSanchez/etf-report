@@ -208,6 +208,10 @@ def _deploy_to_pages_repo(config: dict, project_root: str, html_source_path: str
     pages_root = config.get("pages_repo_root", "")
     pages_branch = config.get("pages_branch", "main")
 
+    if not pages_root:
+        logger.info("未配置独立 Pages 仓库，跳过 Pages 仓部署")
+        return True
+
     if not _is_git_repo(pages_root):
         logger.warn("Pages 仓库路径无效，跳过 Pages 部署", {"path": pages_root})
         return True

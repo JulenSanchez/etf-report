@@ -57,6 +57,17 @@ def test_detect_pages_repo_conflict_detects_same_remote_and_branch(tmp_path, mon
 
 
 
+def test_deploy_to_pages_repo_treats_empty_path_as_disabled(monkeypatch, load_module):
+    module = load_module("deployer")
+    messages = []
+
+    monkeypatch.setattr(module.logger, "info", lambda message, context=None: messages.append(message))
+
+    assert module._deploy_to_pages_repo({"pages_repo_root": ""}, "C:/project") is True
+    assert "未配置独立 Pages 仓库，跳过 Pages 仓部署" in messages
+
+
+
 def test_main_skips_pages_deploy_when_pages_repo_points_to_same_remote(tmp_path, monkeypatch, load_module):
     module = load_module("deployer")
     project_root = tmp_path / "skill"
