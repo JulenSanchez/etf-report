@@ -1657,6 +1657,8 @@ def api_presets():
 @app.route("/api/universe/save", methods=["POST"])
 def api_universe_save():
     """Persist ETF active states to quant_universe.yaml."""
+    if CACHE.get("readonly"):
+        return jsonify({"error": "Tuner is in read-only mode"}), 403
     guard = _require_ready()
     if guard:
         return guard
@@ -1713,6 +1715,8 @@ def _save_to_preset(preset_name, overrides):
 
 @app.route("/api/save", methods=["POST"])
 def api_save():
+    if CACHE.get("readonly"):
+        return jsonify({"error": "Tuner is in read-only mode"}), 403
     guard = _require_ready()
     if guard:
         return guard
@@ -2019,9 +2023,12 @@ if __name__ == "__main__":
                          help="启动服务但不自动打开浏览器，供外部启动器统一控制")
     _parser.add_argument("--preload-then-wait", action="store_true",
                          help="Hot-swap: preload synchronously, signal via file, then wait for old process to be killed before binding port")
+    _parser.add_argument("--readonly", action="store_true",
+                         help="Disable write endpoints — for stable/production use")
     _args = _parser.parse_args()
 
     _hot_swap = _args.preload_then_wait
+    CACHE["readonly"] = _args.readonly
 
     if not _hot_swap:
         # Normal mode: ensure port is free before starting

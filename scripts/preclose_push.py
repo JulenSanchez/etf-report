@@ -54,7 +54,7 @@ def _ensure_tuner():
     log("Tuner: starting fresh from this repo...")
     tuner_script = os.path.join(PROJECT_ROOT, "scripts", "quant_tuner.py")
     subprocess.Popen(
-        ["python", tuner_script],
+        ["python", tuner_script, "--readonly", "--no-browser"],
         cwd=PROJECT_ROOT,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,

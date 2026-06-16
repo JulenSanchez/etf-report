@@ -1,0 +1,32 @@
+[13:03:58] Optimizer start: preset=gam-1 strategy=bayesian metric=calmar
+[13:03:58]   periods=[('1Y', '2025-06-16', '2026-06-16'), ('3Y', '2023-06-17', '2026-06-16'), ('6Y', '2020-06-17', '2026-06-16')] seed=42
+[13:03:58]   output=C:\Users\julentan\etf-report\research\params\gam-1-20260616
+[13:04:42] Optimizer start: preset=gam-1 strategy=bayesian metric=calmar
+[13:04:42]   periods=[('1Y', '2025-06-16', '2026-06-16'), ('3Y', '2023-06-17', '2026-06-16'), ('6Y', '2020-06-17', '2026-06-16')] seed=42
+[13:04:42]   output=C:\Users\julentan\etf-report\research\params\gam-1-20260616
+[13:04:42] Computing baseline ...
+[13:07:01]   baseline 1Y: calmar=9.4950 sharpe=2.5549 annual=141.38%
+[13:07:01]   baseline 3Y: calmar=3.5257 sharpe=1.6342 annual=57.57%
+[13:07:01]   baseline 6Y: calmar=1.6521 sharpe=1.3144 annual=40.46%
+[13:07:01] Param space: 27 params
+[13:07:02] Bayesian: 150 trials (Optuna TPE)
+[14:22:20] Optimizer start: preset=gam-1 strategy=bayesian metric=calmar
+[14:22:20]   periods=[('1Y', '2025-06-16', '2026-06-16'), ('3Y', '2023-06-17', '2026-06-16'), ('6Y', '2020-06-17', '2026-06-16')] seed=42
+[14:22:20]   output=C:\Users\julentan\etf-report\research\params\gam-1-20260616
+[14:22:20] Computing baseline ...
+[14:24:42]   baseline 1Y: calmar=9.4950 sharpe=2.5549 annual=141.38%
+[14:24:42]   baseline 3Y: calmar=3.5257 sharpe=1.6342 annual=57.57%
+[14:24:42]   baseline 6Y: calmar=1.6521 sharpe=1.3144 annual=40.46%
+[14:24:42] Param space: 27 params
+[14:24:42] Resume: 0 already completed
+[14:24:43] Bayesian: 150 trials (Optuna TPE)
+[14:33:06] Optimizer start: preset=gam-1 strategy=bayesian metric=calmar
+[14:33:06]   periods=[('1Y', '2025-06-16', '2026-06-16'), ('3Y', '2023-06-17', '2026-06-16'), ('6Y', '2020-06-17', '2026-06-16')] seed=42
+[14:33:06]   output=C:\Users\julentan\etf-report\research\params\gam-1-20260616
+[14:33:06] Computing baseline ...
+[14:35:31]   baseline 1Y: calmar=9.4950 sharpe=2.5549 annual=141.38%
+[14:35:31]   baseline 3Y: calmar=3.5257 sharpe=1.6342 annual=57.57%
+[14:35:31]   baseline 6Y: calmar=1.6521 sharpe=1.3144 annual=40.46%
+[14:35:31] Param space: 27 params
+[14:35:31] Resume: 0 already completed
+[14:35:31] Bayesian: 70 trials (Optuna TPE)
