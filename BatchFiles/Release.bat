@@ -76,25 +76,15 @@ REM ===== Phase 3: .gitignore Check =====
 echo.
 echo [Phase 3] .gitignore Boundary Check
 echo --------------------------------------------
-echo Checking that private files are NOT tracked...
+echo Checking that sensitive files are NOT tracked...
 set BOUNDARY_OK=1
-for %%f in (PLAN.md CONTRIBUTING.md RELEASE_RUNBOOK.md AUDIT_RUNBOOK.md QUANT_RUNBOOK.md statusbar.config.md) do (
-    git ls-files %%f >nul 2>&1
-    if not errorlevel 1 (
-        git ls-files %%f 2>nul | findstr /r ".*" >nul 2>&1
-        if !errorlevel!==0 (
-            echo [ERROR] %%f is tracked but should be gitignored!
-            set BOUNDARY_OK=0
-        )
-    )
-)
-git ls-files config/config.yaml config/secrets.yaml 2>nul | findstr /r ".*" >nul 2>&1
+git ls-files config/secrets.yaml 2>nul | findstr /r ".*" >nul 2>&1
 if %errorlevel%==0 (
-    echo [ERROR] config/config.yaml or config/secrets.yaml is tracked!
+    echo [ERROR] config/secrets.yaml is tracked!
     set BOUNDARY_OK=0
 )
 if "%BOUNDARY_OK%"=="1" (
-    echo [OK] Private files are properly gitignored.
+    echo [OK] Sensitive files are properly gitignored.
 )
 echo.
 pause

@@ -23,6 +23,9 @@ def reset_config_manager_state() -> None:
         return
 
     module._config_manager = None
+    impl = getattr(module, "_impl", module)
+    if hasattr(impl, "_config_manager"):
+        impl._config_manager = None
     module.ConfigManager._instance = None
     module.ConfigManager._config = None
     module.ConfigManager._config_dir = None

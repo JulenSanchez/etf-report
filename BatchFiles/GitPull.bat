@@ -1,4 +1,5 @@
 @echo off
+setlocal enabledelayedexpansion
 chcp 65001 >nul 2>&1
 title Git Pull - ETF Report
 
@@ -9,13 +10,16 @@ echo   Git Pull - Sync with Origin
 echo ============================================
 echo.
 
-REM Stash local changes before pull to avoid data loss
-echo [1/3] Stashing local changes (if any)...
-git stash push -m "auto-stash before pull %date% %time%" 2>nul
-if %errorlevel%==0 (
-    echo [OK] Local changes stashed. Use 'git stash pop' to restore.
-) else (
-    echo [OK] No local changes to stash.
+echo [1/3] Checking working tree...
+set HAS_CHANGES=0
+git status --short
+for /f %%i in ('git status --porcelain') do set HAS_CHANGES=1
+if "!HAS_CHANGES!"=="1" (
+    echo.
+    echo [WARN] Local changes detected. This script will not overwrite them.
+    echo Commit/stash/discard manually, then run GitPull again.
+    pause
+    exit /b 1
 )
 
 echo.
@@ -28,25 +32,16 @@ if %errorlevel% neq 0 (
 )
 
 echo.
-echo [3/3] Resetting to origin/main...
-echo WARNING: This will overwrite all local tracked files with origin/main.
-set /p CONFIRM="Continue? (y/N): "
-if /i not "%CONFIRM%"=="y" (
-    echo Aborted. Use 'git stash pop' to restore stashed changes.
-    pause
-    exit /b 0
-)
-
-git reset --hard origin/main
+echo [3/3] Fast-forward pull...
+git pull --ff-only origin main
 if %errorlevel% neq 0 (
-    echo [ERROR] Reset failed.
+    echo [ERROR] Pull failed. Remote may have diverged; resolve manually.
     pause
     exit /b 1
 )
 
 echo.
 echo [DONE] Local is now in sync with origin/main.
-echo.
 git log --oneline -3
 echo.
 pause

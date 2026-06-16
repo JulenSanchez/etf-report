@@ -266,7 +266,7 @@ presets:
     description: 精算师1：F1(57%)+F3(17%)+F7(26%)，C=0.78，CS=3.1。子参数TPE：MH=5，MA=39周，牛80%熊18%。等权S×C=46.6(+12%)，Sharpe=2.60。信仰：风险调整后收益最大化。
     scoring:
       weights:
-        ema_deviation: 0.5700000000000001
+        ema_deviation: 0.57
         volume_ratio: 0.17
         log_return_deviation: 0.26
       bias_bonus: 0.0

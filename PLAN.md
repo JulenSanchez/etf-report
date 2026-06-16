@@ -68,44 +68,30 @@ open → fixing → fixed → closed
 | 会继续推进、排查修复、改多个文件、做回归验证、需要归档复盘 | 先申请 `REQ` / `BUG` 编号，再继续 |
 | 当前还不确定 | 先按轻任务观察；一旦进入持续推进，立刻补号 |
 
-### 状态栏协议入口
+### AI 冷启动与协作入口
 
-`PLAN.md` 不再作为状态网络正文的维护位置；从本轮开始，`etf-report` 的状态栏能力按“**协议宿主 + 配置 + 项目守卫**”拆分维护：
+`etf-report` 已是普通项目仓库，不再维护 active `.codebuddy/rules` / `.claude/rules` 项目规则。AI 冷启动与协作说明按两层维护：
 
-| 事实源 | 文件 | 职责 |
-|------|------|------|
-| 通用状态栏协议宿主 | `.codebuddy/rules/statusbar-protocol.mdc` | 定义状态抬头三行结构、渲染安全写法、配置发现 / 选中与通用降级行为 |
-| 技能级状态网络配置 | `statusbar.config.md` | 定义 `States` / `Actions` / `Routing` / `Stacking` / `Display` / `Extensions` |
-| 项目级需求看板守卫 | `.codebuddy/rules/etf-report.mdc` | 负责 `etf-report` 自己的入口 / 出口守卫、需求看板、版本信息与 Bug 治理 |
-| 协议草案与字段冻结说明 | `plans/REQ-123.md` 附录 A | 说明协议职责、配置发现 / 选中流程、v1 schema、迁移映射 |
-| 通用填写模板 | `plans/REQ-123.md` 附录 B | 提供给其他工作区 / 技能复用的最小模板 |
-
-
-当前 `etf-report` 的旧状态网络内容已迁移为：
-
-- `分类体系` → `statusbar.config.md` 中的 `States` / `Actions`
-- `意图分类` → `statusbar.config.md` 中的 `Routing`
-- `状态栈` → `statusbar.config.md` 中的 `Stacking`
-- `人格切换`、`流程雷达`、`监察胶囊`、`落地原则` → `statusbar.config.md` 中的 `Extensions`
-- 状态栏右侧附加信息 → `statusbar.config.md` 中的 `Display.context_presets`
+| 事实源 | 职责 |
+|------|------|
+| `AGENTS.md` | 新对话冷启动入口：开放式评估、关键词定位需求、指定 REQ 启动 |
+| `docs/ai/AGENT_GUIDE.md` | 详细 AI 协作说明：术语、任务路由、高风险规则 |
+| `docs/ai/legacy/` | 旧 Skill / statusbar / rules 归档，仅作历史参考，不作为当前规则 |
 
 维护原则：
 
-- **不要**再把状态网络正文回写到 `PLAN.md`
-- 调整状态 / 动作 / 路由时，直接改 `statusbar.config.md`
-- 调整状态抬头固定三行格式、渲染约束、配置发现 / 选中规则时，改 `.codebuddy/rules/statusbar-protocol.mdc`
-- 调整 `etf-report` 自己的需求看板守卫、版本治理、出口检查时，改 `.codebuddy/rules/etf-report.mdc`
-- 调整协议字段定义、冻结口径、迁移方法时，改 `plans/REQ-123.md` 附录 A / B
-
+- `AGENTS.md` 保持短、稳定、低 token，只写冷启动流程。
+- `docs/ai/AGENT_GUIDE.md` 只保留仍会影响当前开发的协作约定。
+- 不再新增 active `.codebuddy/rules`、`.claude/rules` 或 `statusbar.config.md`。
+- 旧规则如需保留，放在 `docs/ai/legacy/` 并明确标注历史归档。
 
 ### 版本发布
 
-用户说"发布"时，**发布前到底要做什么只看 `runbooks/RELEASE_RUNBOOK.md`**。
+用户说"发布"时，**发布前到底要做什么只看 `docs/ops/release.md`**。
 
-- `runbooks/RELEASE_RUNBOOK.md` 是发布前**唯一门禁**与唯一步骤事实源。
-- `PLAN.md` 不再重复维护发布前检查、版本号递增、归档、Git 推送、PR/直推策略等副本。
-- 如果发布动作里需要核对 `Board.md` / `Archive.md` / 版本号 / 敏感信息 / 禁止跟踪文件，这些要求都必须先写进 `runbooks/RELEASE_RUNBOOK.md`，再按它执行。
-- 若 `runbooks/RELEASE_RUNBOOK.md` 未覆盖某项必要动作，先补写该文档，再继续发布。
+- `docs/ops/release.md` 是发布前唯一门禁与步骤事实源。
+- `PLAN.md` 不重复维护发布前检查、版本号递增、归档、Git 推送、PR/直推策略等副本。
+- 如果发布动作里需要核对 `Board.md` / `Archive.md` / 版本号 / 敏感信息 / 禁止跟踪文件，这些要求应先写进 `docs/ops/release.md`，再按它执行。
 
 
 对话结束前批量更新文件，不在中间频繁写文件。
@@ -116,7 +102,7 @@ open → fixing → fixed → closed
 2. **边界原则**：不要把开发治理文件的引用写回 `SKILL.md` / `README.md`；不要把本地敏感配置写回公开模板
 3. **用户覆盖记录**：如果用户推翻 AI 建议，把原因写进最近的 `REQ-XXX.md` 或 `Board.md`（详见"用户覆盖 AI 建议记录"）
 4. **临时产物**：根目录不新增一次性文件；临时排查输出放 `_working/`；长期复用样本放 `tests/fixtures/`
-5. **技能闭环**：所有文件引用必须在技能目录内解析；外部依赖只走 `requirements.txt` 或 `research/` 调研文档
+5. **项目闭环**：当前事实源优先使用仓库内 `README.md`、`AGENTS.md`、`docs/`、`plans/`、`research/` 和代码；外部依赖只走 `requirements.txt` 或明确记录的调研文档
 
 ## 需求文档规范
 
@@ -215,7 +201,7 @@ Backlog.md 只放一句话摘要 + 元数据。完整拆解放到独立 REQ-XXX.
 **记录优先级**：
 1. **首选**：相关 `REQ-XXX.md` 的「评审记录」
 2. **次选**：`Board.md` / `Backlog.md` 的备注或摘要
-3. **补充**：若属于 etf-report 的长期设计偏好，优先沉淀到技能内部文档（`docs/` / `runbooks/` / `plans/` / `research/`），不要写入外部 memory
+3. **补充**：若属于 etf-report 的长期设计偏好，优先沉淀到项目内部文档（`docs/` / `plans/` / `research/`），不要写入外部 memory
 
 **推荐记录格式**：
 - `[用户覆盖] AI 原建议：...`

@@ -191,7 +191,7 @@ files:
 
 
   
-  # 输出文件（index.html 在技能根目录，便于 GitHub 展示）
+  # 输出文件（index.html 在项目根目录，便于 GitHub Pages 展示）
   html_file: "index.html"             # 根目录的主报告文件
   js_main: "main.js"
   editorial_content_file: "editorial_content.yaml"  # 研究卡 / 宏观卡等解释层内容入口

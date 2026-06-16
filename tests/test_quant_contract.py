@@ -104,6 +104,26 @@ def test_preset_to_tuner_params_round_trip_core_fields():
     assert params["execution_timing"] == "next_open"
 
 
+def test_preset_to_tuner_params_rounds_float_weights():
+    preset = {
+        "scoring": {
+            "weights": {
+                "ema_deviation": 0.57,
+                "volume_ratio": 0.17,
+                "log_return_deviation": 0.26,
+            }
+        },
+        "confidence": {},
+        "position": {},
+        "factors": {},
+    }
+
+    params = qc.preset_to_tuner_params("test", preset, {})
+
+    assert [params["w1"], params["w3"], params["w7"]] == [57, 17, 26]
+    assert params["w1"] + params["w3"] + params["w7"] == 100
+
+
 def test_param_schema_contains_all_core_tuner_params():
     schema = qc.get_param_schema()
     keys = set(qc.iter_schema_param_keys())

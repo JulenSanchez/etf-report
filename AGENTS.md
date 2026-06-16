@@ -95,7 +95,7 @@
 - 修改核心逻辑后跑相关最小验证；涉及回测/参数/发布链时优先跑对应测试。
 - 不扫描或修改 `logs/`、`data/`、`outputs/`、`_working/`，除非任务明确需要。
 - **遭遇 Tuner/回测/数据异常时，先查排障表**：
-  - 量化/Tuner/回测 → `docs/ops/quant/overview.md` §7 故障排查
+  - 量化/Tuner/回测 → `docs/ops/quant/overview.md` 的故障排查索引，再按症状跳到短文档
   - 正式页/推送/数据管线 → `docs/ops/report.md` 常见问题
   - 不要猜进程/网络/缓存，先按症状索引定位。
 

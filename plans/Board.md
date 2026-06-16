@@ -17,18 +17,23 @@
 
 ## in_progress (开发中)
 
-_（无）_
+| ID | 标题 | 开始日期 |
+|----|------|---------|
+| REQ-284 | **shared 模块正式包化** — Phase 1 已迁移 config_manager/logger/trading_calendar，后续继续迁移 shared 模块 | 2026-06-16 |
 
 ## done (已完成，待发布)
 
 | ID | 标题 | 完成日期 |
 |----|------|---------|
 | REQ-274 | **ETF 全市场自动筛选** — 筛选引擎 v2 + R14 换池执行（48 支）+ SOP/docs 收口 | 2026-06-15 |
-|----|------|---------|
 | REQ-277 | **F1 检查点/冻结点机制** | 2026-06-10 |
 | REQ-280 | **术语表补全 + 禁词修正** — SKILL.md 术语表新增约 10 条，QUANT_RUNBOOK.md 禁词全面修正 | 2026-06-13 |
 | REQ-281 | **项目仓库化迁移与 stable 发布链收口** | 2026-06-13 |
 | REQ-289 | **ETF 默认勾选机制** — active 标记 + 5% TR 阈值 + Tuner 保存按钮 | 2026-06-16 |
+| REQ-282 | **权重转换逻辑工程化修复** | 2026-06-16 |
+| REQ-286 | **AI 文档与历史治理文档去 Skill 化** | 2026-06-16 |
+| REQ-283 | **量化运维文档拆分精简** | 2026-06-16 |
+| REQ-287 | **stable 自动更新与计划任务观测** | 2026-06-16 |
 
 ## v4.0.0 规划 → 见 `plans/V4_ROADMAP.md`
 
@@ -47,12 +52,6 @@ _（无）_
 
 
 
-## done (已完成，待发布)
-
-_（本轮 v3.5.0 发布内容已归档至 Archive.md）_
-
-
-
 ## backlog (待开发)
 
 | ID | 标题 | 优先级 | 目标版本 | 备注 |
@@ -67,12 +66,7 @@ _（本轮 v3.5.0 发布内容已归档至 Archive.md）_
 | REQ-277 | **F1 检查点/冻结点机制** — 修复多 bit 抢跑时中间日自由移动的 bug | ✅ 完成 | v3.6.0 | 2026-06-10。7 项测试全部 PASS。详见 plans/REQ-277.md |
 | REQ-278 | **交易日历 CNY 后处理** — 用中国节假日算法修正 `trading_days_YYYY.txt`，替换当前"最后周硬编码 total_td=5"的临时方案 | 🟡 Normal | v3.7.0 | 由 BUG-031 转化。当前用日线统计 + 最后周硬编码可用，但日历修好后可恢复完整逻辑。 |
 | REQ-279 | **data/ 目录结构优化** — 合并散落子目录（backtest_cache→quant/cache, stock_bps+valuation_history→valuation, 正式页文件→report/），移 debug_*.json 到 _working/ | 🟢 Low | v3.8.0 | 涉及 14 个脚本路径更新，需完整回归测试。详见 plan。 |
-| REQ-282 | **权重转换逻辑工程化修复** — 用稳定舍入替代浮点绕法，恢复人类可读权重配置 | 🟠 High | v3.7.0 | 详见 plans/REQ-282.md |
-| REQ-283 | **量化运维文档拆分精简** — 将 `docs/ops/quant/overview.md` 拆成短文档 | 🟡 Normal | v3.8.0 | 详见 plans/REQ-283.md |
-| REQ-284 | **shared 模块正式包化** — 将 shared 脚本迁入 `src/etf_report/core/`，旧 scripts 保留 wrapper | 🟡 Normal | v4.0.0 | 详见 plans/REQ-284.md |
 | REQ-285 | **GitHub Pages 发布面二期迁移** — 评估 `web/` / `dist/` / Actions Pages，源码与发布产物分离 | 🟡 Normal | v4.0.0 | 详见 plans/REQ-285.md |
-| REQ-286 | **AI 文档与历史治理文档去 Skill 化** — 精简 `docs/ai/` 内容结构，清理当前事实源中的旧 Skill/statusbar/runbooks 表述 | 🟢 Low | v3.8.0 | 详见 plans/REQ-286.md |
-| REQ-287 | **stable 自动更新与计划任务观测** — 明确 stable 更新策略和计划任务日志/LastResult 回看 | 🟡 Normal | v3.8.0 | 详见 plans/REQ-287.md |
 | REQ-288 | **report-site / quant-lab 双仓拆分评估** — 在包化和发布面迁移后评估是否拆仓 | 🟢 Low | v4.1.0 | 详见 plans/REQ-288.md |
 | REQ-194 | 统一数据获取管线 | 🟠 High | v4.0.0 | 合并多个数据脚本为统一入口 |
 | REQ-159 | editorial 国内政策源增强 | 🟢 Low | - | |
@@ -156,7 +150,7 @@ _（本轮 v3.5.0 发布内容已归档至 Archive.md）_
 
 ## ID 计数器
 
-**下一个需求 ID**: REQ-289
+**下一个需求 ID**: REQ-290
 
 
 

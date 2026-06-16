@@ -198,6 +198,10 @@ def _as_int(value, default=0):
     return int(float(value))
 
 
+def _weight_to_ui_percent(value, default=0.0):
+    return int(round(_as_float(value, default) * 100))
+
+
 def _as_bool(value, default=False):
     if value is None:
         return default
@@ -336,8 +340,8 @@ def preset_to_tuner_params(preset_key, preset_cfg, global_conf=None):
     return {
         "label": preset_cfg.get("label", preset_key),
         "description": preset_cfg.get("description", ""),
-        "w1": int(w.get("ema_deviation", 0.30) * 100),
-        "w3": int(w.get("volume_ratio", 0.30) * 100),
+        "w1": _weight_to_ui_percent(w.get("ema_deviation"), 0.30),
+        "w3": _weight_to_ui_percent(w.get("volume_ratio"), 0.30),
         "bias": scoring.get("bias_bonus", 4.0),
         "conf_type": pc.get("type", "regime"),
         "dead_zone": pc.get("dead_zone", global_conf.get("dead_zone", 25)),
@@ -371,7 +375,7 @@ def preset_to_tuner_params(preset_key, preset_cfg, global_conf=None):
         "rebalance_freq": position.get("rebalance_freq", "W-FRI"),
         "execution_timing": position.get("execution_timing", "same_close"),
         "score_band": round(position.get("score_band", 0) * 100, 1),
-        "w7": int(w.get("log_return_deviation", 0) * 100),
+        "w7": _weight_to_ui_percent(w.get("log_return_deviation"), 0),
         "f7_t": sensitivity.get("f7_t", 7.0),
         "f7_k": sensitivity.get("f7_k", 3.0),
         "f7_window": factors.get("log_return_deviation", {}).get("window_days", 20),

@@ -1,6 +1,6 @@
 # etf-report AI 协作指南
 
-本文件只记录 AI 执行任务时容易误判的项目约定。项目运行入口见 `README.md`。
+本文件只记录 AI 执行任务时容易误判的项目约定。冷启动入口见 `AGENTS.md`，项目运行入口见 `README.md`。
 
 ## 任务路由
 
@@ -11,7 +11,7 @@
 | 启动 Tuner | `python scripts/quant_tuner.py` 或 `python scripts/quant_lab/quant_tuner.py` |
 | 生成量化 payload | `python scripts/quant_build_payload.py` 或 `python scripts/quant_lab/quant_build_payload.py` |
 | 发布 | 先读 `docs/ops/release.md`，不要直接 push |
-| ETF 池变更 | 先读 `docs/ops/quant/overview.md` 中的池变更规则 |
+| ETF 池变更 | 先读 `docs/ops/pool-change.md`，按逐支 SOP 执行 |
 
 ## 高风险规则
 

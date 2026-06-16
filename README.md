@@ -93,8 +93,9 @@ etf-report/
 |---|---|
 | `docs/architecture.md` | 系统架构总览 |
 | `docs/ops/report.md` | 正式页报告生成与发布链路 |
-| `docs/ops/quant/overview.md` | 量化系统、Tuner、ETF 池变更与排障 |
+| `docs/ops/quant/overview.md` | 量化系统总览与运维索引 |
 | `docs/ops/release.md` | GitHub Pages 发布门禁 |
+| `docs/ops/stable.md` | stable 仓库与计划任务运维 |
 | `docs/ops/audit.md` | 项目审计方法 |
 | `docs/ai/AGENT_GUIDE.md` | AI 协作约定 |
 | `research/README.md` | 研究索引 |
