@@ -81,17 +81,14 @@ def get_rebalance_dates(daily_dates: pd.DatetimeIndex, freq: str = "W-FRI"):
     return pd.DatetimeIndex(rebalance_dates)
 
 
-def get_execution_date(signal_date: pd.Timestamp, all_dates: pd.DatetimeIndex, timing: str) -> pd.Timestamp | None:
-    """Return trade execution date for a signal date."""
-    if timing == "next_open":
-        future_dates = all_dates[all_dates > signal_date]
-        return future_dates[0] if len(future_dates) else None
+def get_execution_date(signal_date: pd.Timestamp, all_dates: pd.DatetimeIndex) -> pd.Timestamp | None:
+    """Return trade execution date — always same_close (signal date = execution date)."""
     return signal_date
 
 
-def execution_price_field(timing: str) -> str:
-    """Return price field used for trade execution."""
-    return "open" if timing == "next_open" else "close"
+def execution_price_field() -> str:
+    """Return price field used for trade execution — always close."""
+    return "close"
 
 
 def get_price_on_date(all_daily: dict, code: str, date: pd.Timestamp, field: str = "close") -> float | None:
@@ -181,8 +178,9 @@ def _execute_rebalance(portfolio, cash, prices, suspended_codes,
         current_value = portfolio.get(code, 0) * prices.get(code, 0)
         diff = target_value - current_value
 
-        if is_last and cash > buy_threshold:
-            buy_value = min(cash, max(diff, 0))
+        if is_last:
+            # 最后一支吸收剩余现金，不再设 buy_threshold 门槛
+            buy_value = min(cash, max(diff, 0)) if cash > 0 else 0
         elif diff > buy_threshold:
             buy_value = min(diff, cash)
         else:
@@ -423,7 +421,6 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
                  initial_capital: float = 1000000.0,
                  rebalance_freq: str = None,
                  preset: str = "zen-1",
-                 execution_timing: str = None,
                  universe_filter: list = None,
                  preloaded: dict = None,
                  config_override: dict = None,
@@ -474,10 +471,6 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
     if rebalance_freq is None:
         rebalance_freq = position_cfg.get("rebalance_freq", "W-FRI")
     score_band = position_cfg.get("score_band", 0)
-    if execution_timing is None:
-        execution_timing = position_cfg.get("execution_timing", "same_close")
-    if execution_timing not in ("same_close", "next_open"):
-        execution_timing = "same_close"
     commission_rate = position_cfg.get("commission_rate", 0)
     f3_sens = sensitivity.get("f3", 1.0)
     f2_sens = sensitivity.get("f2", 8.0)
@@ -653,10 +646,10 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
         if is_initial:
             pass  # 执行初始建仓
 
-        execution_date = get_execution_date(rb_date, all_dates, execution_timing)
+        execution_date = get_execution_date(rb_date, all_dates)
         if execution_date is None:
             continue
-        price_field = execution_price_field(execution_timing)
+        price_field = execution_price_field()
 
         # ------ 1. 查找当日因子（全部预计算，O(log n) 二分查找）------
         factors_data = {}
@@ -868,7 +861,7 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
         # 每支目标仓位
         target_positions = softmax_weights * total_target
 
-        # 离散化（最大余数法：floor 后按余数补回，确保总和逼近 total_target）
+        # 离散化（最大余数法：floor 后按余数补回，最后归一化到 total_target）
         in_steps = target_positions / step
         floored = np.floor(in_steps)
         remainders = in_steps - floored
@@ -876,10 +869,13 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
         target_steps = round(total_target / step)
         deficit = int(target_steps - total_floor)
         if deficit > 0:
-            # 余数最大的 deficit 个标的各补 1 step
             top_indices = remainders.nlargest(min(deficit, len(remainders))).index
             floored.loc[top_indices] += 1
         target_positions = (floored * step).clip(lower=0)
+        # 归一化：等比例缩放到 total_target，避免离散化舍入留现金
+        pos_sum = target_positions.sum()
+        if pos_sum > 0:
+            target_positions = target_positions * (total_target / pos_sum)
 
         # Fallback: fill missing prices for held ETFs with most recent available close.
         # ETFs whose price comes from fallback (not from today's data) are treated as
@@ -922,7 +918,7 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
             "date": execution_date,
             "signal_date": rb_date,
             "execution_date": execution_date,
-            "execution_timing": execution_timing,
+            "execution_timing": "same_close",
             "scores": composite.to_dict(),
             "top6": list(top_n.index),
             "positions": target_positions.to_dict(),
@@ -1046,7 +1042,7 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
             if signal_idx < len(signal_history) and date >= signal_history[signal_idx]["date"]:
                 sig = signal_history[signal_idx]
                 target_codes = set(sig["positions"].keys())
-                trade_field = execution_price_field(sig.get("execution_timing"))
+                trade_field = "close"
                 prices = {code: get_price_on_date(all_daily, code, date, trade_field) for code in all_daily}
                 prices = {k: v for k, v in prices.items() if v is not None}
                 hv = sum(portfolio2.get(c, 0) * prices.get(c, 0) for c in portfolio2)
@@ -1078,8 +1074,8 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
             sig = signal_history[signal_idx]
             target_positions = sig["positions"]
 
-            # 获取成交价格 + 成交额：same_close 用收盘价，next_open 用执行日开盘价
-            trade_field = "open" if sig.get("execution_timing") == "next_open" else "close"
+            # 获取成交价格 — 统一使用收盘价执行
+            trade_field = "close"
             prices = {}
             turnover2 = {}
             for code in all_daily:
@@ -1208,8 +1204,8 @@ def main():
     parser = argparse.ArgumentParser(description="REQ-177 M2.1: 量化回测引擎")
     parser.add_argument("--start", type=str, default="2023-01-01", help="回测起始日期")
     parser.add_argument("--end", type=str, default=None, help="回测结束日期")
-    parser.add_argument("--execution-timing", choices=["same_close", "next_open"], default=None,
-                        help="成交口径：same_close=信号日收盘成交，next_open=下一交易日开盘成交")
+    parser.add_argument("--execution-timing", choices=["same_close"], default=None,
+                        help="(已废弃，仅保留兼容性)")
     parser.add_argument("--output", type=str, default=None, help="输出净值 CSV 路径")
     parser.add_argument("--preset", type=str, default="zen-1",
                         help="预设配置名 (default: zen-1)")
@@ -1225,7 +1221,7 @@ def main():
 
     nav_df, signals, extra = run_backtest(
         start_date=args.start, end_date=args.end,
-        execution_timing=args.execution_timing, preset=args.preset,
+        preset=args.preset,
         return_debug=args.debug,
         universe_filter=universe_filter,
     )

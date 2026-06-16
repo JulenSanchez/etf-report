@@ -75,7 +75,6 @@ def _run_one_backtest(args: dict):
     preset = args["preset"]
     start = args["start"]
     end = args["end"]
-    execution_timing = args.get("execution_timing", "next_open")
     config_override = args.get("config_override")
     universe_filter = args.get("universe_filter")
     preloaded = args.get("preloaded")
@@ -85,7 +84,7 @@ def _run_one_backtest(args: dict):
     with contextlib.redirect_stdout(io.StringIO()):
         nav, sig, ext = _rb(
             start_date=start, end_date=end,
-            preset=preset, execution_timing=execution_timing,
+            preset=preset,
             preloaded=preloaded, config_override=config_override,
             universe_filter=universe_filter, return_details=False,
         )
@@ -110,7 +109,7 @@ def run_parallel(jobs: list, max_workers: int = None, use_cache: bool = True):
     """
     Run multiple backtest jobs in parallel via ProcessPoolExecutor.
 
-    jobs: list of dicts, each with {preset, start, end, execution_timing, config_override, universe_filter, preloaded}
+    jobs: list of dicts, each with {preset, start, end, config_override, universe_filter, preloaded}
     max_workers: None = min(cpu_count - 1, len(jobs))
     use_cache: skip jobs with cached results
 
@@ -131,7 +130,6 @@ def run_parallel(jobs: list, max_workers: int = None, use_cache: bool = True):
             key = cache_key(
                 job["preset"], job["start"], job["end"],
                 job.get("config_override"), job.get("universe_filter"),
-                job.get("execution_timing", "next_open"),
             )
             cached = load_cached_result(key)
             if cached is not None:
@@ -155,9 +153,7 @@ def run_parallel(jobs: list, max_workers: int = None, use_cache: bool = True):
                     job = jobs[idx]
                     key = cache_key(
                         job["preset"], job["start"], job["end"],
-                        job.get("config_override"), job.get("universe_filter"),
-                        job.get("execution_timing", "next_open"),
-                    )
+                        job.get("config_override"), job.get("universe_filter"))
                     CACHE_DIR.mkdir(parents=True, exist_ok=True)
                     import json as _json
                     with open(CACHE_DIR / f"{key}.json", "w", encoding="utf-8") as f:
@@ -194,13 +190,12 @@ def _param_hash(params: dict) -> str:
 
 
 def cache_key(preset: str, start: str, end: str, config_override: dict = None,
-              universe_filter: list = None, execution_timing: str = "next_open") -> str:
+              universe_filter: list = None, execution_timing: str = None) -> str:
     """Build a cache key for a backtest run."""
     parts = {
         "preset": preset,
         "start": start,
         "end": end,
-        "execution_timing": execution_timing,
     }
     if config_override:
         parts["override_hash"] = _param_hash(config_override)

@@ -57,7 +57,7 @@ class TestBacktestDataCache:
         from quant_backtest import run_backtest
         nav, _, _ = run_backtest(
             start_date="2025-06-01", end_date="2025-08-01",
-            preset="zen-1", execution_timing="next_open",
+            preset="zen-1",
             preloaded=preloaded,
         )
         assert len(nav) > 0
@@ -97,11 +97,6 @@ class TestCacheKey:
         k1 = cache_key("act-1", "2025-01-01", "2025-06-01")
         k2 = cache_key("act-1", "2025-01-01", "2025-06-01",
                        universe_filter=["512400", "513120"])
-        assert k1 != k2
-
-    def test_execution_timing_affects_key(self):
-        k1 = cache_key("act-1", "2025-01-01", "2025-06-01", execution_timing="same_close")
-        k2 = cache_key("act-1", "2025-01-01", "2025-06-01", execution_timing="next_open")
         assert k1 != k2
 
 

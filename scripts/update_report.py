@@ -67,7 +67,8 @@ def _ensure_tuner():
     if sys.platform == "win32":
         try:
             result = subprocess.run(
-                ["netstat", "-ano"], capture_output=True, text=True, timeout=5
+                ["netstat", "-ano"], capture_output=True, text=True,
+                encoding="utf-8", errors="ignore", timeout=5
             )
             for line in result.stdout.split("\n"):
                 if ":5179" in line and "LISTENING" in line:

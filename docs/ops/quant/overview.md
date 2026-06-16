@@ -53,6 +53,7 @@ assets/js/quant_payload.js
 | 改数据源 / CSV | `docs/ops/quant/data-fetch.md` | `python scripts/quant_data_fetcher.py --start <date> --end <date>` |
 | 改正式页 payload | `docs/ops/report.md` | `python scripts/quant_build_payload.py` + HTML 验证 |
 | 改日常推送 | `docs/ops/quant/daily-automation.md` | 检查计划任务 + dry-run/手动运行 |
+| 参数优化 | `docs/ops/quant/optimization-report-guide.md` | 70 trial 贝叶斯 + 控制变量验证 + 报告按 8 节规范 |
 
 ## 故障排查索引
 

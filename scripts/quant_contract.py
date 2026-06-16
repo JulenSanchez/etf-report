@@ -55,7 +55,6 @@ PARAM_SCHEMA = {
                 {"key": "concentration", "label": "仓位集中度 C", "unit": "raw", "engine_path": "position.concentration"},
                 {"key": "c_sensitivity", "label": "C 动态灵敏度", "unit": "raw", "engine_path": "position.c_sensitivity"},
                 {"key": "rebalance_freq", "label": "调仓频率", "unit": "enum", "engine_path": "position.rebalance_freq"},
-                {"key": "execution_timing", "label": "执行时点", "unit": "enum", "engine_path": "position.execution_timing"},
                 {"key": "score_band", "label": "分数带", "unit": "ui_percent_to_ratio", "engine_path": "position.score_band"},
             ],
         },
@@ -104,13 +103,13 @@ PARAM_BOUNDS = {
     "max_holdings":     {"type": "integer", "min": 1, "max": 8},
     "disc_step":        {"type": "continuous", "min": 0.02, "max": 0.20},
     "concentration":    {"type": "continuous", "min": 0.0, "max": 5.0},
-    "c_sensitivity":    {"type": "continuous", "min": 0.0, "max": 5.0},
-    "rebalance_freq":   {"type": "categorical", "choices": ["W-FRI", "daily"]},
-    "execution_timing": {"type": "categorical", "choices": ["same_close", "next_open"]},
+    "c_sensitivity":    {"type": "continuous", "min": 0.0, "max": 60.0},
+    "rebalance_freq":   {"type": "categorical", "choices": ["daily"]},
+    "execution_timing": {"type": "categorical", "choices": ["same_close"]},
     "f1_active_days":   {"type": "integer", "min": 0, "max": 31},
     "score_band":       {"type": "continuous", "min": 0, "max": 15},
     # factors
-    "ema_period":       {"type": "integer", "min": 8, "max": 40},
+    "ema_period":       {"type": "integer", "min": 2, "max": 40},
     "vol_window":       {"type": "integer", "min": 5, "max": 60},
     "f7_window":        {"type": "integer", "min": 5, "max": 40},
     # universe
@@ -241,8 +240,8 @@ def validate_tuner_params(params):
         return "Bull position must be greater than bear position"
 
     execution_timing = params.get("execution_timing", "same_close")
-    if execution_timing not in ("same_close", "next_open"):
-        return "execution_timing must be same_close or next_open"
+    if execution_timing != "same_close":
+        return "execution_timing must be same_close"
 
     return None
 

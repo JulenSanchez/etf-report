@@ -98,6 +98,7 @@
   - 量化/Tuner/回测 → `docs/ops/quant/overview.md` 的故障排查索引，再按症状跳到短文档
   - 正式页/推送/数据管线 → `docs/ops/report.md` 常见问题
   - 不要猜进程/网络/缓存，先按症状索引定位。
+- **参数优化完成后，按规范写报告**：`docs/ops/quant/optimization-report-guide.md`（8 节结构 + 6 个方法论视角 + 搜索空间设计原则）
 
 ## 详细 AI 协作说明
 

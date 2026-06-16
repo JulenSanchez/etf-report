@@ -20,7 +20,6 @@ def _worker(job):
             end_date=job["end"],
             preset=job["preset"],
             config_override=job.get("config_override"),
-            execution_timing=job.get("execution_timing", "same_close"),
             return_details=True,
         )
     return nav_df, signal_history, extra
@@ -31,7 +30,7 @@ def parallel_backtests(jobs, max_workers=None):
 
     Args:
         jobs: list of dicts, each with keys: preset, start, end
-              Optional: config_override, execution_timing
+              Optional: config_override
         max_workers: number of parallel processes (default: min(4, len(jobs)))
 
     Returns:

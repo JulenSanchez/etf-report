@@ -27,7 +27,7 @@ def sample_params(**overrides):
         "disc_step": 0.05,
         "concentration": 2.0,
         "rebalance_freq": "daily",
-        "execution_timing": "next_open",
+        "execution_timing": "same_close",
         "score_band": 3,
         "ema_period": 16,
         "vol_window": 20,
@@ -41,8 +41,8 @@ def sample_params(**overrides):
     return params
 
 
-def test_validate_tuner_params_accepts_next_open():
-    params = sample_params(execution_timing="next_open")
+def test_validate_tuner_params_accepts_same_close():
+    params = sample_params(execution_timing="same_close")
     assert qc.validate_tuner_params(params) is None
 
 
@@ -70,7 +70,7 @@ def test_tuner_params_to_config_override_unit_conversions():
     assert override["scoring"]["weights"]["log_return_deviation"] == pytest.approx(0.10)
 
     assert override["position"]["score_band"] == pytest.approx(0.03)
-    assert override["position"]["execution_timing"] == "next_open"
+    assert override["position"]["execution_timing"] == "same_close"
     assert override["position"]["discretize_step"] == pytest.approx(0.05)
     assert override["factors"]["log_return_deviation"]["window_days"] == 20
 
@@ -90,7 +90,7 @@ def test_preset_to_tuner_params_round_trip_core_fields():
             "sensitivity": {"f1": 8, "f3": 1.0, "f7_t": 15, "f7_k": 3.5},
         },
         "confidence": {"type": "ma_trend", "ma_bull_pos": 1.0, "ma_bear_pos": 0.3, "ma_trend_period": 26},
-        "position": {"max_holdings": 6, "discretize_step": 0.05, "concentration": 2.0, "rebalance_freq": "daily", "execution_timing": "next_open", "score_band": 0.03},
+        "position": {"max_holdings": 6, "discretize_step": 0.05, "concentration": 2.0, "rebalance_freq": "daily", "execution_timing": "same_close", "score_band": 0.03},
         "factors": {"ema": {"period_weeks": 16}, "volume_ratio": {"window_days": 20}, "log_return_deviation": {"window_days": 20}},
     }
 
@@ -101,7 +101,7 @@ def test_preset_to_tuner_params_round_trip_core_fields():
     assert params["w3"] == 60
     assert params["w7"] == 10
     assert params["score_band"] == 3
-    assert params["execution_timing"] == "next_open"
+    assert params["execution_timing"] == "same_close"
 
 
 def test_preset_to_tuner_params_rounds_float_weights():
@@ -124,16 +124,17 @@ def test_preset_to_tuner_params_rounds_float_weights():
     assert params["w1"] + params["w3"] + params["w7"] == 100
 
 
+
 def test_param_schema_contains_all_core_tuner_params():
     schema = qc.get_param_schema()
     keys = set(qc.iter_schema_param_keys())
 
     assert schema["version"] == 1
     for key in sample_params().keys():
-        if key not in {"debug"}:
+        if key not in {"debug", "execution_timing"}:
             assert key in keys, f"Missing key in schema: {key}"
 
-    assert "execution_timing" in keys
+    assert "execution_timing" not in keys
     assert "score_band" in keys
     assert "f7_window" in keys
 

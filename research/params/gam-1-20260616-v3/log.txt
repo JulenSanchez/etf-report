@@ -1,0 +1,11 @@
+[16:30:08] Optimizer start: preset=gam-1 strategy=bayesian metric=calmar
+[16:30:08]   periods=[('6Y', '2020-06-17', '2026-06-16')] seed=42
+[16:30:08]   output=research\params\gam-1-20260616-v3
+[16:30:08] Computing baseline ...
+[16:31:17]   baseline 6Y: calmar=1.6521 sharpe=1.3144 annual=40.46%
+[16:31:17] Param space: 9 params
+[16:31:18] Bayesian: 70 trials (Optuna TPE)
+[17:26:34] Generating report (70 trials) ...
+[17:26:34] DONE. Results in research\params\gam-1-20260616-v3
+[17:26:34]   Best: calmar=0.5232
+[17:26:34]   Params: {"dead_zone": 16.973038749123273, "disc_step": 0.0803750661675649, "f7_t": 6.362982905946196, "ma_bear_pos": 0.6960129373008583, "max_holdings": 7, "vol_window": 50, "w1": 60, "w3": 20, "w7": 20}

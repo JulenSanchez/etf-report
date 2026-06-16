@@ -316,7 +316,65 @@ presets:
         window_days: 32
   gam-1:
     label: 赌徒1
-    description: 赌徒1：F1(56%)+F3(24%)+F7(20%)，C=0.43，CS=6.0。子参数TPE：MH=5，MA=28w，熊仓50%。等权AR=108%(+16%)，Sharpe=2.50。
+    description: 赌徒1(#43优化)：F1(58%)+F3(24%)+F7(18%)，C=0.43，MH=4，MA=28w，熊仓73%。6Y TR=+960%/MDD=-22.0%/Sharpe=1.43 vs基线667%。信仰：动量优先、均值回归捕捉极端、噪音过滤。
+    scoring:
+      weights:
+        ema_deviation: 0.58
+        volume_ratio: 0.24
+        residual_momentum: 0.0
+        log_return_deviation: 0.18
+      bias_bonus: 0.0
+      sensitivity:
+        f1: 9.0
+        f3: 2.3
+        f1_residual: 5.0
+        f7_t: 9.5
+        f7_k: 3.4
+    confidence:
+      type: ma_trend
+      ma_trend_period: 28
+      ma_bull_pos: 1.0
+      ma_bear_pos: 0.73
+      ma_direction_confirm: true
+      dead_zone: 17
+      full_zone: 65
+      regime_base:
+        bull_trend: 0.95
+        choppy_range: 0.75
+        bear_trend: 0.35
+      regime_window: 8
+      regime_threshold: 0.03
+      breadth_weight: 0.2
+      clarity_threshold: 0.03
+      dd_sensitivity: 0.2
+    position:
+      max_holdings: 4
+      discretize_step: 0.11
+      concentration: 0.43
+      c_sensitivity: 6.0
+      rebalance_freq: daily
+      execution_timing: same_close
+      score_band: 0.028
+      commission_rate: 0.00026
+      max_holdings_special: 8
+      weighting: arithmetic
+    factors:
+      f1_active_days: 1
+      ema:
+        period_weeks: 4
+      volume_ratio:
+        window_days: 39
+      f6_rsi_thresh: 80.0
+      f6_drop_thresh: 0.025
+      f6_base_penalty: 0.15
+      log_return_deviation:
+        window_days: 34
+        lookback_days: 250
+        min_days: 60
+        sigma_floor: 0.01
+  gam-2:
+    label: 赌徒2
+    description: 旧版赌徒1：F1(56%)+F3(24%)+F7(20%)，C=0.43，CS=6.0。子参数TPE：MH=5，MA=28w，熊仓50%。等权AR=108%(+16%)，Sharpe=2.50。
     scoring:
       weights:
         ema_deviation: 0.56
@@ -481,61 +539,6 @@ presets:
       f6_base_penalty: 0.15
       log_return_deviation:
         window_days: 29
-        lookback_days: 250
-        min_days: 60
-        sigma_floor: 0.01
-  gam-2:
-    label: 赌徒2
-    description: 旧版赌徒(MH=6,MA=26w,mbear=0.3)。等权AR=93.0%，SxC=34.8，Sharpe=2.46。保守对照。
-    scoring:
-      weights:
-        ema_deviation: 0.56
-        volume_ratio: 0.24
-        residual_momentum: 0.0
-        log_return_deviation: 0.2
-      bias_bonus: 0.0
-      sensitivity:
-        f1: 4.7
-        f3: 6.2
-        f1_residual: 5.0
-        f7_t: 13.8
-        f7_k: 3.2
-    confidence:
-      type: ma_trend
-      ma_trend_period: 26
-      ma_bull_pos: 1.0
-      ma_bear_pos: 0.3
-      ma_direction_confirm: true
-      dead_zone: 25
-      full_zone: 65
-      regime_base:
-        bull_trend: 0.95
-        choppy_range: 0.75
-        bear_trend: 0.35
-      regime_window: 8
-      regime_threshold: 0.03
-      breadth_weight: 0.2
-      clarity_threshold: 0.03
-      dd_sensitivity: 0.2
-    position:
-      max_holdings: 6
-      discretize_step: 0.05
-      concentration: 0.43
-      c_sensitivity: 6.0
-      rebalance_freq: daily
-      execution_timing: same_close
-      score_band: 0.03
-      max_holdings_special: 8
-      weighting: arithmetic
-      commission_rate: 0.00026
-    factors:
-      f1_active_days: 1
-      ema:
-        period_weeks: 5
-      volume_ratio:
-        window_days: 20
-      log_return_deviation:
-        window_days: 34
         lookback_days: 250
         min_days: 60
         sigma_floor: 0.01

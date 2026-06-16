@@ -404,7 +404,7 @@ th[data-sort]:hover { color: #e0e0e0; }
     </div>
     <div class="slider-group" id="param-disc-step" aria-label="离散化步长">
       <div class="slider-label"><span class="name">离散化步长</span><span class="val" id="v-step">5%</span></div>
-      <input type="range" id="disc_step" min="1" max="10" step="1" value="5" oninput="$id('v-step').textContent=this.value+'%'" aria-label="离散化步长">
+      <input type="range" id="disc_step" min="1" max="20" step="1" value="5" oninput="$id('v-step').textContent=this.value+'%'" aria-label="离散化步长">
     </div>
     <div class="slider-group" id="param-concentration" aria-label="仓位集中度">
       <div class="slider-label"><span class="name">仓位集中度 C</span><span class="val" id="v-conc">2.0</span></div>
@@ -422,13 +422,6 @@ th[data-sort]:hover { color: #e0e0e0; }
       </div>
     </div>
     <div class="factor-sub">
-      <div class="slider-group" id="param-execution" aria-label="成交口径">
-        <div class="slider-label"><span class="name">成交口径</span><span class="val" id="v-exec">收盘成交(复盘)</span></div>
-        <div class="btn-row" id="exec-group">
-          <button onclick="setExecutionTiming('same_close')" class="active">收盘成交(复盘)</button>
-          <button onclick="setExecutionTiming('next_open')">次日开盘</button>
-        </div>
-      </div>
       <div class="slider-group" id="param-score-band" aria-label="分数带">
         <div class="slider-label"><span class="name">分数带</span><span class="val" id="v-score-band">0%</span></div>
         <input type="range" id="score_band" min="0" max="20" step="0.5" value="0" oninput="$id('v-score-band').textContent=parseFloat(this.value).toFixed(1)+'%'" aria-label="分数带">
@@ -911,7 +904,7 @@ th[data-sort]:hover { color: #e0e0e0; }
 
 <script>
 var $id = id => document.getElementById(id);
-var maxHoldings = 6, discStep = 5, confType = 'ma_trend', rebalanceFreq = 'W-FRI', executionTiming = 'same_close', f1ActiveDays = 1;
+var maxHoldings = 6, discStep = 5, confType = 'ma_trend', rebalanceFreq = 'W-FRI', f1ActiveDays = 1;
 var navChart = null, ddChart = null;
 var lastResult = null;
 var lastBacktestData = null;  // last full backtest response for redraws
@@ -1470,16 +1463,7 @@ function updateF1DayButtons() {
   else if (v === 0) $id('v-f1ad').textContent = '全不选';
   else $id('v-f1ad').textContent = selected.join('、');
 }
-function setExecutionTiming(t) {
-  executionTiming = t;
-  var label = t === 'next_open' ? '次日开盘' : '收盘成交(复盘)';
-  $id('v-exec').textContent = label;
-  document.querySelectorAll('#exec-group button').forEach(b => {
-    var bv = b.getAttribute('onclick').match(/'([^']+)'/)[1];
-    b.classList.toggle('active', bv === t);
-  });
-  renderParamSchemaTable();
-}
+function setExecutionTiming(t) { /* deprecated — always same_close */ }
 function setConfType(t) {
   confType = t;
   var labels = {'ma_trend':'MA趋势','regime':'市场状态','dd_trigger':'回撤触发','momentum_crash':'动量崩溃','always_full':'始终满仓'};
@@ -1672,7 +1656,6 @@ function getParams() {
     f1_sensitivity: parseFloat($id('f1_sensitivity').value),
     f3_sensitivity: parseFloat($id('f3_sensitivity').value),
     rebalance_freq: rebalanceFreq,
-    execution_timing: executionTiming,
     f1_active_days: f1ActiveDays,
     score_band: parseFloat($id('score_band').value),  // 0-20，单位%
     f7_t: parseFloat($id('f7_t').value),
@@ -1725,7 +1708,6 @@ function setParams(p) {
   if (p.ma_direction_confirm != null) { setMaDirConfirm(!!p.ma_direction_confirm); }
   if (p.ema_period != null) { setSlider('ema_period', p.ema_period); $id('v-ema').textContent = p.ema_period + ' 周'; }
   if (p.vol_window != null) { setSlider('vol_window', p.vol_window); $id('v-vol').textContent = p.vol_window + ' 日'; }
-  if (p.execution_timing != null) { setExecutionTiming(p.execution_timing); }
   if (p.f1_active_days != null) { setF1ActiveDays(p.f1_active_days); }
   if (p.f1_sensitivity != null) { setSlider('f1_sensitivity', p.f1_sensitivity); $id('v-f1s').textContent = parseFloat(p.f1_sensitivity).toFixed(1); }
   if (p.f3_sensitivity != null) { setSlider('f3_sensitivity', p.f3_sensitivity); $id('v-f3s').textContent = parseFloat(p.f3_sensitivity).toFixed(1); }
@@ -1873,7 +1855,7 @@ async function loadPresets() {
 }
 
 var SCHOOLS = [
-  {id:'gambler', name:'赌徒', target:'max AR', constraint:'MDD<20%', presets:['gam-1','gam-2'], def:'gam-1'},
+  {id:'gambler', name:'赌徒', target:'max AR', constraint:'MDD<20%', presets:['gam-1','gam-2','gam-3'], def:'gam-1'},
   {id:'zen', name:'禅修者', target:'max Sharpe', constraint:'P90<35%', presets:['zen-1'], def:'zen-1'},
   {id:'actuary', name:'精算师', target:'max SxC', constraint:'无', presets:['act-1'], def:'act-1'},
   {id:'custom', name:'自定义', target:'自定义', constraint:'—', presets:['cst-1'], def:'cst-1'},
@@ -3272,14 +3254,14 @@ function getSliderFromDate(dateStr) {
 
 function applyUrlParams() {
   var qs = new URLSearchParams(location.search);
-  if (!qs.has('w1') && !qs.has('rebalance_freq') && !qs.has('execution_timing') && !qs.has('start_date') && !qs.has('universe')) return false;
+  if (!qs.has('w1') && !qs.has('rebalance_freq') && !qs.has('start_date') && !qs.has('universe')) return false;
 
   var defaults = getParams();
   var p = {};
   Object.keys(defaults).forEach(function(key) {
     if (!qs.has(key)) return;
     var raw = qs.get(key);
-    if (key === 'start_date' || key === 'end_date' || key === 'rebalance_freq' || key === 'execution_timing' || key === 'conf_type' || key === 'universe') {
+    if (key === 'start_date' || key === 'end_date' || key === 'rebalance_freq' || key === 'conf_type' || key === 'universe') {
       p[key] = raw;
     } else {
       p[key] = parseFloat(raw);

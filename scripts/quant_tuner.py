@@ -1129,17 +1129,12 @@ def run_tuner_backtest(params):
 
     # Factor precomputation and price lookup now handled inside run_backtest()
 
-    execution_timing = config_override["position"]["execution_timing"]
-    if execution_timing not in ("same_close", "next_open"):
-        execution_timing = "same_close"
-
     # ── Call unified backtest engine ──
     return_debug = bool(params.get("debug", False))
     nav_df, signal_history, extra = _run_backtest(
         start_date=params.get("start_date"),
         end_date=params.get("end_date"),
         preset="zen-1",
-        execution_timing=execution_timing,
         universe_filter=universe_filter,
         preloaded=preloaded,
         config_override=config_override,

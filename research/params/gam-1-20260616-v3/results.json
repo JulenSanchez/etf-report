@@ -1,0 +1,2344 @@
+{
+  "meta": {
+    "preset": "gam-1",
+    "strategy": "bayesian",
+    "metric": "calmar",
+    "n_trials": 70,
+    "periods": {
+      "6Y": [
+        "2020-06-17",
+        "2026-06-16"
+      ]
+    },
+    "seed": 42,
+    "baseline": [
+      {
+        "total_return": 667.3133,
+        "annual_return": 40.4633,
+        "max_drawdown": -24.4917,
+        "sharpe": 1.3144,
+        "sortino": 1.8662,
+        "calmar": 1.6521,
+        "n_trades": 815,
+        "n_signals": 1453,
+        "commission": 265946.91,
+        "final_nav": 7673132.82,
+        "period": "6Y"
+      }
+    ]
+  },
+  "trials": [
+    {
+      "id": 52,
+      "params": {
+        "dead_zone": 16.973038749123273,
+        "disc_step": 0.0803750661675649,
+        "f7_t": 6.362982905946196,
+        "ma_bear_pos": 0.6960129373008583,
+        "max_holdings": 7,
+        "vol_window": 50,
+        "w1": 60,
+        "w3": 20,
+        "w7": 20
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 107.8236,
+          "annual_return": 12.9727,
+          "max_drawdown": -15.0086,
+          "sharpe": 0.691,
+          "sortino": 1.0349,
+          "calmar": 0.8643,
+          "n_trades": 146,
+          "n_signals": 309,
+          "commission": 14486.01,
+          "final_nav": 2078235.57
+        }
+      },
+      "composite": {
+        "calmar": 0.5231523515525695
+      }
+    },
+    {
+      "id": 18,
+      "params": {
+        "dead_zone": 19.446927138022556,
+        "disc_step": 0.08794392405663301,
+        "f7_t": 6.165988493290486,
+        "ma_bear_pos": 0.6814652074289637,
+        "max_holdings": 7,
+        "vol_window": 47,
+        "w1": 62,
+        "w3": 18,
+        "w7": 20
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 109.7562,
+          "annual_return": 13.1472,
+          "max_drawdown": -16.2166,
+          "sharpe": 0.7084,
+          "sortino": 1.0859,
+          "calmar": 0.8107,
+          "n_trades": 150,
+          "n_signals": 309,
+          "commission": 15583.51,
+          "final_nav": 2097562.01
+        }
+      },
+      "composite": {
+        "calmar": 0.4907087948671388
+      }
+    },
+    {
+      "id": 62,
+      "params": {
+        "dead_zone": 15.650782088395149,
+        "disc_step": 0.08214737661423883,
+        "f7_t": 6.922785735419665,
+        "ma_bear_pos": 0.7611443955643099,
+        "max_holdings": 7,
+        "vol_window": 59,
+        "w1": 58,
+        "w3": 21,
+        "w7": 21
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 108.2874,
+          "annual_return": 13.0147,
+          "max_drawdown": -16.5947,
+          "sharpe": 0.6866,
+          "sortino": 1.0414,
+          "calmar": 0.7843,
+          "n_trades": 134,
+          "n_signals": 309,
+          "commission": 15869.33,
+          "final_nav": 2082874.25
+        }
+      },
+      "composite": {
+        "calmar": 0.4747291326190909
+      }
+    },
+    {
+      "id": 64,
+      "params": {
+        "dead_zone": 15.619865909376756,
+        "disc_step": 0.08159178135248525,
+        "f7_t": 7.485280791785841,
+        "ma_bear_pos": 0.7623495489397243,
+        "max_holdings": 7,
+        "vol_window": 59,
+        "w1": 59,
+        "w3": 20,
+        "w7": 21
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 106.7557,
+          "annual_return": 12.8756,
+          "max_drawdown": -16.5938,
+          "sharpe": 0.6831,
+          "sortino": 1.0406,
+          "calmar": 0.7759,
+          "n_trades": 130,
+          "n_signals": 309,
+          "commission": 15772.19,
+          "final_nav": 2067556.78
+        }
+      },
+      "composite": {
+        "calmar": 0.46964469463107567
+      }
+    },
+    {
+      "id": 9,
+      "params": {
+        "dead_zone": 15.110442342472048,
+        "disc_step": 0.10339152856093507,
+        "f7_t": 10.068573438476172,
+        "ma_bear_pos": 0.8374043008245924,
+        "max_holdings": 7,
+        "vol_window": 32,
+        "w1": 59,
+        "w3": 20,
+        "w7": 21
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 109.4493,
+          "annual_return": 13.1195,
+          "max_drawdown": -17.2704,
+          "sharpe": 0.6633,
+          "sortino": 1.0392,
+          "calmar": 0.7597,
+          "n_trades": 170,
+          "n_signals": 309,
+          "commission": 19820.46,
+          "final_nav": 2094493.0
+        }
+      },
+      "composite": {
+        "calmar": 0.4598389927970462
+      }
+    },
+    {
+      "id": 53,
+      "params": {
+        "dead_zone": 17.008179756314885,
+        "disc_step": 0.0783924816867851,
+        "f7_t": 10.904905672951223,
+        "ma_bear_pos": 0.6294132585987555,
+        "max_holdings": 7,
+        "vol_window": 50,
+        "w1": 60,
+        "w3": 20,
+        "w7": 20
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 90.411,
+          "annual_return": 11.3363,
+          "max_drawdown": -15.7094,
+          "sharpe": 0.6266,
+          "sortino": 0.9666,
+          "calmar": 0.7216,
+          "n_trades": 166,
+          "n_signals": 309,
+          "commission": 16743.83,
+          "final_nav": 1904109.54
+        }
+      },
+      "composite": {
+        "calmar": 0.43677743477997705
+      }
+    },
+    {
+      "id": 67,
+      "params": {
+        "dead_zone": 15.001938087619044,
+        "disc_step": 0.08112954296867056,
+        "f7_t": 6.964693735297297,
+        "ma_bear_pos": 0.6980298204186547,
+        "max_holdings": 7,
+        "vol_window": 59,
+        "w1": 58,
+        "w3": 20,
+        "w7": 22
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 110.587,
+          "annual_return": 13.2218,
+          "max_drawdown": -18.4369,
+          "sharpe": 0.7008,
+          "sortino": 1.0622,
+          "calmar": 0.7171,
+          "n_trades": 143,
+          "n_signals": 309,
+          "commission": 16429.72,
+          "final_nav": 2105869.99
+        }
+      },
+      "composite": {
+        "calmar": 0.43405362871496883
+      }
+    },
+    {
+      "id": 42,
+      "params": {
+        "dead_zone": 16.85955916410315,
+        "disc_step": 0.08044162456722055,
+        "f7_t": 10.55380119270531,
+        "ma_bear_pos": 0.6793587574974685,
+        "max_holdings": 7,
+        "vol_window": 57,
+        "w1": 62,
+        "w3": 19,
+        "w7": 19
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 98.1788,
+          "annual_return": 12.081,
+          "max_drawdown": -16.9334,
+          "sharpe": 0.6809,
+          "sortino": 1.04,
+          "calmar": 0.7134,
+          "n_trades": 123,
+          "n_signals": 309,
+          "commission": 14181.6,
+          "final_nav": 1981788.14
+        }
+      },
+      "composite": {
+        "calmar": 0.43181405483929547
+      }
+    },
+    {
+      "id": 63,
+      "params": {
+        "dead_zone": 15.799233167351247,
+        "disc_step": 0.08134535537329998,
+        "f7_t": 7.455893800832847,
+        "ma_bear_pos": 0.7787462389981167,
+        "max_holdings": 7,
+        "vol_window": 59,
+        "w1": 59,
+        "w3": 20,
+        "w7": 21
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 109.4573,
+          "annual_return": 13.1203,
+          "max_drawdown": -18.4135,
+          "sharpe": 0.6783,
+          "sortino": 1.0284,
+          "calmar": 0.7125,
+          "n_trades": 134,
+          "n_signals": 309,
+          "commission": 15528.47,
+          "final_nav": 2094573.38
+        }
+      },
+      "composite": {
+        "calmar": 0.43126929362629385
+      }
+    },
+    {
+      "id": 44,
+      "params": {
+        "dead_zone": 17.36419173421468,
+        "disc_step": 0.08728091912055362,
+        "f7_t": 12.322264106226573,
+        "ma_bear_pos": 0.7338911763962268,
+        "max_holdings": 7,
+        "vol_window": 58,
+        "w1": 60,
+        "w3": 21,
+        "w7": 19
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 102.6678,
+          "annual_return": 12.5004,
+          "max_drawdown": -18.31,
+          "sharpe": 0.6805,
+          "sortino": 1.0366,
+          "calmar": 0.6827,
+          "n_trades": 124,
+          "n_signals": 309,
+          "commission": 16345.35,
+          "final_nav": 2026678.35
+        }
+      },
+      "composite": {
+        "calmar": 0.41323164457357303
+      }
+    },
+    {
+      "id": 34,
+      "params": {
+        "dead_zone": 16.437421002541363,
+        "disc_step": 0.0975911456818629,
+        "f7_t": 5.618138820315068,
+        "ma_bear_pos": 0.9990980125296525,
+        "max_holdings": 7,
+        "vol_window": 54,
+        "w1": 62,
+        "w3": 19,
+        "w7": 19
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 112.6255,
+          "annual_return": 13.4038,
+          "max_drawdown": -19.968,
+          "sharpe": 0.6602,
+          "sortino": 0.998,
+          "calmar": 0.6713,
+          "n_trades": 152,
+          "n_signals": 309,
+          "commission": 15869.68,
+          "final_nav": 2126254.94
+        }
+      },
+      "composite": {
+        "calmar": 0.40633133587555237
+      }
+    },
+    {
+      "id": 16,
+      "params": {
+        "dead_zone": 15.219783784875425,
+        "disc_step": 0.08763850726289618,
+        "f7_t": 6.204762103541446,
+        "ma_bear_pos": 0.6955801251974457,
+        "max_holdings": 7,
+        "vol_window": 48,
+        "w1": 57,
+        "w3": 20,
+        "w7": 23
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 91.1891,
+          "annual_return": 11.412,
+          "max_drawdown": -17.3281,
+          "sharpe": 0.6122,
+          "sortino": 0.9356,
+          "calmar": 0.6586,
+          "n_trades": 162,
+          "n_signals": 309,
+          "commission": 16822.29,
+          "final_nav": 1911890.9
+        }
+      },
+      "composite": {
+        "calmar": 0.3986441498698626
+      }
+    },
+    {
+      "id": 26,
+      "params": {
+        "dead_zone": 16.672330772024885,
+        "disc_step": 0.08263848095562622,
+        "f7_t": 9.194146943608976,
+        "ma_bear_pos": 0.8297398385198569,
+        "max_holdings": 7,
+        "vol_window": 48,
+        "w1": 62,
+        "w3": 18,
+        "w7": 20
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 94.8705,
+          "annual_return": 11.7669,
+          "max_drawdown": -18.1702,
+          "sharpe": 0.6045,
+          "sortino": 0.9042,
+          "calmar": 0.6476,
+          "n_trades": 143,
+          "n_signals": 309,
+          "commission": 15447.48,
+          "final_nav": 1948704.9
+        }
+      },
+      "composite": {
+        "calmar": 0.3919859572665093
+      }
+    },
+    {
+      "id": 51,
+      "params": {
+        "dead_zone": 15.829970111321739,
+        "disc_step": 0.08712783480508487,
+        "f7_t": 5.124015009910857,
+        "ma_bear_pos": 0.6679185134408063,
+        "max_holdings": 7,
+        "vol_window": 56,
+        "w1": 59,
+        "w3": 20,
+        "w7": 21
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 94.2191,
+          "annual_return": 11.7045,
+          "max_drawdown": -18.0801,
+          "sharpe": 0.6291,
+          "sortino": 0.9579,
+          "calmar": 0.6474,
+          "n_trades": 146,
+          "n_signals": 309,
+          "commission": 14219.09,
+          "final_nav": 1942190.72
+        }
+      },
+      "composite": {
+        "calmar": 0.3918648992191756
+      }
+    },
+    {
+      "id": 17,
+      "params": {
+        "dead_zone": 15.016177999944693,
+        "disc_step": 0.06504334719662469,
+        "f7_t": 6.279853214684621,
+        "ma_bear_pos": 0.5098198017102644,
+        "max_holdings": 7,
+        "vol_window": 49,
+        "w1": 59,
+        "w3": 20,
+        "w7": 21
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 74.6387,
+          "annual_return": 9.7426,
+          "max_drawdown": -15.1303,
+          "sharpe": 0.5627,
+          "sortino": 0.8354,
+          "calmar": 0.6439,
+          "n_trades": 175,
+          "n_signals": 309,
+          "commission": 15394.93,
+          "final_nav": 1746386.79
+        }
+      },
+      "composite": {
+        "calmar": 0.38974638339083595
+      }
+    },
+    {
+      "id": 31,
+      "params": {
+        "dead_zone": 16.170443672782746,
+        "disc_step": 0.08269033717081242,
+        "f7_t": 8.6607744170307,
+        "ma_bear_pos": 0.8364279995251644,
+        "max_holdings": 7,
+        "vol_window": 48,
+        "w1": 63,
+        "w3": 18,
+        "w7": 19
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 95.7847,
+          "annual_return": 11.8541,
+          "max_drawdown": -18.4142,
+          "sharpe": 0.6104,
+          "sortino": 0.9111,
+          "calmar": 0.6437,
+          "n_trades": 144,
+          "n_signals": 309,
+          "commission": 14478.76,
+          "final_nav": 1957847.25
+        }
+      },
+      "composite": {
+        "calmar": 0.38962532534350225
+      }
+    },
+    {
+      "id": 0,
+      "params": {
+        "dead_zone": 22.49080237694725,
+        "disc_step": 0.11556428757689245,
+        "f7_t": 10.31993941811405,
+        "ma_bear_pos": 0.759195090518222,
+        "max_holdings": 4,
+        "vol_window": 34,
+        "w1": 51,
+        "w3": 29,
+        "w7": 20
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 99.4988,
+          "annual_return": 12.2052,
+          "max_drawdown": -19.1043,
+          "sharpe": 0.6066,
+          "sortino": 0.9716,
+          "calmar": 0.6389,
+          "n_trades": 156,
+          "n_signals": 309,
+          "commission": 23112.76,
+          "final_nav": 1994988.41
+        }
+      },
+      "composite": {
+        "calmar": 0.3867199322074935
+      }
+    },
+    {
+      "id": 48,
+      "params": {
+        "dead_zone": 21.102609177850905,
+        "disc_step": 0.05742489099712629,
+        "f7_t": 11.707249082449126,
+        "ma_bear_pos": 0.6256696592404082,
+        "max_holdings": 7,
+        "vol_window": 58,
+        "w1": 60,
+        "w3": 20,
+        "w7": 20
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 82.0476,
+          "annual_return": 10.5055,
+          "max_drawdown": -16.4596,
+          "sharpe": 0.5838,
+          "sortino": 0.8676,
+          "calmar": 0.6383,
+          "n_trades": 141,
+          "n_signals": 309,
+          "commission": 14957.11,
+          "final_nav": 1820476.2
+        }
+      },
+      "composite": {
+        "calmar": 0.3863567580654924
+      }
+    },
+    {
+      "id": 69,
+      "params": {
+        "dead_zone": 15.677389069337062,
+        "disc_step": 0.07347640225598094,
+        "f7_t": 6.885773001615756,
+        "ma_bear_pos": 0.7138957490447454,
+        "max_holdings": 7,
+        "vol_window": 59,
+        "w1": 59,
+        "w3": 20,
+        "w7": 21
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 86.7198,
+          "annual_return": 10.9734,
+          "max_drawdown": -17.2173,
+          "sharpe": 0.5823,
+          "sortino": 0.8675,
+          "calmar": 0.6373,
+          "n_trades": 153,
+          "n_signals": 309,
+          "commission": 13443.94,
+          "final_nav": 1867198.4
+        }
+      },
+      "composite": {
+        "calmar": 0.3857514678288239
+      }
+    },
+    {
+      "id": 33,
+      "params": {
+        "dead_zone": 15.01870309493585,
+        "disc_step": 0.07964345525327221,
+        "f7_t": 8.18719957139242,
+        "ma_bear_pos": 0.7725740933155105,
+        "max_holdings": 7,
+        "vol_window": 44,
+        "w1": 62,
+        "w3": 19,
+        "w7": 19
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 97.0125,
+          "annual_return": 11.9708,
+          "max_drawdown": -18.8851,
+          "sharpe": 0.6164,
+          "sortino": 0.9186,
+          "calmar": 0.6339,
+          "n_trades": 166,
+          "n_signals": 309,
+          "commission": 14840.49,
+          "final_nav": 1970125.42
+        }
+      },
+      "composite": {
+        "calmar": 0.38369348102415113
+      }
+    },
+    {
+      "id": 21,
+      "params": {
+        "dead_zone": 15.339151393085697,
+        "disc_step": 0.0875471686938295,
+        "f7_t": 4.972257677331319,
+        "ma_bear_pos": 0.7106904325992149,
+        "max_holdings": 7,
+        "vol_window": 47,
+        "w1": 62,
+        "w3": 18,
+        "w7": 20
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 89.3871,
+          "annual_return": 11.2362,
+          "max_drawdown": -17.7285,
+          "sharpe": 0.6033,
+          "sortino": 0.9242,
+          "calmar": 0.6338,
+          "n_trades": 158,
+          "n_signals": 309,
+          "commission": 15058.33,
+          "final_nav": 1893871.38
+        }
+      },
+      "composite": {
+        "calmar": 0.38363295200048425
+      }
+    },
+    {
+      "id": 55,
+      "params": {
+        "dead_zone": 19.3364541339543,
+        "disc_step": 0.0786950590926243,
+        "f7_t": 10.621385362501874,
+        "ma_bear_pos": 0.6406029533838279,
+        "max_holdings": 7,
+        "vol_window": 51,
+        "w1": 59,
+        "w3": 21,
+        "w7": 20
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 83.9532,
+          "annual_return": 10.6976,
+          "max_drawdown": -16.8876,
+          "sharpe": 0.5884,
+          "sortino": 0.9019,
+          "calmar": 0.6335,
+          "n_trades": 168,
+          "n_signals": 309,
+          "commission": 16195.56,
+          "final_nav": 1839532.0
+        }
+      },
+      "composite": {
+        "calmar": 0.3834513649294837
+      }
+    },
+    {
+      "id": 54,
+      "params": {
+        "dead_zone": 17.41922379471572,
+        "disc_step": 0.0707043827617713,
+        "f7_t": 11.104789782007952,
+        "ma_bear_pos": 0.6015938642241327,
+        "max_holdings": 7,
+        "vol_window": 50,
+        "w1": 58,
+        "w3": 23,
+        "w7": 19
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 81.1306,
+          "annual_return": 10.4125,
+          "max_drawdown": -16.4489,
+          "sharpe": 0.5778,
+          "sortino": 0.8816,
+          "calmar": 0.633,
+          "n_trades": 147,
+          "n_signals": 309,
+          "commission": 15569.92,
+          "final_nav": 1811306.21
+        }
+      },
+      "composite": {
+        "calmar": 0.38314871981114945
+      }
+    },
+    {
+      "id": 19,
+      "params": {
+        "dead_zone": 19.091839274293925,
+        "disc_step": 0.06435319807148103,
+        "f7_t": 6.769959707663782,
+        "ma_bear_pos": 0.5049564770491409,
+        "max_holdings": 7,
+        "vol_window": 55,
+        "w1": 61,
+        "w3": 20,
+        "w7": 19
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 78.3019,
+          "annual_return": 10.1231,
+          "max_drawdown": -15.9983,
+          "sharpe": 0.5801,
+          "sortino": 0.8597,
+          "calmar": 0.6328,
+          "n_trades": 151,
+          "n_signals": 309,
+          "commission": 12541.95,
+          "final_nav": 1783018.94
+        }
+      },
+      "composite": {
+        "calmar": 0.3830276617638158
+      }
+    },
+    {
+      "id": 12,
+      "params": {
+        "dead_zone": 20.7593179692706,
+        "disc_step": 0.10197683976250571,
+        "f7_t": 10.626960267486194,
+        "ma_bear_pos": 0.7850321159481426,
+        "max_holdings": 6,
+        "vol_window": 30,
+        "w1": 52,
+        "w3": 28,
+        "w7": 20
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 95.7911,
+          "annual_return": 11.8547,
+          "max_drawdown": -18.8248,
+          "sharpe": 0.5917,
+          "sortino": 0.9282,
+          "calmar": 0.6297,
+          "n_trades": 182,
+          "n_signals": 309,
+          "commission": 23563.45,
+          "final_nav": 1957911.22
+        }
+      },
+      "composite": {
+        "calmar": 0.3811512620301435
+      }
+    },
+    {
+      "id": 41,
+      "params": {
+        "dead_zone": 16.26378243262299,
+        "disc_step": 0.09227857255975365,
+        "f7_t": 9.86808693971224,
+        "ma_bear_pos": 0.8520246645652265,
+        "max_holdings": 7,
+        "vol_window": 54,
+        "w1": 62,
+        "w3": 18,
+        "w7": 20
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 100.5745,
+          "annual_return": 12.3058,
+          "max_drawdown": -19.5941,
+          "sharpe": 0.6228,
+          "sortino": 0.9344,
+          "calmar": 0.628,
+          "n_trades": 128,
+          "n_signals": 309,
+          "commission": 14933.9,
+          "final_nav": 2005744.68
+        }
+      },
+      "composite": {
+        "calmar": 0.38012226862780707
+      }
+    },
+    {
+      "id": 38,
+      "params": {
+        "dead_zone": 25.33442406785898,
+        "disc_step": 0.09493537955215327,
+        "f7_t": 11.72677762286907,
+        "ma_bear_pos": 0.6030636895461323,
+        "max_holdings": 7,
+        "vol_window": 51,
+        "w1": 59,
+        "w3": 22,
+        "w7": 19
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 82.1293,
+          "annual_return": 10.5138,
+          "max_drawdown": -17.0555,
+          "sharpe": 0.5874,
+          "sortino": 0.8733,
+          "calmar": 0.6164,
+          "n_trades": 135,
+          "n_signals": 309,
+          "commission": 14793.42,
+          "final_nav": 1821293.1
+        }
+      },
+      "composite": {
+        "calmar": 0.37310090188245265
+      }
+    },
+    {
+      "id": 43,
+      "params": {
+        "dead_zone": 15.851946067297513,
+        "disc_step": 0.07736306489372556,
+        "f7_t": 10.808520038226762,
+        "ma_bear_pos": 0.688724528804646,
+        "max_holdings": 7,
+        "vol_window": 58,
+        "w1": 62,
+        "w3": 19,
+        "w7": 19
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 93.7909,
+          "annual_return": 11.6634,
+          "max_drawdown": -18.9473,
+          "sharpe": 0.624,
+          "sortino": 0.9522,
+          "calmar": 0.6156,
+          "n_trades": 135,
+          "n_signals": 309,
+          "commission": 14362.64,
+          "final_nav": 1937909.0
+        }
+      },
+      "composite": {
+        "calmar": 0.3726166696931179
+      }
+    },
+    {
+      "id": 32,
+      "params": {
+        "dead_zone": 16.81460331508162,
+        "disc_step": 0.09011865974452427,
+        "f7_t": 8.993099812472645,
+        "ma_bear_pos": 0.9279967546446063,
+        "max_holdings": 7,
+        "vol_window": 48,
+        "w1": 63,
+        "w3": 18,
+        "w7": 19
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 101.8632,
+          "annual_return": 12.4258,
+          "max_drawdown": -20.4134,
+          "sharpe": 0.6246,
+          "sortino": 0.937,
+          "calmar": 0.6087,
+          "n_trades": 155,
+          "n_signals": 309,
+          "commission": 16421.85,
+          "final_nav": 2018631.79
+        }
+      },
+      "composite": {
+        "calmar": 0.36844016706010535
+      }
+    },
+    {
+      "id": 3,
+      "params": {
+        "dead_zone": 24.12139968434072,
+        "disc_step": 0.10066583652537121,
+        "f7_t": 4.996737821583597,
+        "ma_bear_pos": 0.708540663048167,
+        "max_holdings": 6,
+        "vol_window": 31,
+        "w1": 60,
+        "w3": 20,
+        "w7": 20
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 91.1969,
+          "annual_return": 11.4128,
+          "max_drawdown": -18.7956,
+          "sharpe": 0.6082,
+          "sortino": 0.9348,
+          "calmar": 0.6072,
+          "n_trades": 166,
+          "n_signals": 309,
+          "commission": 18063.78,
+          "final_nav": 1911969.38
+        }
+      },
+      "composite": {
+        "calmar": 0.3675322317051026
+      }
+    },
+    {
+      "id": 35,
+      "params": {
+        "dead_zone": 18.316929849002076,
+        "disc_step": 0.09814414947697349,
+        "f7_t": 5.591265131747251,
+        "ma_bear_pos": 0.9990148763237787,
+        "max_holdings": 6,
+        "vol_window": 57,
+        "w1": 62,
+        "w3": 19,
+        "w7": 19
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 108.7587,
+          "annual_return": 13.0573,
+          "max_drawdown": -22.0757,
+          "sharpe": 0.6426,
+          "sortino": 0.9527,
+          "calmar": 0.5915,
+          "n_trades": 132,
+          "n_signals": 309,
+          "commission": 14364.05,
+          "final_nav": 2087587.11
+        }
+      },
+      "composite": {
+        "calmar": 0.35802917498940745
+      }
+    },
+    {
+      "id": 22,
+      "params": {
+        "dead_zone": 18.88679182333208,
+        "disc_step": 0.08424074084568811,
+        "f7_t": 6.011177215245073,
+        "ma_bear_pos": 0.5448467814608083,
+        "max_holdings": 7,
+        "vol_window": 46,
+        "w1": 59,
+        "w3": 20,
+        "w7": 21
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 79.8634,
+          "annual_return": 10.2833,
+          "max_drawdown": -17.7595,
+          "sharpe": 0.5952,
+          "sortino": 0.8822,
+          "calmar": 0.579,
+          "n_trades": 143,
+          "n_signals": 309,
+          "commission": 13870.87,
+          "final_nav": 1798634.42
+        }
+      },
+      "composite": {
+        "calmar": 0.3504630470310514
+      }
+    },
+    {
+      "id": 37,
+      "params": {
+        "dead_zone": 16.133125415999082,
+        "disc_step": 0.10324347064162054,
+        "f7_t": 7.272410345162436,
+        "ma_bear_pos": 0.7101780082556733,
+        "max_holdings": 6,
+        "vol_window": 60,
+        "w1": 60,
+        "w3": 20,
+        "w7": 20
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 93.6823,
+          "annual_return": 11.6529,
+          "max_drawdown": -20.1292,
+          "sharpe": 0.6137,
+          "sortino": 0.9293,
+          "calmar": 0.5789,
+          "n_trades": 130,
+          "n_signals": 309,
+          "commission": 13764.06,
+          "final_nav": 1936822.73
+        }
+      },
+      "composite": {
+        "calmar": 0.35040251800738453
+      }
+    },
+    {
+      "id": 66,
+      "params": {
+        "dead_zone": 31.778186108838028,
+        "disc_step": 0.08370667794406517,
+        "f7_t": 6.245196959869167,
+        "ma_bear_pos": 0.8041303934926354,
+        "max_holdings": 7,
+        "vol_window": 47,
+        "w1": 58,
+        "w3": 21,
+        "w7": 21
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 87.2452,
+          "annual_return": 11.0254,
+          "max_drawdown": -19.1863,
+          "sharpe": 0.564,
+          "sortino": 0.847,
+          "calmar": 0.5747,
+          "n_trades": 156,
+          "n_signals": 309,
+          "commission": 14977.47,
+          "final_nav": 1872452.03
+        }
+      },
+      "composite": {
+        "calmar": 0.34786029901337695
+      }
+    },
+    {
+      "id": 14,
+      "params": {
+        "dead_zone": 22.37993285053677,
+        "disc_step": 0.08970657857507844,
+        "f7_t": 11.095789183531142,
+        "ma_bear_pos": 0.8113027648773606,
+        "max_holdings": 6,
+        "vol_window": 39,
+        "w1": 54,
+        "w3": 26,
+        "w7": 20
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 85.0915,
+          "annual_return": 10.8115,
+          "max_drawdown": -18.8205,
+          "sharpe": 0.5547,
+          "sortino": 0.8575,
+          "calmar": 0.5745,
+          "n_trades": 171,
+          "n_signals": 309,
+          "commission": 21125.23,
+          "final_nav": 1850915.2
+        }
+      },
+      "composite": {
+        "calmar": 0.34773924096604325
+      }
+    },
+    {
+      "id": 10,
+      "params": {
+        "dead_zone": 32.571668825878234,
+        "disc_step": 0.03053974646602356,
+        "f7_t": 9.414553232079411,
+        "ma_bear_pos": 0.41077712536889205,
+        "max_holdings": 7,
+        "vol_window": 44,
+        "w1": 60,
+        "w3": 19,
+        "w7": 21
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 67.619,
+          "annual_return": 8.9944,
+          "max_drawdown": -15.7392,
+          "sharpe": 0.5347,
+          "sortino": 0.7781,
+          "calmar": 0.5715,
+          "n_trades": 190,
+          "n_signals": 309,
+          "commission": 14403.87,
+          "final_nav": 1676190.25
+        }
+      },
+      "composite": {
+        "calmar": 0.3459233702560378
+      }
+    },
+    {
+      "id": 30,
+      "params": {
+        "dead_zone": 19.95925532183692,
+        "disc_step": 0.08485441231867458,
+        "f7_t": 6.598109671011403,
+        "ma_bear_pos": 0.789020563643728,
+        "max_holdings": 7,
+        "vol_window": 36,
+        "w1": 54,
+        "w3": 24,
+        "w7": 22
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 77.8545,
+          "annual_return": 10.077,
+          "max_drawdown": -17.7076,
+          "sharpe": 0.5296,
+          "sortino": 0.8033,
+          "calmar": 0.5691,
+          "n_trades": 177,
+          "n_signals": 309,
+          "commission": 16683.94,
+          "final_nav": 1778545.37
+        }
+      },
+      "composite": {
+        "calmar": 0.34447067368803347
+      }
+    },
+    {
+      "id": 65,
+      "params": {
+        "dead_zone": 15.492141775765097,
+        "disc_step": 0.07544670575910782,
+        "f7_t": 8.006393394757893,
+        "ma_bear_pos": 0.7537692466494068,
+        "max_holdings": 7,
+        "vol_window": 60,
+        "w1": 58,
+        "w3": 20,
+        "w7": 22
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 80.1997,
+          "annual_return": 10.3177,
+          "max_drawdown": -18.4411,
+          "sharpe": 0.5414,
+          "sortino": 0.804,
+          "calmar": 0.5595,
+          "n_trades": 162,
+          "n_signals": 309,
+          "commission": 15928.88,
+          "final_nav": 1801997.27
+        }
+      },
+      "composite": {
+        "calmar": 0.338659887416016
+      }
+    },
+    {
+      "id": 13,
+      "params": {
+        "dead_zone": 29.0232519078752,
+        "disc_step": 0.10804897756429359,
+        "f7_t": 7.812884929660226,
+        "ma_bear_pos": 0.6213460475099596,
+        "max_holdings": 4,
+        "vol_window": 50,
+        "w1": 53,
+        "w3": 28,
+        "w7": 19
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 78.3457,
+          "annual_return": 10.1276,
+          "max_drawdown": -18.3851,
+          "sharpe": 0.5451,
+          "sortino": 0.8305,
+          "calmar": 0.5509,
+          "n_trades": 132,
+          "n_signals": 309,
+          "commission": 18768.68,
+          "final_nav": 1783457.47
+        }
+      },
+      "composite": {
+        "calmar": 0.333454391380667
+      }
+    },
+    {
+      "id": 11,
+      "params": {
+        "dead_zone": 30.672592422980337,
+        "disc_step": 0.11957654645488608,
+        "f7_t": 10.183803821417523,
+        "ma_bear_pos": 0.7554989635091168,
+        "max_holdings": 4,
+        "vol_window": 41,
+        "w1": 51,
+        "w3": 29,
+        "w7": 20
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 79.4327,
+          "annual_return": 10.2393,
+          "max_drawdown": -18.8555,
+          "sharpe": 0.5315,
+          "sortino": 0.8092,
+          "calmar": 0.543,
+          "n_trades": 147,
+          "n_signals": 309,
+          "commission": 23037.82,
+          "final_nav": 1794327.4
+        }
+      },
+      "composite": {
+        "calmar": 0.32867259851098607
+      }
+    },
+    {
+      "id": 23,
+      "params": {
+        "dead_zone": 17.50967858427099,
+        "disc_step": 0.0956652078371093,
+        "f7_t": 5.588407650026521,
+        "ma_bear_pos": 0.660078209369678,
+        "max_holdings": 7,
+        "vol_window": 52,
+        "w1": 56,
+        "w3": 23,
+        "w7": 21
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 87.5521,
+          "annual_return": 11.0558,
+          "max_drawdown": -20.4566,
+          "sharpe": 0.5988,
+          "sortino": 0.8908,
+          "calmar": 0.5404,
+          "n_trades": 149,
+          "n_signals": 309,
+          "commission": 16432.24,
+          "final_nav": 1875520.75
+        }
+      },
+      "composite": {
+        "calmar": 0.327098843895648
+      }
+    },
+    {
+      "id": 24,
+      "params": {
+        "dead_zone": 15.252613241843848,
+        "disc_step": 0.06692840493020892,
+        "f7_t": 7.0466874611150425,
+        "ma_bear_pos": 0.8307963751746064,
+        "max_holdings": 6,
+        "vol_window": 42,
+        "w1": 60,
+        "w3": 20,
+        "w7": 20
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 84.3294,
+          "annual_return": 10.7353,
+          "max_drawdown": -19.9993,
+          "sharpe": 0.5526,
+          "sortino": 0.84,
+          "calmar": 0.5368,
+          "n_trades": 168,
+          "n_signals": 309,
+          "commission": 15240.46,
+          "final_nav": 1843293.53
+        }
+      },
+      "composite": {
+        "calmar": 0.3249197990436415
+      }
+    },
+    {
+      "id": 15,
+      "params": {
+        "dead_zone": 34.47346107062806,
+        "disc_step": 0.11103501396805833,
+        "f7_t": 8.587985830433142,
+        "ma_bear_pos": 0.6828016401371124,
+        "max_holdings": 5,
+        "vol_window": 43,
+        "w1": 55,
+        "w3": 25,
+        "w7": 20
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 88.8645,
+          "annual_return": 11.185,
+          "max_drawdown": -20.9837,
+          "sharpe": 0.5898,
+          "sortino": 0.9161,
+          "calmar": 0.533,
+          "n_trades": 159,
+          "n_signals": 309,
+          "commission": 20552.18,
+          "final_nav": 1888644.53
+        }
+      },
+      "composite": {
+        "calmar": 0.32261969614430125
+      }
+    },
+    {
+      "id": 47,
+      "params": {
+        "dead_zone": 17.217448555002367,
+        "disc_step": 0.07411915400139882,
+        "f7_t": 12.410067142259773,
+        "ma_bear_pos": 0.8930558294800874,
+        "max_holdings": 7,
+        "vol_window": 56,
+        "w1": 59,
+        "w3": 23,
+        "w7": 18
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 91.0158,
+          "annual_return": 11.3952,
+          "max_drawdown": -21.5234,
+          "sharpe": 0.5748,
+          "sortino": 0.8724,
+          "calmar": 0.5294,
+          "n_trades": 145,
+          "n_signals": 309,
+          "commission": 14884.84,
+          "final_nav": 1910158.32
+        }
+      },
+      "composite": {
+        "calmar": 0.32044065129229465
+      }
+    },
+    {
+      "id": 40,
+      "params": {
+        "dead_zone": 17.381822612114544,
+        "disc_step": 0.10624967631892408,
+        "f7_t": 5.727358190355764,
+        "ma_bear_pos": 0.8894823036242265,
+        "max_holdings": 6,
+        "vol_window": 34,
+        "w1": 60,
+        "w3": 21,
+        "w7": 19
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 91.4657,
+          "annual_return": 11.4389,
+          "max_drawdown": -21.6347,
+          "sharpe": 0.5762,
+          "sortino": 0.8883,
+          "calmar": 0.5287,
+          "n_trades": 148,
+          "n_signals": 309,
+          "commission": 14284.68,
+          "final_nav": 1914656.98
+        }
+      },
+      "composite": {
+        "calmar": 0.32001694812662673
+      }
+    },
+    {
+      "id": 27,
+      "params": {
+        "dead_zone": 23.496022566292343,
+        "disc_step": 0.07203491295678727,
+        "f7_t": 7.617533446257581,
+        "ma_bear_pos": 0.9201133697677875,
+        "max_holdings": 6,
+        "vol_window": 40,
+        "w1": 54,
+        "w3": 25,
+        "w7": 21
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 89.5543,
+          "annual_return": 11.2526,
+          "max_drawdown": -21.3999,
+          "sharpe": 0.5537,
+          "sortino": 0.8428,
+          "calmar": 0.5258,
+          "n_trades": 188,
+          "n_signals": 309,
+          "commission": 18534.24,
+          "final_nav": 1895543.35
+        }
+      },
+      "composite": {
+        "calmar": 0.31826160644028817
+      }
+    },
+    {
+      "id": 2,
+      "params": {
+        "dead_zone": 21.084844859190753,
+        "disc_step": 0.0772280788469014,
+        "f7_t": 7.319450186421157,
+        "ma_bear_pos": 0.5747374841188252,
+        "max_holdings": 6,
+        "vol_window": 34,
+        "w1": 56,
+        "w3": 23,
+        "w7": 21
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 74.1503,
+          "annual_return": 9.6913,
+          "max_drawdown": -18.6197,
+          "sharpe": 0.5505,
+          "sortino": 0.8401,
+          "calmar": 0.5205,
+          "n_trades": 193,
+          "n_signals": 309,
+          "commission": 18185.92,
+          "final_nav": 1741502.55
+        }
+      },
+      "composite": {
+        "calmar": 0.31505356818594515
+      }
+    },
+    {
+      "id": 61,
+      "params": {
+        "dead_zone": 16.67176801347457,
+        "disc_step": 0.09040703679990245,
+        "f7_t": 6.562430967262726,
+        "ma_bear_pos": 0.626071155680185,
+        "max_holdings": 7,
+        "vol_window": 53,
+        "w1": 62,
+        "w3": 19,
+        "w7": 19
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 83.8586,
+          "annual_return": 10.6881,
+          "max_drawdown": -20.5457,
+          "sharpe": 0.5862,
+          "sortino": 0.8756,
+          "calmar": 0.5202,
+          "n_trades": 119,
+          "n_signals": 309,
+          "commission": 10861.52,
+          "final_nav": 1838586.07
+        }
+      },
+      "composite": {
+        "calmar": 0.31487198111494463
+      }
+    },
+    {
+      "id": 29,
+      "params": {
+        "dead_zone": 22.155208718068387,
+        "disc_step": 0.05247760900725558,
+        "f7_t": 9.717651450893403,
+        "ma_bear_pos": 0.750724999163425,
+        "max_holdings": 6,
+        "vol_window": 45,
+        "w1": 60,
+        "w3": 20,
+        "w7": 20
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 81.5554,
+          "annual_return": 10.4556,
+          "max_drawdown": -20.1589,
+          "sharpe": 0.5518,
+          "sortino": 0.8405,
+          "calmar": 0.5187,
+          "n_trades": 196,
+          "n_signals": 309,
+          "commission": 16527.63,
+          "final_nav": 1815554.0
+        }
+      },
+      "composite": {
+        "calmar": 0.31396404575994197
+      }
+    },
+    {
+      "id": 6,
+      "params": {
+        "dead_zone": 25.934205586865595,
+        "disc_step": 0.046636900997297434,
+        "f7_t": 12.695846277645586,
+        "ma_bear_pos": 0.8650796940166687,
+        "max_holdings": 7,
+        "vol_window": 57,
+        "w1": 55,
+        "w3": 27,
+        "w7": 18
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 88.8331,
+          "annual_return": 11.1819,
+          "max_drawdown": -21.6364,
+          "sharpe": 0.5616,
+          "sortino": 0.8483,
+          "calmar": 0.5168,
+          "n_trades": 222,
+          "n_signals": 309,
+          "commission": 17708.38,
+          "final_nav": 1888331.47
+        }
+      },
+      "composite": {
+        "calmar": 0.3128139943102718
+      }
+    },
+    {
+      "id": 68,
+      "params": {
+        "dead_zone": 15.231822398595492,
+        "disc_step": 0.06858333928639512,
+        "f7_t": 7.1510601157658495,
+        "ma_bear_pos": 0.7657098984624928,
+        "max_holdings": 7,
+        "vol_window": 37,
+        "w1": 58,
+        "w3": 20,
+        "w7": 22
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 74.6426,
+          "annual_return": 9.743,
+          "max_drawdown": -18.8837,
+          "sharpe": 0.5114,
+          "sortino": 0.772,
+          "calmar": 0.5159,
+          "n_trades": 179,
+          "n_signals": 309,
+          "commission": 15283.44,
+          "final_nav": 1746426.11
+        }
+      },
+      "composite": {
+        "calmar": 0.31226923309727017
+      }
+    },
+    {
+      "id": 59,
+      "params": {
+        "dead_zone": 17.924242364667165,
+        "disc_step": 0.06852841414553623,
+        "f7_t": 9.72040139374556,
+        "ma_bear_pos": 0.5190892864309897,
+        "max_holdings": 7,
+        "vol_window": 30,
+        "w1": 59,
+        "w3": 20,
+        "w7": 21
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 67.7442,
+          "annual_return": 9.008,
+          "max_drawdown": -17.9065,
+          "sharpe": 0.5121,
+          "sortino": 0.7843,
+          "calmar": 0.5031,
+          "n_trades": 166,
+          "n_signals": 309,
+          "commission": 15162.63,
+          "final_nav": 1677441.77
+        }
+      },
+      "composite": {
+        "calmar": 0.30452151806791355
+      }
+    },
+    {
+      "id": 25,
+      "params": {
+        "dead_zone": 19.57101129437847,
+        "disc_step": 0.10522699763561298,
+        "f7_t": 11.401879533959846,
+        "ma_bear_pos": 0.7310475753498753,
+        "max_holdings": 7,
+        "vol_window": 46,
+        "w1": 59,
+        "w3": 21,
+        "w7": 20
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 91.7486,
+          "annual_return": 11.4663,
+          "max_drawdown": -22.9275,
+          "sharpe": 0.5987,
+          "sortino": 0.9221,
+          "calmar": 0.5001,
+          "n_trades": 137,
+          "n_signals": 309,
+          "commission": 15564.25,
+          "final_nav": 1917486.32
+        }
+      },
+      "composite": {
+        "calmar": 0.3027056473579081
+      }
+    },
+    {
+      "id": 49,
+      "params": {
+        "dead_zone": 18.8102178306857,
+        "disc_step": 0.038809101480019724,
+        "f7_t": 10.148803762228,
+        "ma_bear_pos": 0.8045094544806365,
+        "max_holdings": 6,
+        "vol_window": 54,
+        "w1": 61,
+        "w3": 21,
+        "w7": 18
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 84.2637,
+          "annual_return": 10.7287,
+          "max_drawdown": -21.5876,
+          "sharpe": 0.5535,
+          "sortino": 0.844,
+          "calmar": 0.497,
+          "n_trades": 182,
+          "n_signals": 309,
+          "commission": 14902.84,
+          "final_nav": 1842637.37
+        }
+      },
+      "composite": {
+        "calmar": 0.30082924762423585
+      }
+    },
+    {
+      "id": 4,
+      "params": {
+        "dead_zone": 16.30103185970559,
+        "disc_step": 0.11539969835279999,
+        "f7_t": 12.656320330745594,
+        "ma_bear_pos": 0.8850384088698766,
+        "max_holdings": 5,
+        "vol_window": 33,
+        "w1": 58,
+        "w3": 22,
+        "w7": 20
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 98.7238,
+          "annual_return": 12.1324,
+          "max_drawdown": -24.5151,
+          "sharpe": 0.5871,
+          "sortino": 0.9099,
+          "calmar": 0.4949,
+          "n_trades": 152,
+          "n_signals": 309,
+          "commission": 21159.78,
+          "final_nav": 1987237.62
+        }
+      },
+      "composite": {
+        "calmar": 0.29955813812723203
+      }
+    },
+    {
+      "id": 56,
+      "params": {
+        "dead_zone": 18.6998637381153,
+        "disc_step": 0.06148913768386942,
+        "f7_t": 12.026108852962041,
+        "ma_bear_pos": 0.6761374364024737,
+        "max_holdings": 5,
+        "vol_window": 46,
+        "w1": 54,
+        "w3": 27,
+        "w7": 19
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 71.1961,
+          "annual_return": 9.3789,
+          "max_drawdown": -18.9836,
+          "sharpe": 0.504,
+          "sortino": 0.7841,
+          "calmar": 0.4941,
+          "n_trades": 187,
+          "n_signals": 309,
+          "commission": 19830.33,
+          "final_nav": 1711961.28
+        }
+      },
+      "composite": {
+        "calmar": 0.29907390593789723
+      }
+    },
+    {
+      "id": 20,
+      "params": {
+        "dead_zone": 18.287934752199714,
+        "disc_step": 0.09890124354369098,
+        "f7_t": 8.54514980613029,
+        "ma_bear_pos": 0.6520281335444768,
+        "max_holdings": 6,
+        "vol_window": 53,
+        "w1": 62,
+        "w3": 18,
+        "w7": 20
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 81.398,
+          "annual_return": 10.4397,
+          "max_drawdown": -21.5287,
+          "sharpe": 0.5567,
+          "sortino": 0.8419,
+          "calmar": 0.4849,
+          "n_trades": 132,
+          "n_signals": 309,
+          "commission": 14174.43,
+          "final_nav": 1813979.96
+        }
+      },
+      "composite": {
+        "calmar": 0.2935052357605472
+      }
+    },
+    {
+      "id": 1,
+      "params": {
+        "dead_zone": 27.022300234864176,
+        "disc_step": 0.09372653200164409,
+        "f7_t": 3.2058449429580245,
+        "ma_bear_pos": 0.9819459112971965,
+        "max_holdings": 7,
+        "vol_window": 36,
+        "w1": 57,
+        "w3": 22,
+        "w7": 21
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 92.2372,
+          "annual_return": 11.5136,
+          "max_drawdown": -24.019,
+          "sharpe": 0.5698,
+          "sortino": 0.8499,
+          "calmar": 0.4794,
+          "n_trades": 201,
+          "n_signals": 309,
+          "commission": 16664.58,
+          "final_nav": 1922371.84
+        }
+      },
+      "composite": {
+        "calmar": 0.29017613945887055
+      }
+    },
+    {
+      "id": 7,
+      "params": {
+        "dead_zone": 16.76985004103839,
+        "disc_step": 0.04763845761772306,
+        "f7_t": 3.4522728891053807,
+        "ma_bear_pos": 0.5951981984579586,
+        "max_holdings": 5,
+        "vol_window": 38,
+        "w1": 60,
+        "w3": 21,
+        "w7": 19
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 68.3178,
+          "annual_return": 9.0701,
+          "max_drawdown": -19.0069,
+          "sharpe": 0.5043,
+          "sortino": 0.7563,
+          "calmar": 0.4772,
+          "n_trades": 218,
+          "n_signals": 309,
+          "commission": 17329.4,
+          "final_nav": 1683177.94
+        }
+      },
+      "composite": {
+        "calmar": 0.2888445009381999
+      }
+    },
+    {
+      "id": 45,
+      "params": {
+        "dead_zone": 23.895052038052217,
+        "disc_step": 0.09802641679791872,
+        "f7_t": 12.289144660801753,
+        "ma_bear_pos": 0.733042305262119,
+        "max_holdings": 7,
+        "vol_window": 57,
+        "w1": 60,
+        "w3": 21,
+        "w7": 19
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 83.1342,
+          "annual_return": 10.6152,
+          "max_drawdown": -22.3596,
+          "sharpe": 0.57,
+          "sortino": 0.8797,
+          "calmar": 0.4747,
+          "n_trades": 115,
+          "n_signals": 309,
+          "commission": 13914.49,
+          "final_nav": 1831342.28
+        }
+      },
+      "composite": {
+        "calmar": 0.2873312753465287
+      }
+    },
+    {
+      "id": 57,
+      "params": {
+        "dead_zone": 17.019104578668525,
+        "disc_step": 0.07584678426118073,
+        "f7_t": 11.254331146749555,
+        "ma_bear_pos": 0.5597014688729692,
+        "max_holdings": 7,
+        "vol_window": 49,
+        "w1": 57,
+        "w3": 24,
+        "w7": 19
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 69.2041,
+          "annual_return": 9.1656,
+          "max_drawdown": -19.6089,
+          "sharpe": 0.5194,
+          "sortino": 0.7816,
+          "calmar": 0.4674,
+          "n_trades": 161,
+          "n_signals": 309,
+          "commission": 15360.75,
+          "final_nav": 1692040.6
+        }
+      },
+      "composite": {
+        "calmar": 0.28291265661884873
+      }
+    },
+    {
+      "id": 28,
+      "params": {
+        "dead_zone": 17.920616379060164,
+        "disc_step": 0.09216751515256313,
+        "f7_t": 4.278264201192063,
+        "ma_bear_pos": 0.6451111596910346,
+        "max_holdings": 7,
+        "vol_window": 52,
+        "w1": 59,
+        "w3": 20,
+        "w7": 21
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 77.6048,
+          "annual_return": 10.0512,
+          "max_drawdown": -21.6615,
+          "sharpe": 0.549,
+          "sortino": 0.8221,
+          "calmar": 0.464,
+          "n_trades": 140,
+          "n_signals": 309,
+          "commission": 13104.29,
+          "final_nav": 1776047.55
+        }
+      },
+      "composite": {
+        "calmar": 0.28085466981417595
+      }
+    },
+    {
+      "id": 36,
+      "params": {
+        "dead_zone": 21.77356726775581,
+        "disc_step": 0.11211961915258987,
+        "f7_t": 5.015176657803604,
+        "ma_bear_pos": 0.9578063890030056,
+        "max_holdings": 7,
+        "vol_window": 55,
+        "w1": 56,
+        "w3": 22,
+        "w7": 22
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 85.6458,
+          "annual_return": 10.8667,
+          "max_drawdown": -23.7056,
+          "sharpe": 0.5423,
+          "sortino": 0.8146,
+          "calmar": 0.4584,
+          "n_trades": 139,
+          "n_signals": 309,
+          "commission": 13307.87,
+          "final_nav": 1856458.09
+        }
+      },
+      "composite": {
+        "calmar": 0.2774650444888324
+      }
+    },
+    {
+      "id": 58,
+      "params": {
+        "dead_zone": 20.207263378706926,
+        "disc_step": 0.07950674503635828,
+        "f7_t": 10.349923226347602,
+        "ma_bear_pos": 0.7067898105724164,
+        "max_holdings": 4,
+        "vol_window": 52,
+        "w1": 61,
+        "w3": 19,
+        "w7": 20
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 72.1112,
+          "annual_return": 9.4761,
+          "max_drawdown": -20.7073,
+          "sharpe": 0.4995,
+          "sortino": 0.7677,
+          "calmar": 0.4576,
+          "n_trades": 83,
+          "n_signals": 309,
+          "commission": 13325.66,
+          "final_nav": 1721111.98
+        }
+      },
+      "composite": {
+        "calmar": 0.2769808122994976
+      }
+    },
+    {
+      "id": 50,
+      "params": {
+        "dead_zone": 18.14122181064606,
+        "disc_step": 0.10106855023922567,
+        "f7_t": 11.868127530436325,
+        "ma_bear_pos": 0.7356586467199275,
+        "max_holdings": 7,
+        "vol_window": 38,
+        "w1": 60,
+        "w3": 21,
+        "w7": 19
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 77.3539,
+          "annual_return": 10.0253,
+          "max_drawdown": -22.1206,
+          "sharpe": 0.5316,
+          "sortino": 0.8287,
+          "calmar": 0.4532,
+          "n_trades": 144,
+          "n_signals": 309,
+          "commission": 15446.65,
+          "final_nav": 1773538.78
+        }
+      },
+      "composite": {
+        "calmar": 0.2743175352581563
+      }
+    },
+    {
+      "id": 8,
+      "params": {
+        "dead_zone": 20.618690193747614,
+        "disc_step": 0.07884264748424236,
+        "f7_t": 4.409242249747626,
+        "ma_bear_pos": 0.8813181884524238,
+        "max_holdings": 4,
+        "vol_window": 60,
+        "w1": 61,
+        "w3": 20,
+        "w7": 19
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 79.8035,
+          "annual_return": 10.2772,
+          "max_drawdown": -23.5125,
+          "sharpe": 0.5177,
+          "sortino": 0.7778,
+          "calmar": 0.4371,
+          "n_trades": 132,
+          "n_signals": 309,
+          "commission": 13551.74,
+          "final_nav": 1798034.58
+        }
+      },
+      "composite": {
+        "calmar": 0.26457236244779375
+      }
+    },
+    {
+      "id": 60,
+      "params": {
+        "dead_zone": 21.04211733510395,
+        "disc_step": 0.08676927795590045,
+        "f7_t": 10.78422273376891,
+        "ma_bear_pos": 0.40827737026533345,
+        "max_holdings": 6,
+        "vol_window": 43,
+        "w1": 59,
+        "w3": 21,
+        "w7": 20
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 67.4728,
+          "annual_return": 8.9786,
+          "max_drawdown": -20.869,
+          "sharpe": 0.5167,
+          "sortino": 0.7702,
+          "calmar": 0.4302,
+          "n_trades": 150,
+          "n_signals": 309,
+          "commission": 15856.06,
+          "final_nav": 1674728.27
+        }
+      },
+      "composite": {
+        "calmar": 0.2603958598147812
+      }
+    },
+    {
+      "id": 39,
+      "params": {
+        "dead_zone": 27.73697333701447,
+        "disc_step": 0.07150359228119485,
+        "f7_t": 4.128581282514887,
+        "ma_bear_pos": 0.9705028569725235,
+        "max_holdings": 7,
+        "vol_window": 32,
+        "w1": 56,
+        "w3": 22,
+        "w7": 22
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 80.6032,
+          "annual_return": 10.3588,
+          "max_drawdown": -24.5294,
+          "sharpe": 0.5158,
+          "sortino": 0.7763,
+          "calmar": 0.4223,
+          "n_trades": 227,
+          "n_signals": 309,
+          "commission": 15543.1,
+          "final_nav": 1806032.36
+        }
+      },
+      "composite": {
+        "calmar": 0.2556140669451002
+      }
+    },
+    {
+      "id": 46,
+      "params": {
+        "dead_zone": 20.0546924443934,
+        "disc_step": 0.11600367753039272,
+        "f7_t": 12.97025962854011,
+        "ma_bear_pos": 0.5665093823067565,
+        "max_holdings": 5,
+        "vol_window": 59,
+        "w1": 58,
+        "w3": 23,
+        "w7": 19
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 72.0867,
+          "annual_return": 9.4735,
+          "max_drawdown": -23.0582,
+          "sharpe": 0.5118,
+          "sortino": 0.7881,
+          "calmar": 0.4109,
+          "n_trades": 126,
+          "n_signals": 309,
+          "commission": 16822.48,
+          "final_nav": 1720866.56
+        }
+      },
+      "composite": {
+        "calmar": 0.24871375824707947
+      }
+    },
+    {
+      "id": 5,
+      "params": {
+        "dead_zone": 17.440764696895577,
+        "disc_step": 0.07456592191001432,
+        "f7_t": 3.343885211152184,
+        "ma_bear_pos": 0.9455922412472693,
+        "max_holdings": 5,
+        "vol_window": 50,
+        "w1": 55,
+        "w3": 24,
+        "w7": 21
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 77.1768,
+          "annual_return": 10.0069,
+          "max_drawdown": -27.367,
+          "sharpe": 0.4972,
+          "sortino": 0.7442,
+          "calmar": 0.3657,
+          "n_trades": 208,
+          "n_signals": 309,
+          "commission": 17809.05,
+          "final_nav": 1771768.23
+        }
+      },
+      "composite": {
+        "calmar": 0.22135463954966408
+      }
+    }
+  ],
+  "best": {
+    "calmar": {
+      "trial_id": 52,
+      "params": {
+        "dead_zone": 16.973038749123273,
+        "disc_step": 0.0803750661675649,
+        "f7_t": 6.362982905946196,
+        "ma_bear_pos": 0.6960129373008583,
+        "max_holdings": 7,
+        "vol_window": 50,
+        "w1": 60,
+        "w3": 20,
+        "w7": 20
+      },
+      "periods": {
+        "6Y": {
+          "total_return": 107.8236,
+          "annual_return": 12.9727,
+          "max_drawdown": -15.0086,
+          "sharpe": 0.691,
+          "sortino": 1.0349,
+          "calmar": 0.8643,
+          "n_trades": 146,
+          "n_signals": 309,
+          "commission": 14486.01,
+          "final_nav": 2078235.57
+        }
+      }
+    },
+    "sharpe": {
+      "trial_id": 52,
+      "params": {
+        "dead_zone": 16.973038749123273,
+        "disc_step": 0.0803750661675649,
+        "f7_t": 6.362982905946196,
+        "ma_bear_pos": 0.6960129373008583,
+        "max_holdings": 7,
+        "vol_window": 50,
+        "w1": 60,
+        "w3": 20,
+        "w7": 20
+      },
+      "periods": {
+        "6Y": {
+          "total_return": 107.8236,
+          "annual_return": 12.9727,
+          "max_drawdown": -15.0086,
+          "sharpe": 0.691,
+          "sortino": 1.0349,
+          "calmar": 0.8643,
+          "n_trades": 146,
+          "n_signals": 309,
+          "commission": 14486.01,
+          "final_nav": 2078235.57
+        }
+      }
+    },
+    "sortino": {
+      "trial_id": 52,
+      "params": {
+        "dead_zone": 16.973038749123273,
+        "disc_step": 0.0803750661675649,
+        "f7_t": 6.362982905946196,
+        "ma_bear_pos": 0.6960129373008583,
+        "max_holdings": 7,
+        "vol_window": 50,
+        "w1": 60,
+        "w3": 20,
+        "w7": 20
+      },
+      "periods": {
+        "6Y": {
+          "total_return": 107.8236,
+          "annual_return": 12.9727,
+          "max_drawdown": -15.0086,
+          "sharpe": 0.691,
+          "sortino": 1.0349,
+          "calmar": 0.8643,
+          "n_trades": 146,
+          "n_signals": 309,
+          "commission": 14486.01,
+          "final_nav": 2078235.57
+        }
+      }
+    },
+    "annual_return": {
+      "trial_id": 52,
+      "params": {
+        "dead_zone": 16.973038749123273,
+        "disc_step": 0.0803750661675649,
+        "f7_t": 6.362982905946196,
+        "ma_bear_pos": 0.6960129373008583,
+        "max_holdings": 7,
+        "vol_window": 50,
+        "w1": 60,
+        "w3": 20,
+        "w7": 20
+      },
+      "periods": {
+        "6Y": {
+          "total_return": 107.8236,
+          "annual_return": 12.9727,
+          "max_drawdown": -15.0086,
+          "sharpe": 0.691,
+          "sortino": 1.0349,
+          "calmar": 0.8643,
+          "n_trades": 146,
+          "n_signals": 309,
+          "commission": 14486.01,
+          "final_nav": 2078235.57
+        }
+      }
+    },
+    "total_return": {
+      "trial_id": 52,
+      "params": {
+        "dead_zone": 16.973038749123273,
+        "disc_step": 0.0803750661675649,
+        "f7_t": 6.362982905946196,
+        "ma_bear_pos": 0.6960129373008583,
+        "max_holdings": 7,
+        "vol_window": 50,
+        "w1": 60,
+        "w3": 20,
+        "w7": 20
+      },
+      "periods": {
+        "6Y": {
+          "total_return": 107.8236,
+          "annual_return": 12.9727,
+          "max_drawdown": -15.0086,
+          "sharpe": 0.691,
+          "sortino": 1.0349,
+          "calmar": 0.8643,
+          "n_trades": 146,
+          "n_signals": 309,
+          "commission": 14486.01,
+          "final_nav": 2078235.57
+        }
+      }
+    }
+  }
+}

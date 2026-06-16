@@ -5,7 +5,6 @@ Coverage:
   - run_backtest() return structure and types
   - All three presets produce valid, distinct results
   - universe_filter limits the ETF pool correctly
-  - execution_timing (same_close vs next_open) affects results
   - return_details provides trade_log
 
 Referenced by: docs/ops/quant/overview.md (验证守卫 / 最小验证)
@@ -21,7 +20,7 @@ class TestRunBacktestStructure:
     def test_returns_three_tuple(self):
         nav, signals, extra = run_backtest(
             start_date="2025-06-01", end_date="2025-09-01",
-            preset="zen-1", execution_timing="next_open",
+            preset="zen-1",
         )
         assert nav is not None
         assert isinstance(signals, list)
@@ -31,7 +30,7 @@ class TestRunBacktestStructure:
     def test_nav_has_expected_columns(self):
         nav, _, _ = run_backtest(
             start_date="2025-06-01", end_date="2025-09-01",
-            preset="zen-1", execution_timing="next_open",
+            preset="zen-1",
         )
         for col in ["date", "nav", "nav_pct", "cash", "holdings"]:
             assert col in nav.columns
@@ -39,7 +38,7 @@ class TestRunBacktestStructure:
     def test_nav_starts_near_1m(self):
         nav, _, _ = run_backtest(
             start_date="2025-06-01", end_date="2025-09-01",
-            preset="zen-1", execution_timing="next_open",
+            preset="zen-1",
         )
         # Initial capital is 1M; first-day portfolio may fluctuate slightly
         assert abs(nav["nav"].iloc[0] / 1_000_000 - 1.0) < 0.05  # within 5%
@@ -47,7 +46,7 @@ class TestRunBacktestStructure:
     def test_extra_has_expected_keys(self):
         _, _, extra = run_backtest(
             start_date="2025-06-01", end_date="2025-09-01",
-            preset="zen-1", execution_timing="next_open",
+            preset="zen-1",
         )
         assert "total_commission" in extra
         assert "trade_count" in extra
@@ -56,7 +55,7 @@ class TestRunBacktestStructure:
     def test_signals_have_expected_keys(self):
         _, signals, _ = run_backtest(
             start_date="2025-06-01", end_date="2025-09-01",
-            preset="zen-1", execution_timing="next_open",
+            preset="zen-1",
         )
         assert len(signals) > 0
         s = signals[0]
@@ -71,7 +70,7 @@ class TestPresets:
     def test_preset_runs(self, preset):
         nav, _, _ = run_backtest(
             start_date="2025-06-01", end_date="2025-09-01",
-            preset=preset, execution_timing="next_open",
+            preset=preset,
         )
         assert nav["nav"].iloc[-1] > 0
 
@@ -81,7 +80,7 @@ class TestPresets:
         for p in ["act-1", "zen-1", "gam-1"]:
             nav, _, _ = run_backtest(
                 start_date="2024-06-01", end_date="2025-06-01",
-                preset=p, execution_timing="next_open",
+                preset=p,
             )
             results[p] = nav["nav"].iloc[-1]
         # At least one pair should differ by > 1%
@@ -97,7 +96,7 @@ class TestUniverseFilter:
         """With only 5 ETFs, signals should reference only those codes."""
         nav, signals, _ = run_backtest(
             start_date="2025-06-01", end_date="2025-09-01",
-            preset="zen-1", execution_timing="next_open",
+            preset="zen-1",
             universe_filter=["512400", "513120", "515880", "159865", "159755"],
         )
         assert len(nav) > 0
@@ -110,29 +109,12 @@ class TestUniverseFilter:
         """With 1 ETF, it should always be in top6."""
         nav, signals, _ = run_backtest(
             start_date="2025-06-01", end_date="2025-08-01",
-            preset="zen-1", execution_timing="next_open",
+            preset="zen-1",
             universe_filter=["515880"],
         )
         for s in signals:
             top6 = s.get("top6", [])
             assert len(top6) <= 1
-
-
-class TestExecutionTiming:
-    """Verify execution_timing affects results."""
-
-    def test_same_close_vs_next_open_differs(self):
-        """same_close and next_open should give slightly different NAVs."""
-        results = {}
-        for timing in ["same_close", "next_open"]:
-            nav, _, _ = run_backtest(
-                start_date="2024-06-01", end_date="2025-06-01",
-                preset="zen-1", execution_timing=timing,
-            )
-            results[timing] = nav["nav"].iloc[-1]
-        # Should differ (not identical)
-        assert results["same_close"] != results["next_open"], \
-            "same_close and next_open should produce different results"
 
 
 class TestReturnDetails:
@@ -141,7 +123,7 @@ class TestReturnDetails:
     def test_return_details_gives_trade_log(self):
         _, _, extra = run_backtest(
             start_date="2025-06-01", end_date="2025-08-01",
-            preset="zen-1", execution_timing="next_open",
+            preset="zen-1",
             return_details=True,
         )
         assert "trade_log" in extra
@@ -150,7 +132,7 @@ class TestReturnDetails:
     def test_trade_log_has_expected_fields(self):
         _, _, extra = run_backtest(
             start_date="2025-06-01", end_date="2025-08-01",
-            preset="zen-1", execution_timing="next_open",
+            preset="zen-1",
             return_details=True,
         )
         if extra["trade_log"]:

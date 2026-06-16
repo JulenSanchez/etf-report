@@ -651,25 +651,13 @@ def _run_trial_optuna(trial, runner: BacktestRunner, cfg: OptimizationConfig, sp
     err = validate_tuner_params(params)
     if err:
         raise optuna.TrialPruned(f"Validation failed: {err}")
-    # Run all periods (parallel — each period is an independent backtest)
-    def _run_one(lab, sd, ed):
-        m = runner.run(params, sd, ed)
-        if m is None:
-            raise RuntimeError(f"Backtest failed for {lab}")
-        return lab, m
-    results = {}
-    with ThreadPoolExecutor(max_workers=min(len(cfg.periods), 3)) as ex:
-        futures = {ex.submit(_run_one, lab, sd, ed): lab for lab, sd, ed in cfg.periods}
-        for f in as_completed(futures):
-            try:
-                lab, m = f.result()
-            except RuntimeError as e:
-                raise optuna.TrialPruned(str(e))
-            trial.set_user_attr(f"{lab}_metrics", json.dumps(m))
-            results[lab] = m
+    # Run all periods (serial — Python GIL makes threads slower for CPU-bound backtests)
     rel_scores = []
     for lab, sd, ed in cfg.periods:
-        m = results[lab]
+        m = runner.run(params, sd, ed)
+        if m is None:
+            raise optuna.TrialPruned(f"Backtest failed for {lab}")
+        trial.set_user_attr(f"{lab}_metrics", json.dumps(m))
         raw = m.get(cfg.metric, -9999)
         bl = baseline_scores.get(lab, 1.0)
         rel_scores.append(raw / bl if bl != 0 else 0.0)

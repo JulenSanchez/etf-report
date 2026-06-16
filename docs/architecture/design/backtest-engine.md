@@ -19,7 +19,6 @@ def run_backtest(
     initial_capital: float = 1000000.0,
     rebalance_freq: str = None,
     preset: str = "preset3",  # 当前默认: 赌徒1
-    execution_timing: str = None,
     universe_filter: list = None,
     preloaded: dict = None,
     config_override: dict = None,
@@ -50,7 +49,7 @@ def run_backtest(
 config/quant_universe.yaml
   -> load_config(preset)
   -> config_override 覆盖 scoring / confidence / position / factors
-  -> 函数参数 rebalance_freq / execution_timing 覆盖
+  -> 函数参数 rebalance_freq 覆盖
   -> universe_filter 过滤 ETF 池
 ```
 
@@ -74,42 +73,16 @@ config/quant_universe.yaml
 
 ## 3. 成交口径契约
 
-成交口径由 `execution_timing` 控制。
-
-### 3.1 same_close
+成交口径 — 统一使用信号日收盘价成交（same_close）。
 
 ```text
 信号日 = 执行日
 成交价字段 = close
 ```
 
-用于复盘口径：假设调仓按信号日收盘价成交。
-
-### 3.2 next_open
-
-```text
-信号日 = 计算信号日
-执行日 = 下一交易日
-成交价字段 = open
-```
-
-用于更接近实盘的“盘后出信号、次日开盘成交”口径。
-
-### 3.3 代码契约
-
-统一函数：
-
 ```python
-get_execution_date(signal_date, all_dates, timing)
-execution_price_field(timing)
-```
-
-固定映射：
-
-```text
-execution_price_field("same_close") -> "close"
-execution_price_field("next_open")  -> "open"
-非法值                            -> "close"
+get_execution_date(signal_date, all_dates)
+execution_price_field()
 ```
 
 回归测试：
@@ -212,8 +185,8 @@ rebalance_freq = W-FRI      -> 每周最后一个交易日
 每个信号日先转执行日：
 
 ```python
-execution_date = get_execution_date(rb_date, all_dates, execution_timing)
-price_field = execution_price_field(execution_timing)
+execution_date = get_execution_date(rb_date, all_dates)
+price_field = execution_price_field()
 ```
 
 然后从执行日取 `open` 或 `close`。
@@ -346,7 +319,6 @@ date / signal_date    — 信号日和实际执行日
 positions             — {code: target_weight}  目标仓位
 detail                — {code: {f1, f3, f7, score, z, position, price, ...}}  逐ETF因子明细
 regime                — "ma_above" / "ma_below"
-execution_timing      — "same_close" / "next_open"
 ```
 
 Tuner 和 payload 会把它序列化为前端可消费格式。
@@ -430,7 +402,7 @@ execution_price_field()
 get_execution_date()
 run_backtest() 主循环
 NAV 二次计算
-Tuner execution_timing 控件
+(已移除)
 quant_contract.py schema 与映射
 tests/test_quant_backtest_execution.py
 ```

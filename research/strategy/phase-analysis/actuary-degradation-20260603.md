@@ -191,7 +191,7 @@
 
 - 本次诊断脚本：`_working/req-273/diagnostic.py`
 - 结构化输出：`_working/req-273/diagnostic_output.json`
-- 回测引擎：`scripts/quant_backtest.py`（preset1/2/3, next_open 执行）
+- 回测引擎：`scripts/quant_backtest.py`（preset1/2/3, same_close 执行）
 - 市场状态数据：`data/market_regimes.json`（2024-01-02 至 2026-04-24）
 
 ## 评审记录
