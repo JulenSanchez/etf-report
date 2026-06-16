@@ -169,7 +169,7 @@ def preload_data(preset):
 
 def main():
     parser = argparse.ArgumentParser(description="REQ-223 Walk-forward optimization")
-    parser.add_argument("--preset", default="preset1")
+    parser.add_argument("--preset", default="act-1")
     parser.add_argument("--output", type=str, default=None)
     args = parser.parse_args()
 

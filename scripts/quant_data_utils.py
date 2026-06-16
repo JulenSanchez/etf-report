@@ -23,8 +23,10 @@ def load_etf_data(code, data_dir=DATA_DIR):
 
 def rebuild_weekly_from_daily(daily_df):
     """Rebuild weekly OHLCV/amount bars from daily data.
-    Includes every ISO week that has at least one trading day.
-    Bar dates = last trading day of the ISO week.
+    Only includes COMPLETE ISO weeks (Friday has occurred).
+    The current incomplete week is excluded to prevent fake bars
+    that break F1 checkpoint/freeze logic.
+    Bar dates = Friday (last trading day) of the ISO week.
     """
     if daily_df is None or len(daily_df) == 0:
         return pd.DataFrame()
@@ -32,6 +34,15 @@ def rebuild_weekly_from_daily(daily_df):
     df["date"] = pd.to_datetime(df["date"])
     df = df.sort_values("date").reset_index(drop=True)
     df["week"] = df["date"].dt.isocalendar().year.astype(str) + "-" + df["date"].dt.isocalendar().week.astype(str).str.zfill(2)
+    df["dow"] = df["date"].dt.dayofweek  # 0=Mon .. 4=Fri
+
+    # Exclude the current incomplete week: if today is before Friday,
+    # drop the current ISO week's bars (they form a partial bar).
+    today = pd.Timestamp.now().normalize()
+    if today.dayofweek < 4:  # Mon-Thu: current week is incomplete
+        cur_iso = today.isocalendar()
+        cur_week_str = f"{cur_iso.year}-{cur_iso.week:02d}"
+        df = df[df["week"] != cur_week_str]
 
     agg = {
         "date": ("date", "last"),
@@ -43,7 +54,10 @@ def rebuild_weekly_from_daily(daily_df):
     }
     if "amount" in df.columns:
         agg["amount"] = ("amount", "sum")
-    return df.groupby("week").agg(**agg).reset_index(drop=True)
+    result = df.groupby("week").agg(**agg).reset_index(drop=True)
+    # Drop helper column if present
+    result = result.drop(columns=["dow"], errors="ignore")
+    return result
 
 
 def get_price_on_date(all_daily, code, date, field="close"):

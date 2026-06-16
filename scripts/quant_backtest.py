@@ -34,7 +34,7 @@ DATA_DIR = PROJECT_ROOT / "data" / "quant"
 OUTPUT_DIR = PROJECT_ROOT / "data" / "quant_results"
 
 
-def load_config(preset: str = "preset2"):
+def load_config(preset: str = "zen-1"):
     """加载配置，并用指定 preset 覆盖顶层 scoring/confidence/position/factors。
     preset=None 将报错（顶层不再维护权重）。
     """
@@ -301,9 +301,9 @@ def _precompute_factors(all_daily, all_weekly, ema_period, vol_window,
         for i in range(len(daily_df)):
             cur_week = _daily_week_str.iloc[i]
 
-            # ── Week boundary: reset checkpoint ──
+            # ── Week boundary: carry over last week's final F1 ──
             if cur_week != prev_week:
-                checkpoint_f1 = None
+                checkpoint_f1 = float(f1_val[i-1]) if i > 0 and not np.isnan(f1_val[i-1]) else None
                 prev_week = cur_week
 
             # ── Base: last complete week ──
@@ -422,7 +422,7 @@ def _precompute_factors(all_daily, all_weekly, ema_period, vol_window,
 def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
                  initial_capital: float = 1000000.0,
                  rebalance_freq: str = None,
-                 preset: str = "preset2",
+                 preset: str = "zen-1",
                  execution_timing: str = None,
                  universe_filter: list = None,
                  preloaded: dict = None,
@@ -453,9 +453,13 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
                     _deep_merge(cfg[section], values)
                 else:
                     cfg[section] = values
-    if universe_filter:
+    if universe_filter is not None:
+        # Explicit filter: use exactly the codes provided (empty = no ETFs)
         allowed = set(universe_filter)
         cfg["universe"] = [e for e in cfg["universe"] if e["code"] in allowed]
+    else:
+        # Default: only active ETFs (active != false)
+        cfg["universe"] = [e for e in cfg["universe"] if e.get("active", True)]
     universe = cfg["universe"]
     scoring_cfg = cfg["scoring"]
     confidence_cfg = cfg["confidence"]
@@ -1207,16 +1211,23 @@ def main():
     parser.add_argument("--execution-timing", choices=["same_close", "next_open"], default=None,
                         help="成交口径：same_close=信号日收盘成交，next_open=下一交易日开盘成交")
     parser.add_argument("--output", type=str, default=None, help="输出净值 CSV 路径")
-    parser.add_argument("--preset", type=str, default="preset2",
-                        help="预设配置名 (default: preset2)")
+    parser.add_argument("--preset", type=str, default="zen-1",
+                        help="预设配置名 (default: zen-1)")
     parser.add_argument("--debug", action="store_true", dest="debug",
                         help="输出调试快照到 data/debug_cli.json")
+    parser.add_argument("--universe", type=str, default=None,
+                        help="ETF 筛选列表（逗号分隔，不传=仅 active ETF）")
     args = parser.parse_args()
+
+    universe_filter = None
+    if args.universe is not None:
+        universe_filter = [c.strip() for c in args.universe.split(",") if c.strip()] if args.universe else []
 
     nav_df, signals, extra = run_backtest(
         start_date=args.start, end_date=args.end,
         execution_timing=args.execution_timing, preset=args.preset,
         return_debug=args.debug,
+        universe_filter=universe_filter,
     )
 
     if nav_df is not None and args.output:

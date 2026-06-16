@@ -387,13 +387,13 @@ def build_presets_response(cfg):
         for key, preset_cfg in presets.items()
     }
 
-    if "preset4" not in result:
-        template = result.get("preset1", {}) or result.get("preset2", {})
+    if "cst-1" not in result:
+        template = result.get("act-1", {}) or result.get("zen-1", {})
         if template:
-            custom = dict(template)
-            custom["label"] = "自定义策略"
-            custom["description"] = "用户自定义策略，初始参数继承自趋势锚定。"
-            result["preset4"] = custom
+            cst = dict(template)
+            cst["label"] = "自定义策略"
+            cst["description"] = "用户自定义策略，初始参数继承自趋势锚定。"
+            result["cst-1"] = cst
 
     result["_universe_options"] = [
         {
@@ -401,6 +401,7 @@ def build_presets_response(cfg):
             "name": e.get("name", e["code"]),
             "sector": e.get("sector", ""),
             "bias": bool(e.get("bias", False)),
+            "active": e.get("active", True),
         }
         for e in cfg.get("universe", [])
     ]

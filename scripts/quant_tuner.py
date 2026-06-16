@@ -1138,7 +1138,7 @@ def run_tuner_backtest(params):
     nav_df, signal_history, extra = _run_backtest(
         start_date=params.get("start_date"),
         end_date=params.get("end_date"),
-        preset="preset2",
+        preset="zen-1",
         execution_timing=execution_timing,
         universe_filter=universe_filter,
         preloaded=preloaded,
@@ -1654,6 +1654,41 @@ def api_presets():
     return jsonify(qc.build_presets_response(cfg))
 
 
+@app.route("/api/universe/save", methods=["POST"])
+def api_universe_save():
+    """Persist ETF active states to quant_universe.yaml."""
+    guard = _require_ready()
+    if guard:
+        return guard
+    data = request.json or {}
+    active_codes = set(data.get("active_codes", []))
+    if not active_codes:
+        return jsonify({"error": "active_codes is empty"}), 400
+
+    with CONFIG_PATH.open("r", encoding="utf-8") as f:
+        cfg = yaml.safe_load(f)
+
+    active_count = 0
+    dormant_count = 0
+    for e in cfg.get("universe", []):
+        code = e["code"]
+        if code in active_codes:
+            e.pop("active", None)
+            active_count += 1
+        else:
+            e["active"] = False
+            dormant_count += 1
+
+    with CONFIG_PATH.open("w", encoding="utf-8") as f:
+        yaml.dump(cfg, f, allow_unicode=True, default_flow_style=False, sort_keys=False)
+
+    # Refresh cache so next /api/presets returns updated state
+    CACHE["cfg"] = cfg
+
+    return jsonify({"ok": True, "saved": active_count + dormant_count,
+                    "active": active_count, "dormant": dormant_count})
+
+
 def _save_to_preset(preset_name, overrides):
     """Deep-merge overrides into a specific preset inside quant_universe.yaml.
     If the preset doesn't exist yet, auto-create it from daily_aggressive template."""
@@ -1661,7 +1696,7 @@ def _save_to_preset(preset_name, overrides):
         cfg = yaml.safe_load(f)
     presets = cfg.setdefault("presets", {})
     if preset_name not in presets:
-        template = presets.get("preset2", {})
+        template = presets.get("zen-1", {})
         if template:
             presets[preset_name] = deepcopy(template)
             presets[preset_name]["label"] = "自定义策略"

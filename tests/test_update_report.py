@@ -18,14 +18,14 @@ def test_load_quant_preset_params_uses_shared_contract(tmp_path, load_module):
               dead_zone: 25
               full_zone: 65
             presets:
-              preset2:
+              zen-1:
                 label: 波动探测
                 scoring:
                   weights:
-                    ema_deviation: 0.3
-                    volume_ratio: 0.60
-                    valuation: 0.0
-                    log_return_deviation: 0.1
+                    ema_deviation: 0.50
+                    volume_ratio: 0.40
+                    residual_momentum: 0.0
+                    log_return_deviation: 0.10
                   bias_bonus: 0.0
                   sensitivity:
                     f1: 8.0
@@ -63,8 +63,8 @@ def test_load_quant_preset_params_uses_shared_contract(tmp_path, load_module):
 
     params = module.load_quant_preset_params(str(config_path))
 
-    assert params["w1"] == 30
-    assert params["w3"] == 60
+    assert params["w1"] == 50
+    assert params["w3"] == 40
     assert params["w7"] == 10
     assert params["disc_step"] == 0.05
     assert params["execution_timing"] == "same_close"

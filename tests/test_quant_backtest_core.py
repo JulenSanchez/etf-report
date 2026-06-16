@@ -21,7 +21,7 @@ class TestRunBacktestStructure:
     def test_returns_three_tuple(self):
         nav, signals, extra = run_backtest(
             start_date="2025-06-01", end_date="2025-09-01",
-            preset="preset2", execution_timing="next_open",
+            preset="zen-1", execution_timing="next_open",
         )
         assert nav is not None
         assert isinstance(signals, list)
@@ -31,7 +31,7 @@ class TestRunBacktestStructure:
     def test_nav_has_expected_columns(self):
         nav, _, _ = run_backtest(
             start_date="2025-06-01", end_date="2025-09-01",
-            preset="preset2", execution_timing="next_open",
+            preset="zen-1", execution_timing="next_open",
         )
         for col in ["date", "nav", "nav_pct", "cash", "holdings"]:
             assert col in nav.columns
@@ -39,7 +39,7 @@ class TestRunBacktestStructure:
     def test_nav_starts_near_1m(self):
         nav, _, _ = run_backtest(
             start_date="2025-06-01", end_date="2025-09-01",
-            preset="preset2", execution_timing="next_open",
+            preset="zen-1", execution_timing="next_open",
         )
         # Initial capital is 1M; first-day portfolio may fluctuate slightly
         assert abs(nav["nav"].iloc[0] / 1_000_000 - 1.0) < 0.05  # within 5%
@@ -47,7 +47,7 @@ class TestRunBacktestStructure:
     def test_extra_has_expected_keys(self):
         _, _, extra = run_backtest(
             start_date="2025-06-01", end_date="2025-09-01",
-            preset="preset2", execution_timing="next_open",
+            preset="zen-1", execution_timing="next_open",
         )
         assert "total_commission" in extra
         assert "trade_count" in extra
@@ -56,7 +56,7 @@ class TestRunBacktestStructure:
     def test_signals_have_expected_keys(self):
         _, signals, _ = run_backtest(
             start_date="2025-06-01", end_date="2025-09-01",
-            preset="preset2", execution_timing="next_open",
+            preset="zen-1", execution_timing="next_open",
         )
         assert len(signals) > 0
         s = signals[0]
@@ -67,7 +67,7 @@ class TestRunBacktestStructure:
 class TestPresets:
     """Verify all three presets produce valid results."""
 
-    @pytest.mark.parametrize("preset", ["preset1", "preset2", "preset3"])
+    @pytest.mark.parametrize("preset", ["act-1", "zen-1", "gam-1"])
     def test_preset_runs(self, preset):
         nav, _, _ = run_backtest(
             start_date="2025-06-01", end_date="2025-09-01",
@@ -78,7 +78,7 @@ class TestPresets:
     def test_different_presets_produce_different_results(self):
         """Three presets should give different final NAVs."""
         results = {}
-        for p in ["preset1", "preset2", "preset3"]:
+        for p in ["act-1", "zen-1", "gam-1"]:
             nav, _, _ = run_backtest(
                 start_date="2024-06-01", end_date="2025-06-01",
                 preset=p, execution_timing="next_open",
@@ -97,7 +97,7 @@ class TestUniverseFilter:
         """With only 5 ETFs, signals should reference only those codes."""
         nav, signals, _ = run_backtest(
             start_date="2025-06-01", end_date="2025-09-01",
-            preset="preset2", execution_timing="next_open",
+            preset="zen-1", execution_timing="next_open",
             universe_filter=["512400", "513120", "515880", "159865", "159755"],
         )
         assert len(nav) > 0
@@ -110,7 +110,7 @@ class TestUniverseFilter:
         """With 1 ETF, it should always be in top6."""
         nav, signals, _ = run_backtest(
             start_date="2025-06-01", end_date="2025-08-01",
-            preset="preset2", execution_timing="next_open",
+            preset="zen-1", execution_timing="next_open",
             universe_filter=["515880"],
         )
         for s in signals:
@@ -127,7 +127,7 @@ class TestExecutionTiming:
         for timing in ["same_close", "next_open"]:
             nav, _, _ = run_backtest(
                 start_date="2024-06-01", end_date="2025-06-01",
-                preset="preset2", execution_timing=timing,
+                preset="zen-1", execution_timing=timing,
             )
             results[timing] = nav["nav"].iloc[-1]
         # Should differ (not identical)
@@ -141,7 +141,7 @@ class TestReturnDetails:
     def test_return_details_gives_trade_log(self):
         _, _, extra = run_backtest(
             start_date="2025-06-01", end_date="2025-08-01",
-            preset="preset2", execution_timing="next_open",
+            preset="zen-1", execution_timing="next_open",
             return_details=True,
         )
         assert "trade_log" in extra
@@ -150,7 +150,7 @@ class TestReturnDetails:
     def test_trade_log_has_expected_fields(self):
         _, _, extra = run_backtest(
             start_date="2025-06-01", end_date="2025-08-01",
-            preset="preset2", execution_timing="next_open",
+            preset="zen-1", execution_timing="next_open",
             return_details=True,
         )
         if extra["trade_log"]:

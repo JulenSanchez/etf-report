@@ -1,7 +1,7 @@
 """Multiprocessing backtest runner for parallel window/persona verification.
 Usage:
     from quant_parallel import parallel_backtests
-    jobs = [{"preset":"preset1","start":"2025-05-28","end":"2026-05-27"}, ...]
+    jobs = [{"preset":"act-1","start":"2025-05-28","end":"2026-05-27"}, ...]
     results = parallel_backtests(jobs)  # 4 workers by default
 """
 import os, sys, io

@@ -1,199 +1,233 @@
-# ETF 选股池
-#
 universe:
-  - code: '512400'
-    name: 有色金属ETF
-    market: sh
-    sector: 资源周期
-    bias: true
-  - code: '513120'
-    name: 创新药ETF
-    market: sh
-    sector: 医药
-    bias: true
-  - code: '159883'
-    name: 医疗器械ETF
-    market: sz
-    sector: 医药
-  - code: '512010'
-    name: 医药ETF
-    market: sh
-    sector: 医药
-  - code: '512070'
-    name: 非银ETF
-    market: sh
-    sector: 金融
-    bias: true
-  - code: '515880'
-    name: 通信ETF
-    market: sh
-    sector: 科技
-  - code: '588200'
-    name: 芯片ETF
-    market: sh
-    sector: 科技
-  - code: '159206'
-    name: 卫星ETF
-    market: sz
-    sector: 科技
-  - code: '513310'
-    name: 中韩半导体ETF
-    market: sh
-    sector: 科技
-    qdii: true
-  - code: '562500'
-    name: 机器人ETF
-    market: sh
-    sector: 科技
-  - code: '513130'
-    name: 恒科ETF
-    market: sh
-    sector: TMT
-  - code: '512980'
-    name: 传媒ETF
-    market: sh
-    sector: TMT
-  - code: '159869'
-    name: 游戏ETF
-    market: sz
-    sector: TMT
-  - code: '159755'
-    name: 电池ETF
-    market: sz
-    sector: 新能源
-  - code: '515790'
-    name: 光伏ETF
-    market: sh
-    sector: 新能源
-  - code: '159326'
-    name: 电网设备ETF
-    market: sz
-    sector: 新能源
-  - code: '159611'
-    name: 电力ETF
-    market: sz
-    sector: 传统
-  - code: '512660'
-    name: 军工ETF
-    market: sh
-    sector: 制造
-  - code: '560710'
-    name: 船舶ETF
-    market: sh
-    sector: 制造
-  - code: '560280'
-    name: 工程机械ETF
-    market: sh
-    sector: 制造
-  - code: '159870'
-    name: 化工ETF
-    market: sz
-    sector: 资源周期
-  - code: '159731'
-    name: 石油
-    market: sz
-    sector: 资源周期
-  - code: '515220'
-    name: 煤炭ETF
-    market: sh
-    sector: 资源周期
-  - code: '562800'
-    name: 稀有金属
-    market: sh
-    sector: 资源周期
-  - code: '513090'
-    name: 港券ETF
-    market: sh
-    sector: 金融
-  - code: '512800'
-    name: 银行ETF
-    market: sh
-    sector: 金融
-  - code: '512690'
-    name: 酒ETF
-    market: sh
-    sector: 消费
-  - code: '159928'
-    name: 消费ETF
-    market: sz
-    sector: 消费
-  - code: '159766'
-    name: 旅游ETF
-    market: sz
-    sector: 消费
-  - code: '159865'
-    name: 养殖ETF
-    market: sz
-    sector: 传统
-  - code: '159698'
-    name: 粮食ETF
-    market: sz
-    sector: 传统
-  - code: '512200'
-    name: 房地产ETF
-    market: sh
-    sector: 传统
-  - code: '513690'
-    name: 港股红利ETF
-    market: sh
-    sector: 传统
-  - code: '563300'
-    name: 微盘ETF
-    market: sh
-    sector: 宽基
-  - code: '159941'
-    name: 纳指ETF
-    market: sz
-    sector: 另类
-    qdii: true
-  - code: '518880'
-    name: 黄金ETF
-    market: sh
-    sector: 另类
-  - code: '513880'
-    name: 日经
-    market: sh
-    sector: 另类
-    qdii: true
-  - code: '520870'
-    name: 巴西
-    market: sh
-    sector: 另类
-    qdii: true
-  - code: '513030'
-    name: 德国
-    market: sh
-    sector: 另类
-    qdii: true
-  - code: '159509'
-    name: 纳指科技ETF
-    market: sz
-    sector: 另类
-    qdii: true
-  - code: '513050'
-    name: 中概互联ETF
-    market: sh
-    sector: TMT
-  - code: '159329'
-    name: 沙特ETF
-    market: sz
-    sector: 另类
-    qdii: true
-  - code: '159518'
-    name: 标普油气
-    market: sz
-    sector: 另类
-    qdii: true
-  - code: '159502'
-    name: 标普生物ETF
-    market: sz
-    sector: 另类
-    qdii: true
-  - code: '159985'
-    name: 豆粕ETF
-    market: sz
-    sector: 另类
-
+- code: '512400'
+  name: 有色金属ETF
+  market: sh
+  sector: 资源周期
+  bias: true
+- code: '513120'
+  name: 创新药ETF
+  market: sh
+  sector: 医药
+  bias: true
+- code: '159883'
+  name: 医疗器械ETF
+  market: sz
+  sector: 医药
+- code: '512070'
+  name: 非银ETF
+  market: sh
+  sector: 金融
+  bias: true
+- code: '515880'
+  name: 通信ETF
+  market: sh
+  sector: 科技
+- code: '588200'
+  name: 芯片ETF
+  market: sh
+  sector: 科技
+- code: '159206'
+  name: 卫星ETF
+  market: sz
+  sector: 科技
+- code: '513310'
+  name: 中韩半导体ETF
+  market: sh
+  sector: 另类
+  qdii: true
+- code: '562500'
+  name: 机器人ETF
+  market: sh
+  sector: 科技
+- code: '512980'
+  name: 传媒ETF
+  market: sh
+  sector: TMT
+- code: '159869'
+  name: 游戏ETF
+  market: sz
+  sector: TMT
+- code: '159755'
+  name: 电池ETF
+  market: sz
+  sector: 新能源
+- code: '515790'
+  name: 光伏ETF
+  market: sh
+  sector: 新能源
+- code: '159326'
+  name: 电网设备ETF
+  market: sz
+  sector: 新能源
+- code: '159611'
+  name: 电力ETF
+  market: sz
+  sector: 传统
+- code: '512660'
+  name: 军工ETF
+  market: sh
+  sector: 制造
+- code: '560710'
+  name: 船舶ETF
+  market: sh
+  sector: 制造
+- code: '560280'
+  name: 工程机械ETF
+  market: sh
+  sector: 制造
+- code: '159870'
+  name: 化工ETF
+  market: sz
+  sector: 资源周期
+- code: '515220'
+  name: 煤炭ETF
+  market: sh
+  sector: 资源周期
+- code: '513090'
+  name: 港券ETF
+  market: sh
+  sector: 金融
+- code: '512800'
+  name: 银行ETF
+  market: sh
+  sector: 金融
+- code: '512690'
+  name: 酒ETF
+  market: sh
+  sector: 消费
+- code: '159766'
+  name: 旅游ETF
+  market: sz
+  sector: 消费
+- code: '159865'
+  name: 养殖ETF
+  market: sz
+  sector: 传统
+- code: '159698'
+  name: 粮食ETF
+  market: sz
+  sector: 传统
+- code: '512200'
+  name: 房地产ETF
+  market: sh
+  sector: 传统
+- code: '513690'
+  name: 港股红利ETF
+  market: sh
+  sector: 传统
+- code: '563300'
+  name: 微盘ETF
+  market: sh
+  sector: 另类
+- code: '159941'
+  name: 纳指ETF
+  market: sz
+  sector: 另类
+  qdii: true
+- code: '518880'
+  name: 黄金ETF
+  market: sh
+  sector: 另类
+- code: '513880'
+  name: 日经
+  market: sh
+  sector: 另类
+  qdii: true
+- code: '520870'
+  name: 巴西
+  market: sh
+  sector: 另类
+  qdii: true
+- code: '159561'
+  name: 德国ETF
+  market: sz
+  sector: 另类
+  qdii: true
+- code: '159509'
+  name: 纳指科技ETF
+  market: sz
+  sector: 另类
+  qdii: true
+- code: '513050'
+  name: 中概互联ETF
+  market: sh
+  sector: TMT
+- code: '159329'
+  name: 沙特ETF
+  market: sz
+  sector: 另类
+  qdii: true
+- code: '159518'
+  name: 标普油气
+  market: sz
+  sector: 另类
+  qdii: true
+- code: '159502'
+  name: 标普生物ETF
+  market: sz
+  sector: 另类
+  qdii: true
+- code: '512880'
+  name: 证券ETF
+  market: sh
+  sector: 金融
+- code: '159992'
+  name: A股创新药ETF
+  market: sz
+  sector: 医药
+- code: '159131'
+  name: 港股信息ETF
+  market: sz
+  sector: TMT
+- code: '159687'
+  name: 亚太精选ETF
+  market: sz
+  sector: 另类
+  qdii: true
+- code: '159985'
+  name: 豆粕ETF
+  market: sz
+  sector: 另类
+- code: '513070'
+  name: 港股消费ETF
+  market: sh
+  sector: TMT
+- code: '159732'
+  name: 消费电子ETF
+  market: sz
+  sector: 科技
+- code: '510880'
+  name: 红利ETF
+  market: sh
+  sector: 传统
+- code: '159851'
+  name: 金融科技ETF
+  market: sz
+  sector: 金融
+- code: '515210'
+  name: 钢铁ETF
+  market: sh
+  sector: 资源周期
+- code: '159996'
+  name: 家电ETF
+  market: sz
+  sector: 消费
+- code: '159745'
+  name: 建材ETF
+  market: sz
+  sector: 传统
+- code: '159667'
+  name: 工业母机ETF
+  market: sz
+  sector: 制造
+- code: '588010'
+  name: 科创新材料ETF
+  market: sh
+  sector: 科技
+- code: '159697'
+  name: 石油ETF
+  market: sz
+  sector: 资源周期
 scoring: null
 confidence:
   type: ma_trend
@@ -227,7 +261,7 @@ factors:
   volume_ratio:
     window_days: 20
 presets:
-  preset1:
+  act-1:
     label: 精算师1
     description: 精算师1：F1(57%)+F3(17%)+F7(26%)，C=0.78，CS=3.1。子参数TPE：MH=5，MA=39周，牛80%熊18%。等权S×C=46.6(+12%)，Sharpe=2.60。信仰：风险调整后收益最大化。
     scoring:
@@ -280,7 +314,7 @@ presets:
       f6_base_penalty: 0.15
       log_return_deviation:
         window_days: 32
-  preset3:
+  gam-1:
     label: 赌徒1
     description: 赌徒1：F1(56%)+F3(24%)+F7(20%)，C=0.43，CS=6.0。子参数TPE：MH=5，MA=28w，熊仓50%。等权AR=108%(+16%)，Sharpe=2.50。
     scoring:
@@ -338,8 +372,8 @@ presets:
         lookback_days: 250
         min_days: 60
         sigma_floor: 0.01
-  preset4:
-    label: 集中趋势
+  cst-1:
+    label: '1'
     description: 日调仓，F1(50%)+F3(40%)+F7(10%)，F2=0。相比趋势锚定：持仓更集中(4支)+趋势信号更快(MA20w)+仓位集中度更高(C=1.0)。6Y+710.6%/年化+41.7%/MDD-17.3%/Sharpe=1.50（2020-05-22~2026-05-21，CLI实测）。
     scoring:
       weights:
@@ -391,9 +425,10 @@ presets:
       f6_base_penalty: 0.15
       log_return_deviation:
         window_days: 20
-  preset2:
+  zen-1:
     label: 禅修者1
-    description: 日调仓，F1(49%)+F3(32%)+F7(19%)，MA趋势(26周慢确认)，CS=0(静态均分，无动态集中)。TPE扩展参数等权Sharpe最优(2.30 vs 基线2.05,+12%)。F7权重翻倍引进反转维度辅助分散，P90单票25%极致分散。信仰：均衡即智慧。
+    description: 日调仓，F1(49%)+F3(32%)+F7(19%)，MA趋势(26周慢确认)，CS=0(静态均分，无动态集中)。TPE扩展参数等权Sharpe最优(2.30
+      vs 基线2.05,+12%)。F7权重翻倍引进反转维度辅助分散，P90单票25%极致分散。信仰：均衡即智慧。
     scoring:
       weights:
         ema_deviation: 0.49
@@ -449,7 +484,7 @@ presets:
         lookback_days: 250
         min_days: 60
         sigma_floor: 0.01
-  preset6:
+  gam-2:
     label: 赌徒2
     description: 旧版赌徒(MH=6,MA=26w,mbear=0.3)。等权AR=93.0%，SxC=34.8，Sharpe=2.46。保守对照。
     scoring:

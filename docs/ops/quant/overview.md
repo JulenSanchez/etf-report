@@ -17,6 +17,7 @@
 | 工坊 Tuner | `scripts/quant_tuner.py` + `templates/tuner.html` | 本地交互调参、运行回测、保存 preset | 定义真实回测逻辑 |
 | 橱窗正式页 | `scripts/update_report.py` + `assets/js/quant-main.js` | 生成并渲染静态量化结果 | 交互调参、写回 YAML |
 | 研究归档 | `research/` | 保存实验、证据、promotion 记录 | 作为当前参数事实源 |
+| **池管理** | `docs/ops/pool-change.md` | ETF 池批量新增/移除 SOP（跨筛选+量化） | 筛选规则本身（见 `scripts/scan_etf_universe.py`） |
 
 ## 2. 当前架构图
 
@@ -360,7 +361,7 @@ get_param_schema()
 | 改因子 | `pytest tests/test_quant_factors.py`，再跑一个短窗口回测 |
 | 改回测引擎 | 跑 CLI 回测 + Tuner `/api/run` 同参数对比；`pytest tests/test_quant_backtest_core.py` |
 | 改 Tuner 参数 | `pytest tests/test_quant_contract.py`，并确认 `/api/param_schema -> /api/presets -> UI -> /api/run -> /api/save -> /api/presets` 往返一致；如需当前策略摘要，由 AI 改参数时同步或用户显式要求更新 |
-| 改参数契约/回测/Tuner 接线 | `python scripts/quant_consistency_check.py --preset preset2 --start 2025-01-01 --end 2026-05-19` |
+| 改参数契约/回测/Tuner 接线 | `python scripts/quant_consistency_check.py --preset zen-1 --start 2025-01-01 --end 2026-05-19` |
 | 改正式页 payload | `python scripts/quant_build_payload.py` 后本地打开 `index.html` |
 | 改资产池 | `python scripts/quant_data_fetcher.py --code <新ETF>` 或按需全量/增量更新 |
 | 改数据缓存/并行模块 | `pytest tests/test_quant_data_cache.py` |
@@ -377,7 +378,7 @@ Tuner contract: preset -> tuner params -> config_override -> run_backtest(...)
 常用命令：
 
 ```bash
-python scripts/quant_consistency_check.py --preset preset2 --start 2025-01-01 --end 2026-05-19
+python scripts/quant_consistency_check.py --preset zen-1 --start 2025-01-01 --end 2026-05-19
 ```
 
 如果这里 FAIL，说明 `quant_universe.yaml`、`quant_contract.py`、`quant_tuner.py` 或 `quant_backtest.py` 之间出现结果级漂移，应先修一致性再继续调参。
@@ -430,9 +431,9 @@ python scripts/strip_csv_dates.py 2026-06-01 2026-06-02
 ### 1.6 跑一致性检查
 
 ```bash
-python scripts/quant_consistency_check.py --preset preset1 --start 2025-01-01 --end 2026-05-19
-python scripts/quant_consistency_check.py --preset preset2 --start 2025-01-01 --end 2026-05-19
-python scripts/quant_consistency_check.py --preset preset3 --start 2025-01-01 --end 2026-05-19
+python scripts/quant_consistency_check.py --preset act-1 --start 2025-01-01 --end 2026-05-19
+python scripts/quant_consistency_check.py --preset zen-1 --start 2025-01-01 --end 2026-05-19
+python scripts/quant_consistency_check.py --preset gam-1 --start 2025-01-01 --end 2026-05-19
 ```
 
 一致性检查对比：
@@ -471,7 +472,7 @@ Tuner contract: preset -> tuner params -> config_override -> run_backtest(...)
 2. 参数会写入 `config/quant_universe.yaml` 的目标 preset。
 3. 立刻运行：
    ```bash
-   python scripts/quant_consistency_check.py --preset preset2 --start 2025-01-01 --end 2026-05-19
+   python scripts/quant_consistency_check.py --preset zen-1 --start 2025-01-01 --end 2026-05-19
    ```
 4. 如参数作为研究结论沉淀，更新：
    ```text
@@ -485,7 +486,7 @@ Tuner contract: preset -> tuner params -> config_override -> run_backtest(...)
 
 ```bash
 python -m pytest tests/test_quant_contract.py tests/test_quant_backtest_execution.py tests/test_quant_consistency.py tests/test_quant_backtest_core.py tests/test_quant_data_cache.py
-python scripts/quant_consistency_check.py --preset preset2 --start 2025-01-01 --end 2026-05-19
+python scripts/quant_consistency_check.py --preset zen-1 --start 2025-01-01 --end 2026-05-19
 ```
 
 若改动影响 `run_backtest()` 的语义，同时更新：
@@ -627,7 +628,7 @@ update_report.py -> generate_quant_baseline_payload()
 
 当前实现：
 
-1. 从 `config/quant_universe.yaml` 读取 `preset2`。
+1. 从 `config/quant_universe.yaml` 读取 `zen-1`。
 2. 通过 `quant_contract.py` 转为 Tuner 参数。
 3. 调用 Tuner `/api/run` 生成 1 年 / 3 年回测结果。
 4. 写入 `assets/js/quant_payload.js`。
@@ -649,15 +650,15 @@ update_report.py -> generate_quant_baseline_payload()
 
 ```bash
 # 网格搜索（小空间穷举）
-python scripts/quant_optimizer.py --preset preset2 --strategy grid \
+python scripts/quant_optimizer.py --preset zen-1 --strategy grid \
   --params "w1=30,40,50 w3=30,40,50 score_band=0,1,2,3" --periods 1Y,3Y
 
 # 随机搜索（大空间探索）
-python scripts/quant_optimizer.py --preset preset2 --strategy random \
+python scripts/quant_optimizer.py --preset zen-1 --strategy random \
   --n-trials 200 --seed 42 --periods 1Y,3Y,6Y
 
 # 贝叶斯优化（智能搜索，需 optuna）
-python scripts/quant_optimizer.py --preset preset2 --strategy bayesian \
+python scripts/quant_optimizer.py --preset zen-1 --strategy bayesian \
   --n-trials 100 --auto-bounds --periods 1Y,3Y,6Y
 
 # 续跑
@@ -672,7 +673,7 @@ python scripts/quant_optimizer.py ... --resume
 
 ```powershell
 Start-Process -FilePath "python" `
-  -ArgumentList "scripts\quant_optimizer.py --preset preset2 --strategy bayesian --n-trials 150 --auto-bounds --periods 1Y,3Y,6Y" `
+  -ArgumentList "scripts\quant_optimizer.py --preset zen-1 --strategy bayesian --n-trials 150 --auto-bounds --periods 1Y,3Y,6Y" `
   -WorkingDirectory "<项目根目录>"
 ```
 
@@ -689,17 +690,73 @@ Start-Process -FilePath "python" `
 
 ## 7. 故障排查
 
-| 现象 | 先查 | 处理 |
-|---|---|---|
-| Tuner 页面打不开 | `/api/data_status` / 端口 5179 | `python scripts/kill_tuner.py` 后重启 |
-| 页面一直“正在加载量化数据” | Tuner 控制台 / `data/quant/*.csv` | 检查 CSV 是否存在，必要时跑 `quant_data_fetcher.py` |
-| 参数契约显示 unavailable | `/api/param_schema` | 检查 `quant_contract.py` 和 Tuner 后端日志 |
-| 回测收益突然变化 | `execution_timing` / preset diff / consistency check | 跑三个 preset 的 `quant_consistency_check.py` |
-| Tuner 与 CLI 结果不一致 | `quant_contract.py` / `quant_backtest.py` | 先修一致性，禁止继续调参 |
-| Save to YAML 后页面没变 | `/api/presets` / `config/quant_universe.yaml` | 刷新页面或重启 Tuner |
-| 数据日期旧 | `/api/data_status` 的 `csvLatestDate` | 跑 `python scripts/quant_data_fetcher.py` |
-| 腾讯 API 被封 | `quant_data_fetcher.py` 输出 | 减少请求，等待 24-48h，避免 `--full` |
-| 正式页量化为空 | `assets/js/quant_payload.js` / update_report 日志 | 启动 Tuner 后重跑 update_report 或单独生成 payload |
+> **诊断第一原则**：出现异常时先看浏览器 Console（F12）或终端错误信息，不要猜进程/网络/缓存。
+
+### 症状索引
+
+#### Tuner 前端
+
+| 症状 | 可能原因 | 检查方法 | 关联 Bug |
+|------|---------|---------|---------|
+| 启动后一直”正在加载量化数据...” | JS 初始化抛异常，阻塞后续逻辑 | F12 → Console 看第一个红色错误 | BUG-033 |
+| 回测按钮被禁用/灰掉 | 权重校验失败（`parseInt(null)`=NaN），常见于废弃参数残留 | 检查 `getWeightTotal` 是否返回 NaN；全项目 grep 废弃参数名 | F6 清退 |
+| 回测结果与 CLI 不一致 | `set()` 迭代顺序非确定 → 买入顺序不同 → 现金分配不同 | 对比 CLI/Tuner 第一个调仓日的持仓排序 | BUG-024 |
+| 滑块拖不动/锁死在 0% 或 100% | `range input` 无 `step` 属性时浏览器默认 step=1 | 检查滑块元素是否有 `step=”any”` | BUG-027 |
+| 预设卡片不显示/报错 | `renderPresetCards()` 某个 school 缺字段 | 检查 `SCHOOLS` 数组每个元素是否都有 `target`/`constraint` | BUG-033 |
+| 标的池勾选不生效 | `getUniverseParam()` 全选时发空串 → 后端解为”全池”而非”默认池” | 检查请求 payload 中 `universe` 字段是空串还是 code 列表 | REQ-289 |
+
+#### 回测数据
+
+| 症状 | 可能原因 | 检查方法 | 关联 Bug |
+|------|---------|---------|---------|
+| 同一策略周五 vs 周一回测结果不同 | F1 跨周冻结失效：周边界 `checkpoint_f1=None` | 对比上周五和本周一的 `f1_val` | BUG-032 |
+| 全量重拉 CSV 后回测指标漂移 | 数据源变化 + 管线重构导致旧基线不可比 | 对比新旧 CSV 的 bar 数量、最后一行日期、close 值 | BUG-030 |
+| 某 ETF 不参与因子计算 | CSV 数据不完整（full fetch 分页丢中间页） | `wc -l data/quant/{code}_daily.csv`，对比预期行数 | BUG-028 |
+| 周一~周四的 MA 信号异常好 | lookahead bias：`merge_asof(direction=”forward”)` 用了未来数据 | 检查周二时 `hs300_above_ma` 是否已包含周五的 MA 值 | BUG-025 |
+| 回测持仓数始终不满 / 熊市现金异常消耗 | 残量回收第二 pass 用了不同变量名漏修 | 检查熊市时 `cash` 是否被花光 | BUG-026 |
+| 周线 bar 日期错位（周一出现 incomplete week bar） | `rebuild_weekly_from_daily` 未排除本周未完成周 | 检查周线 CSV 最后一周的 `week` 列是否为当前 `iso_year-iso_week` | — |
+
+#### 筛选流
+
+| 症状 | 可能原因 | 检查方法 | 关联 Bug |
+|------|---------|---------|---------|
+| 盘中拉数据导致筛选排序失真 | 非交易时段用了 `--force-refresh`，或盘中数据不完整 | 检查 `history_days.json` 缓存时间戳 | — |
+| 刚上市 ETF 虚高打分进入筛选 | `_est_listing_date()` 前缀推测法已删除 | 确认使用 Sina API `history_days` | — |
+| HK ETF 被豁免 O2 重叠淘汰 | `EXEMPT_PREFIXES` 曾包含 `'HK-'` | 检查 `EXEMPT_PREFIXES` 常量 | — |
+
+#### Tuner 后端
+
+| 症状 | 可能原因 | 检查方法 |
+|------|---------|---------|
+| 页面打不开 | 端口被旧进程占用 | `netstat -ano \| findstr 5179`，`python scripts/kill_tuner.py` |
+| `/api/presets` 返回 ETF 数量不对 | 另一个仓库的 Tuner 占用了 5179 端口 | 确认只有一个 LISTENING 进程 |
+| `yaml.dump` 改写了 config 格式 | `pool_change.py` 或 `/api/save` 用 `yaml.dump` 写回 | `git diff config/quant_universe.yaml` |
+| Tuner 启动慢 / preload 卡住 | 某 ETF CSV 缺失或损坏 | 检查 Tuner 终端输出，找到卡在哪个 ETF |
+
+### 诊断流程
+
+**Tuner 前端异常**：
+```
+白屏 / loading 不消失 → F12 Console 看第一个红色错误
+  → 通常是 JS 语法错误 / 字段缺失 / 异步初始化顺序问题
+```
+
+**回测结果异常**：
+```
+指标突变 / 持仓不对
+  → 先确认 CLI 和 Tuner 结果是否一致（排除 Tuner 层）
+  → 缩小范围：单 ETF → 小池 → 全池
+  → 对比中间变量：F1 → 因子得分 → 排名 → 持仓权重
+  → 定位到具体计算步骤后修
+```
+
+**数据异常**：
+```
+CSV 行数不对 / 数据缺失
+  → 检查文件大小和行数
+  → 对比同 ETF 在 stable 和 main 仓库的数据
+  → 确认 fetch 来源
+```
 
 ---
 
@@ -709,16 +766,16 @@ Start-Process -FilePath "python" `
 
 ```bash
 python -m pytest tests/test_quant_contract.py
-python scripts/quant_consistency_check.py --preset preset2 --start 2025-01-01 --end 2026-05-19
+python scripts/quant_consistency_check.py --preset zen-1 --start 2025-01-01 --end 2026-05-19
 ```
 
 ### 改成交口径 / 调仓逻辑后
 
 ```bash
 python -m pytest tests/test_quant_backtest_execution.py tests/test_quant_consistency.py
-python scripts/quant_consistency_check.py --preset preset1 --start 2025-01-01 --end 2026-05-19
-python scripts/quant_consistency_check.py --preset preset2 --start 2025-01-01 --end 2026-05-19
-python scripts/quant_consistency_check.py --preset preset3 --start 2025-01-01 --end 2026-05-19
+python scripts/quant_consistency_check.py --preset act-1 --start 2025-01-01 --end 2026-05-19
+python scripts/quant_consistency_check.py --preset zen-1 --start 2025-01-01 --end 2026-05-19
+python scripts/quant_consistency_check.py --preset gam-1 --start 2025-01-01 --end 2026-05-19
 ```
 
 ### 改正式页 payload 后

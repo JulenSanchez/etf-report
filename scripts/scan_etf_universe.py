@@ -7,6 +7,7 @@ import sys, json, re, time, os, argparse
 from pathlib import Path
 from collections import defaultdict
 from datetime import datetime
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 PROJECT_ROOT = next(parent for parent in Path(__file__).resolve().parents if (parent / "config").is_dir() and (parent / "scripts").is_dir())
 DATA_DIR = PROJECT_ROOT / "data" / "quant"
@@ -18,6 +19,7 @@ SINA_HDR = {"User-Agent": "Mozilla/5.0", "Referer": "https://finance.sina.com.cn
 parser = argparse.ArgumentParser()
 parser.add_argument("--debug", action="store_true")
 parser.add_argument("--force-refresh", action="store_true")
+parser.add_argument("--dry-run", action="store_true", help="Skip Excel, print summary only")
 args = parser.parse_args()
 
 # ============================================================
@@ -61,21 +63,34 @@ if _SPOT_CACHE.exists():
 # ============================================================
 print("[2/4] Volume data...")
 now = datetime.now()
-is_post = now.hour >= 15
+# Only allow fetch after 15:10 (confirmed close data).
+# During session (9:30-15:10) and weekends: ALWAYS use cache — mid-session
+# accumulated volume is unreliable per REQ-274 screening rules.
+is_post_close = now.hour > 15 or (now.hour == 15 and now.minute >= 10)
 cache = {}; fetch_needed = True
 if VOL_CACHE.exists() and not args.force_refresh:
     with open(VOL_CACHE) as f: cache = json.load(f)
     age_h = (time.time() - os.path.getmtime(VOL_CACHE)) / 3600
-    max_age = 24 if is_post else 4
     codes_all = set(df['code'])
     missing_n = sum(1 for c in codes_all if c not in cache)
-    if age_h < max_age and missing_n < len(codes_all) * 0.3:
+    if not is_post_close:
+        # Pre-close: never fetch — cache holds last close data, still valid
         fetch_needed = False
-        print(f"  Using cache ({len(cache)} ETFs, {age_h:.1f}h old)")
+        print(f"  Pre-close: using cache ({len(cache)} ETFs, {age_h:.1f}h old, last close data)")
+    elif age_h < 24 and missing_n < len(codes_all) * 0.3:
+        fetch_needed = False
+        print(f"  Post-close cache valid ({len(cache)} ETFs, {age_h:.1f}h old)")
 
 if fetch_needed:
-    print(f"  Fetching {len(df)} ETFs via Sina...")
+    if not is_post_close and args.force_refresh:
+        print(f"  *** REFUSING --force-refresh pre-close: mid-session data is unreliable ***")
+        print(f"  *** Using cache instead. Re-run after 15:10 if fresh close data is needed. ***")
+        with open(VOL_CACHE) as f: cache = json.load(f)
+        fetch_needed = False
+    else:
+        print(f"  Fetching {len(df)} ETFs via Sina (post-close refresh)...")
     cache = {}
+    cache['_meta'] = {'fetched_at': now.isoformat(), 'is_close_data': True}
     codes_sorted = sorted(df['code'])
     market = {c: ('sh' if c.startswith(('51','56','58','52','50')) else 'sz') for c in codes_sorted}
     symbols = [f"{market[c]}{c}" for c in codes_sorted]
@@ -114,32 +129,85 @@ df['price'] = df['code'].apply(lambda c: cache.get(c, {}).get('price', 0))
 df['amount'] = df['vol'] * df['price']
 df['amount_yi'] = (df['amount'] / 1e8).round(2)
 
-# Fill missing listing dates via code-prefix estimation (fallback until proper batch API found)
-# TODO(REQ-278): replace with batch listing date API when available
-def _est_listing_date(code):
-    if code.startswith('159'):
-        return '2020-06-01'  # ~2020 onwards
-    elif code.startswith(('513','517','518')):
-        return '2021-01-01'
-    elif code.startswith(('510','512')):
-        return '2014-01-01'  # oldest ETF series
-    elif code.startswith(('588','562','563')):
-        return '2022-06-01'
-    elif code.startswith(('515','516','560','561')):
-        return '2020-01-01'
-    elif code.startswith('520'):
-        return '2024-01-01'
-    return '2020-01-01'
+# Data length: how many trading days of history exist for each ETF.
+# Truth source: Sina historical K-line API (independent of quant/backtest flow).
+# Local 回测日线 CSV (data/quant/{code}_daily.csv) is only used as a cache —
+# when present we can skip the API call, but the data is the same external source.
+# Returns -1 as sentinel for "not checked yet" (resolved below via Sina).
+MIN_HISTORY_DAYS = 80  # F7 factor requires 80 daily bars minimum
 
-for _code in df['code']:
-    if not _listing_dates.get(_code):
-        _listing_dates[_code] = _est_listing_date(_code)
-SCREEN_DIR.mkdir(exist_ok=True)
-json.dump(dict(_listing_dates), open(_LISTING_CACHE, 'w'))
-print(f"  Listing dates: {sum(1 for v in _listing_dates.values() if v)} ETFs (cached + estimated)")
+def _history_days(code):
+    """Return known trading-day count for an ETF code.
+    Checks local 回测日线 cache first (fast), returns -1 if not cached."""
+    kline_csv = DATA_DIR / f'{code}_daily.csv'  # 回测日线 (quant flow output, same Sina data)
+    if kline_csv.exists():
+        try:
+            return len(pd.read_csv(kline_csv))
+        except:
+            pass
+    return -1  # sentinel: cache miss, needs Sina API fetch below
 
-# Merge AUM data (fund size from 天天基金)
-# Fetch missing codes only if cache is stale and amount data available
+df['history_days'] = df['code'].apply(_history_days)
+n_csv = (df['history_days'] >= 0).sum()
+n_missing = (df['history_days'] == -1).sum()
+print(f"  Data check: {n_csv} from CSV, {n_missing} need API check")
+
+# For ETFs not in local cache, check history_days cache first, then fallback to Sina API.
+_HISTORY_CACHE = SCREEN_DIR / 'history_days.json'
+_history_map = {}
+if _HISTORY_CACHE.exists():
+    try:
+        _history_map = json.load(open(_HISTORY_CACHE, 'r', encoding='utf-8'))
+        # Use cached values for known codes
+        for _code, _rows in _history_map.items():
+            if _code in df['code'].values and df.loc[df['code'] == _code, 'history_days'].values[0] == -1:
+                df.loc[df['code'] == _code, 'history_days'] = _rows
+        print(f"  Loaded {len(_history_map)} history_days from cache")
+    except Exception:
+        _history_map = {}
+
+# Remaining unfetched ETFs that pass amount filter → fetch from Sina
+_rows_to_fetch = [c for c in df['code']
+                  if df.loc[df['code'] == c, 'history_days'].values[0] == -1
+                  and c in cache
+                  and cache[c].get('vol', 0) * cache[c].get('price', 0) >= 30_000_000]
+if _rows_to_fetch:
+    print(f"  Fetching data row counts for {len(_rows_to_fetch)} ETFs via Sina...")
+    SINA_HIST_URL = 'https://money.finance.sina.com.cn/quotes_service/api/json_v2.php/CN_MarketData.getKLineData'
+    SINA_HDR = {"User-Agent": "Mozilla/5.0", "Referer": "https://finance.sina.com.cn/"}
+    fetched_rows = 0
+
+    def _fetch_rows(code):
+        market = 'sh' if code.startswith(('51','56','58','52','50')) else 'sz'
+        try:
+            r = requests.get(SINA_HIST_URL,
+                           params={'symbol': f'{market}{code}', 'scale': 240, 'ma': 'no', 'datalen': 1024},
+                           headers=SINA_HDR, timeout=8)
+            r.encoding = 'gbk'
+            data = json.loads(r.text)
+            return code, len(data) if isinstance(data, list) else 0
+        except:
+            return code, 0
+
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        futures = {pool.submit(_fetch_rows, c): c for c in _rows_to_fetch}
+        for f in as_completed(futures):
+            code, rows = f.result()
+            df.loc[df['code'] == code, 'history_days'] = rows
+            _history_map[code] = rows
+            fetched_rows += 1
+            if fetched_rows % 100 == 0:
+                print(f'    {fetched_rows}/{len(_rows_to_fetch)}')
+    # Save cache (new codes appended)
+    json.dump(_history_map, open(_HISTORY_CACHE, 'w', encoding='utf-8'), ensure_ascii=False)
+    print(f'    Done: {fetched_rows} fetched, cache saved')
+# Mark remaining unfetched as 0 (will be filtered by minimum)
+df.loc[df['history_days'] == -1, 'history_days'] = 0
+
+n_below = (df['history_days'] < MIN_HISTORY_DAYS).sum()
+print(f"  Final: {(df['history_days'] >= MIN_HISTORY_DAYS).sum()} ETFs >= {MIN_HISTORY_DAYS}d, {n_below} below")
+
+# Load AUM data (fund size from 天天基金 cache)
 _spot_map = {}
 if len(spot) > 0:
     for _, r in spot.iterrows():
@@ -147,47 +215,27 @@ if len(spot) > 0:
             sc = str(int(r[s_code])).zfill(6)
             _spot_map[sc] = float(r[s_cap]) / 1e8 if pd.notna(r[s_cap]) else 0
         except: pass
+# AUM: use cached data. Missing codes that pass amount filter will be fetched below.
+df['mcap_yi'] = df['code'].apply(lambda c: _spot_map.get(c, 0))
 
-# Fetch missing AUM from 天天基金 (only for codes with meaningful amount)
-# Pre-filter: only fetch for codes likely to pass the amount filter (>= 30M)
-_missing = [c for c in df['code']
-            if c not in _spot_map
-            and c in cache
-            and cache[c].get('vol', 0) * cache[c].get('price', 0) >= 30_000_000]
-if _missing and (_spot_age_h > _AUM_MAX_AGE or args.force_refresh):
-    print(f"  Fetching AUM for {len(_missing)} ETFs from 天天基金...")
+# Proactively fill AUM gaps: fetch missing codes via 天天基金 API.
+_aum_missing = [c for c in df['code']
+                if c not in _spot_map
+                and c in cache
+                and cache[c].get('vol', 0) * cache[c].get('price', 0) >= 30_000_000]
+if _aum_missing:
+    print(f'  Fetching AUM for {len(_aum_missing)} ETFs...')
     try:
         sys.path.insert(0, str(PROJECT_ROOT))
-        from _working.fetch_aum_ttjj import fetch_batch as _ttjj_fetch
-        _new_aum = _ttjj_fetch(_missing, delay=0.35)
-        for k, v in _new_aum.items():
+        from _working.fetch_aum_ttjj import fetch_batch as _aum_fetch
+        _new = _aum_fetch(_aum_missing, delay=0.35)
+        for k, v in _new.items():
             _spot_map[k] = v
-        # Save updated cache
-        _rows = [{'代码': str(k).zfill(6), '流通市值': v * 1e8}
-                 for k, v in _spot_map.items()]
-        spot = pd.DataFrame(_rows)
-        spot.to_json(_SPOT_CACHE, force_ascii=False)
-        print(f"  Saved {len(_spot_map)} AUM records")
+            df.loc[df['code'] == k, 'mcap_yi'] = v
+        print(f'    Fetched {len(_new)} AUM records')
     except Exception as e:
-        print(f"  [WARN] 天天基金 fetch failed: {e}")
+        print(f'    [WARN] AUM fetch failed: {e} — {len(_aum_missing)} ETFs have AUM=0')
 
-if _spot_map:
-    df['mcap_yi'] = df['code'].apply(lambda c: _spot_map.get(c, 0))
-else:
-    # Fallback: uniform amount proxy — no pool-specific data
-    df['mcap_yi'] = df['amount_yi'] * 0.5
-
-# Estimate daily_rows from listing date (metadata) or market cap proxy
-df['list_date'] = df['code'].apply(lambda c: _listing_dates.get(c, ''))
-from datetime import datetime as _dt
-def _est_rows(ld):
-    if ld:
-        try:
-            days = (_dt.now() - _dt.strptime(str(ld)[:10], '%Y-%m-%d')).days
-            return max(int(days * 0.65), 1)
-        except: pass
-    return 0
-df['daily_rows'] = df['list_date'].apply(_est_rows)
 
 # ============================================================
 # 3. Combined filter
@@ -197,6 +245,7 @@ BAD_TYPES = ('固收','货币','债')  # type field contains these -> exclude
 
 def passes_filter(r):
     if r['amount'] < 30_000_000: return False, 'amount<30M'
+    if r['history_days'] < MIN_HISTORY_DAYS: return False, f'history<{MIN_HISTORY_DAYS}d'
     ftype = str(r['type'])
     for kw in BAD_TYPES:
         if kw in ftype: return False, 'excluded: ' + kw
@@ -246,13 +295,12 @@ NAME_GROUPS = [
     ('QD-德国', ['德国']), ('QD-法国', ['法国']), ('QD-沙特', ['沙特']),
     ('QD-巴西', ['巴西']), ('QD-印度', ['印度']), ('QD-越南', ['越南']),
     ('QD-东南亚', ['东南亚']), ('QD-亚太', ['亚太']),
-    ('QD-中概互联', ['中概.*互联','海外.*互联','中国互联']),
+    ('HK-中概互联', ['中概.*互联','海外.*互联','中国互联']),
     # === HK by theme ===
     ('HK-医药', ['港股.*药','香港.*药','恒生.*药','恒生.*医','港股通.*药','港股通.*医']),
     ('HK-金融', ['港股.*券','香港.*券','港股.*非银','香港.*非银','港股.*金融','香港.*金融']),
     ('HK-银行', ['港股.*银行','香港.*银行','恒生.*银行']),
-    ('HK-红利', ['港股红利','香港红利','恒生红利','港股通红利','港股通.*红利','恒生.*红利']),
-    ('HK-红利低波', ['港股.*低波','香港.*低波','恒生.*低波']),
+    ('HK-红利', ['港股红利','香港红利','恒生红利','港股通红利','港股通.*红利','恒生.*红利','港股.*低波','香港.*低波','恒生.*低波']),
     ('HK-信息技术', ['港股.*信息','港股通.*信息','香港.*信息','恒生.*信息']),
     ('HK-互联网', ['港股.*互联网','港股通.*互联网','香港.*互联网','恒生.*互联网','中概.*互联','中国互联']),
     ('HK-消费', ['港股.*消费','香港.*消费','恒生.*消费','港股通.*消费']),
@@ -285,14 +333,14 @@ NAME_GROUPS = [
     ('军工', ['军工','国防','航空','通用航空']), ('传媒', ['传媒']), ('游戏', ['游戏']),
     ('煤炭', ['煤炭']), ('钢铁', ['钢铁']), ('化工', ['化工']),
     ('工业母机', ['工业母机','机床']),
-    ('机械', ['机械','工程机械']), ('石油', ['石油','石化']),
+    ('机械', ['机械','工程机械']), ('石油', ['石油','石化','油气','原油']),
     ('房地产', ['地产','房地产']),
     ('农业-养殖', ['养殖','畜牧']),
     ('农业-种植', ['粮食','种植','种业']),
     ('农业', ['农业','农牧','农产品','现代农业']),
     ('有色-稀土', ['稀土','稀有金属','稀金']),
     ('有色', ['有色','矿业','工业金属']),
-    ('黄金', ['黄金','金ETF','上海金']), ('豆粕', ['豆粕']), ('油气', ['油气','原油']),
+    ('黄金', ['黄金','金ETF','上海金']), ('豆粕', ['豆粕']),
     ('通信', ['通信','5G','电信']),
     ('计算机AI', ['计算机','软件','大数据','云计算','数字经济','信创','人工智能','AI','科技','信息','VR']),
     ('汽车', ['汽车','新能源车','智能车','智能驾驶']),
@@ -363,9 +411,10 @@ else:
 # ============================================================
 import math
 def etf_score(amt_yi, rows, aum_yi=0.01):
-    return (0.25 * math.log10(max(amt_yi, 0.01))
-          + 0.45 * math.log10(max(rows, 1))
-          + 0.30 * math.log10(max(aum_yi, 0.01)))
+    # R13 weighting: turnover 35%, data length 50%, fund size 15%
+    return (0.35 * math.log10(max(amt_yi, 0.01))
+          + 0.50 * math.log10(max(rows, 1))
+          + 0.15 * math.log10(max(aum_yi, 0.01)))
 
 _aum_map = {}
 for _code in df_filtered['code']:
@@ -373,7 +422,7 @@ for _code in df_filtered['code']:
     _aum_map[_code] = _aum if _aum > 0 else 0.01
 
 df_filtered['log_score'] = df_filtered.apply(
-    lambda r: etf_score(r['amount_yi'], r['daily_rows'], _aum_map.get(r['code'], 0.01)), axis=1)
+    lambda r: etf_score(r['amount_yi'], r['history_days'], _aum_map.get(r['code'], 0.01)), axis=1)
 df_filtered = df_filtered.sort_values('log_score', ascending=False)
 top1_per_cg = []
 for cg, grp in df_filtered.groupby('cg'):
@@ -385,8 +434,8 @@ top1_per_cg.sort(key=lambda x: -x['log_score'])
 # Iteratively remove the ETF that shares the most duplicate stocks,
 # until no stock appears in >= 7 selected ETFs.
 # QDII/HK/commodity groups are exempt from elimination.
-EXEMPT_PREFIXES = ('QD-',)
-EXEMPT_CGS = {'黄金', '豆粕', '油气'}
+EXEMPT_PREFIXES = ('QD-',)  # Only QDII exempt from overlap elimination (HK ETFs participate)
+EXEMPT_CGS = {'黄金', '豆粕'}  # 商品 ETF，无 A 股成分股。油气已移除（含 A 股 ETF）
 
 # Separate exempt (always kept) from candidates (may be eliminated)
 exempt = [s for s in top1_per_cg if s['cg'].startswith(EXEMPT_PREFIXES) or s['cg'] in EXEMPT_CGS]
@@ -411,7 +460,7 @@ for s in exempt + candidates:
         holdings_count.update(_cand_holdings[s['code']])
 
 removed_pass1 = []  # bottom 1/2, overlap > 5 (O1)
-removed_pass2 = []  # greedy, max_overlap >= 8 (O2)
+removed_pass2 = []  # greedy, max_overlap >= 7 (O2)
 
 # First pass: stricter overlap check on bottom 1/2 by log_score
 if candidates:
@@ -428,11 +477,11 @@ if candidates:
                 if _s['code'] in _cand_holdings:
                     holdings_count.update(_cand_holdings[_s['code']])
 
-# Second pass: greedy reduction on remaining candidates until max_overlap < 9
+# Second pass: greedy reduction on remaining candidates until max_overlap < 7
 while True:
     scores = [(s, _overlap_score(s['code'], holdings_count)) for s in candidates]
     max_score = max(s[1] for s in scores) if scores else 0
-    if max_score < 8:
+    if max_score < 7:
         break
     worst = max(scores, key=lambda x: (x[1], -x[0].get('log_score', 0)))
     worst_etf = worst[0]
@@ -471,7 +520,7 @@ n_cmdty = sum(1 for s in kept if s['cg'] in EXEMPT_CGS)
 n_a = len(kept) - n_qdii - n_hk - n_cmdty
 
 print(f"  Step 3: {len(top1_per_cg)} ETFs (top-1 per coarse group)")
-print(f"  Step 4: {len(kept)} ETFs after overlap reduction (①{len(removed_pass1)} + ②{len(removed_pass2)}, O1=5 O2=8)")
+print(f"  Step 4: {len(kept)} ETFs after overlap reduction (①{len(removed_pass1)} + ②{len(removed_pass2)}, O1=5 O2=7)")
 print(f"  Breakdown: QDII={n_qdii}, HK={n_hk}, Commodity={n_cmdty}, A-share={n_a}")
 _new_codes_console = sel_codes - pool_codes
 print(f"  差异: 重叠{len(overlap)} | 新增{len(_new_codes_console)} | 未入选{len(missing)}")
@@ -483,6 +532,10 @@ if _new_codes_console:
 
 # 5. Debug xlsx
 # ============================================================
+if args.dry_run:
+    print("\n[Dry-run] skipping xlsx.")
+    sys.exit(0)
+
 if args.debug:
     print("\n[DEBUG] Generating xlsx...")
     from openpyxl import Workbook
@@ -568,16 +621,16 @@ if args.debug:
 
     # Sheet 3: ALL ETFs per coarse group, sorted by score. Top-1 marked with ★.
     ws3 = wb.create_sheet("3-粗组排名")
-    cols3 = ['code','name','type','amount_yi','daily_rows','aum_yi','log_score','cg','top1']
-    rule_row(ws3, 1, 'Step 3: 加权得分 = 0.25×log10(成交额亿) + 0.45×log10(数据行数) + 0.30×log10(规模亿)。负分=低活跃/新上市/规模小。★ = 组内第1名。', len(cols3))
+    cols3 = ['code','name','type','amount_yi','history_days','aum_yi','log_score','cg','top1']  # history_days = 历史交易日数 (Sina API)
+    rule_row(ws3, 1, 'Step 3: 加权得分 = 0.35×log10(成交额亿) + 0.50×log10(数据行数) + 0.15×log10(规模亿)。负分=低活跃/新上市/规模小。★ = 组内第1名。', len(cols3))
     rule_row(ws3, 2, f'筛选：成交额≥3000万 + 排除债/货币/固收类。{df_filtered["cg"].nunique()}个粗组, {len(df_filtered)}支ETF, 每组第1名共{len(top1_per_cg)}支进入Step4', len(cols3))
-    hdr_row(ws3, 3, ['代码','名称','类型','成交额(亿)','数据量(行)','规模(流通市值亿)','加权得分','粗组','Top1'])
+    hdr_row(ws3, 3, ['代码','名称','类型','成交额(亿)','历史交易日数','规模(流通市值亿)','加权得分','粗组','Top1'])
     df_cg_sorted = df_filtered.sort_values(['cg','log_score'], ascending=[True,False])
     cg_top_codes = {s['code'] for s in top1_per_cg}
     row_idx = 4
     for _, r in df_cg_sorted.iterrows():
         is_top1 = '★' if r['code'] in cg_top_codes else ''
-        rows_val = r.get('daily_rows', 0)
+        rows_val = r.get('history_days', 0)
         aum_val = round(_aum_map.get(r['code'],0), 2)
         vals = [r['code'], r['name'], r['type'], r['amount_yi'], rows_val,
                 aum_val, round(r.get('log_score',0),3), r['cg'], is_top1]
@@ -617,13 +670,16 @@ if args.debug:
         return [h.get('name', h.get('code','')) for h in top10][:10]
     # Build PK data
     pk_pairs = []
+    # Only exclude QDII and commodities — HK ETFs participate (their HK-stock
+    # holdings can overlap with each other, even if they don't overlap with A-shares).
+    PK_EXEMPT_CGS = {'黄金', '豆粕'}
     for i, s1 in enumerate(top1_per_cg):
         cg1 = s1['cg']
-        if cg1.startswith(EXEMPT_PREFIXES) or cg1 in EXEMPT_CGS: continue
+        if cg1.startswith('QD-') or cg1 in PK_EXEMPT_CGS: continue
         for j, s2 in enumerate(top1_per_cg):
             if j <= i: continue
             cg2 = s2['cg']
-            if cg2.startswith(EXEMPT_PREFIXES) or cg2 in EXEMPT_CGS: continue
+            if cg2.startswith('QD-') or cg2 in PK_EXEMPT_CGS: continue
             if exch(s1['code']) != exch(s2['code']): continue
             sa, sb = hs(s1['code']), hs(s2['code'])
             if not sa or not sb: continue
@@ -669,26 +725,41 @@ if args.debug:
 
     _total_removed = len(removed_pass1) + len(removed_pass2)
 
-    # Build A-share internal ranking (non-exempt ETFs by log_score desc)
-    _ashare_ranked = sorted(
-        [s for s in top1_per_cg if _cat_order(s['cg']) < 2],  # A-share + HK only
+    # Build separate A-share and HK internal rankings
+    _a_ranked = sorted(
+        [s for s in top1_per_cg if _cat_order(s['cg']) == 0],
         key=lambda s: -s.get('log_score', 0)
     )
-    _ashare_rank = {s['code']: i+1 for i, s in enumerate(_ashare_ranked)}
-    _ashare_cutoff = len(_ashare_ranked) // 2  # bottom 1/2 threshold
+    _h_ranked = sorted(
+        [s for s in top1_per_cg if _cat_order(s['cg']) == 1],
+        key=lambda s: -s.get('log_score', 0)
+    )
+    _a_rank = {s['code']: f'A{i+1}' for i, s in enumerate(_a_ranked)}
+    _h_rank = {s['code']: f'H{i+1}' for i, s in enumerate(_h_ranked)}
+    _ashare_cutoff = len(_a_ranked) // 2  # bottom 1/2 threshold for overlap pass 1
 
-    # Main table with 排除(顺序) column
+    # Combined rank map for elimination tracking (use sequential index for pass logic)
+    _all_ranked = _a_ranked + _h_ranked
+    _all_rank = {s['code']: i+1 for i, s in enumerate(_all_ranked)}
+
+    # Main table
     HCOLS = ['持仓1','持仓2','持仓3','持仓4','持仓5','持仓6','持仓7','持仓8','持仓9','持仓10']
     cols4_header = ['代码','名称','粗组','成交额(亿)','得分','排名','排除'] + HCOLS
-    _desc = f'Step 4: ①底1/2({_ashare_cutoff}支) O1>5→淘汰({len(removed_pass1)}支) ②贪心 O2>=8→淘汰({len(removed_pass2)}支). 结果: {len(_kept_codes)}/{len(top1_per_cg)} 入选.'
+    _desc = f'Step 4: ①底1/2(A股{_ashare_cutoff}支) O1>5→淘汰({len(removed_pass1)}支) ②贪心 O2>=8→淘汰({len(removed_pass2)}支). 结果: {len(_kept_codes)}/{len(top1_per_cg)} 入选.'
     rule_row(ws4, 1, _desc, len(cols4_header))
-    rule_row(ws4, 2, f'排名=A股内部得分排名(1~{len(_ashare_ranked)}). ①N=第1步淘汰, ②N=第2步淘汰. 底1/2={_ashare_cutoff}名之后. 灰色=已淘汰.', len(cols4_header))
+    rule_row(ws4, 2, '排名: A1~A' + str(len(_a_ranked)) + '=A股 | H1~H' + str(len(_h_ranked)) + '=港股. ①N/②N=淘汰顺序. 灰色=已淘汰.', len(cols4_header))
     hdr_row(ws4, 3, cols4_header)
     EXEMPT_BLUE = PatternFill(start_color='DBEAFE', end_color='DBEAFE', fill_type='solid')
     ELIM_FILL = PatternFill(start_color='C0C0C0', end_color='C0C0C0', fill_type='solid')
     for idx, s in enumerate(top1_sorted):
         row = 4 + idx
-        rank_val = _ashare_rank.get(s['code'], '-')
+        _cat = _cat_order(s['cg'])
+        if _cat == 0:
+            rank_val = _a_rank.get(s['code'], '-')
+        elif _cat == 1:
+            rank_val = _h_rank.get(s['code'], '-')
+        else:
+            rank_val = '-'
         vals = [s['code'], s['name'], s['cg'], s['amount_yi'], round(s.get('log_score',0),3),
                 rank_val, _removed_order.get(s['code'], '')]
         elim_label = vals[-1]  # elimination order, empty if kept
@@ -697,7 +768,7 @@ if args.debug:
         if is_hk:
             hnames = [h + ' -H' for h in hnames]  # suffix HK holdings
         if _cat_order(s['cg']) == 2:
-            hnames = []  # QDII/commodity: no holdings display
+            hnames = []  # QDII/commodity: no comparable holdings
         vals += hnames + ['']*(10-len(hnames))
         for ci, val in enumerate(vals, 1):
             if isinstance(val, float): val = round(val, 2)
@@ -726,10 +797,11 @@ if args.debug:
 
     # Sheet 5: Full diff — selected + missing pool, with status labels
     ws5 = wb.create_sheet("5-差异对照")
-    NEW_FILL  = PatternFill(start_color='D1FAE5', end_color='D1FAE5', fill_type='solid')  # green: new
-    POOL_FILL = PatternFill(start_color='FFF3CD', end_color='FFF3CD', fill_type='solid')  # yellow: pool
-    MISS_FILL = PatternFill(start_color='FEE2E2', end_color='FEE2E2', fill_type='solid')  # red: missing
-    NEW_FONT  = Font(name='Consolas', size=9, bold=True, color='065F46')
+    NEW_FILL    = PatternFill(start_color='D1FAE5', end_color='D1FAE5', fill_type='solid')  # green: new
+    POOL_FILL   = PatternFill(start_color='FFF3CD', end_color='FFF3CD', fill_type='solid')  # yellow: pool
+    MISS_FILL   = PatternFill(start_color='FEE2E2', end_color='FEE2E2', fill_type='solid')  # red: missing
+    REPL_FILL   = PatternFill(start_color='DBEAFE', end_color='DBEAFE', fill_type='solid')  # blue: replace
+    NEW_FONT    = Font(name='Consolas', size=9, bold=True, color='065F46')
 
     cols5 = ['code','name','type','amount_yi','cg','status']
     _new_codes = sel_codes - pool_codes
@@ -738,90 +810,258 @@ if args.debug:
     # Build elimination info for recommendation logic
     _elim_info = {}
     for _e in removed_pass1:
-        _elim_info[_e] = ('①', _ashare_rank.get(_e, 0))
+        _elim_info[_e] = ('①', _all_rank.get(_e, 0))
     for _e in removed_pass2:
-        _elim_info[_e] = ('②', _ashare_rank.get(_e, 0))
+        _elim_info[_e] = ('②', _all_rank.get(_e, 0))
+
+    # Build score lookup for ALL ETFs (not just winners), for marginal-difference detection.
+    _all_scores = {}
+    for _, _r in df_filtered.iterrows():
+        _all_scores[_r['code']] = _r.get('log_score', 0)
+    _group_winner = {}
+    for _s in top1_per_cg:
+        _cg = _s['cg']
+        if _cg not in _group_winner or _s.get('log_score', 0) > _group_winner[_cg][1]:
+            _group_winner[_cg] = (_s['code'], _s.get('log_score', 0))
+
+    # Score margin threshold: if challenger beats pool ETF by < MARGIN, don't recommend
+    SCORE_MARGIN = 0.05
+
+    # Build pool coarse-group set and holdings overlap lookup for rating
+    _pool_cgs = set()
+    for _pc in pool_codes:
+        _prow = df[df['code'] == _pc]
+        if len(_prow) > 0:
+            _pool_cgs.add(classify(_prow.iloc[0]))
+
+    # Max Jaccard overlap with any pool ETF, excluding self
+    def _max_pool_jaccard(code):
+        _sh = hs(code)
+        if not _sh: return 0
+        _max_j = 0
+        for _pc in pool_codes:
+            if _pc == code: continue  # exclude self
+            _ph = hs(_pc)
+            if not _ph: continue
+            _j = len(_sh & _ph) / max(1, len(_sh | _ph))
+            if _j > _max_j: _max_j = _j
+        return _max_j
+
+    # Data lookup helpers
+    def _get(code, field, default=0):
+        _rows = df_filtered[df_filtered['code'] == code]
+        return _rows[field].values[0] if len(_rows) > 0 else default
+
+    def _rating(score, reasons):
+        """Map score 0-8 to 5-tier rating."""
+        if score >= 6: return '强烈推荐', '; '.join(reasons)
+        if score >= 4: return '推荐', '; '.join(reasons)
+        if score >= 2: return '中立', '; '.join(reasons)
+        if score >= 1: return '不推荐', '; '.join(reasons)
+        return '强烈不推荐', '; '.join(reasons)
 
     def _recommend(status, code, amount_yi):
-        """Generate acceptance recommendation (unified: 纳入=接受新增, 剔除=接受移除)."""
+        """4-dimension rating: turnover, data, AUM, overlap."""
         amt = amount_yi if amount_yi else 0
+        rows = _get(code, 'history_days', 0)
+        aum = _get(code, 'mcap_yi', 0)
+        cg = classify(df[df['code'] == code].iloc[0]) if len(df[df['code'] == code]) > 0 else ''
+        overlap = _max_pool_jaccard(code)
+
+        score = 4  # baseline
+        reasons = []
+
+        # Turnover (0–2)
+        if amt >= 10: score += 2; reasons.append(f'高成交额{amt:.0f}亿')
+        elif amt >= 5: score += 1; reasons.append(f'成交额{amt:.0f}亿')
+        elif amt >= 1: pass
+        elif amt >= 0.5: score -= 1; reasons.append(f'成交额偏低{amt:.2f}亿')
+        else: score -= 2; reasons.append(f'成交额不足{amt:.2f}亿')
+
+        # Data length (0–2)
+        if rows >= 1000: score += 2; reasons.append(f'数据充足{rows}d')
+        elif rows >= 500: score += 1
+        elif rows >= 80: pass
+        else: score -= 2; reasons.append(f'数据不足{rows}d')
+
+        # Fund size (0–1)
+        if aum >= 100: score += 1; reasons.append(f'大规模{aum:.0f}亿')
+        elif aum >= 10: pass
+        elif aum >= 1: score -= 1; reasons.append(f'规模偏小{aum:.1f}亿')
+        else: score -= 2; reasons.append('规模极小')
+
+        # Holdings overlap (0–2 penalty)
+        if overlap > 0.6: score -= 2; reasons.append(f'成分股高度重叠{overlap:.0%}')
+        elif overlap > 0.4: score -= 1; reasons.append(f'成分股部分重叠{overlap:.0%}')
+
+        # Status-specific adjustments
         if status == '缺失':
-            # Pool ETF not selected → recommend REMOVING it
-            if amt < 0.3:
-                return '强烈推荐接受', '剔除：成交量<30M不达标'
+            if amt < 0.3: return '强烈推荐', f'成交额{amt:.2f}亿<30M，应剔除'
             info = _elim_info.get(code)
             if info:
                 label, rank = info
-                if label == '①':
-                    return '推荐接受', f'剔除：底半区淘汰 rank={rank}'
-                else:
-                    return '中立', f'剔除：贪心削峰淘汰 rank={rank}'
-            return '中立', '剔除：组内PK落选，需人工判断替代'
+                if label == '①': return '推荐', f'底半区淘汰 rank={rank}'
+                return '中立', f'贪心削峰淘汰 rank={rank}'
+            _my_score = _all_scores.get(code, 0)
+            if cg in _group_winner:
+                _diff = _group_winner[cg][1] - _my_score
+                if _diff < SCORE_MARGIN:
+                    return '中立', f'差距微弱 Δ={_diff:.3f}'
+                return _rating(score - 2, reasons + [f'PK落败 Δ={_diff:.3f}'])
+            return _rating(score - 2, reasons)
         elif status == '新增':
-            # Not in pool but selected → recommend ADDING it
-            if amt >= 5:
-                return '强烈推荐接受', f'纳入：高流动性 {amt:.0f}亿'
-            elif amt >= 1:
-                return '推荐接受', f'纳入：流动性达标 {amt:.1f}亿'
-            elif amt >= 0.5:
-                return '中立', f'纳入：流动性偏低 {amt:.2f}亿'
-            else:
-                return '推荐不接受', f'纳入：流动性不足 {amt:.2f}亿'
-        else:
-            return '—', '已覆盖，无需操作'
+            _replaces = None
+            for _mc in missing:
+                _mrow = df[df['code'] == _mc]
+                if len(_mrow) > 0 and classify(_mrow.iloc[0]) == cg:
+                    _replaces = _mc
+                    break
+            if _replaces:
+                _diff = _all_scores.get(code, 0) - _all_scores.get(_replaces, 0)
+                if _diff < SCORE_MARGIN:
+                    return '中立', f'差距微弱 Δ={_diff:.3f}'
+                reasons.append(f'优于池内{_replaces} Δ={_diff:.3f}')
+            return _rating(score, reasons)
+        return '—', '已覆盖'
 
-    # Build combined list: selected ETFs first, then missing pool ETFs
-    _combined = []
-    for s in kept:
-        entry = dict(s)
-        entry['status'] = '新增' if s['code'] in _new_codes else '池内'
-        rec, rec_reason = _recommend(entry['status'], s['code'], s.get('amount_yi', 0))
-        entry['recommend'] = rec
-        entry['rec_reason'] = rec_reason
-        _combined.append(entry)
-    # Add missing pool ETFs (not selected)
+    # Keep backward compat for combined list building
+    def _recommend_simple(status, code, amount_yi):
+        return _recommend(status, code, amount_yi)
+
+    # Build combined list with replacement detection.
+    # Match missing pool ETFs to new selections in the same coarse group → "替换"
+    _cg_of_missing = {}  # code -> cg for missing pool ETFs
     for code in sorted(missing):
-        _row = df[df['code'] == code]
-        if len(_row) > 0:
-            r = _row.iloc[0]
-            rec, rec_reason = _recommend('缺失', code, r['amount_yi'])
-            entry = {'code': code, 'name': r['name'], 'type': r['type'],
-                     'amount_yi': r['amount_yi'], 'cg': classify(r), 'status': '缺失',
-                     'recommend': rec, 'rec_reason': rec_reason}
+        _mrow = df[df['code'] == code]
+        if len(_mrow) > 0:
+            _cg_of_missing[code] = classify(_mrow.iloc[0])
+
+    _replacement_pairs = []  # [(old_code, new_code, cg, old_score, new_score)]
+    _replaced_news = set()
+    _replaced_missings = set()
+    for _mc, _mcg in _cg_of_missing.items():
+        for _s in kept:
+            if _s['code'] in _new_codes and _s['cg'] == _mcg:
+                _replacement_pairs.append((_mc, _s['code'], _mcg,
+                    _all_scores.get(_mc, 0), _s.get('log_score', 0)))
+                _replaced_news.add(_s['code'])
+                _replaced_missings.add(_mc)
+                break  # one replacement per missing ETF
+
+    _combined = []
+    # Pool ETFs that stayed selected
+    for s in kept:
+        if s['code'] not in _new_codes:
+            entry = dict(s)
+            entry['status'] = '池内'
+            entry['recommend'] = '—'
+            entry['rec_reason'] = '已覆盖，无需操作'
             _combined.append(entry)
+    # Replacements (merged rows)
+    for _old, _new, _cg, _old_score, _new_score in _replacement_pairs:
+        _new_s = [s for s in kept if s['code'] == _new][0]
+        _old_row = df[df['code'] == _old].iloc[0] if len(df[df['code'] == _old]) > 0 else None
+        rec, rec_reason = _recommend('新增', _new, _new_s.get('amount_yi', 0))
+        entry = {
+            'code': f'{_old}→{_new}',
+            'name': f'{_old_row["name"] if _old_row is not None else _old} → {_new_s["name"]}',
+            'type': _new_s.get('type', ''),
+            'amount_yi': f'{_new_s["amount_yi"]} (旧 {_old_row["amount_yi"] if _old_row is not None else "?"})',
+            'cg': _cg,
+            'status': '替换',
+            'recommend': rec,
+            'rec_reason': rec_reason,
+        }
+        _combined.append(entry)
+    # New ETFs that are pure additions (not replacing any pool ETF)
+    for s in kept:
+        if s['code'] in _new_codes and s['code'] not in _replaced_news:
+            entry = dict(s)
+            entry['status'] = '新增'
+            rec, rec_reason = _recommend('新增', s['code'], s.get('amount_yi', 0))
+            entry['recommend'] = rec
+            entry['rec_reason'] = rec_reason
+            _combined.append(entry)
+    # Missing pool ETFs that weren't matched to a replacement
+    for code in sorted(missing):
+        if code not in _replaced_missings:
+            _mrow = df[df['code'] == code]
+            if len(_mrow) > 0:
+                r = _mrow.iloc[0]
+                rec, rec_reason = _recommend('缺失', code, r['amount_yi'])
+                entry = {'code': code, 'name': r['name'], 'type': r['type'],
+                         'amount_yi': r['amount_yi'], 'cg': classify(r), 'status': '缺失',
+                         'recommend': rec, 'rec_reason': rec_reason}
+                _combined.append(entry)
 
-    _combined.sort(key=lambda s: ({'池内':0,'新增':1,'缺失':2}[s['status']], s['cg'], -s['amount_yi']))
+    _combined.sort(key=lambda s: ({'池内':0,'替换':1,'新增':2,'缺失':3}[s['status']], s['cg'], -float(str(s.get('amount_yi','0')).split()[0]) if s.get('amount_yi') else 0))
 
-    # Recommendation color map (unified: acceptance level)
+    # Rating color map: 5 tiers
     REC_FILLS = {
-        '强烈推荐接受': PatternFill(start_color='065F46', end_color='065F46', fill_type='solid'),
-        '推荐接受':     PatternFill(start_color='10B981', end_color='10B981', fill_type='solid'),
-        '中立':         PatternFill(start_color='FCD34D', end_color='FCD34D', fill_type='solid'),
-        '推荐不接受':   PatternFill(start_color='F97316', end_color='F97316', fill_type='solid'),
-        '强烈不推荐接受': PatternFill(start_color='DC2626', end_color='DC2626', fill_type='solid'),
-        '—':           None,
+        '强烈推荐': PatternFill(start_color='065F46', end_color='065F46', fill_type='solid'),
+        '推荐':     PatternFill(start_color='10B981', end_color='10B981', fill_type='solid'),
+        '中立':     PatternFill(start_color='FCD34D', end_color='FCD34D', fill_type='solid'),
+        '不推荐':   PatternFill(start_color='F97316', end_color='F97316', fill_type='solid'),
+        '强烈不推荐': PatternFill(start_color='DC2626', end_color='DC2626', fill_type='solid'),
+        '—':       None,
     }
     REC_FONTS = {
-        '强烈推荐接受': Font(name='Consolas', size=9, bold=True, color='FFFFFF'),
-        '推荐接受':     Font(name='Consolas', size=9, bold=True, color='FFFFFF'),
-        '强烈不推荐接受': Font(name='Consolas', size=9, bold=True, color='FFFFFF'),
-        '推荐不接受':   Font(name='Consolas', size=9, bold=True, color='FFFFFF'),
-        '中立':         Font(name='Consolas', size=9, color='92400E'),
+        '强烈推荐': Font(name='Consolas', size=9, bold=True, color='FFFFFF'),
+        '推荐':     Font(name='Consolas', size=9, bold=True, color='FFFFFF'),
+        '不推荐':   Font(name='Consolas', size=9, bold=True, color='FFFFFF'),
+        '强烈不推荐': Font(name='Consolas', size=9, bold=True, color='FFFFFF'),
+        '中立':     Font(name='Consolas', size=9, color='92400E'),
     }
 
     cols5 = ['code','name','type','amount_yi','cg','status','recommend']
     ncols5 = len(cols5)
-    n_rec = {'强烈推荐接受':0,'推荐接受':0,'中立':0,'推荐不接受':0,'强烈不推荐接受':0}
+    n_rec = {'强烈推荐':0,'推荐':0,'中立':0,'不推荐':0,'强烈不推荐':0}
     for s in _combined:
         r = s.get('recommend', '—')
         if r in n_rec: n_rec[r] += 1
-    desc5 = f'差异对照: {len(kept)}入选 | 新增{n_new}(绿) | 已覆盖{len(overlap)}(黄) | 未入选{len(missing)}(红). 筛选=新基线. 接受度: ++{n_rec["强烈推荐接受"]} +{n_rec["推荐接受"]} ~{n_rec["中立"]} -{n_rec["推荐不接受"]}'
-    rule_row(ws5, 1, desc5, ncols5)
-    hdr_row(ws5, 3, ['代码','名称','类型','成交额(亿)','粗组','状态','接受建议'])
+    n_repl = sum(1 for s in _combined if s['status'] == '替换')
+    desc5 = f'差异对照: {len(kept)}入选 | 替换{n_repl}(蓝) | 新增{n_new - len(_replaced_news)}(绿) | 已覆盖{len(overlap)}(黄) | 未入选{len(missing) - len(_replaced_missings)}(红)'
+    rule_row(ws5, 1, desc5, 10)
+    rule_row(ws5, 2, f'评级(4维,0-8分): 成交额≥10亿+2/≥5亿+1/<1亿-1/<0.5亿-2 | 数据≥1000d+2/≥500d+1/<80d-2 | 规模≥100亿+1/<10亿-1/<1亿-2 | 重叠度>60%-2/>40%-1. 总分≥6=强烈推荐 ≥4=推荐 ≥2=中立 ≥1=不推荐.', 10)
+    ncols5 = 10
+    cols5 = ['code','name','amount_yi','history_days','mcap_yi','overlap','score','cg','status','recommend']
+    hdr_row(ws5, 3, ['代码','名称','成交额(亿)','数据量(d)','规模(亿)','重叠度','评分','粗组','状态','评级'])
+
+    # Build dimension data for each entry
+    for _e in _combined:
+        _code = _e.get('code', '')
+        _actual_code = _code.split('→')[-1].strip() if '→' in str(_code) else _code
+        _e['history_days'] = _get(_actual_code, 'history_days', 0)
+        _e['mcap_yi'] = round(_get(_actual_code, 'mcap_yi', 0), 1)
+        _e['overlap'] = round(_max_pool_jaccard(_actual_code), 2)
+        # Compute score using same 4-dimension formula as _recommend
+        _amt = float(str(_e.get('amount_yi', '0')).split()[0]) if _e.get('amount_yi') else 0
+        _rows = _e.get('history_days', 0)
+        _aum = _e.get('mcap_yi', 0)
+        _score = 4  # baseline
+        if _amt >= 10: _score += 2
+        elif _amt >= 5: _score += 1
+        elif _amt >= 1: pass
+        elif _amt >= 0.5: _score -= 1
+        else: _score -= 2
+        if _rows >= 1000: _score += 2
+        elif _rows >= 500: _score += 1
+        elif _rows >= 80: pass
+        else: _score -= 2
+        if _aum >= 100: _score += 1
+        elif _aum >= 10: pass
+        elif _aum >= 1: _score -= 1
+        else: _score -= 2
+        _ol = _e.get('overlap', 0)
+        if _ol > 0.6: _score -= 2
+        elif _ol > 0.4: _score -= 1
+        _e['score'] = _score
 
     for idx, s in enumerate(_combined):
         row = 4 + idx
-        vals = [s['code'], s['name'], s.get('type',''), s['amount_yi'], s['cg'], s['status'], s.get('recommend','')]
+        vals = [s.get('code',''), s.get('name',''), s.get('amount_yi',''),
+                s.get('history_days',''), s.get('mcap_yi',''), s.get('overlap',''),
+                s.get('score',''), s.get('cg',''), s.get('status',''), s.get('recommend','')]
         for ci, val in enumerate(vals, 1):
             if isinstance(val, float): val = round(val, 2)
             c = ws5.cell(row=row, column=ci, value=val)
@@ -830,22 +1070,28 @@ if args.debug:
             for ci in range(1, ncols5+1):
                 ws5.cell(row=row, column=ci).fill = NEW_FILL
             ws5.cell(row=row, column=1).font = NEW_FONT
+        elif s['status'] == '替换':
+            for ci in range(1, ncols5+1):
+                ws5.cell(row=row, column=ci).fill = REPL_FILL
+            ws5.cell(row=row, column=1).font = NEW_FONT
         elif s['status'] == '池内':
             for ci in range(1, ncols5+1):
                 ws5.cell(row=row, column=ci).fill = POOL_FILL
         elif s['status'] == '缺失':
             for ci in range(1, ncols5+1):
                 ws5.cell(row=row, column=ci).fill = MISS_FILL
-        # Color recommendation column
+        # Color rating column (col 10)
         rec = s.get('recommend', '')
         rec_fill = REC_FILLS.get(rec)
         rec_font = REC_FONTS.get(rec)
         if rec_fill:
-            ws5.cell(row=row, column=7).fill = rec_fill
+            ws5.cell(row=row, column=10).fill = rec_fill
         if rec_font:
-            ws5.cell(row=row, column=7).font = rec_font
+            ws5.cell(row=row, column=10).font = rec_font
 
-    for c, w in zip('ABCDEFG', [10,30,24,14,22,10,18]): ws5.column_dimensions[c].width = w
+    widths5 = [16,40,14,12,12,8,6,22,10,12]
+    for i, w in enumerate(widths5):
+        ws5.column_dimensions[get_column_letter(i+1)].width = w
 
     os.system('taskkill /f /im excel.exe 2>nul')
     import time; time.sleep(1)

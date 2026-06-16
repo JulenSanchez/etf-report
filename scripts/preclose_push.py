@@ -11,7 +11,7 @@ from trading_calendar import is_trading_day
 
 TUNER_URL = "http://localhost:5179"
 REFRESH_ONLY = "--refresh-only" in sys.argv
-DEFAULT_PRESET = "preset3"
+DEFAULT_PRESET = "gam-1"
 TUNER_STARTUP_TIMEOUT = 60  # max seconds to wait for Tuner
 
 def log(msg):
@@ -32,12 +32,26 @@ def _tuner_ready():
         return False
 
 def _ensure_tuner():
-    """Ensure Tuner is running. Start it if not, wait for readiness."""
-    if _tuner_ready():
-        log("Tuner: already running")
-        return True
+    """Kill any existing Tuner, then start a fresh one from THIS repo.
+    Guarantees the Tuner uses this repo's config+data, not another repo's."""
+    # Kill any Tuner already on port 5179 (could be from another repo)
+    if sys.platform == "win32":
+        try:
+            result = subprocess.run(
+                ["netstat", "-ano"], capture_output=True, text=True, timeout=5
+            )
+            for line in result.stdout.split("\n"):
+                if ":5179" in line and "LISTENING" in line:
+                    pid = line.strip().split()[-1]
+                    log(f"Tuner: killing existing PID {pid} (from other repo)")
+                    subprocess.run(["taskkill", "/f", "/pid", pid],
+                                   capture_output=True, timeout=5)
+                    time.sleep(2)
+                    break
+        except Exception as e:
+            log(f"Tuner: failed to kill existing process: {e}")
 
-    log("Tuner: not running — starting...")
+    log("Tuner: starting fresh from this repo...")
     tuner_script = os.path.join(PROJECT_ROOT, "scripts", "quant_tuner.py")
     subprocess.Popen(
         ["python", tuner_script],
@@ -144,7 +158,6 @@ params = {k: v for k, v in p.items() if not k.startswith("_")}
 params.update({
     "start_date": start,
     "end_date": end,
-    "universe": "",
     "debug": False,
 })
 

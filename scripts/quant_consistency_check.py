@@ -117,7 +117,7 @@ def run_check(preset, start, end, tolerance=1e-6):
 
 def main():
     parser = argparse.ArgumentParser(description="Quant backtest consistency check")
-    parser.add_argument("--preset", default="preset2")
+    parser.add_argument("--preset", default="zen-1")
     parser.add_argument("--start", default="2025-01-01")
     parser.add_argument("--end", default=None)
     parser.add_argument("--tolerance", type=float, default=1e-6)

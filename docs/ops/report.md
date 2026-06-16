@@ -85,13 +85,17 @@ powershell -ExecutionPolicy Bypass -File batchfiles\setup_report_task.ps1
 
 ## 常见问题
 
-| 问题 | 排查 |
-|------|------|
-| 数据为空 | 检查 config.yaml ETF 代码；API 限流等 5 分钟重试 |
-| 图表不显示 | 检查 `data/etf_full_kline_data.json` 数据格式 |
-| 健康检查 FAIL | 查看具体失败项；少量 WARN 通常不影响 |
-| 发布失败 | 检查 `config/secrets.yaml`、SSH：`ssh -T git@github.com` |
-| 量化板块显示"建设中" | 量化回测仅在开发环境可用，见 `docs/ops/quant/overview.md` |
+| 症状 | 可能原因 | 检查 |
+|------|---------|------|
+| 数据为空 | config.yaml ETF 代码错误；API 限流 | 等 5 分钟重试 |
+| 图表不显示 | `data/etf_full_kline_data.json` 格式异常 | 检查 JSON 结构 |
+| 健康检查 FAIL | 看具体失败项 | 少量 WARN 通常不影响 |
+| 发布失败 | SSH / secrets 问题 | `ssh -T git@github.com` |
+| 量化板块显示"建设中" | 量化回测仅开发环境可用，正式页依赖 Tuner | 见 `docs/ops/quant/overview.md` |
+| 推送内容 ETF 显示代码非中文名 | `preclose_push.py` 的 name map 未更新 | 确认 `config/quant_universe.yaml` 有 `name` 字段 |
+| 定时任务跑了 stable 目录但结果含新 ETF | stable/main 双源分裂：Tuner 进程跑在另一仓库 | `netstat -ano \| findstr 5179`，确认进程路径 |
+| preclose_push 盘中数据不刷新 | 盘中缓存规则：15:10 前不拉取收盘数据 | 检查 `history_days.json` 时间戳；`--force-refresh` 拒绝 pre-close |
+| 发布后页面日期滞后 | 非交易日数据正常显示 | 不视为异常 |
 
 ---
 

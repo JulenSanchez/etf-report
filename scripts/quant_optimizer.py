@@ -19,6 +19,7 @@ import time
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from dataclasses import dataclass, field
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Iterator
@@ -72,6 +73,7 @@ class OptimizationConfig:
     resume: bool = False
     save_nav: int = 0
     end_date: str = None
+    universe_str: str = None
 
     @property
     def multi_period(self):
@@ -107,6 +109,8 @@ def parse_args(argv=None):
     p.add_argument("--resume", action="store_true", help="Resume from checkpoint")
     p.add_argument("--save-nav", type=int, default=0,
                    help="Save NAV CSVs for top N trials")
+    p.add_argument("--universe", default=None, dest="universe_str",
+                   help="ETF filter: '*'=all, comma-list=subset, omit=active-only")
     p.add_argument("--end", default=None, dest="end_date",
                    help="End date override (default: today)")
     args = p.parse_args(argv)
@@ -137,6 +141,7 @@ def parse_args(argv=None):
         output_dir=output_dir,
         resume=args.resume,
         save_nav=args.save_nav,
+        universe_str=args.universe_str,
         end_date=end_date,
     )
 
@@ -285,11 +290,12 @@ class ParamSpace:
 # 3. BacktestRunner
 # ═══════════════════════════════════════════════════════════════════════════
 class BacktestRunner:
-    def __init__(self, preset: str, data_dir: Path, project_root: Path):
+    def __init__(self, preset: str, data_dir: Path, project_root: Path, universe_filter=None):
         self.preset = preset
         self.data_dir = data_dir
         self.project_root = project_root
         self._preloaded = None
+        self.universe_filter = universe_filter
 
     def _ensure_preloaded(self):
         if self._preloaded is not None:
@@ -321,6 +327,7 @@ class BacktestRunner:
             preset=self.preset,
             preloaded=self._preloaded,
             config_override=config_override,
+            universe_filter=self.universe_filter,
         )
         if nav_df is None or len(nav_df) == 0:
             return None
@@ -644,13 +651,25 @@ def _run_trial_optuna(trial, runner: BacktestRunner, cfg: OptimizationConfig, sp
     err = validate_tuner_params(params)
     if err:
         raise optuna.TrialPruned(f"Validation failed: {err}")
-    # Run all periods
-    rel_scores = []
-    for lab, sd, ed in cfg.periods:
+    # Run all periods (parallel — each period is an independent backtest)
+    def _run_one(lab, sd, ed):
         m = runner.run(params, sd, ed)
         if m is None:
-            raise optuna.TrialPruned(f"Backtest failed for {lab}")
-        trial.set_user_attr(f"{lab}_metrics", json.dumps(m))
+            raise RuntimeError(f"Backtest failed for {lab}")
+        return lab, m
+    results = {}
+    with ThreadPoolExecutor(max_workers=min(len(cfg.periods), 3)) as ex:
+        futures = {ex.submit(_run_one, lab, sd, ed): lab for lab, sd, ed in cfg.periods}
+        for f in as_completed(futures):
+            try:
+                lab, m = f.result()
+            except RuntimeError as e:
+                raise optuna.TrialPruned(str(e))
+            trial.set_user_attr(f"{lab}_metrics", json.dumps(m))
+            results[lab] = m
+    rel_scores = []
+    for lab, sd, ed in cfg.periods:
+        m = results[lab]
         raw = m.get(cfg.metric, -9999)
         bl = baseline_scores.get(lab, 1.0)
         rel_scores.append(raw / bl if bl != 0 else 0.0)
@@ -678,7 +697,15 @@ def run(cfg: OptimizationConfig):
     log(f"  output={cfg.output_dir}")
 
     # ── Build runner and baseline ──
-    runner = BacktestRunner(cfg.preset, DATA_DIR, PROJECT_ROOT)
+    # Parse universe filter
+    universe_filter = None
+    if cfg.universe_str is not None:
+        if cfg.universe_str.strip() == '*':
+            universe_filter = [e["code"] for e in _load_backtest_config(preset=cfg.preset).get("universe", [])]
+        elif cfg.universe_str.strip():
+            universe_filter = [c.strip() for c in cfg.universe_str.split(",") if c.strip()]
+
+    runner = BacktestRunner(cfg.preset, DATA_DIR, PROJECT_ROOT, universe_filter=universe_filter)
     log("Computing baseline ...")
     baseline_metrics = _run_baseline(runner, cfg)
     for bm in baseline_metrics:

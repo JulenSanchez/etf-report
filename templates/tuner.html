@@ -282,6 +282,10 @@ th[data-sort]:hover { color: #e0e0e0; }
         <button onclick="universeSelectInverse()">反选</button>
         <button onclick="universeSelectBias()">仅偏好</button>
       </div>
+      <div class="universe-actions" style="margin-top:4px;">
+        <button onclick="saveUniverse()" style="background:#4a90d9;color:#fff;">保存标的池</button>
+        <span id="universe-save-msg" style="margin-left:8px;font-size:13px;color:#aaa;"></span>
+      </div>
       <div id="universe-sectors"></div>
     </div>
   </section>
@@ -745,7 +749,10 @@ th[data-sort]:hover { color: #e0e0e0; }
           <!-- 业绩主区 (含单 ETF 详情) -->
           <section id="tuner-perf-section">
             <h2 id="tuner-perf-heading" style="font-size:15px;color:#e0e0e0;margin-bottom:8px;">📊 策略业绩</h2>
-            <div id="tuner-perf-subtitle" style="font-size:12px;color:#94a3b8;margin-bottom:12px;">净值曲线 / 回撤 / 单 ETF 走势 · 三图共享缩放 · 点击切换调仓节点</div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+              <div id="tuner-perf-subtitle" style="font-size:12px;color:#94a3b8;">净值曲线 / 回撤 / 单 ETF 走势 · 三图共享缩放 · 点击切换调仓节点</div>
+              <div id="intraday-estimate-banner" style="display:none;background:rgba(245,158,11,0.10);border:1px solid rgba(245,158,11,0.35);color:#fbbf24;border-radius:6px;padding:2px 8px;font-size:11px;line-height:1.3;">盘中估算：本次回测包含实时行情与预估全天成交额，适合收盘前调仓参考；正式复盘请以收盘确认数据为准。</div>
+            </div>
             <div id="tuner-perf-block" style="background:#1a2332;border:1px solid #2a3a4a;border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:8px;">
               <div class="metrics" id="tuner-metrics" style="margin-bottom:0;">
                 <div class="metric-card" id="metric-annual" aria-label="年化收益"><div class="label">年化收益</div><div class="value green" id="m-annual">-</div></div>
@@ -758,9 +765,6 @@ th[data-sort]:hover { color: #e0e0e0; }
                 <div class="metric-card" id="metric-dd" aria-label="最大回撤"><div class="label">最大回撤</div><div class="value red" id="m-dd">-</div></div>
                 <div class="metric-card" id="metric-rebalance" aria-label="换仓率"><div class="label">换仓率<i class="tip-icon">?<span class="tip-text">实际发生换仓的调仓日 ÷ 总调仓日数。低比率说明策略稳定、持仓延续性强。</span></i></div><div class="value" id="m-rb">-</div></div>
                 <div class="metric-card" id="metric-commission" aria-label="交易佣金"><div class="label">交易佣金</div><div class="value" id="m-comm">-</div></div>
-              </div>
-              <div id="intraday-estimate-banner" style="display:none;background:rgba(245,158,11,0.10);border:1px solid rgba(245,158,11,0.35);color:#fbbf24;border-radius:8px;padding:6px 10px;font-size:11px;line-height:1.5;">
-                盘中估算：本次回测包含实时行情与预估全天成交额，适合收盘前调仓参考；正式复盘请以收盘确认数据为准。
               </div>
 
               <!-- 净值 + 回撤区: 左标题 + 右 freq Tab -->
@@ -1755,7 +1759,7 @@ function drawConfChart() {
 
 /* ====== Strategy presets ====== */
 var PRESETS = {};
-var CURRENT_PRESET = null;  // currently selected preset key (or 'preset4')
+var CURRENT_PRESET = null;  // currently selected preset key (or 'cst-1')
 var snapshotSort = { col: 'score', dir: 'desc' };  // tri-state: col=null for default
 var PARAM_SCHEMA = null;
 
@@ -1869,9 +1873,10 @@ async function loadPresets() {
 }
 
 var SCHOOLS = [
-  {id:'gambler', name:'赌徒', target:'max AR', constraint:'MDD<20%', presets:['preset3','preset6'], def:'preset3'},
-  {id:'zen', name:'禅修者', target:'max Sharpe', constraint:'P90<35%', presets:['preset2'], def:'preset2'},
-  {id:'actuary', name:'精算师', target:'max SxC', constraint:'无', presets:['preset1'], def:'preset1'},
+  {id:'gambler', name:'赌徒', target:'max AR', constraint:'MDD<20%', presets:['gam-1','gam-2'], def:'gam-1'},
+  {id:'zen', name:'禅修者', target:'max Sharpe', constraint:'P90<35%', presets:['zen-1'], def:'zen-1'},
+  {id:'actuary', name:'精算师', target:'max SxC', constraint:'无', presets:['act-1'], def:'act-1'},
+  {id:'custom', name:'自定义', target:'自定义', constraint:'—', presets:['cst-1'], def:'cst-1'},
 ];
 
 function renderPresetCards() {
@@ -1886,7 +1891,9 @@ function renderPresetCards() {
     row.className = 'school-row';
     var header = document.createElement('div');
     header.className = 'school-header';
-    header.textContent = school.name + ' (max ' + school.target.split(' ')[1] + ', ' + school.constraint + ')';
+    var t = (school.target || '').split(' ')[1] || school.target || '';
+    var c = school.constraint || '—';
+    header.textContent = school.name + (t ? ' (max ' + t + ', ' + c + ')' : '');
     row.appendChild(header);
 
     school.presets.forEach(function(key) {
@@ -1908,9 +1915,9 @@ function renderPresetCards() {
   });
 
   // Auto-select default on first load only; subsequent reloads keep current preset.
-  if (!window._presetsFirstLoad && PRESETS && PRESETS['preset3']) {
+  if (!window._presetsFirstLoad && PRESETS && PRESETS['gam-1']) {
     window._presetsFirstLoad = true;
-    applyPreset('preset3');
+    applyPreset('gam-1');
   }
 }
 
@@ -1930,8 +1937,8 @@ function applyPreset(name) {
 
 /* ====== Universe selector logic ====== */
 function initUniverseSelector() {
-  // Default: all selected
-  UNIVERSE_SELECTED = new Set(UNIVERSE_OPTIONS.map(function(e) { return e.code; }));
+  // Default: only active ETFs selected
+  UNIVERSE_SELECTED = new Set(UNIVERSE_OPTIONS.filter(function(e) { return e.active !== false; }).map(function(e) { return e.code; }));
   renderUniverseSectors();
   updateUniverseCount();
 }
@@ -2032,6 +2039,38 @@ function universeSelectBias() {
   updateUniverseUI();
 }
 
+async function saveUniverse() {
+  var msg = document.getElementById('universe-save-msg');
+  var activeCodes = Array.from(UNIVERSE_SELECTED);
+  if (activeCodes.length === 0) {
+    msg.textContent = '至少勾选一支 ETF';
+    msg.style.color = '#e74c3c';
+    return;
+  }
+  try {
+    var resp = await fetch('/api/universe/save', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({active_codes: activeCodes})
+    });
+    var data = await resp.json();
+    if (data.error) {
+      msg.textContent = '保存失败: ' + data.error;
+      msg.style.color = '#e74c3c';
+    } else {
+      // Update UNIVERSE_OPTIONS active flags to reflect saved state
+      var savedSet = new Set(activeCodes);
+      UNIVERSE_OPTIONS.forEach(function(e) { e.active = savedSet.has(e.code); });
+      msg.textContent = '已保存：' + data.active + ' 支活跃，' + data.dormant + ' 支休眠';
+      msg.style.color = '#27ae60';
+      setTimeout(function() { msg.textContent = ''; }, 5000);
+    }
+  } catch(e) {
+    msg.textContent = '请求失败: ' + e.message;
+    msg.style.color = '#e74c3c';
+  }
+}
+
 function updateUniverseUI() {
   // Update chips
   document.querySelectorAll('.u-chip').forEach(function(chip) {
@@ -2066,7 +2105,6 @@ function updateUniverseCount() {
 
 function getUniverseParam() {
   if (UNIVERSE_SELECTED.size === 0) return '__NONE__';
-  if (UNIVERSE_SELECTED.size === UNIVERSE_OPTIONS.length) return '';  // all = empty
   return Array.from(UNIVERSE_SELECTED).sort().join(',');
 }
 
@@ -2074,7 +2112,8 @@ function setUniverseFromParam(str) {
   if (str === '__NONE__') {
     UNIVERSE_SELECTED = new Set();
   } else if (!str) {
-    UNIVERSE_SELECTED = new Set(UNIVERSE_OPTIONS.map(function(e) { return e.code; }));
+    // No param: default to active-only
+    UNIVERSE_SELECTED = new Set(UNIVERSE_OPTIONS.filter(function(e) { return e.active !== false; }).map(function(e) { return e.code; }));
   } else {
     var codes = new Set(str.split(','));
     UNIVERSE_SELECTED = new Set();
@@ -2466,7 +2505,7 @@ async function saveYAML() {
       return;
     }
     var payload = getParams();
-    payload._preset = CURRENT_PRESET || 'preset2';
+    payload._preset = CURRENT_PRESET || 'zen-1';
     var resp = await fetch('/api/save', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
     var data = await resp.json();
     var label = (PRESETS[CURRENT_PRESET] && PRESETS[CURRENT_PRESET].label) || CURRENT_PRESET || '预设';
@@ -3281,6 +3320,8 @@ window.addEventListener('load', async function() {
   setConfType(confType);  // sync panel visibility with default confType
   drawConfChart();
   validateBullBear();  // initial bull/bear validation
+  // Default start date fixed at 2026-05-01 (same as Server酱 push window)
+  $id('start_date_slider').value = getSliderFromDate('2026-05-01');
   onPeriodSliderChange();  // initialize date labels
   await loadParamSchema();
   var leftPanel = $id('tuner-panel-left');
@@ -3304,7 +3345,7 @@ window.addEventListener('load', async function() {
   }
   await loadPresets();
   // renderPresetCards() already auto-selects preset1; this is a safety net
-  var defaultPreset = PRESETS['preset3'] ? 'preset3' : Object.keys(PRESETS)[0];
+  var defaultPreset = PRESETS['gam-1'] ? 'gam-1' : Object.keys(PRESETS)[0];
   if (defaultPreset && CURRENT_PRESET !== defaultPreset) applyPreset(defaultPreset);
 });
 window.addEventListener('resize', () => {
@@ -3326,9 +3367,10 @@ document.addEventListener('keydown', function(e) {
   }
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) return;
   if (e.key === '?') { e.preventDefault(); toggleShortcuts(); }
-  else if (e.key === '1') { e.preventDefault(); applyPreset('preset3'); }
-  else if (e.key === '2') { e.preventDefault(); applyPreset('preset2'); }
-  else if (e.key === '3') { e.preventDefault(); applyPreset('preset1'); }
+  else if (e.key === '1') { e.preventDefault(); applyPreset('gam-1'); }
+  else if (e.key === '2') { e.preventDefault(); applyPreset('zen-1'); }
+  else if (e.key === '3') { e.preventDefault(); applyPreset('act-1'); }
+  else if (e.key === '4') { e.preventDefault(); applyPreset('cst-1'); }
   else if (e.key === 'r' || e.key === 'R') { e.preventDefault(); runBacktest(); }
   else if (e.key === 's' || e.key === 'S') { e.preventDefault(); saveYAML(); }
   else if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && currentSelectedDate && navDates.length) {
@@ -3385,7 +3427,7 @@ function initHeatmap() {
         '科技': '#3b82f6', 'TMT': '#06b6d4', '新能源': '#10b981',
         '医药': '#ec4899', '消费': '#f97316', '金融': '#eab308',
         '资源周期': '#d97706', '传统': '#78716c', '制造': '#8b5cf6',
-        '宽基': '#94a3b8', '另类': '#a855f7'
+        '另类': '#a855f7'
       };
       secs.forEach(function(s) { HM_SEC_COLOR[s] = secPalette[s] || '#6b7280'; });
       // Sector legend

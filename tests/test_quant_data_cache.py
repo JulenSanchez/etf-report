@@ -57,7 +57,7 @@ class TestBacktestDataCache:
         from quant_backtest import run_backtest
         nav, _, _ = run_backtest(
             start_date="2025-06-01", end_date="2025-08-01",
-            preset="preset2", execution_timing="next_open",
+            preset="zen-1", execution_timing="next_open",
             preloaded=preloaded,
         )
         assert len(nav) > 0
@@ -73,35 +73,35 @@ class TestCacheKey:
     """Hash-based cache key generation."""
 
     def test_same_params_same_key(self):
-        k1 = cache_key("preset1", "2025-01-01", "2025-06-01")
-        k2 = cache_key("preset1", "2025-01-01", "2025-06-01")
+        k1 = cache_key("act-1", "2025-01-01", "2025-06-01")
+        k2 = cache_key("act-1", "2025-01-01", "2025-06-01")
         assert k1 == k2
 
     def test_different_preset_different_key(self):
-        k1 = cache_key("preset1", "2025-01-01", "2025-06-01")
-        k2 = cache_key("preset2", "2025-01-01", "2025-06-01")
+        k1 = cache_key("act-1", "2025-01-01", "2025-06-01")
+        k2 = cache_key("zen-1", "2025-01-01", "2025-06-01")
         assert k1 != k2
 
     def test_different_dates_different_key(self):
-        k1 = cache_key("preset1", "2025-01-01", "2025-06-01")
-        k2 = cache_key("preset1", "2025-01-01", "2025-07-01")
+        k1 = cache_key("act-1", "2025-01-01", "2025-06-01")
+        k2 = cache_key("act-1", "2025-01-01", "2025-07-01")
         assert k1 != k2
 
     def test_config_override_affects_key(self):
-        k1 = cache_key("preset1", "2025-01-01", "2025-06-01")
-        k2 = cache_key("preset1", "2025-01-01", "2025-06-01",
+        k1 = cache_key("act-1", "2025-01-01", "2025-06-01")
+        k2 = cache_key("act-1", "2025-01-01", "2025-06-01",
                        config_override={"scoring": {"weights": {"ema_deviation": 0.5}}})
         assert k1 != k2
 
     def test_universe_filter_affects_key(self):
-        k1 = cache_key("preset1", "2025-01-01", "2025-06-01")
-        k2 = cache_key("preset1", "2025-01-01", "2025-06-01",
+        k1 = cache_key("act-1", "2025-01-01", "2025-06-01")
+        k2 = cache_key("act-1", "2025-01-01", "2025-06-01",
                        universe_filter=["512400", "513120"])
         assert k1 != k2
 
     def test_execution_timing_affects_key(self):
-        k1 = cache_key("preset1", "2025-01-01", "2025-06-01", execution_timing="same_close")
-        k2 = cache_key("preset1", "2025-01-01", "2025-06-01", execution_timing="next_open")
+        k1 = cache_key("act-1", "2025-01-01", "2025-06-01", execution_timing="same_close")
+        k2 = cache_key("act-1", "2025-01-01", "2025-06-01", execution_timing="next_open")
         assert k1 != k2
 
 
