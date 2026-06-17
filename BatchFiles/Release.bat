@@ -34,11 +34,9 @@ if %errorlevel% neq 0 (
 echo [OK] Report generated successfully.
 echo.
 
-echo Running audit...
-python -u scripts/audit_project.py --full --report-only
-if %errorlevel% neq 0 (
-    echo [WARN] Audit found issues. Review before continuing.
-)
+echo Audit checklist: docs\ops\audit.md
+echo No automated audit script is currently configured.
+echo Review audit checklist manually when needed before continuing.
 echo.
 pause
 

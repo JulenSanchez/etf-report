@@ -1,6 +1,6 @@
 # etf-report 系统设计
 
-> 架构总览。子系统设计见 `architecture/design/`，运维手册见 `ops/`。
+> 架构总览。子系统设计见 `architecture/`，运维手册见 `ops/`。
 
 ## 一、系统架构
 
@@ -49,9 +49,9 @@
 
 | 子系统 | 设计文档 | 核心代码 |
 |--------|---------|---------|
-| 因子体系（F1/F3/F7） | `architecture/design/factors.md` | `scripts/quant_backtest.py:_precompute_factors()` |
-| 回测引擎（循环/仓位/信心/执行） | `architecture/design/backtest-engine.md` | `scripts/quant_backtest.py::run_backtest()` |
-| ETF 贡献分析 | `architecture/design/etf-contribution.md` | `scripts/quant_tuner.py:_compute_etf_contributions()` |
+| 因子体系（F1/F3/F7） | `architecture/factors.md` | `scripts/quant_backtest.py:_precompute_factors()` |
+| 回测引擎（循环/仓位/信心/执行） | `architecture/backtest-engine.md` | `scripts/quant_backtest.py::run_backtest()` |
+| ETF 贡献分析 | `architecture/etf-contribution.md` | `scripts/quant_tuner.py:_compute_etf_contributions()` |
 | 参数契约 | `scripts/quant_contract.py` | 三层转换（YAML↔Tuner↔引擎） |
 
 ## 三、设计原则
@@ -80,7 +80,7 @@ config/quant_universe.yaml preset
 
 ### 检查点/冻结模型（F1 抢跑）
 
-F1 的周线 EMA 偏离通过 bitmask `f1_active_days` 控制更新频率。核心是三分支状态机：检查点（滚 EMA）、冻结（复用上一个检查点）、hold（复用上周值）。详见 `architecture/design/factors.md`。
+F1 的周线 EMA 偏离通过 bitmask `f1_active_days` 控制更新频率。核心是三分支状态机：检查点（滚 EMA）、冻结（复用上一个检查点）、hold（复用上周值）。详见 `architecture/factors.md`。
 
 ## 四、运维手册
 

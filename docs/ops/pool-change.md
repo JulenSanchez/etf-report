@@ -1,5 +1,7 @@
 # ETF 池变更流程
 
+> **触发词**: 用户说"换池"。AI 自动：检查数据 → 展示池状态 → 逐支执行 → 更新追踪文档。禁止批量改 config。
+
 从筛选候选到落地归档的完整操作流程。
 
 **关联文档**: 量化运维 → `docs/ops/quant/overview.md` | 筛选脚本 → `scripts/scan_etf_universe.py` | 池历史档案 → `research/pool/README.md`

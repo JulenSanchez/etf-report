@@ -1,6 +1,6 @@
 # 量化打分系统方法论
 
-> ⚠️ 历史文档：本文描述早期 REQ-177 M5.1 的三因子 / 25 支 ETF / 截面标准化版本，不作为当前量化系统事实源。文中 F2 已于 2026-05 退役，当前活跃因子为 F1/F3/F7，公式见 `../docs/architecture/design/backtest-engine.md`。当前系统入口见 `../docs/ops/quant/overview.md`。
+> ⚠️ 历史文档：本文描述早期 REQ-177 M5.1 的三因子 / 25 支 ETF / 截面标准化版本，不作为当前量化系统事实源。文中 F2 已于 2026-05 退役，当前活跃因子为 F1/F3/F7，公式见 `../docs/architecture/backtest-engine.md`。当前系统入口见 `../docs/ops/quant/overview.md`。
 >
 > REQ-177 M5.1 · 三因子 ETF 轮动策略 · 25 支选股池
 

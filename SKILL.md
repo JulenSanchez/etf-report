@@ -3,7 +3,7 @@
 本项目已从 Claude Skill 改造为普通项目仓库。
 
 - 项目入口：`README.md`
-- AI 协作说明：`docs/ai/AGENT_GUIDE.md`
+- AI 协作说明：`docs/reference/glossary.md`
 - 报告运维：`docs/ops/report.md`
 - 量化运维：`docs/ops/quant/overview.md`
 - 发布门禁：`docs/ops/release.md`

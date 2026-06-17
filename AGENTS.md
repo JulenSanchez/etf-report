@@ -64,7 +64,7 @@
    - 量化 / Tuner / 回测：`docs/ops/quant/overview.md`、`config/quant_universe.yaml`、`scripts/quant_*.py`
    - 正式页 / 报告 / 发布：`docs/ops/report.md`、`docs/ops/release.md`、`scripts/update_report.py`、`scripts/deployer.py`、`assets/js/`
    - stable / 计划任务：`BatchFiles/`、`docs/ops/release.md`
-   - 架构 / 包化：`docs/architecture.md`、`src/`、`scripts/`
+   - 架构 / 包化：`docs/architecture/overview.md`、`src/`、`scripts/`
 
 输出：
 
@@ -88,8 +88,9 @@
 
 ## 安全规则
 
-- 涉及**换池/新增/移除/替换 ETF** 的任何操作前，**必须先读取 `docs/ops/pool-change.md`**，按逐支执行 SOP 操作。禁止批量改 config，禁止合并验证。
-- 不主动 push、发布、删除目录、修改 Windows 计划任务，除非用户明确要求。
+- **换池**：用户说"换池"。详见 `docs/ops/pool-change.md`。
+- **发布/提交**：用户说"发布"（完整 Phase 0-8）或"提交"（快速路径跳过版本治理）。详见 `docs/ops/release.md`。
+- 不主动删除目录、修改 Windows 计划任务，除非用户明确要求。
 - 遇到 destructive / shared-state 操作先确认。
 - 不使用 `--force` / `--force-with-lease`，除非用户明确要求且说明原因。
 - 修改核心逻辑后跑相关最小验证；涉及回测/参数/发布链时优先跑对应测试。
@@ -98,12 +99,8 @@
   - 量化/Tuner/回测 → `docs/ops/quant/overview.md` 的故障排查索引，再按症状跳到短文档
   - 正式页/推送/数据管线 → `docs/ops/report.md` 常见问题
   - 不要猜进程/网络/缓存，先按症状索引定位。
-- **参数优化完成后，按规范写报告**：`docs/ops/quant/optimization-report-guide.md`（8 节结构 + 6 个方法论视角 + 搜索空间设计原则）
+- **参数优化**：用户说"优化 <preset>"。详见 `docs/ops/quant/optimization.md`。必须跑 `optimization_analyzer.py`。
 
-## 详细 AI 协作说明
+## 术语
 
-需要术语、任务路由或高风险规则时，再读取：
-
-```text
-docs/ai/AGENT_GUIDE.md
-```
+需要术语定义时：`docs/reference/glossary.md`

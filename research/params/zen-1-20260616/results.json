@@ -1,0 +1,3619 @@
+{
+  "meta": {
+    "preset": "zen-1",
+    "strategy": "bayesian",
+    "metric": "calmar",
+    "n_trials": 70,
+    "periods": {
+      "6Y": [
+        "2020-06-17",
+        "2026-06-16"
+      ]
+    },
+    "seed": 42,
+    "baseline": [
+      {
+        "total_return": 636.9229,
+        "annual_return": 39.4988,
+        "max_drawdown": -12.862,
+        "sharpe": 1.6045,
+        "sortino": 2.2947,
+        "calmar": 3.071,
+        "n_trades": 629,
+        "n_signals": 1454,
+        "commission": 209469.01,
+        "final_nav": 7369228.57,
+        "period": "6Y"
+      }
+    ]
+  },
+  "trials": [
+    {
+      "id": 41,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 32.1332971583927,
+        "disc_step": 0.050857493076737655,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 10.766879713355298,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.30156231290748703,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 4,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 32,
+        "w1": 48,
+        "w3": 32,
+        "w7": 20
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 804.5021,
+          "annual_return": 44.345,
+          "max_drawdown": -10.4096,
+          "sharpe": 1.6062,
+          "sortino": 2.3425,
+          "calmar": 4.26,
+          "n_trades": 611,
+          "n_signals": 1454,
+          "commission": 255091.2,
+          "final_nav": 9045021.01
+        }
+      },
+      "composite": {
+        "calmar": 1.3871703028329534
+      }
+    },
+    {
+      "id": 51,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 31.81947087765082,
+        "disc_step": 0.046183626630464526,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 11.543673147323235,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.3046819981544098,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 4,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 31,
+        "w1": 49,
+        "w3": 32,
+        "w7": 19
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 840.5089,
+          "annual_return": 45.2871,
+          "max_drawdown": -10.9914,
+          "sharpe": 1.6272,
+          "sortino": 2.3827,
+          "calmar": 4.1203,
+          "n_trades": 609,
+          "n_signals": 1454,
+          "commission": 262033.88,
+          "final_nav": 9405088.89
+        }
+      },
+      "composite": {
+        "calmar": 1.3416802344513188
+      }
+    },
+    {
+      "id": 67,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 30.176224985832967,
+        "disc_step": 0.04900943852240466,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 10.519722334862264,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.20182841131599683,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 4,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 32,
+        "w1": 50,
+        "w3": 31,
+        "w7": 19
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 808.0785,
+          "annual_return": 44.4399,
+          "max_drawdown": -10.814,
+          "sharpe": 1.622,
+          "sortino": 2.2929,
+          "calmar": 4.1095,
+          "n_trades": 564,
+          "n_signals": 1454,
+          "commission": 239976.59,
+          "final_nav": 9080784.76
+        }
+      },
+      "composite": {
+        "calmar": 1.3381634646694887
+      }
+    },
+    {
+      "id": 43,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 32.990208122979304,
+        "disc_step": 0.049553297502743704,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 11.332838763184153,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.3008617619364392,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 4,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 31,
+        "w1": 48,
+        "w3": 32,
+        "w7": 20
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 796.4198,
+          "annual_return": 44.1292,
+          "max_drawdown": -10.7424,
+          "sharpe": 1.5974,
+          "sortino": 2.3173,
+          "calmar": 4.1079,
+          "n_trades": 620,
+          "n_signals": 1454,
+          "commission": 260653.13,
+          "final_nav": 8964197.93
+        }
+      },
+      "composite": {
+        "calmar": 1.3376424617388472
+      }
+    },
+    {
+      "id": 68,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 30.138645546685957,
+        "disc_step": 0.055662460635059544,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 13.790631348646436,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.24745729441415504,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 4,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 32,
+        "w1": 48,
+        "w3": 32,
+        "w7": 20
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 856.1911,
+          "annual_return": 45.6881,
+          "max_drawdown": -11.1256,
+          "sharpe": 1.6523,
+          "sortino": 2.3866,
+          "calmar": 4.1066,
+          "n_trades": 547,
+          "n_signals": 1454,
+          "commission": 260036.42,
+          "final_nav": 9561911.17
+        }
+      },
+      "composite": {
+        "calmar": 1.337219146857701
+      }
+    },
+    {
+      "id": 61,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 31.940539731606684,
+        "disc_step": 0.04929451043704832,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 11.423304725854738,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.32200219903915206,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 4,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 31,
+        "w1": 50,
+        "w3": 32,
+        "w7": 18
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 848.499,
+          "annual_return": 45.4921,
+          "max_drawdown": -11.0856,
+          "sharpe": 1.6272,
+          "sortino": 2.3946,
+          "calmar": 4.1037,
+          "n_trades": 614,
+          "n_signals": 1454,
+          "commission": 260157.78,
+          "final_nav": 9484989.61
+        }
+      },
+      "composite": {
+        "calmar": 1.3362748290459132
+      }
+    },
+    {
+      "id": 31,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 31.55287590168964,
+        "disc_step": 0.052689403525182595,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 11.662406344426557,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.24461978039336527,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 4,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 31,
+        "w1": 46,
+        "w3": 36,
+        "w7": 18
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 841.1194,
+          "annual_return": 45.3028,
+          "max_drawdown": -11.2372,
+          "sharpe": 1.6503,
+          "sortino": 2.4223,
+          "calmar": 4.0315,
+          "n_trades": 607,
+          "n_signals": 1454,
+          "commission": 256824.15,
+          "final_nav": 9411193.72
+        }
+      },
+      "composite": {
+        "calmar": 1.3127645718007164
+      }
+    },
+    {
+      "id": 44,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 34.94892024044973,
+        "disc_step": 0.04713119446598872,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 11.420716911839266,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.23692618289238804,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 4,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 31,
+        "w1": 48,
+        "w3": 32,
+        "w7": 20
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 797.9125,
+          "annual_return": 44.1692,
+          "max_drawdown": -11.0056,
+          "sharpe": 1.6102,
+          "sortino": 2.2978,
+          "calmar": 4.0133,
+          "n_trades": 610,
+          "n_signals": 1454,
+          "commission": 255445.53,
+          "final_nav": 8979125.44
+        }
+      },
+      "composite": {
+        "calmar": 1.3068381634646695
+      }
+    },
+    {
+      "id": 14,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 30.82404834922051,
+        "disc_step": 0.05173994396823059,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 10.235018359544712,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.35171370910450483,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 4,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 22,
+        "w1": 51,
+        "w3": 30,
+        "w7": 19
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 899.9146,
+          "annual_return": 46.7778,
+          "max_drawdown": -11.7058,
+          "sharpe": 1.6694,
+          "sortino": 2.4522,
+          "calmar": 3.9961,
+          "n_trades": 640,
+          "n_signals": 1454,
+          "commission": 273788.64,
+          "final_nav": 9999146.03
+        }
+      },
+      "composite": {
+        "calmar": 1.3012373819602736
+      }
+    },
+    {
+      "id": 42,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 31.862960174375214,
+        "disc_step": 0.04877735293070581,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 11.429724667081972,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.31501174197847204,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 4,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 31,
+        "w1": 50,
+        "w3": 32,
+        "w7": 18
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 875.7249,
+          "annual_return": 46.18,
+          "max_drawdown": -11.6536,
+          "sharpe": 1.6511,
+          "sortino": 2.4145,
+          "calmar": 3.9627,
+          "n_trades": 595,
+          "n_signals": 1454,
+          "commission": 270168.31,
+          "final_nav": 9757249.12
+        }
+      },
+      "composite": {
+        "calmar": 1.2903614457831325
+      }
+    },
+    {
+      "id": 16,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 30.143740333868138,
+        "disc_step": 0.0604258915222827,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 10.149090506224027,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.30914836381700295,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 4,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 32,
+        "w1": 50,
+        "w3": 31,
+        "w7": 19
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 834.2092,
+          "annual_return": 45.1245,
+          "max_drawdown": -11.4443,
+          "sharpe": 1.6168,
+          "sortino": 2.3619,
+          "calmar": 3.943,
+          "n_trades": 557,
+          "n_signals": 1454,
+          "commission": 259515.94,
+          "final_nav": 9342091.74
+        }
+      },
+      "composite": {
+        "calmar": 1.2839465971996091
+      }
+    },
+    {
+      "id": 55,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 29.521711817786883,
+        "disc_step": 0.04520303343446716,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 10.031422100352783,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.3949357019367927,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 4,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 32,
+        "w1": 47,
+        "w3": 33,
+        "w7": 20
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 778.8,
+          "annual_return": 43.6531,
+          "max_drawdown": -11.1098,
+          "sharpe": 1.5629,
+          "sortino": 2.3443,
+          "calmar": 3.9293,
+          "n_trades": 626,
+          "n_signals": 1454,
+          "commission": 261733.11,
+          "final_nav": 8787999.98
+        }
+      },
+      "composite": {
+        "calmar": 1.2794855096059914
+      }
+    },
+    {
+      "id": 66,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 30.935068977182738,
+        "disc_step": 0.061123991281647125,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 13.263459005299284,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.3890895746901273,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 4,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 31,
+        "w1": 48,
+        "w3": 32,
+        "w7": 20
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 863.073,
+          "annual_return": 45.8623,
+          "max_drawdown": -11.686,
+          "sharpe": 1.6359,
+          "sortino": 2.4439,
+          "calmar": 3.9246,
+          "n_trades": 606,
+          "n_signals": 1454,
+          "commission": 284440.59,
+          "final_nav": 9630730.44
+        }
+      },
+      "composite": {
+        "calmar": 1.277955063497232
+      }
+    },
+    {
+      "id": 47,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 19.257327044203123,
+        "disc_step": 0.03466411012183329,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 11.201855026994009,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.21252426159979612,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 4,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 31,
+        "w1": 45,
+        "w3": 35,
+        "w7": 20
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 802.5901,
+          "annual_return": 44.2941,
+          "max_drawdown": -11.2903,
+          "sharpe": 1.6216,
+          "sortino": 2.3345,
+          "calmar": 3.9232,
+          "n_trades": 657,
+          "n_signals": 1454,
+          "commission": 261786.32,
+          "final_nav": 9025900.87
+        }
+      },
+      "composite": {
+        "calmar": 1.2774991859329208
+      }
+    },
+    {
+      "id": 59,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 34.94350398256869,
+        "disc_step": 0.032078684658647307,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 10.764419260660253,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.2279172143923041,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 4,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 32,
+        "w1": 51,
+        "w3": 29,
+        "w7": 20
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 818.0246,
+          "annual_return": 44.7024,
+          "max_drawdown": -11.4055,
+          "sharpe": 1.6126,
+          "sortino": 2.3109,
+          "calmar": 3.9194,
+          "n_trades": 630,
+          "n_signals": 1454,
+          "commission": 245647.32,
+          "final_nav": 9180245.68
+        }
+      },
+      "composite": {
+        "calmar": 1.2762618039726472
+      }
+    },
+    {
+      "id": 62,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 32.065569815138616,
+        "disc_step": 0.04005241565258623,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 10.173665220785209,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.25450744171891065,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 4,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 33,
+        "w1": 51,
+        "w3": 30,
+        "w7": 19
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 850.9183,
+          "annual_return": 45.5539,
+          "max_drawdown": -11.7909,
+          "sharpe": 1.6339,
+          "sortino": 2.3573,
+          "calmar": 3.8635,
+          "n_trades": 606,
+          "n_signals": 1454,
+          "commission": 249622.96,
+          "final_nav": 9509183.14
+        }
+      },
+      "composite": {
+        "calmar": 1.2580592640833606
+      }
+    },
+    {
+      "id": 26,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 28.39188324491687,
+        "disc_step": 0.039472562989198226,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 8.539467997275048,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.3317241387457937,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 4,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 37,
+        "w1": 46,
+        "w3": 36,
+        "w7": 18
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 720.101,
+          "annual_return": 42.0075,
+          "max_drawdown": -10.9944,
+          "sharpe": 1.5249,
+          "sortino": 2.2239,
+          "calmar": 3.8208,
+          "n_trades": 586,
+          "n_signals": 1454,
+          "commission": 239143.48,
+          "final_nav": 8201009.73
+        }
+      },
+      "composite": {
+        "calmar": 1.2441549983718658
+      }
+    },
+    {
+      "id": 58,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 30.753309213421296,
+        "disc_step": 0.04739255441345359,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 9.495944341959875,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.27952191078215277,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 4,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 26,
+        "w1": 49,
+        "w3": 31,
+        "w7": 20
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 841.6513,
+          "annual_return": 45.3165,
+          "max_drawdown": -11.9025,
+          "sharpe": 1.6224,
+          "sortino": 2.3558,
+          "calmar": 3.8073,
+          "n_trades": 632,
+          "n_signals": 1454,
+          "commission": 251977.41,
+          "final_nav": 9416513.14
+        }
+      },
+      "composite": {
+        "calmar": 1.2397590361445783
+      }
+    },
+    {
+      "id": 57,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 32.740792041599576,
+        "disc_step": 0.0574786305966447,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 11.379900966148625,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.3166576871358492,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 4,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 31,
+        "w1": 45,
+        "w3": 35,
+        "w7": 20
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 820.6796,
+          "annual_return": 44.7721,
+          "max_drawdown": -11.762,
+          "sharpe": 1.6057,
+          "sortino": 2.4164,
+          "calmar": 3.8065,
+          "n_trades": 606,
+          "n_signals": 1454,
+          "commission": 276849.51,
+          "final_nav": 9206795.83
+        }
+      },
+      "composite": {
+        "calmar": 1.2394985346792575
+      }
+    },
+    {
+      "id": 22,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 32.16482630249036,
+        "disc_step": 0.0533044128744336,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 10.809702588319158,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.2864963249021607,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 4,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 33,
+        "w1": 48,
+        "w3": 34,
+        "w7": 18
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 885.8271,
+          "annual_return": 46.4311,
+          "max_drawdown": -12.3084,
+          "sharpe": 1.6608,
+          "sortino": 2.4232,
+          "calmar": 3.7723,
+          "n_trades": 587,
+          "n_signals": 1454,
+          "commission": 268986.79,
+          "final_nav": 9858271.02
+        }
+      },
+      "composite": {
+        "calmar": 1.2283620970367957
+      }
+    },
+    {
+      "id": 49,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 34.047225678420624,
+        "disc_step": 0.07462519744213506,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 13.423632210860633,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.27277574055324255,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 4,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 28,
+        "w1": 49,
+        "w3": 31,
+        "w7": 20
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 785.9146,
+          "annual_return": 43.8463,
+          "max_drawdown": -11.6987,
+          "sharpe": 1.5894,
+          "sortino": 2.3107,
+          "calmar": 3.7479,
+          "n_trades": 535,
+          "n_signals": 1454,
+          "commission": 261347.09,
+          "final_nav": 8859145.94
+        }
+      },
+      "composite": {
+        "calmar": 1.2204168023445132
+      }
+    },
+    {
+      "id": 32,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 29.548102058756186,
+        "disc_step": 0.05458062860225564,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 12.059809102500946,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.2546185490833542,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 4,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 31,
+        "w1": 46,
+        "w3": 36,
+        "w7": 18
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 801.8123,
+          "annual_return": 44.2733,
+          "max_drawdown": -11.8234,
+          "sharpe": 1.6078,
+          "sortino": 2.3584,
+          "calmar": 3.7446,
+          "n_trades": 596,
+          "n_signals": 1454,
+          "commission": 255068.21,
+          "final_nav": 9018122.52
+        }
+      },
+      "composite": {
+        "calmar": 1.219342233800065
+      }
+    },
+    {
+      "id": 65,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 29.498905560119166,
+        "disc_step": 0.04315619499092606,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 12.74746698203392,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.3180844102770791,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 4,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 28,
+        "w1": 49,
+        "w3": 32,
+        "w7": 19
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 812.9166,
+          "annual_return": 44.5679,
+          "max_drawdown": -11.9376,
+          "sharpe": 1.6081,
+          "sortino": 2.3776,
+          "calmar": 3.7334,
+          "n_trades": 660,
+          "n_signals": 1454,
+          "commission": 264761.98,
+          "final_nav": 9129165.68
+        }
+      },
+      "composite": {
+        "calmar": 1.2156952132855747
+      }
+    },
+    {
+      "id": 21,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 31.210864673466677,
+        "disc_step": 0.058808536702944995,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 12.862043557848555,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.29142819115116747,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 4,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 33,
+        "w1": 47,
+        "w3": 33,
+        "w7": 20
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 744.0231,
+          "annual_return": 42.6896,
+          "max_drawdown": -11.5547,
+          "sharpe": 1.5548,
+          "sortino": 2.2612,
+          "calmar": 3.6946,
+          "n_trades": 574,
+          "n_signals": 1454,
+          "commission": 259953.99,
+          "final_nav": 8440231.21
+        }
+      },
+      "composite": {
+        "calmar": 1.2030608922175186
+      }
+    },
+    {
+      "id": 53,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 32.27606689447207,
+        "disc_step": 0.056102917844746,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 11.597721982165629,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.2356587757007015,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 4,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 33,
+        "w1": 47,
+        "w3": 33,
+        "w7": 20
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 757.315,
+          "annual_return": 43.0617,
+          "max_drawdown": -11.6696,
+          "sharpe": 1.5749,
+          "sortino": 2.2562,
+          "calmar": 3.6901,
+          "n_trades": 553,
+          "n_signals": 1454,
+          "commission": 253422.6,
+          "final_nav": 8573149.77
+        }
+      },
+      "composite": {
+        "calmar": 1.2015955714750894
+      }
+    },
+    {
+      "id": 52,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 31.18255157894369,
+        "disc_step": 0.045331312905321636,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 11.896362750972804,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.30018982843216474,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 4,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 30,
+        "w1": 49,
+        "w3": 32,
+        "w7": 19
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 831.7718,
+          "annual_return": 45.0613,
+          "max_drawdown": -12.2167,
+          "sharpe": 1.6181,
+          "sortino": 2.3711,
+          "calmar": 3.6885,
+          "n_trades": 617,
+          "n_signals": 1454,
+          "commission": 252916.65,
+          "final_nav": 9317717.73
+        }
+      },
+      "composite": {
+        "calmar": 1.201074568544448
+      }
+    },
+    {
+      "id": 17,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 30.449053134553935,
+        "disc_step": 0.06073219054270302,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 13.086446300739741,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.29066921277167734,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 4,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 34,
+        "w1": 47,
+        "w3": 34,
+        "w7": 19
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 781.1993,
+          "annual_return": 43.7184,
+          "max_drawdown": -11.8548,
+          "sharpe": 1.5729,
+          "sortino": 2.318,
+          "calmar": 3.6878,
+          "n_trades": 571,
+          "n_signals": 1454,
+          "commission": 257696.81,
+          "final_nav": 8811993.12
+        }
+      },
+      "composite": {
+        "calmar": 1.2008466297622924
+      }
+    },
+    {
+      "id": 60,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 33.4388657534384,
+        "disc_step": 0.10803989685434354,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 11.674549605407979,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.30114859530461446,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 5,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 29,
+        "w1": 50,
+        "w3": 31,
+        "w7": 19
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 677.5433,
+          "annual_return": 40.7518,
+          "max_drawdown": -11.2638,
+          "sharpe": 1.54,
+          "sortino": 2.2418,
+          "calmar": 3.6179,
+          "n_trades": 589,
+          "n_signals": 1454,
+          "commission": 229825.34,
+          "final_nav": 7775433.09
+        }
+      },
+      "composite": {
+        "calmar": 1.1780853142298926
+      }
+    },
+    {
+      "id": 56,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 31.562763409248866,
+        "disc_step": 0.0637188988605291,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 12.40103213076032,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.26702719854045087,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 4,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 30,
+        "w1": 49,
+        "w3": 32,
+        "w7": 19
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 829.1114,
+          "annual_return": 44.9922,
+          "max_drawdown": -12.4776,
+          "sharpe": 1.6234,
+          "sortino": 2.3427,
+          "calmar": 3.6058,
+          "n_trades": 528,
+          "n_signals": 1454,
+          "commission": 243820.39,
+          "final_nav": 9291113.83
+        }
+      },
+      "composite": {
+        "calmar": 1.1741452295669161
+      }
+    },
+    {
+      "id": 29,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 23.330725057303948,
+        "disc_step": 0.053433026776133395,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 9.668735037526254,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.3359703218079505,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 4,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 21,
+        "w1": 49,
+        "w3": 34,
+        "w7": 17
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 839.5246,
+          "annual_return": 45.2618,
+          "max_drawdown": -12.5766,
+          "sharpe": 1.6225,
+          "sortino": 2.3712,
+          "calmar": 3.5989,
+          "n_trades": 654,
+          "n_signals": 1454,
+          "commission": 253432.43,
+          "final_nav": 9395245.73
+        }
+      },
+      "composite": {
+        "calmar": 1.1718984044285248
+      }
+    },
+    {
+      "id": 35,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 25.834675887161684,
+        "disc_step": 0.05015435573380384,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 13.622897632466811,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.40152242466674043,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 4,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 27,
+        "w1": 48,
+        "w3": 35,
+        "w7": 17
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 818.114,
+          "annual_return": 44.7047,
+          "max_drawdown": -12.4439,
+          "sharpe": 1.5768,
+          "sortino": 2.3615,
+          "calmar": 3.5925,
+          "n_trades": 603,
+          "n_signals": 1454,
+          "commission": 263189.32,
+          "final_nav": 9181140.11
+        }
+      },
+      "composite": {
+        "calmar": 1.1698143927059588
+      }
+    },
+    {
+      "id": 13,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 30.13145955406778,
+        "disc_step": 0.0330227296441025,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 9.995518122819817,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.3362834069905271,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 4,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 23,
+        "w1": 51,
+        "w3": 30,
+        "w7": 19
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 885.2692,
+          "annual_return": 46.4173,
+          "max_drawdown": -12.9776,
+          "sharpe": 1.6491,
+          "sortino": 2.4161,
+          "calmar": 3.5767,
+          "n_trades": 687,
+          "n_signals": 1454,
+          "commission": 267301.95,
+          "final_nav": 9852691.71
+        }
+      },
+      "composite": {
+        "calmar": 1.1646694887658744
+      }
+    },
+    {
+      "id": 33,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 31.199756959046244,
+        "disc_step": 0.047794759126726864,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 9.7470827477588,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.3342913369864352,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 4,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 38,
+        "w1": 47,
+        "w3": 36,
+        "w7": 17
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 698.1763,
+          "annual_return": 41.3676,
+          "max_drawdown": -11.6148,
+          "sharpe": 1.4954,
+          "sortino": 2.195,
+          "calmar": 3.5616,
+          "n_trades": 585,
+          "n_signals": 1454,
+          "commission": 231328.83,
+          "final_nav": 7981762.89
+        }
+      },
+      "composite": {
+        "calmar": 1.1597525236079451
+      }
+    },
+    {
+      "id": 15,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 29.80392366124535,
+        "disc_step": 0.06245053671699299,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 10.360385455442719,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.37654496026573964,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 4,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 30,
+        "w1": 51,
+        "w3": 30,
+        "w7": 19
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 746.1723,
+          "annual_return": 42.7501,
+          "max_drawdown": -12.3919,
+          "sharpe": 1.5287,
+          "sortino": 2.2675,
+          "calmar": 3.4499,
+          "n_trades": 585,
+          "n_signals": 1454,
+          "commission": 243140.86,
+          "final_nav": 8461723.32
+        }
+      },
+      "composite": {
+        "calmar": 1.1233800065125366
+      }
+    },
+    {
+      "id": 69,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 30.216779709888833,
+        "disc_step": 0.05546760586387007,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 14.801079660311382,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.20650343041353725,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 4,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 33,
+        "w1": 49,
+        "w3": 33,
+        "w7": 18
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 783.9066,
+          "annual_return": 43.7919,
+          "max_drawdown": -12.7302,
+          "sharpe": 1.5961,
+          "sortino": 2.2784,
+          "calmar": 3.44,
+          "n_trades": 541,
+          "n_signals": 1454,
+          "commission": 251300.62,
+          "final_nav": 8839066.0
+        }
+      },
+      "composite": {
+        "calmar": 1.1201563008791924
+      }
+    },
+    {
+      "id": 50,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 33.13041236610564,
+        "disc_step": 0.1188929871242618,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 12.286185595015198,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.2166166536239064,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 5,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 23,
+        "w1": 49,
+        "w3": 30,
+        "w7": 21
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 758.8043,
+          "annual_return": 43.1031,
+          "max_drawdown": -12.5815,
+          "sharpe": 1.6226,
+          "sortino": 2.3379,
+          "calmar": 3.4259,
+          "n_trades": 597,
+          "n_signals": 1454,
+          "commission": 262903.89,
+          "final_nav": 8588043.13
+        }
+      },
+      "composite": {
+        "calmar": 1.1155649625529143
+      }
+    },
+    {
+      "id": 18,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 31.803689299204017,
+        "disc_step": 0.0604598292072961,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 9.283195110172267,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.44780501051015215,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 4,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 36,
+        "w1": 47,
+        "w3": 35,
+        "w7": 18
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 746.9273,
+          "annual_return": 42.7713,
+          "max_drawdown": -12.5097,
+          "sharpe": 1.5155,
+          "sortino": 2.2849,
+          "calmar": 3.4191,
+          "n_trades": 572,
+          "n_signals": 1454,
+          "commission": 254115.02,
+          "final_nav": 8469272.68
+        }
+      },
+      "composite": {
+        "calmar": 1.1133507000976879
+      }
+    },
+    {
+      "id": 54,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 34.11339209330071,
+        "disc_step": 0.05138660565345679,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 10.473633967670079,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.35445916643848396,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 4,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 34,
+        "w1": 49,
+        "w3": 32,
+        "w7": 19
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 787.3177,
+          "annual_return": 43.8842,
+          "max_drawdown": -12.8591,
+          "sharpe": 1.5632,
+          "sortino": 2.3257,
+          "calmar": 3.4127,
+          "n_trades": 616,
+          "n_signals": 1454,
+          "commission": 262053.91,
+          "final_nav": 8873176.94
+        }
+      },
+      "composite": {
+        "calmar": 1.111266688375122
+      }
+    },
+    {
+      "id": 19,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 27.368003084696475,
+        "disc_step": 0.053766332981613325,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 11.826213158263446,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.28605779745581056,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 6,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 29,
+        "w1": 49,
+        "w3": 31,
+        "w7": 20
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 552.8438,
+          "annual_return": 36.7104,
+          "max_drawdown": -10.8258,
+          "sharpe": 1.494,
+          "sortino": 2.1254,
+          "calmar": 3.391,
+          "n_trades": 643,
+          "n_signals": 1454,
+          "commission": 194410.81,
+          "final_nav": 6528438.41
+        }
+      },
+      "composite": {
+        "calmar": 1.1042005861282969
+      }
+    },
+    {
+      "id": 20,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 28.693860410603847,
+        "disc_step": 0.06930756186143891,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 12.895586706263767,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.4664172264279919,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 4,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 26,
+        "w1": 50,
+        "w3": 31,
+        "w7": 19
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 843.815,
+          "annual_return": 45.3721,
+          "max_drawdown": -13.4838,
+          "sharpe": 1.5677,
+          "sortino": 2.4123,
+          "calmar": 3.3649,
+          "n_trades": 592,
+          "n_signals": 1454,
+          "commission": 270935.74,
+          "final_nav": 9438149.89
+        }
+      },
+      "composite": {
+        "calmar": 1.0957017258222077
+      }
+    },
+    {
+      "id": 45,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 34.89092511053223,
+        "disc_step": 0.050500084362307254,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 14.146973592962103,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.23621049975589456,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 5,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 29,
+        "w1": 48,
+        "w3": 31,
+        "w7": 21
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 647.7122,
+          "annual_return": 39.8371,
+          "max_drawdown": -11.9031,
+          "sharpe": 1.5558,
+          "sortino": 2.1957,
+          "calmar": 3.3468,
+          "n_trades": 585,
+          "n_signals": 1454,
+          "commission": 215783.05,
+          "final_nav": 7477122.25
+        }
+      },
+      "composite": {
+        "calmar": 1.0898078801693258
+      }
+    },
+    {
+      "id": 23,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 32.63903880980584,
+        "disc_step": 0.041518524742086144,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 10.437103996300552,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.26229654147375353,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 4,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 30,
+        "w1": 48,
+        "w3": 34,
+        "w7": 18
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 768.1451,
+          "annual_return": 43.3613,
+          "max_drawdown": -13.077,
+          "sharpe": 1.5781,
+          "sortino": 2.2751,
+          "calmar": 3.3158,
+          "n_trades": 641,
+          "n_signals": 1454,
+          "commission": 258195.98,
+          "final_nav": 8681450.73
+        }
+      },
+      "composite": {
+        "calmar": 1.079713448388147
+      }
+    },
+    {
+      "id": 37,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 33.672326966212246,
+        "disc_step": 0.07055768277760084,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 7.891756044744781,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.3699506632890362,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 4,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 36,
+        "w1": 51,
+        "w3": 30,
+        "w7": 19
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 776.5352,
+          "annual_return": 43.5913,
+          "max_drawdown": -13.1722,
+          "sharpe": 1.5502,
+          "sortino": 2.2665,
+          "calmar": 3.3093,
+          "n_trades": 552,
+          "n_signals": 1454,
+          "commission": 247472.29,
+          "final_nav": 8765352.12
+        }
+      },
+      "composite": {
+        "calmar": 1.077596873982416
+      }
+    },
+    {
+      "id": 64,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 34.169792470724104,
+        "disc_step": 0.036208542189148055,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 11.179303878740287,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.2826181573596016,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 4,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 30,
+        "w1": 50,
+        "w3": 33,
+        "w7": 17
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 797.1816,
+          "annual_return": 44.1496,
+          "max_drawdown": -13.3445,
+          "sharpe": 1.5971,
+          "sortino": 2.3098,
+          "calmar": 3.3084,
+          "n_trades": 597,
+          "n_signals": 1454,
+          "commission": 244520.99,
+          "final_nav": 8971815.71
+        }
+      },
+      "composite": {
+        "calmar": 1.0773038098339303
+      }
+    },
+    {
+      "id": 40,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 26.115208362601436,
+        "disc_step": 0.04365800655501697,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 5.972854913780657,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.3666776058853659,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 4,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 18,
+        "w1": 42,
+        "w3": 38,
+        "w7": 20
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 817.4552,
+          "annual_return": 44.6874,
+          "max_drawdown": -13.6573,
+          "sharpe": 1.6477,
+          "sortino": 2.4575,
+          "calmar": 3.272,
+          "n_trades": 680,
+          "n_signals": 1454,
+          "commission": 262178.74,
+          "final_nav": 9174552.03
+        }
+      },
+      "composite": {
+        "calmar": 1.0654509931618363
+      }
+    },
+    {
+      "id": 34,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 27.57053788803431,
+        "disc_step": 0.042624191907220665,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 11.093292613536496,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.24110603682074752,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 4,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 20,
+        "w1": 48,
+        "w3": 35,
+        "w7": 17
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 793.7266,
+          "annual_return": 44.0569,
+          "max_drawdown": -13.5338,
+          "sharpe": 1.5977,
+          "sortino": 2.2874,
+          "calmar": 3.2553,
+          "n_trades": 676,
+          "n_signals": 1454,
+          "commission": 243518.29,
+          "final_nav": 8937265.63
+        }
+      },
+      "composite": {
+        "calmar": 1.060013025073266
+      }
+    },
+    {
+      "id": 46,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 33.29164472612372,
+        "disc_step": 0.09560860690012019,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 12.581664279658872,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.2603213337065957,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 7,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 25,
+        "w1": 48,
+        "w3": 32,
+        "w7": 20
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 555.3221,
+          "annual_return": 36.7968,
+          "max_drawdown": -11.6882,
+          "sharpe": 1.5364,
+          "sortino": 2.2508,
+          "calmar": 3.1482,
+          "n_trades": 635,
+          "n_signals": 1454,
+          "commission": 208802.48,
+          "final_nav": 6553221.23
+        }
+      },
+      "composite": {
+        "calmar": 1.0251383914034515
+      }
+    },
+    {
+      "id": 24,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 28.588392237761127,
+        "disc_step": 0.06840784777140729,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 9.17654661742046,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.3438078906216723,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 4,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 35,
+        "w1": 48,
+        "w3": 34,
+        "w7": 18
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 751.9004,
+          "annual_return": 42.9107,
+          "max_drawdown": -14.1451,
+          "sharpe": 1.5355,
+          "sortino": 2.2705,
+          "calmar": 3.0336,
+          "n_trades": 577,
+          "n_signals": 1454,
+          "commission": 239696.66,
+          "final_nav": 8519003.83
+        }
+      },
+      "composite": {
+        "calmar": 0.9878215564962551
+      }
+    },
+    {
+      "id": 7,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 16.76985004103839,
+        "disc_step": 0.04763845761772306,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 3.542727466926457,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.39519819845795867,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 5,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 22,
+        "w1": 52,
+        "w3": 29,
+        "w7": 19
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 536.1083,
+          "annual_return": 36.12,
+          "max_drawdown": -12.1483,
+          "sharpe": 1.3959,
+          "sortino": 2.0146,
+          "calmar": 2.9733,
+          "n_trades": 662,
+          "n_signals": 1454,
+          "commission": 196873.28,
+          "final_nav": 6361083.49
+        }
+      },
+      "composite": {
+        "calmar": 0.9681862585477043
+      }
+    },
+    {
+      "id": 25,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 32.86435400658777,
+        "disc_step": 0.08418013999384984,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 10.93766542946724,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.41972042692290246,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 5,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 32,
+        "w1": 55,
+        "w3": 26,
+        "w7": 19
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 617.3919,
+          "annual_return": 38.8756,
+          "max_drawdown": -13.2378,
+          "sharpe": 1.4781,
+          "sortino": 2.196,
+          "calmar": 2.9367,
+          "n_trades": 522,
+          "n_signals": 1454,
+          "commission": 214174.28,
+          "final_nav": 7173918.94
+        }
+      },
+      "composite": {
+        "calmar": 0.9562683165092803
+      }
+    },
+    {
+      "id": 28,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 28.37585572575636,
+        "disc_step": 0.03972226833649102,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 6.6272914075956475,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.568442546134048,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 4,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 36,
+        "w1": 50,
+        "w3": 31,
+        "w7": 19
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 696.3047,
+          "annual_return": 41.3123,
+          "max_drawdown": -14.2961,
+          "sharpe": 1.4429,
+          "sortino": 2.1993,
+          "calmar": 2.8898,
+          "n_trades": 611,
+          "n_signals": 1454,
+          "commission": 243460.71,
+          "final_nav": 7963047.39
+        }
+      },
+      "composite": {
+        "calmar": 0.9409964181048518
+      }
+    },
+    {
+      "id": 11,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 33.93923752780299,
+        "disc_step": 0.0303263215050874,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 7.661466433539463,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.20695933004611552,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 5,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 25,
+        "w1": 50,
+        "w3": 32,
+        "w7": 18
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 606.8067,
+          "annual_return": 38.532,
+          "max_drawdown": -13.4451,
+          "sharpe": 1.4962,
+          "sortino": 2.1012,
+          "calmar": 2.8659,
+          "n_trades": 702,
+          "n_signals": 1454,
+          "commission": 197688.44,
+          "final_nav": 7068066.71
+        }
+      },
+      "composite": {
+        "calmar": 0.9332139368283946
+      }
+    },
+    {
+      "id": 10,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 33.90273088460773,
+        "disc_step": 0.03053974646602356,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 7.424745272653168,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.21077712536889204,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 5,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 24,
+        "w1": 50,
+        "w3": 32,
+        "w7": 18
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 579.2247,
+          "annual_return": 37.616,
+          "max_drawdown": -13.6624,
+          "sharpe": 1.4751,
+          "sortino": 2.0556,
+          "calmar": 2.7532,
+          "n_trades": 708,
+          "n_signals": 1454,
+          "commission": 194185.73,
+          "final_nav": 6792246.96
+        }
+      },
+      "composite": {
+        "calmar": 0.8965157929013351
+      }
+    },
+    {
+      "id": 63,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 32.78062295515131,
+        "disc_step": 0.05197801049181426,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 4.079605154620757,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.3531656865649032,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 4,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 35,
+        "w1": 49,
+        "w3": 32,
+        "w7": 19
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 628.6404,
+          "annual_return": 39.2362,
+          "max_drawdown": -14.4804,
+          "sharpe": 1.415,
+          "sortino": 2.0398,
+          "calmar": 2.7096,
+          "n_trades": 613,
+          "n_signals": 1454,
+          "commission": 222449.11,
+          "final_nav": 7286403.7
+        }
+      },
+      "composite": {
+        "calmar": 0.8823184630413545
+      }
+    },
+    {
+      "id": 39,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 21.61971114155774,
+        "disc_step": 0.05717283206397534,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 6.902720034683657,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.2405147763175474,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 6,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 34,
+        "w1": 45,
+        "w3": 37,
+        "w7": 18
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 514.8762,
+          "annual_return": 35.352,
+          "max_drawdown": -13.0529,
+          "sharpe": 1.4577,
+          "sortino": 2.0707,
+          "calmar": 2.7084,
+          "n_trades": 664,
+          "n_signals": 1454,
+          "commission": 171639.64,
+          "final_nav": 6148761.58
+        }
+      },
+      "composite": {
+        "calmar": 0.8819277108433735
+      }
+    },
+    {
+      "id": 12,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 34.81885129098892,
+        "disc_step": 0.04617659243290291,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 6.330314851106723,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.2026676534116851,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 5,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 27,
+        "w1": 50,
+        "w3": 32,
+        "w7": 18
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 531.4849,
+          "annual_return": 35.9546,
+          "max_drawdown": -13.3643,
+          "sharpe": 1.4143,
+          "sortino": 1.9652,
+          "calmar": 2.6904,
+          "n_trades": 649,
+          "n_signals": 1454,
+          "commission": 182156.94,
+          "final_nav": 6314848.58
+        }
+      },
+      "composite": {
+        "calmar": 0.8760664278736567
+      }
+    },
+    {
+      "id": 38,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 28.616343097767178,
+        "disc_step": 0.08256037597454666,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 8.950166623277969,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.44745394435524183,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 5,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 29,
+        "w1": 53,
+        "w3": 28,
+        "w7": 19
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 642.9566,
+          "annual_return": 39.6885,
+          "max_drawdown": -14.8634,
+          "sharpe": 1.4875,
+          "sortino": 2.2416,
+          "calmar": 2.6702,
+          "n_trades": 515,
+          "n_signals": 1454,
+          "commission": 223122.84,
+          "final_nav": 7429565.85
+        }
+      },
+      "composite": {
+        "calmar": 0.869488765874308
+      }
+    },
+    {
+      "id": 2,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 21.084844859190753,
+        "disc_step": 0.0772280788469014,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 8.18334022370539,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.3747374841188252,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 6,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 18,
+        "w1": 47,
+        "w3": 32,
+        "w7": 21
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 509.6139,
+          "annual_return": 35.1582,
+          "max_drawdown": -13.1698,
+          "sharpe": 1.4435,
+          "sortino": 2.0843,
+          "calmar": 2.6696,
+          "n_trades": 642,
+          "n_signals": 1454,
+          "commission": 183494.8,
+          "final_nav": 6096138.95
+        }
+      },
+      "composite": {
+        "calmar": 0.8692933897753174
+      }
+    },
+    {
+      "id": 36,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 30.57384024289494,
+        "disc_step": 0.0368753745975988,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 12.140774814403489,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.31532842943698136,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 5,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 40,
+        "w1": 46,
+        "w3": 36,
+        "w7": 18
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 592.6363,
+          "annual_return": 38.0652,
+          "max_drawdown": -14.5988,
+          "sharpe": 1.4728,
+          "sortino": 2.1171,
+          "calmar": 2.6074,
+          "n_trades": 669,
+          "n_signals": 1454,
+          "commission": 200394.27,
+          "final_nav": 6926362.73
+        }
+      },
+      "composite": {
+        "calmar": 0.8490394008466298
+      }
+    },
+    {
+      "id": 27,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 24.827105552824797,
+        "disc_step": 0.03746850846669071,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 8.4174293100758,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.5052141274302182,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 5,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 38,
+        "w1": 47,
+        "w3": 36,
+        "w7": 17
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 519.9519,
+          "annual_return": 35.5376,
+          "max_drawdown": -13.7277,
+          "sharpe": 1.3539,
+          "sortino": 2.0428,
+          "calmar": 2.5887,
+          "n_trades": 662,
+          "n_signals": 1454,
+          "commission": 208385.91,
+          "final_nav": 6199518.93
+        }
+      },
+      "composite": {
+        "calmar": 0.8429501790947573
+      }
+    },
+    {
+      "id": 0,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 22.49080237694725,
+        "disc_step": 0.11556428757689245,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 11.783927301736862,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.559195090518222,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 4,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 19,
+        "w1": 41,
+        "w3": 39,
+        "w7": 20
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 736.4868,
+          "annual_return": 42.4765,
+          "max_drawdown": -17.1311,
+          "sharpe": 1.4774,
+          "sortino": 2.2636,
+          "calmar": 2.4795,
+          "n_trades": 600,
+          "n_signals": 1454,
+          "commission": 276399.04,
+          "final_nav": 8364868.11
+        }
+      },
+      "composite": {
+        "calmar": 0.807391729078476
+      }
+    },
+    {
+      "id": 5,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 17.440764696895577,
+        "disc_step": 0.07456592191001432,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 3.4126622533826207,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.7455922412472693,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 5,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 32,
+        "w1": 46,
+        "w3": 34,
+        "w7": 20
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 677.6456,
+          "annual_return": 40.7549,
+          "max_drawdown": -16.4596,
+          "sharpe": 1.4447,
+          "sortino": 2.2875,
+          "calmar": 2.4761,
+          "n_trades": 611,
+          "n_signals": 1454,
+          "commission": 248942.96,
+          "final_nav": 7776455.88
+        }
+      },
+      "composite": {
+        "calmar": 0.8062845978508629
+      }
+    },
+    {
+      "id": 48,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 34.56032383133424,
+        "disc_step": 0.0648961590273202,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 10.72202331832604,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.7527489840026985,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 5,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 15,
+        "w1": 48,
+        "w3": 32,
+        "w7": 20
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 706.3808,
+          "annual_return": 41.6087,
+          "max_drawdown": -17.1137,
+          "sharpe": 1.4601,
+          "sortino": 2.3027,
+          "calmar": 2.4313,
+          "n_trades": 690,
+          "n_signals": 1454,
+          "commission": 280716.11,
+          "final_nav": 8063807.63
+        }
+      },
+      "composite": {
+        "calmar": 0.7916965157929012
+      }
+    },
+    {
+      "id": 30,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 26.751892357775887,
+        "disc_step": 0.06545145948301491,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 8.523444207470842,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.550836198199142,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 6,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 28,
+        "w1": 45,
+        "w3": 33,
+        "w7": 22
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 531.2569,
+          "annual_return": 35.9464,
+          "max_drawdown": -15.1734,
+          "sharpe": 1.4196,
+          "sortino": 2.1487,
+          "calmar": 2.369,
+          "n_trades": 668,
+          "n_signals": 1454,
+          "commission": 216405.86,
+          "final_nav": 6312569.0
+        }
+      },
+      "composite": {
+        "calmar": 0.7714099641810486
+      }
+    },
+    {
+      "id": 4,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 16.30103185970559,
+        "disc_step": 0.11539969835279999,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 14.587584396894712,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.6850384088698768,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 5,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 17,
+        "w1": 50,
+        "w3": 32,
+        "w7": 18
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 715.0618,
+          "annual_return": 41.8617,
+          "max_drawdown": -18.6991,
+          "sharpe": 1.4728,
+          "sortino": 2.2691,
+          "calmar": 2.2387,
+          "n_trades": 608,
+          "n_signals": 1454,
+          "commission": 263079.4,
+          "final_nav": 8150618.07
+        }
+      },
+      "composite": {
+        "calmar": 0.7289807880169326
+      }
+    },
+    {
+      "id": 6,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 25.934205586865595,
+        "disc_step": 0.046636900997297434,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 14.635015533174702,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.6650796940166688,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 7,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 38,
+        "w1": 46,
+        "w3": 36,
+        "w7": 18
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 467.6873,
+          "annual_return": 33.5626,
+          "max_drawdown": -17.2845,
+          "sharpe": 1.3574,
+          "sortino": 2.0871,
+          "calmar": 1.9418,
+          "n_trades": 675,
+          "n_signals": 1454,
+          "commission": 191855.0,
+          "final_nav": 5676872.55
+        }
+      },
+      "composite": {
+        "calmar": 0.632302181699772
+      }
+    },
+    {
+      "id": 3,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 24.12139968434072,
+        "disc_step": 0.10066583652537121,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 5.396085385900317,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.508540663048167,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 6,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 16,
+        "w1": 52,
+        "w3": 28,
+        "w7": 20
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 565.2526,
+          "annual_return": 37.1401,
+          "max_drawdown": -20.4235,
+          "sharpe": 1.439,
+          "sortino": 2.1192,
+          "calmar": 1.8185,
+          "n_trades": 674,
+          "n_signals": 1454,
+          "commission": 192598.93,
+          "final_nav": 6652525.64
+        }
+      },
+      "composite": {
+        "calmar": 0.5921523933572126
+      }
+    },
+    {
+      "id": 1,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 27.022300234864176,
+        "disc_step": 0.09372653200164409,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 3.2470139315496294,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.7819459112971967,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 7,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 20,
+        "w1": 48,
+        "w3": 31,
+        "w7": 21
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 479.6737,
+          "annual_return": 34.0285,
+          "max_drawdown": -18.7249,
+          "sharpe": 1.3166,
+          "sortino": 1.9713,
+          "calmar": 1.8173,
+          "n_trades": 679,
+          "n_signals": 1454,
+          "commission": 196787.94,
+          "final_nav": 5796737.32
+        }
+      },
+      "composite": {
+        "calmar": 0.5917616411592315
+      }
+    },
+    {
+      "id": 8,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 20.618690193747614,
+        "disc_step": 0.07884264748424236,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 4.691090699697152,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.6813181884524239,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 4,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 40,
+        "w1": 53,
+        "w3": 28,
+        "w7": 19
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 543.4561,
+          "annual_return": 36.3808,
+          "max_drawdown": -20.365,
+          "sharpe": 1.251,
+          "sortino": 1.9012,
+          "calmar": 1.7864,
+          "n_trades": 520,
+          "n_signals": 1454,
+          "commission": 215274.03,
+          "final_nav": 6434561.32
+        }
+      },
+      "composite": {
+        "calmar": 0.5816997720612178
+      }
+    },
+    {
+      "id": 9,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 15.110442342472048,
+        "disc_step": 0.10339152856093507,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 11.482288126171404,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.6374043008245924,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 7,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 16,
+        "w1": 50,
+        "w3": 29,
+        "w7": 21
+      },
+      "metrics": {
+        "6Y": {
+          "total_return": 494.6609,
+          "annual_return": 34.5999,
+          "max_drawdown": -23.2544,
+          "sharpe": 1.3748,
+          "sortino": 2.0798,
+          "calmar": 1.4879,
+          "n_trades": 694,
+          "n_signals": 1454,
+          "commission": 204853.86,
+          "final_nav": 5946608.61
+        }
+      },
+      "composite": {
+        "calmar": 0.4845001628134158
+      }
+    }
+  ],
+  "best": {
+    "calmar": {
+      "trial_id": 41,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 32.1332971583927,
+        "disc_step": 0.050857493076737655,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 10.766879713355298,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.30156231290748703,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 4,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 32,
+        "w1": 48,
+        "w3": 32,
+        "w7": 20
+      },
+      "periods": {
+        "6Y": {
+          "total_return": 804.5021,
+          "annual_return": 44.345,
+          "max_drawdown": -10.4096,
+          "sharpe": 1.6062,
+          "sortino": 2.3425,
+          "calmar": 4.26,
+          "n_trades": 611,
+          "n_signals": 1454,
+          "commission": 255091.2,
+          "final_nav": 9045021.01
+        }
+      }
+    },
+    "sharpe": {
+      "trial_id": 41,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 32.1332971583927,
+        "disc_step": 0.050857493076737655,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 10.766879713355298,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.30156231290748703,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 4,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 32,
+        "w1": 48,
+        "w3": 32,
+        "w7": 20
+      },
+      "periods": {
+        "6Y": {
+          "total_return": 804.5021,
+          "annual_return": 44.345,
+          "max_drawdown": -10.4096,
+          "sharpe": 1.6062,
+          "sortino": 2.3425,
+          "calmar": 4.26,
+          "n_trades": 611,
+          "n_signals": 1454,
+          "commission": 255091.2,
+          "final_nav": 9045021.01
+        }
+      }
+    },
+    "sortino": {
+      "trial_id": 41,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 32.1332971583927,
+        "disc_step": 0.050857493076737655,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 10.766879713355298,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.30156231290748703,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 4,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 32,
+        "w1": 48,
+        "w3": 32,
+        "w7": 20
+      },
+      "periods": {
+        "6Y": {
+          "total_return": 804.5021,
+          "annual_return": 44.345,
+          "max_drawdown": -10.4096,
+          "sharpe": 1.6062,
+          "sortino": 2.3425,
+          "calmar": 4.26,
+          "n_trades": 611,
+          "n_signals": 1454,
+          "commission": 255091.2,
+          "final_nav": 9045021.01
+        }
+      }
+    },
+    "annual_return": {
+      "trial_id": 41,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 32.1332971583927,
+        "disc_step": 0.050857493076737655,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 10.766879713355298,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.30156231290748703,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 4,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 32,
+        "w1": 48,
+        "w3": 32,
+        "w7": 20
+      },
+      "periods": {
+        "6Y": {
+          "total_return": 804.5021,
+          "annual_return": 44.345,
+          "max_drawdown": -10.4096,
+          "sharpe": 1.6062,
+          "sortino": 2.3425,
+          "calmar": 4.26,
+          "n_trades": 611,
+          "n_signals": 1454,
+          "commission": 255091.2,
+          "final_nav": 9045021.01
+        }
+      }
+    },
+    "total_return": {
+      "trial_id": 41,
+      "params": {
+        "bias": 0,
+        "c_sensitivity": 0,
+        "concentration": 3.5,
+        "conf_type": "ma_trend",
+        "dead_zone": 32.1332971583927,
+        "disc_step": 0.050857493076737655,
+        "ema_period": 5,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 4.0,
+        "f3_sensitivity": 1.4,
+        "f7_k": 3.0,
+        "f7_t": 10.766879713355298,
+        "f7_window": 29,
+        "full_zone": 65,
+        "ma_bear_pos": 0.30156231290748703,
+        "ma_bull_pos": 1.0,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 26,
+        "max_holdings": 4,
+        "rebalance_freq": "daily",
+        "score_band": 3.0,
+        "vol_window": 32,
+        "w1": 48,
+        "w3": 32,
+        "w7": 20
+      },
+      "periods": {
+        "6Y": {
+          "total_return": 804.5021,
+          "annual_return": 44.345,
+          "max_drawdown": -10.4096,
+          "sharpe": 1.6062,
+          "sortino": 2.3425,
+          "calmar": 4.26,
+          "n_trades": 611,
+          "n_signals": 1454,
+          "commission": 255091.2,
+          "final_nav": 9045021.01
+        }
+      }
+    }
+  }
+}

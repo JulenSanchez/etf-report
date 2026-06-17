@@ -19,7 +19,7 @@
 
 | ID | 标题 | 开始日期 |
 |----|------|---------|
-| REQ-284 | **shared 模块正式包化** — Phase 1 已迁移 config_manager/logger/trading_calendar，后续继续迁移 shared 模块 | 2026-06-16 |
+| REQ-284 | **shared 模块正式包化** — Phase 2 已迁移 quant_contract/quant_data_cache/benchmark/compliance/data_cleaning 等 shared 模块，后续处理业务层入口 | 2026-06-16 |
 
 ## done (已完成，待发布)
 
@@ -67,6 +67,7 @@
 | REQ-277 | **F1 检查点/冻结点机制** — 修复多 bit 抢跑时中间日自由移动的 bug | ✅ 完成 | v3.6.0 | 2026-06-10。7 项测试全部 PASS。详见 plans/REQ-277.md |
 | REQ-278 | **交易日历 CNY 后处理** — 用中国节假日算法修正 `trading_days_YYYY.txt`，替换当前"最后周硬编码 total_td=5"的临时方案 | 🟡 Normal | v3.7.0 | 由 BUG-031 转化。当前用日线统计 + 最后周硬编码可用，但日历修好后可恢复完整逻辑。 |
 | REQ-279 | **data/ 目录结构优化** — 合并散落子目录（backtest_cache→quant/cache, stock_bps+valuation_history→valuation, 正式页文件→report/），移 debug_*.json 到 _working/ | 🟢 Low | v3.8.0 | 涉及 14 个脚本路径更新，需完整回归测试。详见 plan。 |
+| REQ-291 | **三派优化参数 promotion 评审** — 评估 gam-2/zen-1/act-1 优化结果是否写入生产 preset | 🟠 High | v3.8.0/v4.0.0 | 详见 plans/REQ-291.md |
 | REQ-285 | **GitHub Pages 发布面二期迁移** — 评估 `web/` / `dist/` / Actions Pages，源码与发布产物分离 | 🟡 Normal | v4.0.0 | 详见 plans/REQ-285.md |
 | REQ-288 | **report-site / quant-lab 双仓拆分评估** — 在包化和发布面迁移后评估是否拆仓 | 🟢 Low | v4.1.0 | 详见 plans/REQ-288.md |
 | REQ-194 | 统一数据获取管线 | 🟠 High | v4.0.0 | 合并多个数据脚本为统一入口 |
@@ -151,7 +152,7 @@
 
 ## ID 计数器
 
-**下一个需求 ID**: REQ-291
+**下一个需求 ID**: REQ-292
 
 
 

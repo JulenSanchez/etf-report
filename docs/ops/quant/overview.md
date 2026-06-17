@@ -36,7 +36,7 @@ assets/js/quant_payload.js
 | 问题 | 第一事实源 | 第二事实源 |
 |---|---|---|
 | 当前 ETF 池 / preset 参数 | `config/quant_universe.yaml` | `research/params/README.md` |
-| 回测实际计算过程 | `scripts/quant_backtest.py` | `docs/architecture/design/backtest-engine.md` |
+| 回测实际计算过程 | `scripts/quant_backtest.py` | `docs/architecture/backtest-engine.md` |
 | Tuner API 与缓存 | `scripts/quant_tuner.py` | `docs/ops/quant/tuner.md` |
 | 数据刷新和 CSV | `scripts/quant_data_fetcher.py` | `docs/ops/quant/data-fetch.md` |
 | ETF 池变更 | `docs/ops/pool-change.md` | `research/pool/README.md` |
@@ -47,13 +47,13 @@ assets/js/quant_payload.js
 
 | 变更类型 | 先读 | 最小验证 |
 |---|---|---|
-| 改因子 / 回测逻辑 | `docs/architecture/design/backtest-engine.md` | `python -m pytest tests/test_quant_* -q` |
+| 改因子 / 回测逻辑 | `docs/architecture/backtest-engine.md` | `python -m pytest tests/test_quant_* -q` |
 | 改 Tuner 参数 | `docs/ops/quant/tuner.md` + `scripts/quant_contract.py` | `python -m pytest tests/test_quant_contract.py -q` |
 | 改 ETF 池 | `docs/ops/pool-change.md` | 逐支拉数 + 回测基线对比 |
 | 改数据源 / CSV | `docs/ops/quant/data-fetch.md` | `python scripts/quant_data_fetcher.py --start <date> --end <date>` |
 | 改正式页 payload | `docs/ops/report.md` | `python scripts/quant_build_payload.py` + HTML 验证 |
 | 改日常推送 | `docs/ops/quant/daily-automation.md` | 检查计划任务 + dry-run/手动运行 |
-| 参数优化 | `docs/ops/quant/optimization-report-guide.md` | 70 trial 贝叶斯 + 控制变量验证 + 报告按 8 节规范 |
+| 参数优化 | `docs/ops/quant/optimization.md` + `optimization.md` | 人类说"优化 <preset>"拉起，AI 自检→搜索→分析器→报告 |
 
 ## 故障排查索引
 
@@ -71,4 +71,6 @@ assets/js/quant_payload.js
 - 数据刷新：`docs/ops/quant/data-fetch.md`
 - ETF 池变更：`docs/ops/pool-change.md`
 - 每日自动化：`docs/ops/quant/daily-automation.md`
-- 回测引擎设计：`docs/architecture/design/backtest-engine.md`
+- 参数优化流程：`docs/ops/quant/optimization.md`
+- 参数优化报告：`docs/ops/quant/optimization.md`
+- 回测引擎设计：`docs/architecture/backtest-engine.md`

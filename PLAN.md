@@ -75,15 +75,15 @@ open → fixing → fixed → closed
 | 事实源 | 职责 |
 |------|------|
 | `AGENTS.md` | 新对话冷启动入口：开放式评估、关键词定位需求、指定 REQ 启动 |
-| `docs/ai/AGENT_GUIDE.md` | 详细 AI 协作说明：术语、任务路由、高风险规则 |
-| `docs/ai/legacy/` | 旧 Skill / statusbar / rules 归档，仅作历史参考，不作为当前规则 |
+| `docs/reference/glossary.md` | 详细 AI 协作说明：术语、任务路由、高风险规则 |
+| `docs/reference/` | 跨产品线参考（术语表、审计方法） |
 
 维护原则：
 
 - `AGENTS.md` 保持短、稳定、低 token，只写冷启动流程。
-- `docs/ai/AGENT_GUIDE.md` 只保留仍会影响当前开发的协作约定。
+- `docs/reference/glossary.md` 只保留仍会影响当前开发的协作约定。
 - 不再新增 active `.codebuddy/rules`、`.claude/rules` 或 `statusbar.config.md`。
-- 旧规则如需保留，放在 `docs/ai/legacy/` 并明确标注历史归档。
+- 旧规则如需保留，放在 `` 并明确标注历史归档。
 
 ### 版本发布
 

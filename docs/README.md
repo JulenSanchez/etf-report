@@ -4,19 +4,19 @@
 
 | # | 文件 | 内容 |
 |---|------|------|
-| 01 | `01-数据源与工具生态.md` | A 股数据去哪拿、工具怎么选、K 线接口速查 |
-| 02 | `02-外部数据合规入门.md` | 抓数据合不合法、边界在哪 |
-| 03 | `03-A股行业分类体系对比.md` | 申万/中证/GICS 分类体系区别 |
-| 04 | `04-ETF估值方法论.md` | ETF 贵还是便宜、指标怎么选 |
-| 05 | `05-量化估值因子入门.md` | 因子投资入门、学术脉络 |
-| 06 | `06-技术分析简介.md` | K 线/均线/MACD 的语言和陷阱 |
+| 01 | `knowledge/data-sources.md` | A 股数据去哪拿、工具怎么选、K 线接口速查 |
+| 02 | `knowledge/compliance.md` | 抓数据合不合法、边界在哪 |
+| 03 | `knowledge/sector-classification.md` | 申万/中证/GICS 分类体系区别 |
+| 04 | `knowledge/valuation-methodology.md` | ETF 贵还是便宜、指标怎么选 |
+| 05 | `knowledge/quant-factors-intro.md` | 因子投资入门、学术脉络 |
+| 06 | `knowledge/technical-analysis.md` | K 线/均线/MACD 的语言和陷阱 |
 
 ---
 
 > **工程文档入口**：
 > - 系统架构 → `architecture.md`
-> - 量化回测引擎 → `architecture/design/backtest-engine.md`
-> - ETF 贡献度分析 → `architecture/design/etf-contribution.md`
+> - 量化回测引擎 → `architecture/backtest-engine.md`
+> - ETF 贡献度分析 → `architecture/etf-contribution.md`
 > - 量化运维 → `ops/quant/overview.md`
 > - 正式页运维 → `ops/report.md`
 > - 发布门禁 → `ops/release.md`

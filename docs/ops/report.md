@@ -101,7 +101,7 @@ powershell -ExecutionPolicy Bypass -File batchfiles\setup_report_task.ps1
 
 ## 相关文档
 
-- 系统架构：`docs/architecture.md`
+- 系统架构：`docs/architecture/overview.md`
 - 量化运维：`docs/ops/quant/overview.md`
-- 代码审计：`docs/ops/audit.md`
+- 代码审计：`docs/reference/audit.md`
 - 发布门禁：`docs/ops/release.md`

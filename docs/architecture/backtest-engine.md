@@ -416,7 +416,7 @@ scripts/quant_factors.py
 scripts/quant_backtest.py::_precompute_factors()
 scripts/quant_contract.py（如有参数）
 templates/tuner.html（如有控件/说明）
-docs/architecture/design/backtest-engine.md
+docs/architecture/backtest-engine.md
 tests/test_quant_factors.py
 ```
 

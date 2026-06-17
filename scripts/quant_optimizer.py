@@ -74,6 +74,7 @@ class OptimizationConfig:
     save_nav: int = 0
     end_date: str = None
     universe_str: str = None
+    constraints: list = field(default_factory=list)
 
     @property
     def multi_period(self):
@@ -111,6 +112,8 @@ def parse_args(argv=None):
                    help="Save NAV CSVs for top N trials")
     p.add_argument("--universe", default=None, dest="universe_str",
                    help="ETF filter: '*'=all, comma-list=subset, omit=active-only")
+    p.add_argument("--constraint", default=None, action="append", dest="constraints",
+                   help="Constraint: mdd,-20 = MDD must be >= -20pct, bear,0.15,0.30 = bear pos in [0.15,0.30]. Repeatable.")
     p.add_argument("--end", default=None, dest="end_date",
                    help="End date override (default: today)")
     args = p.parse_args(argv)
@@ -142,6 +145,7 @@ def parse_args(argv=None):
         resume=args.resume,
         save_nav=args.save_nav,
         universe_str=args.universe_str,
+        constraints=args.constraints or [],
         end_date=end_date,
     )
 
@@ -619,6 +623,25 @@ def _run_baseline(runner: BacktestRunner, cfg: OptimizationConfig):
     return results
 
 
+def _check_constraints(trial_params: dict, trial_metrics: dict, constraints: list):
+    """Check trial against constraints. Returns None if passed, or error string."""
+    for c in (constraints or []):
+        parts = c.split(",")
+        ctype = parts[0]
+        if ctype == "mdd":
+            limit = float(parts[1])
+            for lab, m in trial_metrics.items():
+                mdd = m.get("max_drawdown", 0)
+                if mdd < limit:  # mdd is negative
+                    return f"{lab} MDD={mdd:.1f}% < constraint {limit:.1f}%"
+        elif ctype == "bear":
+            lo, hi = float(parts[1]), float(parts[2])
+            bear = trial_params.get("ma_bear_pos")
+            if bear is not None and (bear < lo or bear > hi):
+                return f"ma_bear_pos={bear:.3f} outside [{lo},{hi}]"
+    return None
+
+
 def _run_trial_optuna(trial, runner: BacktestRunner, cfg: OptimizationConfig, space: ParamSpace, baseline_scores: dict):
     """Optuna objective: suggest params, run backtests, return normalized composite score."""
     params = {}
@@ -652,15 +675,21 @@ def _run_trial_optuna(trial, runner: BacktestRunner, cfg: OptimizationConfig, sp
     if err:
         raise optuna.TrialPruned(f"Validation failed: {err}")
     # Run all periods (serial — Python GIL makes threads slower for CPU-bound backtests)
+    all_metrics = {}
     rel_scores = []
     for lab, sd, ed in cfg.periods:
         m = runner.run(params, sd, ed)
         if m is None:
             raise optuna.TrialPruned(f"Backtest failed for {lab}")
         trial.set_user_attr(f"{lab}_metrics", json.dumps(m))
+        all_metrics[lab] = m
         raw = m.get(cfg.metric, -9999)
         bl = baseline_scores.get(lab, 1.0)
         rel_scores.append(raw / bl if bl != 0 else 0.0)
+    # Check constraints
+    c_err = _check_constraints(params, all_metrics, cfg.constraints)
+    if c_err:
+        raise optuna.TrialPruned(f"Constraint: {c_err}")
     return float(np.mean(rel_scores))
 
 
