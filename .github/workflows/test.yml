@@ -1,12 +1,8 @@
 name: test
 
+# Manual only. Do not run on push/pull_request; this prevents noisy failure emails.
 on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+  workflow_dispatch:
 
 permissions:
   contents: read
