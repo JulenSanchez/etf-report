@@ -144,6 +144,7 @@ w1=48:65:1 w3=18:30:1 ... w7=20 bias=0 conf_type=ma_trend ...
 | `--constraint` 不生效 | argparse 格式错误 | 确认 `--constraint mdd,-20` 无空格、无 % 号 |
 | 优化器 OOM | 54 支全池 + preload 数据 ~2GB | 减少 trial 数或重启进程 |
 | resolve_weights 改变所有权重 | 固定值参数被当作 weight 类型 | 确认 w7 用 `w7=20` 格式（非 weight type）|
+| `DuplicatedStudyError` 重复 study | 旧 run 的 optuna.db 未被删除（Windows 文件锁） | 优化器已自动处理：目录存在时自动追加 `-v2`/`-v3`，无需手动改名 |
 
 ## 六、环境约定
 

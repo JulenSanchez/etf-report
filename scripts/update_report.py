@@ -541,14 +541,14 @@ def load_quant_preset_params(quant_config_path, preset="zen-1"):
 def default_quant_preset_params():
     """Fallback params matching current preset2 defaults."""
     return {
-        "w1": 0, "w2": 45, "w3": 45, "w4": 0, "w6": 0, "w7": 10, "bias": 0,
+        "w1": 45, "w3": 45, "w7": 10, "bias": 0,
         "conf_type": "ma_trend", "ma_trend_period": 26,
         "ma_bull_pos": 1.0, "ma_bear_pos": 0.3, "ma_direction_confirm": True,
         "max_holdings": 6, "disc_step": 0.05, "concentration": 0.0,
         "rebalance_freq": "daily", "execution_timing": "same_close", "score_band": 3,
-        "ema_period": 5, "vol_window": 20,
-        "f1_sensitivity": 8.0, "f2_sensitivity": 8.0, "f3_sensitivity": 1.5,
-        "f7_t": 15.0, "f7_k": 3.5, "f7_window": 20, "f2_ma_period": 25,
+        "f1_ema_period": 5, "f3_vol_window": 20,
+        "f1_sensitivity": 8.0, "f3_sensitivity": 1.5,
+        "f7_t": 15.0, "f7_k": 3.5, "f7_window": 20,
         "f6_rsi_thresh": 80.0, "f6_drop_thresh": 2.5, "f6_base_penalty": 0.15,
     }
 

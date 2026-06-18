@@ -10,7 +10,7 @@ import quant_contract as qc
 
 
 def sample_params(**overrides):
-    """Test params using only active keys (w2/w4/w6/f2/f6 removed in REQ-255/256)."""
+    """Test params using only active keys."""
     params = {
         "w1": 30,
         "w3": 60,

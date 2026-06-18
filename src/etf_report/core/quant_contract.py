@@ -52,8 +52,8 @@ PARAM_SCHEMA = {
             "params": [
                 {"key": "max_holdings", "label": "最大持仓数", "unit": "count", "engine_path": "position.max_holdings"},
                 {"key": "disc_step", "label": "离散化步长", "unit": "ratio", "engine_path": "position.discretize_step"},
-                {"key": "concentration", "label": "仓位集中度 C", "unit": "raw", "engine_path": "position.concentration"},
-                {"key": "c_sensitivity", "label": "C 动态灵敏度", "unit": "raw", "engine_path": "position.c_sensitivity"},
+                {"key": "concentration", "label": "仓位集中度 C", "unit": "ui_x10_to_raw", "engine_path": "position.concentration"},
+                {"key": "c_sensitivity", "label": "C 动态灵敏度", "unit": "ui_x10_to_raw", "engine_path": "position.c_sensitivity"},
                 {"key": "rebalance_freq", "label": "调仓频率", "unit": "enum", "engine_path": "position.rebalance_freq"},
                 {"key": "score_band", "label": "分数带", "unit": "ui_percent_to_ratio", "engine_path": "position.score_band"},
             ],

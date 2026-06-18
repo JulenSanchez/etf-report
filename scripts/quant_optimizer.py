@@ -128,9 +128,19 @@ def parse_args(argv=None):
     output_dir = args.output_dir
     if output_dir:
         output_dir = Path(output_dir)
+        # Auto-bump if directory already exists
+        v = 2
+        while output_dir.exists():
+            output_dir = Path(f"{args.output_dir}-v{v}")
+            v += 1
     else:
         ts = datetime.now().strftime("%Y%m%d")
-        output_dir = RESEARCH_DIR / f"{args.preset}-{ts}"
+        base = RESEARCH_DIR / f"{args.preset}-{ts}"
+        output_dir = base
+        v = 2
+        while output_dir.exists():
+            output_dir = RESEARCH_DIR / f"{args.preset}-{ts}-v{v}"
+            v += 1
 
     return OptimizationConfig(
         preset=args.preset,
@@ -558,7 +568,7 @@ class ReportGenerator:
             for i, r in enumerate(top_n):
                 c = r.get("composite", {})
                 vals = " | ".join(f"{c.get(m, 0):.4f}" for m in METRIC_NAMES[:5])
-                kp = ", ".join(f"{k}={v}" for k, v in sorted(r["params"].items()) if v != 0 and k in ("w1", "w2", "w3", "w6", "w7", "concentration", "ema_period", "score_band"))
+                kp = ", ".join(f"{k}={v}" for k, v in sorted(r["params"].items()) if v != 0 and k in ("w1", "w3", "w7", "concentration", "f1_ema_period", "score_band"))
                 lines.append(f"| {i+1} | {vals} | {kp} |")
         lines.append("")
 

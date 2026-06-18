@@ -52,7 +52,6 @@ def test_load_quant_preset_params_uses_shared_contract(tmp_path, load_module):
                     window_days: 20
                   log_return_deviation:
                     window_days: 20
-                  f2_ma_period: 25
                   f6_rsi_thresh: 80.0
                   f6_drop_thresh: 0.025
                   f6_base_penalty: 0.15

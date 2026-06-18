@@ -86,20 +86,72 @@
 4. `docs/`：架构与运维说明。
 5. `plans/Archive.md`、历史 REQ、research：历史上下文，不作为当前状态事实源。
 
-## 安全规则
+## 工作流
 
-- **换池**：用户说"换池"。详见 `docs/runbook/v2-quant/pool-change.md`。
-- **发布/提交**：用户说"发布"（完整 Phase 0-8）或"提交"（快速路径跳过版本治理）。详见 `docs/runbook/release.md`。
-- 不主动删除目录、修改 Windows 计划任务，除非用户明确要求。
-- 遇到 destructive / shared-state 操作先确认。
-- 不使用 `--force` / `--force-with-lease`，除非用户明确要求且说明原因。
-- 修改核心逻辑后跑相关最小验证；涉及回测/参数/发布链时优先跑对应测试。
-- 不扫描或修改 `logs/`、`data/`、`outputs/`、`_working/`，除非任务明确需要。
-- **遭遇 Tuner/回测/数据异常时，先查排障表**：
-  - 量化/Tuner/回测 → `docs/runbook/v2-quant/overview.md` 的故障排查索引，再按症状跳到短文档
-  - 正式页/推送/数据管线 → `docs/runbook/v1-report.md` 常见问题
-  - 不要猜进程/网络/缓存，先按症状索引定位。
-- **参数优化**：用户说"优化 <preset>"。详见 `docs/runbook/v2-quant/optimization.md`。优化器自动出 analysis.json。
+每个操作都有对应的流水线。AI 按触发词自动进入对应流程。
+
+### 需求开发（REQ）
+
+```
+用户说"处理 REQ-XXX" → EnterPlanMode → 调研 → 写 plan → 用户审批 → 执行 → 验证
+```
+- 简单操作除外：单行修/config 改/文档更新/数据拉取/查进度
+- Plan 文件落在 `~/.claude/plans/`
+
+### ETF 筛选
+
+```
+用户说"筛选 ETF" → scan_etf_universe.py --debug → 出 Excel → 审阅候选 → 决定 → 进入换池
+```
+
+### 换池
+
+```
+用户说"换池" → 读 SOP → 逐支执行 → 基线对比 → 更新追踪文档
+```
+详见 `docs/runbook/v2-quant/pool-change.md`
+
+### 参数优化
+
+```
+用户说"优化 <preset>" → 自检数据 → 推导空间 → TPE 搜索 → auto-analyze → 写报告
+```
+详见 `docs/runbook/v2-quant/optimization.md`
+
+### 策略变更
+
+| 类型 | 触发词 | 全链路审计（必须逐层检查） |
+|------|--------|--------------------------|
+| 改参数 | "删参数 X"/"加参数 Y"/"改参数 Z" | `PARAM_SCHEMA` → `PARAM_BOUNDS` → `preset_to_tuner_params` → `tuner_params_to_config_override` → `tuner.html` 控件 → `quant_tuner.py` getParams/setParams → `quant_backtest.py` 消费 → tests |
+| 改因子 | "改 F1/F3/F7" | `quant_factors.py` → `quant_backtest.py` compute/sensitivity → `quant_contract.py` 映射 → `tuner.html` 控件 → `config/quant_universe.yaml` preset → `docs/design/factors.md` |
+| 改引擎 | "改回测逻辑"/"改仓位分配" | `quant_backtest.py` → `quant_contract.py` config_override → `docs/design/backtest-engine.md` → tests |
+
+核心原则：**不改孤岛，必审全链**。看不懂 `engine_path` 就查 `PARAM_SCHEMA`，不知道哪些测试就查 `overview.md` 变更路由。
+
+### 发布
+
+```
+用户说"发布" → Phase 0-8 全流程
+用户说"提交" → 快速路径（跳过版本治理）
+```
+详见 `docs/runbook/release.md`
+
+### Bug 排查
+
+```
+遭遇异常 → 自动查排障表 → 按症状定位 → 修复
+```
+- 量化/Tuner/回测 → `docs/runbook/v2-quant/overview.md` 故障排查索引
+- 正式页/推送/数据管线 → `docs/runbook/v1-report.md` 常见问题
+- 不要猜进程/网络/缓存
+
+## 行为约束
+
+- 不主动删除目录、修改 Windows 计划任务，除非用户明确要求
+- 遇到 destructive / shared-state 操作先确认
+- 不使用 `--force` / `--force-with-lease`，除非用户明确要求且说明原因
+- 修改核心逻辑后跑相关最小验证
+- 不扫描或修改 `logs/`、`data/`、`outputs/`、`_working/`，除非任务明确需要
 
 ## 术语
 

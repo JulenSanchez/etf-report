@@ -22,7 +22,6 @@ PROJECT_ROOT = next(parent for parent in Path(__file__).resolve().parents if (pa
 sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
 
 from quant_factors import (
-    compute_all_factors,
     map_f1, map_f3, map_f4, map_f7,
     confidence_function, regime_confidence, infer_regime_from_nav, dd_trigger_confidence, momentum_crash_confidence, ma_trend_confidence,
 )
@@ -233,7 +232,7 @@ from quant_factors import calc_rsi as _precalc_rsi
 def _precompute_factors(all_daily, all_weekly, ema_period, vol_window,
                          f7_window=20, f7_lookback=250, f7_min_days=60, f7_sigma_floor=0.01,
                          f3_norm_window=60, f1_daily_ema=False, f1_daily_ma=False,
-                         f2_ma_period=None, f6_rsi_thresh=80.0, f6_drop_thresh=0.025,
+                         f6_rsi_thresh=80.0, f6_drop_thresh=0.025,
                          f6_vol_thresh=1.5, f6_decay_days=3, f6_base_penalty=0.15,
                          f1_active_days=0):
     '''Precompute F1/F3/F6/F7/RSI series once — O(1) lookup per rebalance date.
@@ -250,8 +249,6 @@ def _precompute_factors(all_daily, all_weekly, ema_period, vol_window,
     import numpy as np
     from quant_factors import calc_ema as _ce
     out = {}
-    f1_daily = f1_daily_ema or f1_daily_ma
-    f2_window = f2_ma_period or (ema_period * 5)
 
     # Bit → offset from last trading day of the ISO week.
     # bit 0 (Fri) = 0 days before last, bit 1 (Thu) = 1 before last, etc.
@@ -376,13 +373,6 @@ def _precompute_factors(all_daily, all_weekly, ema_period, vol_window,
                 mu = np.nanmean(wv); sigma = max(np.nanstd(wv), f7_sigma_floor)
                 if sigma == 0: continue
                 f7_val[i] = float((v - mu) / sigma)
-        # F2: daily MA deviation
-        f2_val = np.full(len(daily_dates), np.nan, dtype=float)
-        if len(daily_df) >= f2_window:
-            cd = daily_df["close"].astype(float).to_numpy()
-            ma = np.convolve(cd, np.ones(f2_window)/f2_window, mode='valid')
-            dev = (cd[f2_window-1:] - ma) / ma * 100
-            f2_val[f2_window-1:] = dev
         rsi_val = np.full(len(daily_dates), np.nan, dtype=float)
         if len(daily_df) >= 15:
             rsi_series = _precalc_rsi(daily_df["close"].astype(float), period=14)
@@ -413,7 +403,7 @@ def _precompute_factors(all_daily, all_weekly, ema_period, vol_window,
                         break
 
         out[code] = {"daily_dates": daily_dates, "weekly_dates": weekly_dates,
-                      "f1": f1_val, "f2": f2_val, "f3": f3_val, "f6": f6_val,
+                      "f1": f1_val, "f3": f3_val, "f6": f6_val,
                       "f7": f7_val, "rsi": rsi_val}
     return out
 
@@ -473,7 +463,6 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
     score_band = position_cfg.get("score_band", 0)
     commission_rate = position_cfg.get("commission_rate", 0)
     f3_sens = sensitivity.get("f3", 1.0)
-    f2_sens = sensitivity.get("f2", 8.0)
     conf_type = confidence_cfg.get("type", "regime")
     # dead_zone/full_zone 在 YAML 中为百分制(如 25/65)，需转为 [0,1]
     dead_zone = confidence_cfg["dead_zone"] / 100.0
@@ -505,7 +494,6 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
     f1_daily_ema = factor_cfg.get("f1_daily_ema", False)
     f1_daily_ma = factor_cfg.get("f1_daily_ma", False)
     f1_active_days = factor_cfg.get("f1_active_days", 0)
-    f2_ma_period = factor_cfg.get("f2_ma_period")
     f6_rsi_thresh   = factor_cfg.get("f6_rsi_thresh", 80.0)
     f6_drop_thresh  = factor_cfg.get("f6_drop_thresh", 0.025)
     f6_base_penalty = factor_cfg.get("f6_base_penalty", 0.15)
@@ -588,7 +576,6 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
         f7_min_days=f7_min_days, f7_sigma_floor=f7_sigma_floor,
         f1_daily_ema=f1_daily_ema, f1_daily_ma=f1_daily_ma,
         f1_active_days=f1_active_days,
-        f2_ma_period=f2_ma_period,
         f6_rsi_thresh=f6_rsi_thresh,
         f6_drop_thresh=f6_drop_thresh,
         f6_vol_thresh=f6_vol_thresh,
@@ -689,9 +676,8 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
             if np.isnan(f6_val):
                 f6_val = 1.0
 
-            f2_val = fs["f2"][daily_end - 1] if daily_end > 0 else np.nan
             factors = {
-                "f1_ema_dev": f1_val, "f2_daily_ma": f2_val,
+                "f1_ema_dev": f1_val,
                 "f3_volume_ratio": f3_val, "f4_valuation": 50.0,
                 "f7_log_return_dev": f7_val, "f6_exhaustion_penalty": f6_val,
             }
@@ -705,18 +691,16 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
         factors_df = pd.DataFrame(factors_data).T
 
         mapped_f1 = factors_df["f1_ema_dev"].apply(lambda v: map_f1(v, f1_sens))
-        mapped_f2 = factors_df["f2_daily_ma"].apply(lambda v: map_f1(v, f2_sens)).fillna(0.5)
         mapped_f3 = factors_df["f3_volume_ratio"].apply(lambda v: map_f3(v, f3_sens))
 
         mapped_f7 = factors_df["f7_log_return_dev"].apply(lambda v: map_f7(v, t=f7_t, k=f7_k)).fillna(0.5)
         w1 = weights.get("ema_deviation", 0.35)
-        w2 = weights.get("f2_daily_ma", 0.0)
         w3 = weights.get("volume_ratio", 0.35)
         w4 = weights.get("valuation", 0.15)
         w6 = weights.get("exhaustion_penalty", 0.0)
         w7 = weights.get("log_return_deviation", 0.0)
 
-        composite = mapped_f1 * w1 + mapped_f2 * w2 + mapped_f3 * w3
+        composite = mapped_f1 * w1 + mapped_f3 * w3
         if w7 > 0:
             composite = composite + mapped_f7 * w7
 
@@ -961,7 +945,6 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
         if return_details:
             # Convert to plain dicts for O(1) lookup (avoid pandas Series .get() overhead)
             _f1_d = mapped_f1.to_dict()
-            _f2_d = mapped_f2.to_dict()
             _f3_d = mapped_f3.to_dict()
             _f7_d = mapped_f7.to_dict() if "f7_log_return_dev" in factors_df.columns else {}
             _comp_d = composite.to_dict()
@@ -979,7 +962,6 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
                 z = (raw_score - mu) / sigma if sigma > 0 else 0
                 detail[code] = {
                     "f1": round(_f1_d.get(code, 0) * 100, 1),
-                    "f2": round(_f2_d.get(code, 0.5) * 100, 1),
                     "f3": round(_f3_d.get(code, 0) * 100, 1),
                     "f6": round(_f6_d.get(code, 100.0) * 100, 1) if _f6_d else 100.0,
                     "f7": round(_f7_d.get(code, 0.5) * 100, 1) if _has_f7 else None,
