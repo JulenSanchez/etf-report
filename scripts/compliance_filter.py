@@ -10,4 +10,8 @@ if str(SRC_DIR) not in sys.path:
 
 from etf_report.core import compliance_filter as _impl
 
-sys.modules[__name__] = _impl
+
+if __name__ == "__main__":
+    _impl.main()
+else:
+    sys.modules[__name__] = _impl

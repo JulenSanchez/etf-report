@@ -2,7 +2,7 @@
 
 三个常驻研究轨道，各自独立推进、独立可停。与需求看板（`plans/`）分离——需求看板管功能级 Bug/Feature，research 管持续探索。
 
-> 本目录记录研究过程、实验结果和 promotion 证据；当前生效参数始终以 `../config/quant_universe.yaml` 为准，工程入口见 `../docs/ops/quant/overview.md`。
+> 本目录记录研究过程、实验结果和 promotion 证据；当前生效参数始终以 `../config/quant_universe.yaml` 为准，工程入口见 `../docs/runbook/v2-quant/overview.md`。
 
 **与 plans/ 需求看板的分工**：research 是探索空间，plans 是交付空间。Promotion 闸门连接二者。
 
@@ -74,7 +74,7 @@
 参数优化推荐使用统一优化器 `scripts/quant_optimizer.py`（替代手工 sweep 脚本）：
 
 ```bash
-# 见 docs/ops/quant/overview.md 完整用法
+# 见 docs/runbook/v2-quant/overview.md 完整用法
 python scripts/quant_optimizer.py --preset daily_aggressive --strategy bayesian --auto-bounds --n-trials 100
 ```
 

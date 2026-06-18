@@ -230,12 +230,16 @@ def write_audit(
         "daily_summary_path", "logs/compliance_daily_summary_{date}.md"
     )
 
-    audit_path = os.path.join(
-        PROJECT_ROOT, audit_tpl.format(date=today)
-    )
-    summary_path = os.path.join(
-        PROJECT_ROOT, summary_tpl.format(date=today)
-    )
+    def _resolve_output_path(template: str) -> str:
+        path = template.format(date=today)
+        if os.path.isabs(path):
+            return path
+        if os.path.dirname(path):
+            return os.path.join(PROJECT_ROOT, path)
+        return os.path.join(log_dir, path)
+
+    audit_path = _resolve_output_path(audit_tpl)
+    summary_path = _resolve_output_path(summary_tpl)
     os.makedirs(os.path.dirname(audit_path), exist_ok=True)
 
     # 1. 逐条 append

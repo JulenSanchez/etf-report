@@ -861,7 +861,7 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
         # 每支目标仓位
         target_positions = softmax_weights * total_target
 
-        # 离散化（最大余数法：floor 后按余数补回，最后归一化到 total_target）
+        # 离散化（最大余数法：floor 后按余数补回，残量补给最大持仓者）
         in_steps = target_positions / step
         floored = np.floor(in_steps)
         remainders = in_steps - floored
@@ -872,10 +872,10 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
             top_indices = remainders.nlargest(min(deficit, len(remainders))).index
             floored.loc[top_indices] += 1
         target_positions = (floored * step).clip(lower=0)
-        # 归一化：等比例缩放到 total_target，避免离散化舍入留现金
-        pos_sum = target_positions.sum()
-        if pos_sum > 0:
-            target_positions = target_positions * (total_target / pos_sum)
+        leftover = total_target - target_positions.sum()
+        if leftover > 0:
+            max_idx = target_positions.idxmax()
+            target_positions[max_idx] += leftover
 
         # Fallback: fill missing prices for held ETFs with most recent available close.
         # ETFs whose price comes from fallback (not from today's data) are treated as

@@ -623,24 +623,22 @@ def _run_baseline(runner: BacktestRunner, cfg: OptimizationConfig):
     return results
 
 
+
 def _check_constraints(trial_params: dict, trial_metrics: dict, constraints: list):
-    """Check trial against constraints. Returns None if passed, or error string."""
-    for c in (constraints or []):
-        parts = c.split(",")
-        ctype = parts[0]
-        if ctype == "mdd":
+    for cst in (constraints or []):
+        parts = cst.split(",")
+        if parts[0] == "mdd":
             limit = float(parts[1])
             for lab, m in trial_metrics.items():
                 mdd = m.get("max_drawdown", 0)
-                if mdd < limit:  # mdd is negative
+                if mdd < limit:
                     return f"{lab} MDD={mdd:.1f}% < constraint {limit:.1f}%"
-        elif ctype == "bear":
+        elif parts[0] == "bear":
             lo, hi = float(parts[1]), float(parts[2])
             bear = trial_params.get("ma_bear_pos")
             if bear is not None and (bear < lo or bear > hi):
                 return f"ma_bear_pos={bear:.3f} outside [{lo},{hi}]"
     return None
-
 
 def _run_trial_optuna(trial, runner: BacktestRunner, cfg: OptimizationConfig, space: ParamSpace, baseline_scores: dict):
     """Optuna objective: suggest params, run backtests, return normalized composite score."""
@@ -675,8 +673,8 @@ def _run_trial_optuna(trial, runner: BacktestRunner, cfg: OptimizationConfig, sp
     if err:
         raise optuna.TrialPruned(f"Validation failed: {err}")
     # Run all periods (serial — Python GIL makes threads slower for CPU-bound backtests)
-    all_metrics = {}
     rel_scores = []
+    all_metrics = {}
     for lab, sd, ed in cfg.periods:
         m = runner.run(params, sd, ed)
         if m is None:
@@ -908,6 +906,22 @@ def run(cfg: OptimizationConfig):
     # Sort by primary metric desc
     all_results.sort(key=lambda r: r.get("composite", {}).get(cfg.metric, -9999), reverse=True)
     ReportGenerator(cfg, baseline_metrics, all_results).generate_all(cfg.output_dir)
+
+    # ── Auto-analyze ──
+    study_name = f"{cfg.preset}_{cfg.output_dir.name}"
+    log("Running optimization_analyzer...")
+    analyzer_cmd = [
+        sys.executable, str(PROJECT_ROOT / "scripts" / "optimization_analyzer.py"),
+        "--study", study_name, "--preset", cfg.preset, "--baseline-preset", cfg.preset,
+        "--start", cfg.periods[-1][1] if cfg.periods else "2020-06-17",
+        "--end", cfg.end_date or datetime.now().strftime("%Y-%m-%d"),
+        "--top-n", "3", "--output", str(cfg.output_dir / "analysis.json"),
+    ]
+    try:
+        subprocess.run(analyzer_cmd, check=True, capture_output=True, text=True, timeout=1800)
+        log("  analysis.json generated")
+    except Exception as e:
+        print(f"  WARNING: analyzer failed: {e}", file=sys.stderr)
 
     # ── Done marker ──
     marker = cfg.output_dir / ".optimizer_done"

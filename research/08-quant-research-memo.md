@@ -1,6 +1,6 @@
 # 08 - 量化研究备忘录
 
-> 本文是历史研究备忘录，记录策略演进经验和已验证/已放弃的想法，不作为当前工程事实源。当前系统入口见 `../docs/ops/quant/overview.md`，当前参数事实源见 `../config/quant_universe.yaml`，回测引擎契约见 `../docs/architecture/backtest-engine.md`。
+> 本文是历史研究备忘录，记录策略演进经验和已验证/已放弃的想法，不作为当前工程事实源。当前系统入口见 `../docs/runbook/v2-quant/overview.md`，当前参数事实源见 `../config/quant_universe.yaml`，回测引擎契约见 `../docs/design/backtest-engine.md`。
 >
 > 本文收拢原先散落在外部 memory 中的 etf-report 量化策略演进记录。后续 ETF/量化策略事实源优先写入项目内部的 `docs/`、`plans/`、`research/`，不要再依赖外部 memory。
 
@@ -21,7 +21,7 @@
 | 指定收益/回撤范围 | Target Band Filter | 粗扫后筛满足目标带的组合 |
 | 找弱点和崩溃区 | Adversarial Search | 反向按最差窗口、最大回撤等排序 |
 
-统一优化器用法见 `docs/ops/quant/overview.md`。
+统一优化器用法见 `docs/runbook/v2-quant/overview.md`。
 
 每次正式搜索应记录：策略、采样效率、是否漏峰、是否过慢、用户反馈和新适用场景。
 

@@ -62,8 +62,8 @@ PARAM_SCHEMA = {
             "key": "factors",
             "label": "因子周期与阈值",
             "params": [
-                {"key": "ema_period", "label": "F1 EMA 周期", "unit": "weeks", "engine_path": "factors.ema.period_weeks"},
-                {"key": "vol_window", "label": "F3 量比窗口", "unit": "days", "engine_path": "factors.volume_ratio.window_days"},
+                {"key": "f1_ema_period", "label": "F1 EMA 周期", "unit": "weeks", "engine_path": "factors.ema.period_weeks"},
+                {"key": "f3_vol_window", "label": "F3 量比窗口", "unit": "days", "engine_path": "factors.volume_ratio.window_days"},
                 {"key": "f7_window", "label": "F7 累计收益窗口", "unit": "days", "engine_path": "factors.log_return_deviation.window_days"},
             ],
         },
@@ -109,8 +109,8 @@ PARAM_BOUNDS = {
     "f1_active_days":   {"type": "integer", "min": 0, "max": 31},
     "score_band":       {"type": "continuous", "min": 0, "max": 15},
     # factors
-    "ema_period":       {"type": "integer", "min": 2, "max": 40},
-    "vol_window":       {"type": "integer", "min": 5, "max": 60},
+    "f1_ema_period":       {"type": "integer", "min": 2, "max": 40},
+    "f3_vol_window":       {"type": "integer", "min": 5, "max": 60},
     "f7_window":        {"type": "integer", "min": 5, "max": 40},
     # universe
     "universe": {"type": "special"},
@@ -285,8 +285,8 @@ def tuner_params_to_config_override(params):
         },
         "factors": {
             "f1_active_days": _as_int(params.get("f1_active_days"), 0),
-            "ema": {"period_weeks": _as_int(params.get("ema_period"), 20)},
-            "volume_ratio": {"window_days": _as_int(params.get("vol_window"), 20)},
+            "ema": {"period_weeks": _as_int(params.get("f1_ema_period"), 20)},
+            "volume_ratio": {"window_days": _as_int(params.get("f3_vol_window"), 20)},
             "log_return_deviation": {
                 "window_days": _as_int(params.get("f7_window"), 20),
                 "lookback_days": 250,
@@ -367,8 +367,8 @@ def preset_to_tuner_params(preset_key, preset_cfg, global_conf=None):
         "disc_step": position.get("discretize_step", 0.05),
         "concentration": position.get("concentration", 2.0) * 10,
         "c_sensitivity": position.get("c_sensitivity", 0.0) * 10,
-        "ema_period": factors.get("ema", {}).get("period_weeks", 20),
-        "vol_window": factors.get("volume_ratio", {}).get("window_days", 20),
+        "f1_ema_period": factors.get("ema", {}).get("period_weeks", 20),
+        "f3_vol_window": factors.get("volume_ratio", {}).get("window_days", 20),
         "f1_sensitivity": sensitivity.get("f1", 8.0),
         "f3_sensitivity": sensitivity.get("f3", 1.0),
         "rebalance_freq": position.get("rebalance_freq", "W-FRI"),

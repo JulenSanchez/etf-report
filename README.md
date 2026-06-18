@@ -52,7 +52,7 @@ pytest tests -q
 
 因此本轮项目化改造仍保留根目录 `index.html` 和 `assets/`，避免远端 Pages 断站。
 
-发布前先读：`docs/ops/release.md`。
+发布前先读：`docs/runbook/release.md`。
 
 ## 目录结构
 
@@ -67,9 +67,9 @@ etf-report/
 ├── src/etf_report/core/       # 共享项目路径等基础模块
 ├── tests/                     # 回归测试
 ├── docs/
-│   ├── ai/                    # AI 协作说明与 legacy skill 配置
-│   ├── ops/                   # report / quant / release / audit 运维文档
-│   └── architecture/          # 架构设计与子系统文档
+│   ├── design/                # 架构设计、术语与子系统文档
+│   ├── runbook/               # report / quant / release / audit 运维文档
+│   └── knowledge/             # 长期知识材料
 ├── research/                  # 研究记录与 promotion 证据
 ├── plans/                     # 历史需求治理材料
 ├── data/                      # ignored，运行数据与缓存
@@ -91,13 +91,13 @@ etf-report/
 
 | 文档 | 内容 |
 |---|---|
-| `docs/architecture/overview.md` | 系统架构总览 |
-| `docs/ops/report.md` | 正式页报告生成与发布链路 |
-| `docs/ops/quant/overview.md` | 量化系统总览与运维索引 |
-| `docs/ops/release.md` | GitHub Pages 发布门禁 |
-| `docs/ops/stable.md` | stable 仓库与计划任务运维 |
-| `docs/reference/audit.md` | 项目审计方法 |
-| `docs/reference/glossary.md` | 核心术语 |
+| `docs/design/overview.md` | 系统架构总览 |
+| `docs/runbook/v1-report.md` | 正式页报告生成与发布链路 |
+| `docs/runbook/v2-quant/overview.md` | 量化系统总览与运维索引 |
+| `docs/runbook/release.md` | GitHub Pages 发布门禁 |
+| `docs/runbook/stable.md` | stable 仓库与计划任务运维 |
+| `docs/runbook/audit.md` | 项目审计方法 |
+| `docs/design/glossary.md` | 核心术语 |
 | `research/README.md` | 研究索引 |
 
 ## 运行产物

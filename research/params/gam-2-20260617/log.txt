@@ -1,0 +1,12 @@
+[19:01:27] Optimizer start: preset=gam-2 strategy=bayesian metric=annual_return
+[19:01:27]   periods=[('6Y', '2020-06-18', '2026-06-17')] seed=42
+[19:01:27]   output=research\params\gam-2-20260617
+[19:01:27] Computing baseline ...
+[19:02:46]   baseline 6Y: calmar=1.6508 sharpe=1.3082 annual=40.40%
+[19:02:46] Param space: 27 params
+[19:02:47] Bayesian: 70 trials (Optuna TPE)
+[20:30:50] Generating report (65 trials) ...
+[20:30:50] Running optimization_analyzer...
+[20:30:50] DONE. Results in research\params\gam-2-20260617
+[20:30:50]   Best: annual_return=1.2536
+[20:30:50]   Params: {"bias": 0, "c_sensitivity": 60, "concentration": 4.3, "conf_type": "ma_trend", "dead_zone": 21.71665786551153, "disc_step": 0.04941436757067727, "ema_period": 4, "execution_timing": "same_close", "f1_active_days": 1, "f1_sensitivity": 9.0, "f3_sensitivity": 2.3, "f7_k": 3.4, "f7_t": 10.391440683294244, "f7_window": 34, "full_zone": 65, "ma_bear_pos": 0.5214738862819698, "ma_bull_pos": 1.0, "ma_direction_confirm": "True", "ma_trend_period": 28, "max_holdings": 3, "rebalance_freq": "daily", "score_band": 2.8, "vol_window": 44, "w1": 59, "w3": 22, "w7": 19}

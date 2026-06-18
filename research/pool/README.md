@@ -1,7 +1,7 @@
 # pool/ — 标的池选择
 
 > 本文记录标的池研究和候选逻辑，不作为当前资产池事实源。当前生效 universe 以 `../../config/quant_universe.yaml` 为准。
-> 换池流程见 `../../docs/ops/pool-change.md`。
+> 换池流程见 `../../docs/runbook/v2-quant/pool-change.md`。
 
 ## 字段参考
 

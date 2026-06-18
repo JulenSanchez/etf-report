@@ -1,0 +1,2123 @@
+{
+  "study": "act-1_act-1-20260617",
+  "baseline": {
+    "preset": "act-1",
+    "tr": 530.13,
+    "mdd": -13.44,
+    "sharpe": 1.58,
+    "annual_return": 35.93
+  },
+  "convergence": [
+    {
+      "trial": 0,
+      "tr": 653.3846,
+      "mdd": -18.8973,
+      "w1": 46,
+      "w3": 24,
+      "max_holdings": 3,
+      "ma_bear_pos": 0.24,
+      "disc_step": 0.1926,
+      "f7_t": 26.0
+    },
+    {
+      "trial": 5,
+      "tr": 663.3674,
+      "mdd": -17.0417,
+      "w1": 51,
+      "w3": 19,
+      "max_holdings": 4,
+      "ma_bear_pos": 0.286,
+      "disc_step": 0.1243,
+      "f7_t": 15.5
+    },
+    {
+      "trial": 15,
+      "tr": 705.7161,
+      "mdd": -19.2778,
+      "w1": 57,
+      "w3": 18,
+      "max_holdings": 3,
+      "ma_bear_pos": 0.274,
+      "disc_step": 0.1477,
+      "f7_t": 27.5
+    },
+    {
+      "trial": 26,
+      "tr": 756.856,
+      "mdd": -19.4677,
+      "w1": 59,
+      "w3": 17,
+      "max_holdings": 3,
+      "ma_bear_pos": 0.263,
+      "disc_step": 0.1744,
+      "f7_t": 19.6
+    },
+    {
+      "trial": 37,
+      "tr": 787.7609,
+      "mdd": -18.9111,
+      "w1": 56,
+      "w3": 24,
+      "max_holdings": 3,
+      "ma_bear_pos": 0.207,
+      "disc_step": 0.1697,
+      "f7_t": 22.0
+    },
+    {
+      "trial": 40,
+      "tr": 816.2137,
+      "mdd": -19.3002,
+      "w1": 58,
+      "w3": 22,
+      "max_holdings": 3,
+      "ma_bear_pos": 0.184,
+      "disc_step": 0.1757,
+      "f7_t": 24.2
+    },
+    {
+      "trial": 50,
+      "tr": 846.3137,
+      "mdd": -18.8033,
+      "w1": 55,
+      "w3": 25,
+      "max_holdings": 3,
+      "ma_bear_pos": 0.254,
+      "disc_step": 0.1684,
+      "f7_t": 21.2
+    }
+  ],
+  "top_bottom_divergence": {
+    "w1": {
+      "top10_mean": 56.5,
+      "bot10_mean": 56.2,
+      "gap": 0.3,
+      "baseline": 57
+    },
+    "w3": {
+      "top10_mean": 19.7,
+      "bot10_mean": 16.9,
+      "gap": 2.8,
+      "baseline": 17
+    },
+    "max_holdings": {
+      "top10_mean": 3.4,
+      "bot10_mean": 5.3,
+      "gap": -1.9,
+      "baseline": 5
+    },
+    "disc_step": {
+      "top10_mean": 0.172,
+      "bot10_mean": 0.132,
+      "gap": 0.04,
+      "baseline": 0.1
+    },
+    "vol_window": {
+      "top10_mean": 46.8,
+      "bot10_mean": 40.5,
+      "gap": 6.3,
+      "baseline": 45
+    },
+    "dead_zone": {
+      "top10_mean": 29.904,
+      "bot10_mean": 24.735,
+      "gap": 5.169,
+      "baseline": 25
+    },
+    "f7_t": {
+      "top10_mean": 22.126,
+      "bot10_mean": 22.95,
+      "gap": -0.824,
+      "baseline": 23.7
+    },
+    "ma_bear_pos": {
+      "top10_mean": 0.258,
+      "bot10_mean": 0.233,
+      "gap": 0.025,
+      "baseline": 0.18
+    }
+  },
+  "top_trials": [
+    {
+      "trial": 50,
+      "tr": 850.39,
+      "mdd": -18.8,
+      "sharpe": 1.63,
+      "trade_count": 419,
+      "commission": 240908.0,
+      "raw_params": {
+        "bias": 0,
+        "c_sensitivity": 31,
+        "concentration": 7.8,
+        "conf_type": "ma_trend",
+        "dead_zone": 30.588332273923896,
+        "disc_step": 0.1684475837320428,
+        "ema_period": 4,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 3.4,
+        "f3_sensitivity": 3.9,
+        "f7_k": 3.4,
+        "f7_t": 21.165522796760854,
+        "f7_window": 32,
+        "full_zone": 65,
+        "ma_bear_pos": 0.2541882762084472,
+        "ma_bull_pos": 0.8,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 39,
+        "max_holdings": 3,
+        "rebalance_freq": "daily",
+        "score_band": 2.8,
+        "vol_window": 45,
+        "w1": 55,
+        "w3": 25,
+        "w7": 26
+      },
+      "resolved_params": {
+        "bias": 0,
+        "c_sensitivity": 31,
+        "concentration": 7.8,
+        "conf_type": "ma_trend",
+        "dead_zone": 30.588332273923896,
+        "disc_step": 0.1684475837320428,
+        "ema_period": 4,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 3.4,
+        "f3_sensitivity": 3.9,
+        "f7_k": 3.4,
+        "f7_t": 21.165522796760854,
+        "f7_window": 32,
+        "full_zone": 65,
+        "ma_bear_pos": 0.2541882762084472,
+        "ma_bull_pos": 0.8,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 39,
+        "max_holdings": 3,
+        "rebalance_freq": "daily",
+        "score_band": 2.8,
+        "vol_window": 45,
+        "w1": 52,
+        "w3": 24,
+        "w7": 24
+      },
+      "holdings_distribution": {
+        "3": 723,
+        "2": 654,
+        "1": 77
+      },
+      "etf_contributions": {
+        "159131": {
+          "selectionRate": 13.5,
+          "totalPnlPct": 2.06,
+          "tradeCount": 1,
+          "winRate": 100.0,
+          "payoffRatio": 999.0,
+          "sectorShare": 1.0
+        },
+        "159206": {
+          "selectionRate": 15.0,
+          "totalPnlPct": 90.57,
+          "tradeCount": 11,
+          "winRate": 63.6,
+          "payoffRatio": 4.48,
+          "sectorShare": 6.1
+        },
+        "159326": {
+          "selectionRate": 7.5,
+          "totalPnlPct": 15.48,
+          "tradeCount": 5,
+          "winRate": 40.0,
+          "payoffRatio": 3.75,
+          "sectorShare": 9.5
+        },
+        "159329": {
+          "selectionRate": 3.4,
+          "totalPnlPct": 31.26,
+          "tradeCount": 8,
+          "winRate": 75.0,
+          "payoffRatio": 0.91,
+          "sectorShare": 1.3
+        },
+        "159502": {
+          "selectionRate": 7.7,
+          "totalPnlPct": 22.13,
+          "tradeCount": 16,
+          "winRate": 56.2,
+          "payoffRatio": 1.8,
+          "sectorShare": 4.0
+        },
+        "159509": {
+          "selectionRate": 19.8,
+          "totalPnlPct": 145.53,
+          "tradeCount": 31,
+          "winRate": 77.4,
+          "payoffRatio": 5.97,
+          "sectorShare": 12.6
+        },
+        "159518": {
+          "selectionRate": 11.4,
+          "totalPnlPct": 133.61,
+          "tradeCount": 38,
+          "winRate": 60.5,
+          "payoffRatio": 1.54,
+          "sectorShare": 6.4
+        },
+        "159561": {
+          "selectionRate": 3.5,
+          "totalPnlPct": 7.21,
+          "tradeCount": 4,
+          "winRate": 75.0,
+          "payoffRatio": 0.63,
+          "sectorShare": 1.5
+        },
+        "159611": {
+          "selectionRate": 4.8,
+          "totalPnlPct": -7.7,
+          "tradeCount": 6,
+          "winRate": 16.7,
+          "payoffRatio": 0.86,
+          "sectorShare": 12.6
+        },
+        "159667": {
+          "selectionRate": 6.2,
+          "totalPnlPct": -4.88,
+          "tradeCount": 9,
+          "winRate": 44.4,
+          "payoffRatio": 0.89,
+          "sectorShare": 22.6
+        },
+        "159687": {
+          "selectionRate": 3.6,
+          "totalPnlPct": 34.79,
+          "tradeCount": 12,
+          "winRate": 75.0,
+          "payoffRatio": 1.09,
+          "sectorShare": 2.8
+        },
+        "159697": {
+          "selectionRate": 4.0,
+          "totalPnlPct": 0.38,
+          "tradeCount": 7,
+          "winRate": 57.1,
+          "payoffRatio": 0.8,
+          "sectorShare": 4.4
+        },
+        "159698": {
+          "selectionRate": 3.3,
+          "totalPnlPct": -0.85,
+          "tradeCount": 4,
+          "winRate": 50.0,
+          "payoffRatio": 0.85,
+          "sectorShare": 5.2
+        },
+        "159732": {
+          "selectionRate": 7.6,
+          "totalPnlPct": -0.22,
+          "tradeCount": 12,
+          "winRate": 58.3,
+          "payoffRatio": 0.71,
+          "sectorShare": 16.3
+        },
+        "159745": {
+          "selectionRate": 2.3,
+          "totalPnlPct": -10.92,
+          "tradeCount": 4,
+          "winRate": 0.0,
+          "payoffRatio": 0.0,
+          "sectorShare": 6.8
+        },
+        "159755": {
+          "selectionRate": 6.4,
+          "totalPnlPct": 43.35,
+          "tradeCount": 18,
+          "winRate": 55.6,
+          "payoffRatio": 2.46,
+          "sectorShare": 28.2
+        },
+        "159766": {
+          "selectionRate": 6.6,
+          "totalPnlPct": -1.35,
+          "tradeCount": 20,
+          "winRate": 45.0,
+          "payoffRatio": 1.16,
+          "sectorShare": 20.8
+        },
+        "159851": {
+          "selectionRate": 7.3,
+          "totalPnlPct": 6.69,
+          "tradeCount": 15,
+          "winRate": 40.0,
+          "payoffRatio": 1.82,
+          "sectorShare": 24.5
+        },
+        "159865": {
+          "selectionRate": 7.1,
+          "totalPnlPct": -37.85,
+          "tradeCount": 24,
+          "winRate": 33.3,
+          "payoffRatio": 0.49,
+          "sectorShare": 22.7
+        },
+        "159869": {
+          "selectionRate": 15.7,
+          "totalPnlPct": 47.8,
+          "tradeCount": 48,
+          "winRate": 47.9,
+          "payoffRatio": 1.58,
+          "sectorShare": 36.0
+        },
+        "159870": {
+          "selectionRate": 2.0,
+          "totalPnlPct": -14.77,
+          "tradeCount": 6,
+          "winRate": 33.3,
+          "payoffRatio": 0.59,
+          "sectorShare": 3.9
+        },
+        "159883": {
+          "selectionRate": 1.8,
+          "totalPnlPct": -27.99,
+          "tradeCount": 6,
+          "winRate": 16.7,
+          "payoffRatio": 1.08,
+          "sectorShare": 7.7
+        },
+        "159941": {
+          "selectionRate": 10.5,
+          "totalPnlPct": 65.49,
+          "tradeCount": 34,
+          "winRate": 67.6,
+          "payoffRatio": 2.2,
+          "sectorShare": 16.5
+        },
+        "159985": {
+          "selectionRate": 11.2,
+          "totalPnlPct": 6.75,
+          "tradeCount": 37,
+          "winRate": 54.1,
+          "payoffRatio": 0.94,
+          "sectorShare": 17.6
+        },
+        "159992": {
+          "selectionRate": 7.8,
+          "totalPnlPct": -16.24,
+          "tradeCount": 26,
+          "winRate": 38.5,
+          "payoffRatio": 1.15,
+          "sectorShare": 41.7
+        },
+        "159996": {
+          "selectionRate": 2.5,
+          "totalPnlPct": 19.23,
+          "tradeCount": 9,
+          "winRate": 66.7,
+          "payoffRatio": 2.01,
+          "sectorShare": 10.2
+        },
+        "510880": {
+          "selectionRate": 5.8,
+          "totalPnlPct": -8.72,
+          "tradeCount": 22,
+          "winRate": 36.4,
+          "payoffRatio": 1.14,
+          "sectorShare": 23.3
+        },
+        "512070": {
+          "selectionRate": 3.5,
+          "totalPnlPct": -12.85,
+          "tradeCount": 9,
+          "winRate": 22.2,
+          "payoffRatio": 1.6,
+          "sectorShare": 14.7
+        },
+        "512200": {
+          "selectionRate": 5.4,
+          "totalPnlPct": 25.44,
+          "tradeCount": 32,
+          "winRate": 31.2,
+          "payoffRatio": 3.29,
+          "sectorShare": 21.4
+        },
+        "512400": {
+          "selectionRate": 10.7,
+          "totalPnlPct": 4.7,
+          "tradeCount": 42,
+          "winRate": 47.6,
+          "payoffRatio": 1.17,
+          "sectorShare": 26.1
+        },
+        "512660": {
+          "selectionRate": 9.7,
+          "totalPnlPct": 97.53,
+          "tradeCount": 44,
+          "winRate": 63.6,
+          "payoffRatio": 1.59,
+          "sectorShare": 66.5
+        },
+        "512690": {
+          "selectionRate": 16.2,
+          "totalPnlPct": 233.68,
+          "tradeCount": 66,
+          "winRate": 43.9,
+          "payoffRatio": 3.57,
+          "sectorShare": 69.0
+        },
+        "512800": {
+          "selectionRate": 4.8,
+          "totalPnlPct": -14.34,
+          "tradeCount": 27,
+          "winRate": 22.2,
+          "payoffRatio": 2.18,
+          "sectorShare": 20.2
+        },
+        "512880": {
+          "selectionRate": 3.6,
+          "totalPnlPct": -13.05,
+          "tradeCount": 15,
+          "winRate": 26.7,
+          "payoffRatio": 0.37,
+          "sectorShare": 15.3
+        },
+        "512980": {
+          "selectionRate": 10.0,
+          "totalPnlPct": 6.62,
+          "tradeCount": 24,
+          "winRate": 50.0,
+          "payoffRatio": 1.13,
+          "sectorShare": 28.2
+        },
+        "513050": {
+          "selectionRate": 8.3,
+          "totalPnlPct": 99.82,
+          "tradeCount": 33,
+          "winRate": 81.8,
+          "payoffRatio": 2.21,
+          "sectorShare": 23.3
+        },
+        "513070": {
+          "selectionRate": 6.4,
+          "totalPnlPct": 29.57,
+          "tradeCount": 13,
+          "winRate": 69.2,
+          "payoffRatio": 0.93,
+          "sectorShare": 11.5
+        },
+        "513090": {
+          "selectionRate": 6.3,
+          "totalPnlPct": 3.74,
+          "tradeCount": 22,
+          "winRate": 36.4,
+          "payoffRatio": 1.89,
+          "sectorShare": 25.4
+        },
+        "513120": {
+          "selectionRate": 15.5,
+          "totalPnlPct": 78.61,
+          "tradeCount": 53,
+          "winRate": 62.3,
+          "payoffRatio": 1.17,
+          "sectorShare": 50.6
+        },
+        "513310": {
+          "selectionRate": 19.4,
+          "totalPnlPct": 175.71,
+          "tradeCount": 38,
+          "winRate": 63.2,
+          "payoffRatio": 2.67,
+          "sectorShare": 15.5
+        },
+        "513690": {
+          "selectionRate": 2.6,
+          "totalPnlPct": 6.64,
+          "tradeCount": 4,
+          "winRate": 75.0,
+          "payoffRatio": 3.21,
+          "sectorShare": 7.9
+        },
+        "513880": {
+          "selectionRate": 6.3,
+          "totalPnlPct": 12.02,
+          "tradeCount": 14,
+          "winRate": 78.6,
+          "payoffRatio": 1.15,
+          "sectorShare": 10.0
+        },
+        "515210": {
+          "selectionRate": 7.4,
+          "totalPnlPct": 54.3,
+          "tradeCount": 22,
+          "winRate": 50.0,
+          "payoffRatio": 3.19,
+          "sectorShare": 17.7
+        },
+        "515220": {
+          "selectionRate": 20.0,
+          "totalPnlPct": -26.21,
+          "tradeCount": 61,
+          "winRate": 49.2,
+          "payoffRatio": 0.8,
+          "sectorShare": 47.9
+        },
+        "515790": {
+          "selectionRate": 12.8,
+          "totalPnlPct": 137.6,
+          "tradeCount": 39,
+          "winRate": 59.0,
+          "payoffRatio": 3.38,
+          "sectorShare": 62.3
+        },
+        "515880": {
+          "selectionRate": 15.7,
+          "totalPnlPct": 369.05,
+          "tradeCount": 62,
+          "winRate": 66.1,
+          "payoffRatio": 3.18,
+          "sectorShare": 46.6
+        },
+        "518880": {
+          "selectionRate": 6.7,
+          "totalPnlPct": 23.22,
+          "tradeCount": 30,
+          "winRate": 60.0,
+          "payoffRatio": 1.26,
+          "sectorShare": 10.5
+        },
+        "560280": {
+          "selectionRate": 4.3,
+          "totalPnlPct": 3.44,
+          "tradeCount": 4,
+          "winRate": 75.0,
+          "payoffRatio": 0.88,
+          "sectorShare": 10.8
+        },
+        "562500": {
+          "selectionRate": 6.1,
+          "totalPnlPct": -7.45,
+          "tradeCount": 15,
+          "winRate": 46.7,
+          "payoffRatio": 0.7,
+          "sectorShare": 12.0
+        },
+        "563300": {
+          "selectionRate": 2.3,
+          "totalPnlPct": 28.87,
+          "tradeCount": 5,
+          "winRate": 100.0,
+          "payoffRatio": 999.0,
+          "sectorShare": 1.4
+        },
+        "588010": {
+          "selectionRate": 1.4,
+          "totalPnlPct": 17.69,
+          "tradeCount": 5,
+          "winRate": 80.0,
+          "payoffRatio": 6.15,
+          "sectorShare": 2.2
+        },
+        "588200": {
+          "selectionRate": 10.6,
+          "totalPnlPct": 155.03,
+          "tradeCount": 34,
+          "winRate": 52.9,
+          "payoffRatio": 3.05,
+          "sectorShare": 16.7
+        }
+      }
+    },
+    {
+      "trial": 40,
+      "tr": 820.33,
+      "mdd": -19.3,
+      "sharpe": 1.6,
+      "trade_count": 379,
+      "commission": 220824.0,
+      "raw_params": {
+        "bias": 0,
+        "c_sensitivity": 31,
+        "concentration": 7.8,
+        "conf_type": "ma_trend",
+        "dead_zone": 26.13328428562428,
+        "disc_step": 0.17569892374228008,
+        "ema_period": 4,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 3.4,
+        "f3_sensitivity": 3.9,
+        "f7_k": 3.4,
+        "f7_t": 24.151609666741557,
+        "f7_window": 32,
+        "full_zone": 65,
+        "ma_bear_pos": 0.18427427420559966,
+        "ma_bull_pos": 0.8,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 39,
+        "max_holdings": 3,
+        "rebalance_freq": "daily",
+        "score_band": 2.8,
+        "vol_window": 53,
+        "w1": 58,
+        "w3": 22,
+        "w7": 26
+      },
+      "resolved_params": {
+        "bias": 0,
+        "c_sensitivity": 31,
+        "concentration": 7.8,
+        "conf_type": "ma_trend",
+        "dead_zone": 26.13328428562428,
+        "disc_step": 0.17569892374228008,
+        "ema_period": 4,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 3.4,
+        "f3_sensitivity": 3.9,
+        "f7_k": 3.4,
+        "f7_t": 24.151609666741557,
+        "f7_window": 32,
+        "full_zone": 65,
+        "ma_bear_pos": 0.18427427420559966,
+        "ma_bull_pos": 0.8,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 39,
+        "max_holdings": 3,
+        "rebalance_freq": "daily",
+        "score_band": 2.8,
+        "vol_window": 53,
+        "w1": 55,
+        "w3": 21,
+        "w7": 24
+      },
+      "holdings_distribution": {
+        "3": 726,
+        "1": 686,
+        "2": 42
+      },
+      "etf_contributions": {
+        "159131": {
+          "selectionRate": 17.2,
+          "totalPnlPct": 2.06,
+          "tradeCount": 1,
+          "winRate": 100.0,
+          "payoffRatio": 999.0,
+          "sectorShare": 1.0
+        },
+        "159206": {
+          "selectionRate": 15.6,
+          "totalPnlPct": 74.16,
+          "tradeCount": 7,
+          "winRate": 71.4,
+          "payoffRatio": 6.81,
+          "sectorShare": 5.9
+        },
+        "159326": {
+          "selectionRate": 7.7,
+          "totalPnlPct": 15.48,
+          "tradeCount": 5,
+          "winRate": 40.0,
+          "payoffRatio": 3.75,
+          "sectorShare": 9.5
+        },
+        "159329": {
+          "selectionRate": 3.5,
+          "totalPnlPct": 47.31,
+          "tradeCount": 7,
+          "winRate": 85.7,
+          "payoffRatio": 4.11,
+          "sectorShare": 1.3
+        },
+        "159502": {
+          "selectionRate": 7.6,
+          "totalPnlPct": 9.85,
+          "tradeCount": 16,
+          "winRate": 56.2,
+          "payoffRatio": 1.23,
+          "sectorShare": 3.9
+        },
+        "159509": {
+          "selectionRate": 18.9,
+          "totalPnlPct": 97.51,
+          "tradeCount": 25,
+          "winRate": 76.0,
+          "payoffRatio": 5.41,
+          "sectorShare": 11.9
+        },
+        "159518": {
+          "selectionRate": 11.6,
+          "totalPnlPct": 149.89,
+          "tradeCount": 38,
+          "winRate": 60.5,
+          "payoffRatio": 1.61,
+          "sectorShare": 6.4
+        },
+        "159561": {
+          "selectionRate": 3.5,
+          "totalPnlPct": 7.21,
+          "tradeCount": 4,
+          "winRate": 75.0,
+          "payoffRatio": 0.63,
+          "sectorShare": 1.5
+        },
+        "159611": {
+          "selectionRate": 4.8,
+          "totalPnlPct": -5.67,
+          "tradeCount": 6,
+          "winRate": 16.7,
+          "payoffRatio": 1.11,
+          "sectorShare": 12.1
+        },
+        "159667": {
+          "selectionRate": 7.0,
+          "totalPnlPct": 2.61,
+          "tradeCount": 9,
+          "winRate": 44.4,
+          "payoffRatio": 1.54,
+          "sectorShare": 24.9
+        },
+        "159687": {
+          "selectionRate": 3.1,
+          "totalPnlPct": 37.79,
+          "tradeCount": 10,
+          "winRate": 80.0,
+          "payoffRatio": 1.05,
+          "sectorShare": 2.4
+        },
+        "159697": {
+          "selectionRate": 4.0,
+          "totalPnlPct": -1.88,
+          "tradeCount": 9,
+          "winRate": 44.4,
+          "payoffRatio": 0.92,
+          "sectorShare": 4.3
+        },
+        "159698": {
+          "selectionRate": 3.3,
+          "totalPnlPct": -0.85,
+          "tradeCount": 4,
+          "winRate": 50.0,
+          "payoffRatio": 0.85,
+          "sectorShare": 5.0
+        },
+        "159732": {
+          "selectionRate": 6.9,
+          "totalPnlPct": -10.36,
+          "tradeCount": 13,
+          "winRate": 38.5,
+          "payoffRatio": 1.01,
+          "sectorShare": 14.2
+        },
+        "159745": {
+          "selectionRate": 2.6,
+          "totalPnlPct": -14.3,
+          "tradeCount": 5,
+          "winRate": 0.0,
+          "payoffRatio": 0.0,
+          "sectorShare": 7.7
+        },
+        "159755": {
+          "selectionRate": 6.4,
+          "totalPnlPct": 61.77,
+          "tradeCount": 17,
+          "winRate": 64.7,
+          "payoffRatio": 3.0,
+          "sectorShare": 27.8
+        },
+        "159766": {
+          "selectionRate": 6.6,
+          "totalPnlPct": -5.78,
+          "tradeCount": 23,
+          "winRate": 52.2,
+          "payoffRatio": 0.74,
+          "sectorShare": 20.4
+        },
+        "159851": {
+          "selectionRate": 7.3,
+          "totalPnlPct": 15.89,
+          "tradeCount": 15,
+          "winRate": 53.3,
+          "payoffRatio": 1.67,
+          "sectorShare": 24.9
+        },
+        "159865": {
+          "selectionRate": 6.3,
+          "totalPnlPct": -25.89,
+          "tradeCount": 16,
+          "winRate": 37.5,
+          "payoffRatio": 0.38,
+          "sectorShare": 19.3
+        },
+        "159869": {
+          "selectionRate": 16.3,
+          "totalPnlPct": 112.0,
+          "tradeCount": 52,
+          "winRate": 53.8,
+          "payoffRatio": 1.79,
+          "sectorShare": 36.5
+        },
+        "159870": {
+          "selectionRate": 2.0,
+          "totalPnlPct": -6.55,
+          "tradeCount": 5,
+          "winRate": 40.0,
+          "payoffRatio": 0.73,
+          "sectorShare": 3.8
+        },
+        "159883": {
+          "selectionRate": 1.8,
+          "totalPnlPct": -27.99,
+          "tradeCount": 6,
+          "winRate": 16.7,
+          "payoffRatio": 1.08,
+          "sectorShare": 8.1
+        },
+        "159941": {
+          "selectionRate": 11.4,
+          "totalPnlPct": 63.84,
+          "tradeCount": 32,
+          "winRate": 71.9,
+          "payoffRatio": 1.98,
+          "sectorShare": 18.1
+        },
+        "159985": {
+          "selectionRate": 11.6,
+          "totalPnlPct": 41.95,
+          "tradeCount": 42,
+          "winRate": 64.3,
+          "payoffRatio": 1.08,
+          "sectorShare": 18.4
+        },
+        "159992": {
+          "selectionRate": 7.1,
+          "totalPnlPct": -3.19,
+          "tradeCount": 20,
+          "winRate": 50.0,
+          "payoffRatio": 0.95,
+          "sectorShare": 39.5
+        },
+        "159996": {
+          "selectionRate": 2.9,
+          "totalPnlPct": 30.06,
+          "tradeCount": 11,
+          "winRate": 81.8,
+          "payoffRatio": 4.27,
+          "sectorShare": 11.5
+        },
+        "510880": {
+          "selectionRate": 5.6,
+          "totalPnlPct": 9.45,
+          "tradeCount": 6,
+          "winRate": 83.3,
+          "payoffRatio": 2.59,
+          "sectorShare": 21.6
+        },
+        "512070": {
+          "selectionRate": 2.1,
+          "totalPnlPct": -4.22,
+          "tradeCount": 4,
+          "winRate": 25.0,
+          "payoffRatio": 2.11,
+          "sectorShare": 9.2
+        },
+        "512200": {
+          "selectionRate": 6.6,
+          "totalPnlPct": -30.02,
+          "tradeCount": 30,
+          "winRate": 23.3,
+          "payoffRatio": 1.54,
+          "sectorShare": 25.3
+        },
+        "512400": {
+          "selectionRate": 11.2,
+          "totalPnlPct": -17.32,
+          "tradeCount": 30,
+          "winRate": 36.7,
+          "payoffRatio": 1.29,
+          "sectorShare": 27.0
+        },
+        "512660": {
+          "selectionRate": 9.8,
+          "totalPnlPct": 93.34,
+          "tradeCount": 36,
+          "winRate": 69.4,
+          "payoffRatio": 1.81,
+          "sectorShare": 65.9
+        },
+        "512690": {
+          "selectionRate": 16.3,
+          "totalPnlPct": 229.96,
+          "tradeCount": 65,
+          "winRate": 46.2,
+          "payoffRatio": 2.27,
+          "sectorShare": 68.1
+        },
+        "512800": {
+          "selectionRate": 5.1,
+          "totalPnlPct": -26.17,
+          "tradeCount": 28,
+          "winRate": 21.4,
+          "payoffRatio": 1.25,
+          "sectorShare": 21.9
+        },
+        "512880": {
+          "selectionRate": 4.0,
+          "totalPnlPct": -11.31,
+          "tradeCount": 13,
+          "winRate": 30.8,
+          "payoffRatio": 0.35,
+          "sectorShare": 17.2
+        },
+        "512980": {
+          "selectionRate": 10.3,
+          "totalPnlPct": -24.24,
+          "tradeCount": 27,
+          "winRate": 40.7,
+          "payoffRatio": 0.97,
+          "sectorShare": 28.8
+        },
+        "513050": {
+          "selectionRate": 8.2,
+          "totalPnlPct": 51.15,
+          "tradeCount": 33,
+          "winRate": 66.7,
+          "payoffRatio": 1.4,
+          "sectorShare": 22.9
+        },
+        "513070": {
+          "selectionRate": 6.1,
+          "totalPnlPct": 67.66,
+          "tradeCount": 13,
+          "winRate": 53.8,
+          "payoffRatio": 6.82,
+          "sectorShare": 10.8
+        },
+        "513090": {
+          "selectionRate": 6.5,
+          "totalPnlPct": 28.9,
+          "tradeCount": 22,
+          "winRate": 40.9,
+          "payoffRatio": 2.4,
+          "sectorShare": 26.9
+        },
+        "513120": {
+          "selectionRate": 15.5,
+          "totalPnlPct": 35.41,
+          "tradeCount": 42,
+          "winRate": 59.5,
+          "payoffRatio": 1.23,
+          "sectorShare": 52.4
+        },
+        "513310": {
+          "selectionRate": 19.4,
+          "totalPnlPct": 165.02,
+          "tradeCount": 24,
+          "winRate": 75.0,
+          "payoffRatio": 4.23,
+          "sectorShare": 15.4
+        },
+        "513690": {
+          "selectionRate": 3.0,
+          "totalPnlPct": 0.98,
+          "tradeCount": 5,
+          "winRate": 40.0,
+          "payoffRatio": 2.02,
+          "sectorShare": 9.0
+        },
+        "513880": {
+          "selectionRate": 5.6,
+          "totalPnlPct": 1.29,
+          "tradeCount": 13,
+          "winRate": 61.5,
+          "payoffRatio": 0.76,
+          "sectorShare": 9.0
+        },
+        "515210": {
+          "selectionRate": 7.4,
+          "totalPnlPct": 33.26,
+          "tradeCount": 22,
+          "winRate": 45.5,
+          "payoffRatio": 2.75,
+          "sectorShare": 17.4
+        },
+        "515220": {
+          "selectionRate": 20.2,
+          "totalPnlPct": -54.93,
+          "tradeCount": 58,
+          "winRate": 36.2,
+          "payoffRatio": 1.05,
+          "sectorShare": 47.4
+        },
+        "515790": {
+          "selectionRate": 13.0,
+          "totalPnlPct": 114.79,
+          "tradeCount": 31,
+          "winRate": 54.8,
+          "payoffRatio": 3.79,
+          "sectorShare": 62.7
+        },
+        "515880": {
+          "selectionRate": 17.0,
+          "totalPnlPct": 215.23,
+          "tradeCount": 50,
+          "winRate": 56.0,
+          "payoffRatio": 4.93,
+          "sectorShare": 48.8
+        },
+        "518880": {
+          "selectionRate": 6.7,
+          "totalPnlPct": 18.19,
+          "tradeCount": 22,
+          "winRate": 59.1,
+          "payoffRatio": 1.18,
+          "sectorShare": 10.6
+        },
+        "560280": {
+          "selectionRate": 3.8,
+          "totalPnlPct": 1.44,
+          "tradeCount": 6,
+          "winRate": 50.0,
+          "payoffRatio": 1.23,
+          "sectorShare": 9.2
+        },
+        "562500": {
+          "selectionRate": 6.2,
+          "totalPnlPct": 7.36,
+          "tradeCount": 13,
+          "winRate": 46.2,
+          "payoffRatio": 1.92,
+          "sectorShare": 11.9
+        },
+        "563300": {
+          "selectionRate": 1.6,
+          "totalPnlPct": 19.08,
+          "tradeCount": 4,
+          "winRate": 100.0,
+          "payoffRatio": 999.0,
+          "sectorShare": 1.0
+        },
+        "588010": {
+          "selectionRate": 2.0,
+          "totalPnlPct": 14.37,
+          "tradeCount": 6,
+          "winRate": 66.7,
+          "payoffRatio": 2.27,
+          "sectorShare": 3.0
+        },
+        "588200": {
+          "selectionRate": 10.7,
+          "totalPnlPct": 101.69,
+          "tradeCount": 29,
+          "winRate": 55.2,
+          "payoffRatio": 2.45,
+          "sectorShare": 16.2
+        }
+      }
+    },
+    {
+      "trial": 37,
+      "tr": 791.62,
+      "mdd": -18.91,
+      "sharpe": 1.61,
+      "trade_count": 388,
+      "commission": 216050.0,
+      "raw_params": {
+        "bias": 0,
+        "c_sensitivity": 31,
+        "concentration": 7.8,
+        "conf_type": "ma_trend",
+        "dead_zone": 28.576220086701902,
+        "disc_step": 0.16969116163199016,
+        "ema_period": 4,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 3.4,
+        "f3_sensitivity": 3.9,
+        "f7_k": 3.4,
+        "f7_t": 21.95182686065351,
+        "f7_window": 32,
+        "full_zone": 65,
+        "ma_bear_pos": 0.20652664393896675,
+        "ma_bull_pos": 0.8,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 39,
+        "max_holdings": 3,
+        "rebalance_freq": "daily",
+        "score_band": 2.8,
+        "vol_window": 46,
+        "w1": 56,
+        "w3": 24,
+        "w7": 26
+      },
+      "resolved_params": {
+        "bias": 0,
+        "c_sensitivity": 31,
+        "concentration": 7.8,
+        "conf_type": "ma_trend",
+        "dead_zone": 28.576220086701902,
+        "disc_step": 0.16969116163199016,
+        "ema_period": 4,
+        "execution_timing": "same_close",
+        "f1_active_days": 1,
+        "f1_sensitivity": 3.4,
+        "f3_sensitivity": 3.9,
+        "f7_k": 3.4,
+        "f7_t": 21.95182686065351,
+        "f7_window": 32,
+        "full_zone": 65,
+        "ma_bear_pos": 0.20652664393896675,
+        "ma_bull_pos": 0.8,
+        "ma_direction_confirm": "True",
+        "ma_trend_period": 39,
+        "max_holdings": 3,
+        "rebalance_freq": "daily",
+        "score_band": 2.8,
+        "vol_window": 46,
+        "w1": 53,
+        "w3": 23,
+        "w7": 24
+      },
+      "holdings_distribution": {
+        "3": 726,
+        "1": 686,
+        "2": 42
+      },
+      "etf_contributions": {
+        "159131": {
+          "selectionRate": 13.9,
+          "totalPnlPct": 2.06,
+          "tradeCount": 1,
+          "winRate": 100.0,
+          "payoffRatio": 999.0,
+          "sectorShare": 1.0
+        },
+        "159206": {
+          "selectionRate": 15.1,
+          "totalPnlPct": 69.81,
+          "tradeCount": 8,
+          "winRate": 62.5,
+          "payoffRatio": 5.26,
+          "sectorShare": 5.8
+        },
+        "159326": {
+          "selectionRate": 7.5,
+          "totalPnlPct": 15.48,
+          "tradeCount": 5,
+          "winRate": 40.0,
+          "payoffRatio": 3.75,
+          "sectorShare": 9.6
+        },
+        "159329": {
+          "selectionRate": 3.4,
+          "totalPnlPct": 47.31,
+          "tradeCount": 7,
+          "winRate": 85.7,
+          "payoffRatio": 4.11,
+          "sectorShare": 1.3
+        },
+        "159502": {
+          "selectionRate": 7.5,
+          "totalPnlPct": 6.25,
+          "tradeCount": 15,
+          "winRate": 53.3,
+          "payoffRatio": 1.2,
+          "sectorShare": 3.9
+        },
+        "159509": {
+          "selectionRate": 19.9,
+          "totalPnlPct": 118.71,
+          "tradeCount": 28,
+          "winRate": 78.6,
+          "payoffRatio": 5.62,
+          "sectorShare": 12.7
+        },
+        "159518": {
+          "selectionRate": 11.4,
+          "totalPnlPct": 146.31,
+          "tradeCount": 39,
+          "winRate": 61.5,
+          "payoffRatio": 1.54,
+          "sectorShare": 6.5
+        },
+        "159561": {
+          "selectionRate": 3.5,
+          "totalPnlPct": 7.21,
+          "tradeCount": 4,
+          "winRate": 75.0,
+          "payoffRatio": 0.63,
+          "sectorShare": 1.5
+        },
+        "159611": {
+          "selectionRate": 4.8,
+          "totalPnlPct": -5.67,
+          "tradeCount": 6,
+          "winRate": 16.7,
+          "payoffRatio": 1.11,
+          "sectorShare": 12.8
+        },
+        "159667": {
+          "selectionRate": 6.8,
+          "totalPnlPct": 7.26,
+          "tradeCount": 8,
+          "winRate": 62.5,
+          "payoffRatio": 0.92,
+          "sectorShare": 24.4
+        },
+        "159687": {
+          "selectionRate": 3.6,
+          "totalPnlPct": 34.7,
+          "tradeCount": 11,
+          "winRate": 72.7,
+          "payoffRatio": 1.25,
+          "sectorShare": 2.8
+        },
+        "159697": {
+          "selectionRate": 4.0,
+          "totalPnlPct": -1.88,
+          "tradeCount": 9,
+          "winRate": 44.4,
+          "payoffRatio": 0.92,
+          "sectorShare": 4.3
+        },
+        "159698": {
+          "selectionRate": 3.3,
+          "totalPnlPct": -0.85,
+          "tradeCount": 4,
+          "winRate": 50.0,
+          "payoffRatio": 0.85,
+          "sectorShare": 5.3
+        },
+        "159732": {
+          "selectionRate": 7.7,
+          "totalPnlPct": 30.2,
+          "tradeCount": 14,
+          "winRate": 57.1,
+          "payoffRatio": 2.42,
+          "sectorShare": 15.7
+        },
+        "159745": {
+          "selectionRate": 2.8,
+          "totalPnlPct": -10.92,
+          "tradeCount": 4,
+          "winRate": 0.0,
+          "payoffRatio": 0.0,
+          "sectorShare": 8.6
+        },
+        "159755": {
+          "selectionRate": 6.4,
+          "totalPnlPct": 70.03,
+          "tradeCount": 18,
+          "winRate": 72.2,
+          "payoffRatio": 2.92,
+          "sectorShare": 28.0
+        },
+        "159766": {
+          "selectionRate": 6.4,
+          "totalPnlPct": -5.98,
+          "tradeCount": 22,
+          "winRate": 50.0,
+          "payoffRatio": 0.8,
+          "sectorShare": 19.9
+        },
+        "159851": {
+          "selectionRate": 6.8,
+          "totalPnlPct": 14.54,
+          "tradeCount": 14,
+          "winRate": 50.0,
+          "payoffRatio": 1.74,
+          "sectorShare": 23.2
+        },
+        "159865": {
+          "selectionRate": 6.1,
+          "totalPnlPct": -26.33,
+          "tradeCount": 17,
+          "winRate": 35.3,
+          "payoffRatio": 0.41,
+          "sectorShare": 20.0
+        },
+        "159869": {
+          "selectionRate": 15.3,
+          "totalPnlPct": 126.63,
+          "tradeCount": 51,
+          "winRate": 54.9,
+          "payoffRatio": 1.95,
+          "sectorShare": 35.3
+        },
+        "159870": {
+          "selectionRate": 2.0,
+          "totalPnlPct": -6.55,
+          "tradeCount": 5,
+          "winRate": 40.0,
+          "payoffRatio": 0.73,
+          "sectorShare": 3.8
+        },
+        "159883": {
+          "selectionRate": 1.8,
+          "totalPnlPct": -33.67,
+          "tradeCount": 9,
+          "winRate": 22.2,
+          "payoffRatio": 0.67,
+          "sectorShare": 7.8
+        },
+        "159941": {
+          "selectionRate": 10.7,
+          "totalPnlPct": 57.33,
+          "tradeCount": 29,
+          "winRate": 72.4,
+          "payoffRatio": 1.81,
+          "sectorShare": 17.0
+        },
+        "159985": {
+          "selectionRate": 10.9,
+          "totalPnlPct": 28.58,
+          "tradeCount": 36,
+          "winRate": 58.3,
+          "payoffRatio": 1.17,
+          "sectorShare": 17.4
+        },
+        "159992": {
+          "selectionRate": 7.5,
+          "totalPnlPct": -7.86,
+          "tradeCount": 17,
+          "winRate": 47.1,
+          "payoffRatio": 0.84,
+          "sectorShare": 40.6
+        },
+        "159996": {
+          "selectionRate": 2.8,
+          "totalPnlPct": 30.06,
+          "tradeCount": 11,
+          "winRate": 81.8,
+          "payoffRatio": 4.27,
+          "sectorShare": 11.5
+        },
+        "510880": {
+          "selectionRate": 5.5,
+          "totalPnlPct": 9.45,
+          "tradeCount": 6,
+          "winRate": 83.3,
+          "payoffRatio": 2.59,
+          "sectorShare": 22.2
+        },
+        "512070": {
+          "selectionRate": 3.3,
+          "totalPnlPct": -11.87,
+          "tradeCount": 6,
+          "winRate": 16.7,
+          "payoffRatio": 2.29,
+          "sectorShare": 14.1
+        },
+        "512200": {
+          "selectionRate": 5.4,
+          "totalPnlPct": -32.87,
+          "tradeCount": 28,
+          "winRate": 17.9,
+          "payoffRatio": 1.58,
+          "sectorShare": 21.7
+        },
+        "512400": {
+          "selectionRate": 11.7,
+          "totalPnlPct": -25.05,
+          "tradeCount": 37,
+          "winRate": 43.2,
+          "payoffRatio": 0.92,
+          "sectorShare": 27.9
+        },
+        "512660": {
+          "selectionRate": 9.7,
+          "totalPnlPct": 129.29,
+          "tradeCount": 42,
+          "winRate": 71.4,
+          "payoffRatio": 1.53,
+          "sectorShare": 65.0
+        },
+        "512690": {
+          "selectionRate": 16.4,
+          "totalPnlPct": 236.33,
+          "tradeCount": 50,
+          "winRate": 46.0,
+          "payoffRatio": 3.74,
+          "sectorShare": 68.6
+        },
+        "512800": {
+          "selectionRate": 4.9,
+          "totalPnlPct": -23.93,
+          "tradeCount": 26,
+          "winRate": 23.1,
+          "payoffRatio": 1.2,
+          "sectorShare": 20.9
+        },
+        "512880": {
+          "selectionRate": 3.7,
+          "totalPnlPct": -10.43,
+          "tradeCount": 12,
+          "winRate": 33.3,
+          "payoffRatio": 0.33,
+          "sectorShare": 15.9
+        },
+        "512980": {
+          "selectionRate": 10.5,
+          "totalPnlPct": 4.27,
+          "tradeCount": 28,
+          "winRate": 39.3,
+          "payoffRatio": 1.69,
+          "sectorShare": 30.0
+        },
+        "513050": {
+          "selectionRate": 8.2,
+          "totalPnlPct": 49.88,
+          "tradeCount": 33,
+          "winRate": 66.7,
+          "payoffRatio": 1.38,
+          "sectorShare": 23.3
+        },
+        "513070": {
+          "selectionRate": 5.8,
+          "totalPnlPct": 50.2,
+          "tradeCount": 12,
+          "winRate": 58.3,
+          "payoffRatio": 5.81,
+          "sectorShare": 10.4
+        },
+        "513090": {
+          "selectionRate": 6.3,
+          "totalPnlPct": 8.6,
+          "tradeCount": 22,
+          "winRate": 36.4,
+          "payoffRatio": 2.08,
+          "sectorShare": 25.9
+        },
+        "513120": {
+          "selectionRate": 15.6,
+          "totalPnlPct": 21.72,
+          "tradeCount": 46,
+          "winRate": 58.7,
+          "payoffRatio": 0.92,
+          "sectorShare": 51.6
+        },
+        "513310": {
+          "selectionRate": 19.5,
+          "totalPnlPct": 175.62,
+          "tradeCount": 29,
+          "winRate": 69.0,
+          "payoffRatio": 3.04,
+          "sectorShare": 15.6
+        },
+        "513690": {
+          "selectionRate": 3.0,
+          "totalPnlPct": 0.53,
+          "tradeCount": 5,
+          "winRate": 40.0,
+          "payoffRatio": 1.74,
+          "sectorShare": 9.4
+        },
+        "513880": {
+          "selectionRate": 6.0,
+          "totalPnlPct": 1.27,
+          "tradeCount": 12,
+          "winRate": 58.3,
+          "payoffRatio": 0.86,
+          "sectorShare": 9.5
+        },
+        "515210": {
+          "selectionRate": 7.4,
+          "totalPnlPct": 32.57,
+          "tradeCount": 26,
+          "winRate": 46.2,
+          "payoffRatio": 2.11,
+          "sectorShare": 17.2
+        },
+        "515220": {
+          "selectionRate": 20.1,
+          "totalPnlPct": -48.09,
+          "tradeCount": 59,
+          "winRate": 39.0,
+          "payoffRatio": 0.99,
+          "sectorShare": 46.9
+        },
+        "515790": {
+          "selectionRate": 12.8,
+          "totalPnlPct": 114.16,
+          "tradeCount": 31,
+          "winRate": 58.1,
+          "payoffRatio": 3.32,
+          "sectorShare": 62.4
+        },
+        "515880": {
+          "selectionRate": 16.6,
+          "totalPnlPct": 207.78,
+          "tradeCount": 45,
+          "winRate": 57.8,
+          "payoffRatio": 5.36,
+          "sectorShare": 47.0
+        },
+        "518880": {
+          "selectionRate": 6.5,
+          "totalPnlPct": 19.53,
+          "tradeCount": 21,
+          "winRate": 61.9,
+          "payoffRatio": 1.11,
+          "sectorShare": 10.4
+        },
+        "560280": {
+          "selectionRate": 4.3,
+          "totalPnlPct": 5.53,
+          "tradeCount": 7,
+          "winRate": 57.1,
+          "payoffRatio": 1.6,
+          "sectorShare": 10.6
+        },
+        "562500": {
+          "selectionRate": 6.2,
+          "totalPnlPct": -6.96,
+          "tradeCount": 12,
+          "winRate": 41.7,
+          "payoffRatio": 0.8,
+          "sectorShare": 11.7
+        },
+        "563300": {
+          "selectionRate": 2.2,
+          "totalPnlPct": 28.87,
+          "tradeCount": 5,
+          "winRate": 100.0,
+          "payoffRatio": 999.0,
+          "sectorShare": 1.3
+        },
+        "588010": {
+          "selectionRate": 2.1,
+          "totalPnlPct": 16.72,
+          "tradeCount": 6,
+          "winRate": 66.7,
+          "payoffRatio": 5.36,
+          "sectorShare": 3.1
+        },
+        "588200": {
+          "selectionRate": 11.1,
+          "totalPnlPct": 103.73,
+          "tradeCount": 28,
+          "winRate": 57.1,
+          "payoffRatio": 2.35,
+          "sectorShare": 16.7
+        }
+      }
+    }
+  ],
+  "etf_quadrants": {
+    "core": [
+      {
+        "code": "515880",
+        "name": "通信ETF",
+        "pnl": 369.05,
+        "sel_rate": 15.7,
+        "win_rate": 66.1,
+        "payoff": 3.18,
+        "trades": 62
+      },
+      {
+        "code": "512690",
+        "name": "酒ETF",
+        "pnl": 233.68,
+        "sel_rate": 16.2,
+        "win_rate": 43.9,
+        "payoff": 3.57,
+        "trades": 66
+      },
+      {
+        "code": "513310",
+        "name": "中韩半导体ETF",
+        "pnl": 175.71,
+        "sel_rate": 19.4,
+        "win_rate": 63.2,
+        "payoff": 2.67,
+        "trades": 38
+      },
+      {
+        "code": "588200",
+        "name": "芯片ETF",
+        "pnl": 155.03,
+        "sel_rate": 10.6,
+        "win_rate": 52.9,
+        "payoff": 3.05,
+        "trades": 34
+      },
+      {
+        "code": "159509",
+        "name": "纳指科技ETF",
+        "pnl": 145.53,
+        "sel_rate": 19.8,
+        "win_rate": 77.4,
+        "payoff": 5.97,
+        "trades": 31
+      },
+      {
+        "code": "515790",
+        "name": "光伏ETF",
+        "pnl": 137.6,
+        "sel_rate": 12.8,
+        "win_rate": 59.0,
+        "payoff": 3.38,
+        "trades": 39
+      },
+      {
+        "code": "159518",
+        "name": "标普油气",
+        "pnl": 133.61,
+        "sel_rate": 11.4,
+        "win_rate": 60.5,
+        "payoff": 1.54,
+        "trades": 38
+      },
+      {
+        "code": "159206",
+        "name": "卫星ETF",
+        "pnl": 90.57,
+        "sel_rate": 15.0,
+        "win_rate": 63.6,
+        "payoff": 4.48,
+        "trades": 11
+      },
+      {
+        "code": "513120",
+        "name": "创新药ETF",
+        "pnl": 78.61,
+        "sel_rate": 15.5,
+        "win_rate": 62.3,
+        "payoff": 1.17,
+        "trades": 53
+      },
+      {
+        "code": "159941",
+        "name": "纳指ETF",
+        "pnl": 65.49,
+        "sel_rate": 10.5,
+        "win_rate": 67.6,
+        "payoff": 2.2,
+        "trades": 34
+      },
+      {
+        "code": "159869",
+        "name": "游戏ETF",
+        "pnl": 47.8,
+        "sel_rate": 15.7,
+        "win_rate": 47.9,
+        "payoff": 1.58,
+        "trades": 48
+      },
+      {
+        "code": "159985",
+        "name": "豆粕ETF",
+        "pnl": 6.75,
+        "sel_rate": 11.2,
+        "win_rate": 54.1,
+        "payoff": 0.94,
+        "trades": 37
+      },
+      {
+        "code": "512980",
+        "name": "传媒ETF",
+        "pnl": 6.62,
+        "sel_rate": 10.0,
+        "win_rate": 50.0,
+        "payoff": 1.13,
+        "trades": 24
+      },
+      {
+        "code": "512400",
+        "name": "有色金属ETF",
+        "pnl": 4.7,
+        "sel_rate": 10.7,
+        "win_rate": 47.6,
+        "payoff": 1.17,
+        "trades": 42
+      },
+      {
+        "code": "159131",
+        "name": "港股信息ETF",
+        "pnl": 2.06,
+        "sel_rate": 13.5,
+        "win_rate": 100.0,
+        "payoff": 999.0,
+        "trades": 1
+      }
+    ],
+    "snipers": [
+      {
+        "code": "513050",
+        "name": "中概互联ETF",
+        "pnl": 99.82,
+        "sel_rate": 8.3,
+        "win_rate": 81.8,
+        "payoff": 2.21,
+        "trades": 33
+      },
+      {
+        "code": "512660",
+        "name": "军工ETF",
+        "pnl": 97.53,
+        "sel_rate": 9.7,
+        "win_rate": 63.6,
+        "payoff": 1.59,
+        "trades": 44
+      },
+      {
+        "code": "515210",
+        "name": "钢铁ETF",
+        "pnl": 54.3,
+        "sel_rate": 7.4,
+        "win_rate": 50.0,
+        "payoff": 3.19,
+        "trades": 22
+      }
+    ],
+    "problematic": [
+      {
+        "code": "515220",
+        "name": "煤炭ETF",
+        "pnl": -26.21,
+        "sel_rate": 20.0,
+        "win_rate": 49.2,
+        "payoff": 0.8,
+        "trades": 61
+      }
+    ],
+    "marginal": [
+      {
+        "code": "159755",
+        "name": "电池ETF",
+        "pnl": 43.35,
+        "sel_rate": 6.4,
+        "win_rate": 55.6,
+        "payoff": 2.46,
+        "trades": 18
+      },
+      {
+        "code": "159687",
+        "name": "亚太精选ETF",
+        "pnl": 34.79,
+        "sel_rate": 3.6,
+        "win_rate": 75.0,
+        "payoff": 1.09,
+        "trades": 12
+      },
+      {
+        "code": "159329",
+        "name": "沙特ETF",
+        "pnl": 31.26,
+        "sel_rate": 3.4,
+        "win_rate": 75.0,
+        "payoff": 0.91,
+        "trades": 8
+      },
+      {
+        "code": "513070",
+        "name": "港股消费ETF",
+        "pnl": 29.57,
+        "sel_rate": 6.4,
+        "win_rate": 69.2,
+        "payoff": 0.93,
+        "trades": 13
+      },
+      {
+        "code": "563300",
+        "name": "微盘ETF",
+        "pnl": 28.87,
+        "sel_rate": 2.3,
+        "win_rate": 100.0,
+        "payoff": 999.0,
+        "trades": 5
+      },
+      {
+        "code": "512200",
+        "name": "房地产ETF",
+        "pnl": 25.44,
+        "sel_rate": 5.4,
+        "win_rate": 31.2,
+        "payoff": 3.29,
+        "trades": 32
+      },
+      {
+        "code": "518880",
+        "name": "黄金ETF",
+        "pnl": 23.22,
+        "sel_rate": 6.7,
+        "win_rate": 60.0,
+        "payoff": 1.26,
+        "trades": 30
+      },
+      {
+        "code": "159502",
+        "name": "标普生物ETF",
+        "pnl": 22.13,
+        "sel_rate": 7.7,
+        "win_rate": 56.2,
+        "payoff": 1.8,
+        "trades": 16
+      },
+      {
+        "code": "159996",
+        "name": "家电ETF",
+        "pnl": 19.23,
+        "sel_rate": 2.5,
+        "win_rate": 66.7,
+        "payoff": 2.01,
+        "trades": 9
+      },
+      {
+        "code": "588010",
+        "name": "科创新材料ETF",
+        "pnl": 17.69,
+        "sel_rate": 1.4,
+        "win_rate": 80.0,
+        "payoff": 6.15,
+        "trades": 5
+      },
+      {
+        "code": "159326",
+        "name": "电网设备ETF",
+        "pnl": 15.48,
+        "sel_rate": 7.5,
+        "win_rate": 40.0,
+        "payoff": 3.75,
+        "trades": 5
+      },
+      {
+        "code": "513880",
+        "name": "日经",
+        "pnl": 12.02,
+        "sel_rate": 6.3,
+        "win_rate": 78.6,
+        "payoff": 1.15,
+        "trades": 14
+      },
+      {
+        "code": "159561",
+        "name": "德国ETF",
+        "pnl": 7.21,
+        "sel_rate": 3.5,
+        "win_rate": 75.0,
+        "payoff": 0.63,
+        "trades": 4
+      },
+      {
+        "code": "159851",
+        "name": "金融科技ETF",
+        "pnl": 6.69,
+        "sel_rate": 7.3,
+        "win_rate": 40.0,
+        "payoff": 1.82,
+        "trades": 15
+      },
+      {
+        "code": "513690",
+        "name": "港股红利ETF",
+        "pnl": 6.64,
+        "sel_rate": 2.6,
+        "win_rate": 75.0,
+        "payoff": 3.21,
+        "trades": 4
+      },
+      {
+        "code": "513090",
+        "name": "港券ETF",
+        "pnl": 3.74,
+        "sel_rate": 6.3,
+        "win_rate": 36.4,
+        "payoff": 1.89,
+        "trades": 22
+      },
+      {
+        "code": "560280",
+        "name": "工程机械ETF",
+        "pnl": 3.44,
+        "sel_rate": 4.3,
+        "win_rate": 75.0,
+        "payoff": 0.88,
+        "trades": 4
+      },
+      {
+        "code": "159697",
+        "name": "石油ETF",
+        "pnl": 0.38,
+        "sel_rate": 4.0,
+        "win_rate": 57.1,
+        "payoff": 0.8,
+        "trades": 7
+      },
+      {
+        "code": "159732",
+        "name": "消费电子ETF",
+        "pnl": -0.22,
+        "sel_rate": 7.6,
+        "win_rate": 58.3,
+        "payoff": 0.71,
+        "trades": 12
+      },
+      {
+        "code": "159698",
+        "name": "粮食ETF",
+        "pnl": -0.85,
+        "sel_rate": 3.3,
+        "win_rate": 50.0,
+        "payoff": 0.85,
+        "trades": 4
+      },
+      {
+        "code": "159766",
+        "name": "旅游ETF",
+        "pnl": -1.35,
+        "sel_rate": 6.6,
+        "win_rate": 45.0,
+        "payoff": 1.16,
+        "trades": 20
+      },
+      {
+        "code": "159667",
+        "name": "工业母机ETF",
+        "pnl": -4.88,
+        "sel_rate": 6.2,
+        "win_rate": 44.4,
+        "payoff": 0.89,
+        "trades": 9
+      },
+      {
+        "code": "562500",
+        "name": "机器人ETF",
+        "pnl": -7.45,
+        "sel_rate": 6.1,
+        "win_rate": 46.7,
+        "payoff": 0.7,
+        "trades": 15
+      },
+      {
+        "code": "159611",
+        "name": "电力ETF",
+        "pnl": -7.7,
+        "sel_rate": 4.8,
+        "win_rate": 16.7,
+        "payoff": 0.86,
+        "trades": 6
+      },
+      {
+        "code": "510880",
+        "name": "红利ETF",
+        "pnl": -8.72,
+        "sel_rate": 5.8,
+        "win_rate": 36.4,
+        "payoff": 1.14,
+        "trades": 22
+      },
+      {
+        "code": "159745",
+        "name": "建材ETF",
+        "pnl": -10.92,
+        "sel_rate": 2.3,
+        "win_rate": 0.0,
+        "payoff": 0.0,
+        "trades": 4
+      },
+      {
+        "code": "512070",
+        "name": "非银ETF",
+        "pnl": -12.85,
+        "sel_rate": 3.5,
+        "win_rate": 22.2,
+        "payoff": 1.6,
+        "trades": 9
+      },
+      {
+        "code": "512880",
+        "name": "证券ETF",
+        "pnl": -13.05,
+        "sel_rate": 3.6,
+        "win_rate": 26.7,
+        "payoff": 0.37,
+        "trades": 15
+      },
+      {
+        "code": "512800",
+        "name": "银行ETF",
+        "pnl": -14.34,
+        "sel_rate": 4.8,
+        "win_rate": 22.2,
+        "payoff": 2.18,
+        "trades": 27
+      },
+      {
+        "code": "159870",
+        "name": "化工ETF",
+        "pnl": -14.77,
+        "sel_rate": 2.0,
+        "win_rate": 33.3,
+        "payoff": 0.59,
+        "trades": 6
+      },
+      {
+        "code": "159992",
+        "name": "A股创新药ETF",
+        "pnl": -16.24,
+        "sel_rate": 7.8,
+        "win_rate": 38.5,
+        "payoff": 1.15,
+        "trades": 26
+      },
+      {
+        "code": "159883",
+        "name": "医疗器械ETF",
+        "pnl": -27.99,
+        "sel_rate": 1.8,
+        "win_rate": 16.7,
+        "payoff": 1.08,
+        "trades": 6
+      },
+      {
+        "code": "159865",
+        "name": "养殖ETF",
+        "pnl": -37.85,
+        "sel_rate": 7.1,
+        "win_rate": 33.3,
+        "payoff": 0.49,
+        "trades": 24
+      }
+    ]
+  },
+  "phase_performance": {
+    "2020-2021_bull": {
+      "baseline_tr": 53.1,
+      "baseline_mdd": -11.6,
+      "new_tr": 66.8,
+      "new_mdd": -13.39,
+      "delta_tr": 13.7
+    },
+    "2021_chop": {
+      "baseline_tr": 3.2,
+      "baseline_mdd": -12.99,
+      "new_tr": 5.6,
+      "new_mdd": -15.76,
+      "delta_tr": 2.4
+    },
+    "2022-2023_recovery": {
+      "baseline_tr": 24.4,
+      "baseline_mdd": -6.1,
+      "new_tr": 29.9,
+      "new_mdd": -8.16,
+      "delta_tr": 5.5
+    },
+    "2024-2026_rocket": {
+      "baseline_tr": 220.5,
+      "baseline_mdd": -12.95,
+      "new_tr": 315.3,
+      "new_mdd": -12.96,
+      "delta_tr": 94.8
+    }
+  },
+  "behavioral_baseline": {
+    "avg_holdings_by_year": {
+      "2020": 4.2,
+      "2021": 3.5,
+      "2022": 2.0,
+      "2023": 2.5,
+      "2024": 3.1,
+      "2025": 4.6,
+      "2026": 4.5
+    },
+    "trade_count": 443,
+    "commission": 162915.0
+  }
+}

@@ -61,10 +61,10 @@
    - 若无法唯一定位，再搜索 `plans/REQ-*.md`，最多读取 3-5 个最相关候选。
    - 不要读取所有 REQ。
 5. 根据领域选择最小阅读范围：
-   - 量化 / Tuner / 回测：`docs/ops/quant/overview.md`、`config/quant_universe.yaml`、`scripts/quant_*.py`
-   - 正式页 / 报告 / 发布：`docs/ops/report.md`、`docs/ops/release.md`、`scripts/update_report.py`、`scripts/deployer.py`、`assets/js/`
-   - stable / 计划任务：`BatchFiles/`、`docs/ops/release.md`
-   - 架构 / 包化：`docs/architecture/overview.md`、`src/`、`scripts/`
+   - 量化 / Tuner / 回测：`docs/runbook/v2-quant/overview.md`、`config/quant_universe.yaml`、`scripts/quant_*.py`
+   - 正式页 / 报告 / 发布：`docs/runbook/v1-report.md`、`docs/runbook/release.md`、`scripts/update_report.py`、`scripts/deployer.py`、`assets/js/`
+   - stable / 计划任务：`BatchFiles/`、`docs/runbook/release.md`
+   - 架构 / 包化：`docs/design/overview.md`、`src/`、`scripts/`
 
 输出：
 
@@ -88,19 +88,19 @@
 
 ## 安全规则
 
-- **换池**：用户说"换池"。详见 `docs/ops/pool-change.md`。
-- **发布/提交**：用户说"发布"（完整 Phase 0-8）或"提交"（快速路径跳过版本治理）。详见 `docs/ops/release.md`。
+- **换池**：用户说"换池"。详见 `docs/runbook/v2-quant/pool-change.md`。
+- **发布/提交**：用户说"发布"（完整 Phase 0-8）或"提交"（快速路径跳过版本治理）。详见 `docs/runbook/release.md`。
 - 不主动删除目录、修改 Windows 计划任务，除非用户明确要求。
 - 遇到 destructive / shared-state 操作先确认。
 - 不使用 `--force` / `--force-with-lease`，除非用户明确要求且说明原因。
 - 修改核心逻辑后跑相关最小验证；涉及回测/参数/发布链时优先跑对应测试。
 - 不扫描或修改 `logs/`、`data/`、`outputs/`、`_working/`，除非任务明确需要。
 - **遭遇 Tuner/回测/数据异常时，先查排障表**：
-  - 量化/Tuner/回测 → `docs/ops/quant/overview.md` 的故障排查索引，再按症状跳到短文档
-  - 正式页/推送/数据管线 → `docs/ops/report.md` 常见问题
+  - 量化/Tuner/回测 → `docs/runbook/v2-quant/overview.md` 的故障排查索引，再按症状跳到短文档
+  - 正式页/推送/数据管线 → `docs/runbook/v1-report.md` 常见问题
   - 不要猜进程/网络/缓存，先按症状索引定位。
-- **参数优化**：用户说"优化 <preset>"。详见 `docs/ops/quant/optimization.md`。必须跑 `optimization_analyzer.py`。
+- **参数优化**：用户说"优化 <preset>"。详见 `docs/runbook/v2-quant/optimization.md`。优化器自动出 analysis.json。
 
 ## 术语
 
-需要术语定义时：`docs/reference/glossary.md`
+需要术语定义时：`docs/design/glossary.md`

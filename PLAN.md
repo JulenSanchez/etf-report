@@ -75,23 +75,23 @@ open → fixing → fixed → closed
 | 事实源 | 职责 |
 |------|------|
 | `AGENTS.md` | 新对话冷启动入口：开放式评估、关键词定位需求、指定 REQ 启动 |
-| `docs/reference/glossary.md` | 详细 AI 协作说明：术语、任务路由、高风险规则 |
-| `docs/reference/` | 跨产品线参考（术语表、审计方法） |
+| `docs/design/glossary.md` | 详细 AI 协作说明：术语、任务路由、高风险规则 |
+| `docs/runbook/audit.md` | 项目审计方法 |
 
 维护原则：
 
 - `AGENTS.md` 保持短、稳定、低 token，只写冷启动流程。
-- `docs/reference/glossary.md` 只保留仍会影响当前开发的协作约定。
+- `docs/design/glossary.md` 只保留仍会影响当前开发的协作约定。
 - 不再新增 active `.codebuddy/rules`、`.claude/rules` 或 `statusbar.config.md`。
 - 旧规则如需保留，放在 `` 并明确标注历史归档。
 
 ### 版本发布
 
-用户说"发布"时，**发布前到底要做什么只看 `docs/ops/release.md`**。
+用户说"发布"时，**发布前到底要做什么只看 `docs/runbook/release.md`**。
 
-- `docs/ops/release.md` 是发布前唯一门禁与步骤事实源。
+- `docs/runbook/release.md` 是发布前唯一门禁与步骤事实源。
 - `PLAN.md` 不重复维护发布前检查、版本号递增、归档、Git 推送、PR/直推策略等副本。
-- 如果发布动作里需要核对 `Board.md` / `Archive.md` / 版本号 / 敏感信息 / 禁止跟踪文件，这些要求应先写进 `docs/ops/release.md`，再按它执行。
+- 如果发布动作里需要核对 `Board.md` / `Archive.md` / 版本号 / 敏感信息 / 禁止跟踪文件，这些要求应先写进 `docs/runbook/release.md`，再按它执行。
 
 
 对话结束前批量更新文件，不在中间频繁写文件。

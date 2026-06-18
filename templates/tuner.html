@@ -240,9 +240,9 @@ th[data-sort]:hover { color: #e0e0e0; }
 <div id="shortcuts-overlay" onclick="if(event.target===this)toggleShortcuts()">
   <div id="shortcuts-card">
     <h3>Keyboard Shortcuts</h3>
-    <div class="shortcut-row"><span class="shortcut-key">1</span><span class="shortcut-desc">Preset 3 — 赌徒</span></div>
-    <div class="shortcut-row"><span class="shortcut-key">2</span><span class="shortcut-desc">Preset 2 — 禅修者</span></div>
-    <div class="shortcut-row"><span class="shortcut-key">3</span><span class="shortcut-desc">Preset 1 — 精算师</span></div>
+    <div class="shortcut-row"><span class="shortcut-key">1</span><span class="shortcut-desc">赌徒1 (gam-1)</span></div>
+    <div class="shortcut-row"><span class="shortcut-key">2</span><span class="shortcut-desc">禅修者1 (zen-1)</span></div>
+    <div class="shortcut-row"><span class="shortcut-key">3</span><span class="shortcut-desc">精算师1 (act-1)</span></div>
     <div class="shortcut-row"><span class="shortcut-key">R</span><span class="shortcut-desc">Run Backtest</span></div>
     <div class="shortcut-row"><span class="shortcut-key">S</span><span class="shortcut-desc">Save YAML</span></div>
     <div class="shortcut-hint">Press ? or ESC to close</div>
@@ -301,8 +301,8 @@ th[data-sort]:hover { color: #e0e0e0; }
     </div>
     <div class="factor-sub">
       <div class="slider-group" id="param-ema" aria-label="EMA周期">
-        <div class="slider-label"><span class="name">EMA 周期</span><span class="val" id="v-ema">16 周</span></div>
-        <input type="range" id="ema_period" min="3" max="30" step="1" value="16" oninput="$id('v-ema').textContent=this.value+' 周'" aria-label="EMA周期">
+        <div class="slider-label"><span class="name">EMA 周期</span><span class="val" id="v-f1-ema">16 周</span></div>
+        <input type="range" id="f1_ema_period" min="3" max="30" step="1" value="16" oninput="$id('v-f1-ema').textContent=this.value+' 周'" aria-label="EMA周期">
       </div>
       <div class="slider-group" id="param-f1s" aria-label="F1 sigmoid">
         <div class="slider-label"><span class="name">sigmoid 尺度</span><span class="val" id="v-f1s">8.0</span></div>
@@ -331,7 +331,7 @@ th[data-sort]:hover { color: #e0e0e0; }
     <div class="factor-sub">
       <div class="slider-group" id="param-vol" aria-label="量比窗口">
         <div class="slider-label"><span class="name">量比窗口</span><span class="val" id="v-vol">20 日</span></div>
-        <input type="range" id="vol_window" min="5" max="60" step="1" value="20" oninput="$id('v-vol').textContent=this.value+' 日'" aria-label="量比窗口">
+        <input type="range" id="f3_vol_window" min="5" max="60" step="1" value="20" oninput="$id('v-vol').textContent=this.value+' 日'" aria-label="量比窗口">
       </div>
       <div class="slider-group" id="param-f3s" aria-label="F3指数尺度">
         <div class="slider-label"><span class="name">指数尺度</span><span class="val" id="v-f3s">1.0</span></div>
@@ -1651,8 +1651,8 @@ function getParams() {
     disc_step: parseInt($id('disc_step').value) / 100.0,
     concentration: parseFloat($id('concentration').value),
     c_sensitivity: parseFloat($id('c_sensitivity').value),
-    ema_period: parseInt($id('ema_period').value),
-    vol_window: parseInt($id('vol_window').value),
+    f1_f1_ema_period: parseInt($id('f1_ema_period').value),
+    f3_f3_vol_window: parseInt($id('f3_vol_window').value),
     f1_sensitivity: parseFloat($id('f1_sensitivity').value),
     f3_sensitivity: parseFloat($id('f3_sensitivity').value),
     rebalance_freq: rebalanceFreq,
@@ -1706,8 +1706,8 @@ function setParams(p) {
   if (p.ma_bull_pos != null) { setSlider('ma_bull_pos', p.ma_bull_pos); $id('v-ma-bull').textContent = Math.round(p.ma_bull_pos * 100) + '%'; }
   if (p.ma_bear_pos != null) { setSlider('ma_bear_pos', p.ma_bear_pos); $id('v-ma-bear').textContent = Math.round(p.ma_bear_pos * 100) + '%'; }
   if (p.ma_direction_confirm != null) { setMaDirConfirm(!!p.ma_direction_confirm); }
-  if (p.ema_period != null) { setSlider('ema_period', p.ema_period); $id('v-ema').textContent = p.ema_period + ' 周'; }
-  if (p.vol_window != null) { setSlider('vol_window', p.vol_window); $id('v-vol').textContent = p.vol_window + ' 日'; }
+  if (p.f1_ema_period != null) { setSlider('f1_ema_period', p.ema_period); $id('v-f1-ema').textContent = p.ema_period + ' 周'; }
+  if (p.f3_vol_window != null) { setSlider('f3_vol_window', p.vol_window); $id('v-vol').textContent = p.vol_window + ' 日'; }
   if (p.f1_active_days != null) { setF1ActiveDays(p.f1_active_days); }
   if (p.f1_sensitivity != null) { setSlider('f1_sensitivity', p.f1_sensitivity); $id('v-f1s').textContent = parseFloat(p.f1_sensitivity).toFixed(1); }
   if (p.f3_sensitivity != null) { setSlider('f3_sensitivity', p.f3_sensitivity); $id('v-f3s').textContent = parseFloat(p.f3_sensitivity).toFixed(1); }
@@ -1855,9 +1855,9 @@ async function loadPresets() {
 }
 
 var SCHOOLS = [
-  {id:'gambler', name:'赌徒', target:'max AR', constraint:'MDD<20%', presets:['gam-1','gam-2','gam-3'], def:'gam-1'},
+  {id:'gambler', name:'赌徒', target:'max AR', constraint:'MDD<28%', presets:['gam-1','gam-2'], def:'gam-1'},
   {id:'zen', name:'禅修者', target:'max Sharpe', constraint:'P90<35%', presets:['zen-1'], def:'zen-1'},
-  {id:'actuary', name:'精算师', target:'max SxC', constraint:'无', presets:['act-1'], def:'act-1'},
+  {id:'actuary', name:'精算师', target:'max SxC', constraint:'bear<30%', presets:['act-1','act-2'], def:'act-1'},
   {id:'custom', name:'自定义', target:'自定义', constraint:'—', presets:['cst-1'], def:'cst-1'},
 ];
 
