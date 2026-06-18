@@ -4,8 +4,8 @@
 
 | 字段 | 值 |
 |------|------|
-| **当前版本** | **v3.7.0** (开发中) |
-| **发布日期** | — |
+| **当前版本** | **v3.8.0** |
+| **发布日期** | 2026-06-18 |
 | **三派终局** | 精算师1(57/17/26,C=0.78,CS=3.1,MH=5,MA=39w,S×C=46.6)、禅修者1(49/32/19,C=0.35,CS=0,Sharpe=2.31)、赌徒1(56/24/20,C=0.43,CS=6.0,AR=93.0%) |
 | **下一目标版本** | **v4.0.0** (多主体策略治理) |
 | **基线** | gam-1 TR=+709.49% MDD=-26.21% Sharpe=1.33，ETF 54支（全量 active） |
@@ -17,26 +17,11 @@
 
 ## in_progress (开发中)
 
-| ID | 标题 | 开始日期 |
-|----|------|---------|
-| REQ-284 | **shared 模块正式包化** — Phase 2 已迁移 quant_contract/quant_data_cache/benchmark/compliance/data_cleaning 等 shared 模块，后续处理业务层入口 | 2026-06-16 |
+（空）
 
 ## done (已完成，待发布)
 
-| ID | 标题 | 完成日期 |
-|----|------|---------|
-| REQ-274 | **ETF 全市场自动筛选** — 筛选引擎 v2 + R14 换池执行（48 支）+ SOP/docs 收口 | 2026-06-15 |
-| REQ-277 | **F1 检查点/冻结点机制** | 2026-06-10 |
-| REQ-280 | **术语表补全 + 禁词修正** — SKILL.md 术语表新增约 10 条，QUANT_RUNBOOK.md 禁词全面修正 | 2026-06-13 |
-| REQ-281 | **项目仓库化迁移与 stable 发布链收口** | 2026-06-13 |
-| REQ-289 | **ETF 默认勾选机制** — active 标记 + 5% TR 阈值 + Tuner 保存按钮 | 2026-06-16 |
-| — | — | — |
-| REQ-291 | **三派优化 promotion 评审** — | 评审中 |
-| REQ-290 | **参数优化报告规范** — 8 节结构 + 6 个方法论 + 搜索空间设计原则 | 2026-06-16 |
-| REQ-282 | **权重转换逻辑工程化修复** | 2026-06-16 |
-| REQ-286 | **AI 文档与历史治理文档去 Skill 化** | 2026-06-16 |
-| REQ-283 | **量化运维文档拆分精简** | 2026-06-16 |
-| REQ-287 | **stable 自动更新与计划任务观测** | 2026-06-16 |
+（空）
 
 ## v4.0.0 规划 → 见 `plans/V4_ROADMAP.md`
 
@@ -136,9 +121,6 @@
 | BUG-027 | setSlider `removeAttribute('step')` → 浏览器默认 step=1 → 滑块锁死 0%/100% | 🟡 Medium | fixed | v3.2.0-dev | ma_bull/ma_bear 滑块 | 2026-05-21 | HTML 规范: range input 无 step 属性时默认值=1。修复: `el.step='any'` 代替 `removeAttribute` | v3.2.0 |
 | BUG-028 | 中概互联(513050) `--full` 分页 bug → CSV 仅 2017-2019 数据 → 不进因子计算 | 🟡 Medium | fixed | v3.2.0-dev | REQ-214 池子扩容 | 2026-05-22 | `fetch_etf_kline` full 模式后处理丢失中间页数据。手动分页重建 2264 行 CSV。后续 full fetch 仍可能有此问题，需统一修复。 | v3.2.0 |
 | BUG-030 | 回测历史信号漂移：全量重拉CSV后6/3煤炭得分从65.3降至62.7，排名从第2跌至第7 | 🔴 Critical | closed | v3.5.0 | — | 2026-06-05 | f1_active_days 重构重写了整个 F1 管线（rebuild_weekly + bitmask），旧基线不可比。若新体系再出现漂移，开 BUG-031。 | — |
-| BUG-033 | **Tuner 启动白屏** — `SCHOOLS[3]`(`自定义`)缺 `target`/`constraint`，`renderPresetCards()` `school.target.split()` 抛 TypeError 阻塞页面 | 🔴 Critical | fixed | v3.7.0-dev | preset 重命名 | 2026-06-16 | 补字段 + JS 加固 `undefined.split()` | v3.7.0 |
-| BUG-034 | **Snapshot 仓位显示非整数** — 离散化后归一化 `* (total_target/pos_sum)` 把步长整数倍（22%/33%）变成浮点（22.2%/33.3%），前后端不一致 | 🟡 Medium | fixed | v3.7.0-dev | 离散化归一化 | 2026-06-17 | 归一化替为残量补最大权重者，保持步长整数倍 | v3.7.0 |
-| BUG-032 | **F1 跨周冻结失效** — checkpoint_f1 在周边界被重置为 None，新周周一跌入 else 分支重算 base，导致周一 F1 ≠ 上周五。应跨周携带上周最后值。 | 🔴 Critical | fixed | v3.6.0-dev | REQ-277 | 2026-06-15 | `checkpoint_f1 = None` → 应携带 `f1_val[i-1]` | v3.6.1 |
 | ~~BUG-031~~ | **交易日历缺失历史节假日** — 已转 REQ-278。当前用日线数据统计 + 最后周硬编码 5 的临时方案可用。 | 🟡 Medium | closed | v3.6.0-dev | REQ-277 | 2026-06-10 | 转为 REQ-278：增加中国节假日后处理修正日历，替换临时硬编码。 | — |
 
 

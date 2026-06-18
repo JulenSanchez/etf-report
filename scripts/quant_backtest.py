@@ -19,13 +19,16 @@ import yaml
 sys.stdout.reconfigure(encoding="utf-8")
 
 PROJECT_ROOT = next(parent for parent in Path(__file__).resolve().parents if (parent / "config").is_dir() and (parent / "scripts").is_dir())
+SRC_DIR = PROJECT_ROOT / "src"
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
 sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
 
 from quant_factors import (
     map_f1, map_f3, map_f4, map_f7,
     confidence_function, regime_confidence, infer_regime_from_nav, dd_trigger_confidence, momentum_crash_confidence, ma_trend_confidence,
 )
-from quant_data_utils import load_etf_data as _load_etf_data, get_price_on_date as _get_price_on_date
+from etf_report.core.quant_data_utils import load_etf_data as _load_etf_data, get_price_on_date as _get_price_on_date
 from benchmark_data import load_hs300_daily_cached, build_hs300_weekly, build_ma_trend_cache
 
 CONFIG_PATH = PROJECT_ROOT / "config" / "quant_universe.yaml"
@@ -283,11 +286,22 @@ def _precompute_factors(all_daily, all_weekly, ema_period, vol_window,
         # Precompute trading-day counts per ISO week from daily data.
         # More reliable than the trading calendar for historical holidays.
         _week_td_map = _daily_week_str.value_counts().to_dict()
-        # Last ISO week in the data is likely incomplete — its actual count
-        # would grow as data is added, making checkpoint conditions unstable.
-        # Clamp to 5 for the last week; complete short weeks are unaffected.
+        # Last ISO week: use actual daily-data count unless calendar says
+        # there are still trading days remaining (truly incomplete week).
         _last_week = _daily_week_str.iloc[-1]
-        _week_td_map[_last_week] = 5
+        try:
+            from trading_calendar import is_trading_day as _is_td_check
+            import pandas as _pd
+            _today = _pd.Timestamp.now().normalize()
+            _mon = _today - _pd.Timedelta(days=_today.dayofweek)
+            _has_future = any(_is_td_check(_mon + _pd.Timedelta(days=i)) for i in range(7) if _mon + _pd.Timedelta(days=i) > _today)
+        except Exception:
+            _has_future = _today.dayofweek < 4
+        if _has_future:
+            # Week is truly incomplete — force 5 to prevent false checkpoint
+            _week_td_map[_last_week] = 5
+        # else: short but complete week (e.g. Thu before holiday Fri)
+        # — keep actual daily-data count so checkpoint fires correctly
 
         # Per-ETF state: checkpoint value for the current ISO week, reset on week boundary.
         checkpoint_f1 = None
@@ -361,7 +375,7 @@ def _precompute_factors(all_daily, all_weekly, ema_period, vol_window,
             f3_val[:f3_norm_window + vol_window] = np.nan
         f7_val = np.full(len(daily_dates), np.nan, dtype=float)
         if len(daily_df) >= f7_window + f7_min_days:
-            cd = daily_df["close"].astype(float)
+            cd = daily_df["close"].astype(float).where(lambda s: s > 0)
             lr = np.log(cd / cd.shift(1))
             cs = lr.rolling(window=f7_window).sum().values
             for i in range(len(cs)):

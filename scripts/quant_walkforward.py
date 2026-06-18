@@ -16,10 +16,13 @@ import pandas as pd
 sys.stdout.reconfigure(encoding="utf-8")
 
 PROJECT_ROOT = next(parent for parent in Path(__file__).resolve().parents if (parent / "config").is_dir() and (parent / "scripts").is_dir())
+SRC_DIR = PROJECT_ROOT / "src"
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
 sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
 
 from quant_backtest import run_backtest, load_config
-from quant_data_utils import load_etf_data as _load_etf_data
+from etf_report.core.quant_data_utils import load_etf_data as _load_etf_data
 from benchmark_data import load_hs300_daily_cached, build_hs300_weekly, build_ma_trend_cache
 
 RESULTS_DIR = PROJECT_ROOT / "research" / "strategy" / "walkforward"

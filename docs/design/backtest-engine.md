@@ -453,7 +453,7 @@ tests/test_update_report.py -k "quant_preset_params or quant_payload_config_sect
 
 | 内容 | 去哪里 |
 |---|---|
-| 系统总览、文件职责、变更路由 | `../../architecture.md` / `../../ops/quant/overview.md` |
-| 启动 Tuner、刷新数据、排障 | `../../ops/quant/overview.md` |
+| 系统总览、文件职责、变更路由 | `overview.md` / `../runbook/v2-quant/overview.md` |
+| 启动 Tuner、刷新数据、排障 | `../runbook/v2-quant/overview.md` |
 | 当前最优参数和研究结论 | `../../research/params/README.md` / `../../research/strategy/README.md` |
-| 历史方法论和研究备忘 | `07-quant-methodology.md` / `08-quant-research-memo.md` |
+| 历史方法论和研究备忘 | `../../research/07-quant-methodology.md` / `../../research/08-quant-research-memo.md` |

@@ -42,10 +42,10 @@ if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
 from quant_factors import calc_ema, calc_rsi
-from quant_data_utils import load_etf_data, rebuild_weekly_from_daily
+from etf_report.core.quant_data_utils import load_etf_data, rebuild_weekly_from_daily
+from etf_report.core import quant_contract as qc
 from benchmark_data import load_hs300_daily_cached, build_hs300_pct, build_hs300_weekly, build_ma_trend_cache
 from trading_calendar import load_trading_calendar, is_trading_day, last_trading_day
-import quant_contract as qc
 
 CONFIG_PATH = CONFIG_DIR / "quant_universe.yaml"
 OVERRIDES_PATH = CONFIG_DIR / "quant_user_overrides.yaml"

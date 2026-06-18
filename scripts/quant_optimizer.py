@@ -28,6 +28,9 @@ import numpy as np
 import pandas as pd
 
 PROJECT_ROOT = next(parent for parent in Path(__file__).resolve().parents if (parent / "config").is_dir() and (parent / "scripts").is_dir())
+SRC_DIR = PROJECT_ROOT / "src"
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
 sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
 
 try:
@@ -35,14 +38,14 @@ try:
 except ImportError:
     optuna = None
 
-from quant_contract import (
+from etf_report.core.quant_contract import (
     PARAM_BOUNDS, get_param_bounds, get_param_type, auto_bounds,
     tuner_params_to_config_override, validate_tuner_params,
     preset_to_tuner_params,
     _WEIGHT_PARAM_KEYS,
 )
 from quant_backtest import run_backtest, load_config as _load_backtest_config
-from quant_data_utils import load_etf_data as _load_etf_data
+from etf_report.core.quant_data_utils import load_etf_data as _load_etf_data
 
 DATA_DIR = PROJECT_ROOT / "data" / "quant"
 RESEARCH_DIR = PROJECT_ROOT / "research" / "params"
@@ -289,9 +292,16 @@ class ParamSpace:
                     if "values" in b:
                         params[key] = rng.choice(b["values"])
                     else:
-                        params[key] = float(rng.uniform(b["min"], b["max"]))
+                        step = b.get("step")
+                        if step:
+                            n = int(round((b["max"] - b["min"]) / step))
+                            params[key] = float(b["min"] + rng.integers(0, n + 1) * step)
+                        else:
+                            params[key] = float(rng.uniform(b["min"], b["max"]))
                 elif tp == "integer":
-                    params[key] = int(rng.integers(b["min"], b["max"] + 1))
+                    step = int(b.get("step", 1))
+                    vals = list(range(int(b["min"]), int(b["max"]) + 1, step))
+                    params[key] = int(rng.choice(vals))
                 elif tp == "categorical":
                     params[key] = rng.choice(b["choices"])
                 elif tp == "special":
@@ -670,9 +680,16 @@ def _run_trial_optuna(trial, runner: BacktestRunner, cfg: OptimizationConfig, sp
                 hi = lo + step
             params[key] = trial.suggest_int(key, lo, hi, step=step)
         elif tp == "continuous":
-            params[key] = trial.suggest_float(key, b["min"], b["max"])
+            step = b.get("step")
+            if step:
+                hi = b["min"] + int((b["max"] - b["min"]) / step) * step
+                params[key] = trial.suggest_float(key, b["min"], hi, step=step)
+            else:
+                params[key] = trial.suggest_float(key, b["min"], b["max"])
         elif tp == "integer":
-            params[key] = trial.suggest_int(key, b["min"], b["max"])
+            step = int(b.get("step", 1))
+            hi = b["min"] + ((b["max"] - b["min"]) // step) * step
+            params[key] = trial.suggest_int(key, b["min"], hi, step=step)
         elif tp == "categorical":
             params[key] = trial.suggest_categorical(key, b["choices"])
         elif tp == "special":

@@ -16,11 +16,14 @@ import numpy as np
 import pandas as pd
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+SRC_DIR = PROJECT_ROOT / "src"
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
 sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
 
 from quant_data_cache import get_cache
 from quant_backtest import run_backtest
-from quant_contract import tuner_params_to_config_override, preset_to_tuner_params
+from etf_report.core.quant_contract import tuner_params_to_config_override, preset_to_tuner_params
 from quant_tuner import _compute_etf_contributions
 import yaml
 

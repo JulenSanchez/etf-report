@@ -82,36 +82,36 @@ PARAM_SCHEMA = {
 # Types: continuous (float), integer (int), categorical (list), weight (0-100 int, group-sum=100), special (pass-through)
 PARAM_BOUNDS = {
     # scoring weights (UI percentage points, 0-100 int, must sum to 100)
-    "w1":  {"type": "weight",  "min": 0,  "max": 70, "step": 1},
-    "w3":  {"type": "weight",  "min": 0,  "max": 70, "step": 1},
-    "w7":  {"type": "weight",  "min": 0,  "max": 25, "step": 1},
-    "bias": {"type": "continuous", "min": 0.0, "max": 10.0},
+    "w1":  {"type": "weight",  "min": 0,  "max": 100, "step": 1},
+    "w3":  {"type": "weight",  "min": 0,  "max": 100, "step": 1},
+    "w7":  {"type": "weight",  "min": 0,  "max": 100, "step": 1},
+    "bias": {"type": "continuous", "min": 0.0, "max": 10.0, "step": 0.1},
     # sensitivity
-    "f1_sensitivity": {"type": "continuous", "min": 2.0, "max": 16.0},
-    "f3_sensitivity": {"type": "continuous", "min": 0.2, "max": 4.0},
-    "f7_t":           {"type": "continuous", "min": 1.0, "max": 25.0},
-    "f7_k":           {"type": "continuous", "min": 1.0, "max": 6.0},
+    "f1_sensitivity": {"type": "continuous", "min": 3.0, "max": 15.0, "step": 0.1},
+    "f3_sensitivity": {"type": "continuous", "min": 0.5, "max": 8.0, "step": 0.1},
+    "f7_t":           {"type": "continuous", "min": 1.0, "max": 25.0, "step": 1.0},
+    "f7_k":           {"type": "continuous", "min": 0.1, "max": 10.0, "step": 0.1},
     # confidence
-    "conf_type":            {"type": "categorical", "choices": ["ma_trend", "regime", "dd_trigger", "momentum_crash", "always_full"]},
-    "ma_trend_period":      {"type": "integer", "min": 10, "max": 50},
-    "ma_bull_pos":          {"type": "continuous", "min": 0.7, "max": 1.0},
-    "ma_bear_pos":          {"type": "continuous", "min": 0.1, "max": 0.6},
+    "conf_type":            {"type": "categorical", "choices": ["ma_trend"]},
+    "ma_trend_period":      {"type": "integer", "min": 8, "max": 40, "step": 2},
+    "ma_bull_pos":          {"type": "continuous", "min": 0.0, "max": 1.0, "step": 0.01},
+    "ma_bear_pos":          {"type": "continuous", "min": 0.0, "max": 1.0, "step": 0.01},
     "ma_direction_confirm": {"type": "categorical", "choices": [True, False]},
-    "dead_zone":            {"type": "continuous", "min": 10, "max": 50},
-    "full_zone":            {"type": "continuous", "min": 40, "max": 90},
+    "dead_zone":            {"type": "continuous", "min": 10, "max": 50, "step": 1},
+    "full_zone":            {"type": "continuous", "min": 40, "max": 90, "step": 1},
     # position
-    "max_holdings":     {"type": "integer", "min": 1, "max": 8},
-    "disc_step":        {"type": "continuous", "min": 0.02, "max": 0.20},
-    "concentration":    {"type": "continuous", "min": 0.0, "max": 5.0},
-    "c_sensitivity":    {"type": "continuous", "min": 0.0, "max": 60.0},
-    "rebalance_freq":   {"type": "categorical", "choices": ["daily"]},
+    "max_holdings":     {"type": "integer", "min": 1, "max": 8, "step": 1},
+    "disc_step":        {"type": "continuous", "min": 0.01, "max": 0.20, "step": 0.01},
+    "concentration":    {"type": "continuous", "min": 0.0, "max": 30.0, "step": 0.1},
+    "c_sensitivity":    {"type": "continuous", "min": 0.0, "max": 200.0, "step": 2.0},
+    "rebalance_freq":   {"type": "categorical", "choices": ["W-FRI", "daily"]},
     "execution_timing": {"type": "categorical", "choices": ["same_close"]},
-    "f1_active_days":   {"type": "integer", "min": 0, "max": 31},
-    "score_band":       {"type": "continuous", "min": 0, "max": 15},
+    "f1_active_days":   {"type": "integer", "min": 0, "max": 31, "step": 1},
+    "score_band":       {"type": "continuous", "min": 0.0, "max": 20.0, "step": 0.5},
     # factors
-    "f1_ema_period":       {"type": "integer", "min": 2, "max": 40},
-    "f3_vol_window":       {"type": "integer", "min": 5, "max": 60},
-    "f7_window":        {"type": "integer", "min": 5, "max": 40},
+    "f1_ema_period":    {"type": "integer", "min": 3, "max": 30, "step": 1},
+    "f3_vol_window":    {"type": "integer", "min": 5, "max": 60, "step": 1},
+    "f7_window":        {"type": "integer", "min": 5, "max": 60, "step": 1},
     # universe
     "universe": {"type": "special"},
 }
@@ -159,7 +159,7 @@ def auto_bounds(preset_tuner_params, user_overrides=None):
             hi = min(b["max"], cur * 3.0)
             if hi <= lo:
                 hi = lo * 1.5
-            result[key] = {"type": "continuous", "min": lo, "max": hi}
+            result[key] = {"type": "continuous", "min": lo, "max": hi, "step": b.get("step")}
         elif tp == "integer":
             if cur is None:
                 cur = (b["min"] + b["max"]) // 2
@@ -167,7 +167,7 @@ def auto_bounds(preset_tuner_params, user_overrides=None):
             hi = min(b["max"], int(cur * 1.5))
             if hi <= lo:
                 hi = lo + 1
-            result[key] = {"type": "integer", "min": lo, "max": hi}
+            result[key] = {"type": "integer", "min": lo, "max": hi, "step": b.get("step", 1)}
         elif tp == "categorical":
             result[key] = {"type": "categorical", "choices": list(b["choices"])}
         elif tp == "special":
@@ -416,7 +416,7 @@ def build_presets_response(cfg):
 # ═══════════════════════════════════════════════════════════════════════════
 PRESET_OPT_PROFILES = {
     "gam-1": {"metric": "annual_return", "constraints": ["mdd,-20"]},
-    "gam-2": {"metric": "annual_return", "constraints": ["mdd,-20"]},
+    "gam-2": {"metric": "annual_return", "constraints": ["mdd,-25"]},
     "zen-1": {"metric": "sharpe", "constraints": []},
     "act-1": {"metric": "calmar", "constraints": ["bear,0.15,0.30"]},
 }

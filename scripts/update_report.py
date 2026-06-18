@@ -526,7 +526,7 @@ def _build_kline_replay_data(etf_name_map, start_date, end_date):
 def load_quant_preset_params(quant_config_path, preset="zen-1"):
     """Load a quant preset and convert it to Tuner parameter shape via quant_contract."""
     import yaml
-    import quant_contract as qc
+    from etf_report.core import quant_contract as qc
 
     with open(quant_config_path, "r", encoding="utf-8") as f:
         qcfg = yaml.safe_load(f)
@@ -555,7 +555,7 @@ def default_quant_preset_params():
 
 def build_quant_payload_config_section(preset_params):
     """Build yr1/yr3 payload config from the same contract used by Tuner /api/run."""
-    import quant_contract as qc
+    from etf_report.core import quant_contract as qc
 
     config_override = qc.tuner_params_to_config_override(preset_params)
     return {

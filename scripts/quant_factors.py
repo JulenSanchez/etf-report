@@ -698,7 +698,7 @@ def factor_log_return_deviation(daily_df: pd.DataFrame,
     if daily_df is None or len(daily_df) < window + min_days:
         return np.nan
 
-    close = daily_df["close"].astype(float)
+    close = daily_df["close"].astype(float).where(lambda s: s > 0)
     log_ret = np.log(close / close.shift(1))
     log_ret = log_ret.dropna()
 

@@ -307,21 +307,22 @@ P&L 和选中率两个维度交叉：
 
 | Preset | 信仰 | metric | 约束 | 理由 |
 |--------|------|--------|------|------|
-| gam-1/2 | 赌徒 | annual_return | mdd,-20 | 追求绝对收益，回撤容忍 20% |
+| gam-1 | 赌徒1 | annual_return | mdd,-20 | 追求绝对收益，回撤容忍 20% |
+| gam-2 | 赌徒2 | annual_return | mdd,-25 | 追求绝对收益，回撤容忍 25% |
 | zen-1 | 禅修者 | sharpe | — | 风险调整收益，无需额外约束 |
 | act-1 | 精算师 | calmar | bear,0.15,0.30 | 风险调整后收益，熊仓不超 30% |
 
 优化命令示例：
 ```bash
 # 自动使用 preset 默认 metric + 约束
-python scripts/quant_optimizer.py --preset gam-2 --metric annual_return --constraint mdd,-20 ...
+python scripts/quant_optimizer.py --preset gam-2 --metric annual_return --constraint mdd,-25 ...
 
 # 覆盖默认
 python scripts/quant_optimizer.py --preset act-1 --metric sharpe --constraint bear,0.15,0.30 ...
 ```
 
 约束使用 `--constraint type,val` 语法（可重复）：
-- `mdd,-20`：MDD 必须 ≥ -20%（超限 trial 被 prune）
+- `mdd,-20` / `mdd,-25`：MDD 必须不低于对应阈值（超限 trial 被 prune）
 - `bear,0.15,0.30`：ma_bear_pos 必须在 [0.15, 0.30]
 
 ## 五、优化产物归档规范

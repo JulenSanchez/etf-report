@@ -14,10 +14,10 @@
 ---
 
 > **工程文档入口**：
-> - 系统架构 → `architecture.md`
-> - 量化回测引擎 → `architecture/backtest-engine.md`
-> - ETF 贡献度分析 → `architecture/etf-contribution.md`
-> - 量化运维 → `ops/quant/overview.md`
-> - 正式页运维 → `ops/report.md`
-> - 发布门禁 → `ops/release.md`
+> - 系统架构 → `design/overview.md`
+> - 量化回测引擎 → `design/backtest-engine.md`
+> - ETF 贡献度分析 → `design/etf-contribution.md`
+> - 量化运维 → `runbook/v2-quant/overview.md`
+> - 正式页运维 → `runbook/v1-report.md`
+> - 发布门禁 → `runbook/release.md`
 > - 工具调研与历史方法 → `../research/`

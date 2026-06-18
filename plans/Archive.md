@@ -18,6 +18,8 @@
 | v3.2.0 | 2026-05-22 | REQ-213~221 | ETF池扩容(40→44)+扇区重划、逐笔配对胜率+赔率、ETF贡献度评估系统(9指标+分析框架)、盘中CSV修复、回测持久化缓存、超额收益+10卡指标、Tuner UI综合优化、扇区语义配色、ETF元数据(规模+Top10持仓)、BUG-027/028 |
 | v3.4.0 | 2026-06-02 | REQ-252~267 | QDII停牌感知+全日量估算+push停牌标注、德国入池、AUDIT_RUNBOOK v4.0、Tuner快捷键+键盘快捷键、收盘前信号推送、三派TPE收敛、F2/F4/F5全量清退、人设系统基建 |
 | v3.5.0 | 2026-06-05 | REQ-265/269/271/273 + REQ-204 | QDII停牌L2实测完成、精算师退化诊断、F7双重角色研究(黑洞螺旋)、REQ-269三流派负贡献分析(最终结论:不干预选股池)、回测并行化(quant_data_cache+2.7x加速)、核心量化测试覆盖(+27 tests)、Sina快速通道修复+多日补拉清退、_Avoid_术语表(30+术语)+ADR门控+技能闭环审计、CONTRIBUTING.md分拆删除、K线箭头键+点击联动、Matt Pocock调研、养殖研报采集 |
+| v3.6.0 | 2026-06-10 | REQ-277 | F1 检查点/冻结点机制 — 修复多 bit 抢跑时中间日自由移动的 bug |
+| v3.8.0 | 2026-06-18 | REQ-274/277/280/281/282/283/284/286/287/289/290/291 | shared 模块包化 Phase 1+2（src/etf_report/core/ 迁入 7 个 shared 模块）、ETF 全市场自动筛选引擎 v2 + R14 换池(48支)、ETF 默认勾选机制(active+5%TR阈值)、三派优化 promotion 评审、参数优化报告规范(8节+6方法论)、权重转换逻辑工程化修复、AI 文档/治理文档去 Skill 化、量化运维文档拆分精简、stable 自动更新与计划任务观测、BUG-032/033/034 修复 |
 
 
 
@@ -46,6 +48,9 @@
 | BUG-020 | 文档暴露本地绝对路径与用户级规则引用 | closed | major | 2026-04-21 | 2026-04-21 | `README.md` 曾写入本机 `file:///c:/Users/...` 绝对路径，并引用用户级规则文件；`SKILL.md`、`CONTRIBUTING.md`、`plans/REQ-161.md` 也带有用户级规则路径。现已统一改写为仓库内自洽表述，并将 `PLAN.md` 加入 `.gitignore` 且从 Git 跟踪中移出。 |
 | BUG-021 | 发布前唯一门禁未收束到 `plans/private/GIT_WORKFLOW.md` | closed | major | 2026-04-21 | 2026-04-21 | 已完成治理收口：`.codebuddy/rules/etf-report.mdc` 与 `PLAN.md` 不再并列维护发布前检查，统一改为只引用 `plans/private/GIT_WORKFLOW.md`；该文档现已重写为发布前唯一门禁，并加入 `.gitignore` 且从 Git 跟踪中移出。 |
 | BUG-024 | FetchData 后 Tuner 回测/K线仍停在 2026-05-08 | closed | medium | 2026-05-11 | 2026-05-12 | FetchData 依赖腾讯 weekly K线，周内未生成当周周线；已改为由本地 daily 重建 weekly。v3.1.0 修复。 |
+| BUG-032 | **F1 跨周冻结失效** — checkpoint_f1 在周边界被重置为 None，新周周一跌入 else 分支重算 base，导致周一 F1 ≠ 上周五 | fixed | critical | 2026-06-15 | 2026-06-18 | `checkpoint_f1 = None` → 应携带 `f1_val[i-1]`。v3.6.1 修复。 |
+| BUG-033 | **Tuner 启动白屏** — `SCHOOLS[3]`(`自定义`)缺 `target`/`constraint`，`renderPresetCards()` `school.target.split()` 抛 TypeError 阻塞页面 | fixed | critical | 2026-06-16 | 2026-06-18 | 补字段 + JS 加固 `undefined.split()`。v3.7.0 修复。 |
+| BUG-034 | **Snapshot 仓位显示非整数** — 离散化后归一化 `* (total_target/pos_sum)` 把步长整数倍（22%/33%）变成浮点（22.2%/33.3%），前后端不一致 | fixed | medium | 2026-06-17 | 2026-06-18 | 归一化替为残量补最大权重者，保持步长整数倍。v3.7.0 修复。 |
 
 
 

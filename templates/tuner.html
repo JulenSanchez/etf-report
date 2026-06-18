@@ -306,7 +306,7 @@ th[data-sort]:hover { color: #e0e0e0; }
       </div>
       <div class="slider-group" id="param-f1s" aria-label="F1 sigmoid">
         <div class="slider-label"><span class="name">sigmoid 尺度</span><span class="val" id="v-f1s">8.0</span></div>
-        <input type="range" id="f1_sensitivity" min="3" max="15" step="0.5" value="8" oninput="$id('v-f1s').textContent=parseFloat(this.value).toFixed(1)" aria-label="F1 sigmoid尺度">
+        <input type="range" id="f1_sensitivity" min="3" max="15" step="0.1" value="8" oninput="$id('v-f1s').textContent=parseFloat(this.value).toFixed(1)" aria-label="F1 sigmoid尺度">
       </div>
       <div class="slider-group" id="param-f1-active" aria-label="F1抢跑" style="margin-top:2px;">
         <div class="slider-label"><span class="name">抢跑</span><span class="val" id="v-f1ad">周五</span></div>
@@ -343,7 +343,7 @@ th[data-sort]:hover { color: #e0e0e0; }
     <!-- F7 -->
     <div class="slider-group" id="param-w7" aria-label="F7权重">
       <div class="slider-label"><span class="name">F7 对数收益偏离</span><span class="val" id="v-w7">0%</span></div>
-      <input type="range" id="w7" min="0" max="30" step="1" value="0" oninput="syncWeights()" aria-label="F7对数收益偏离权重">
+      <input type="range" id="w7" min="0" max="100" step="1" value="0" oninput="syncWeights()" aria-label="F7对数收益偏离权重">
     </div>
     <div class="factor-sub">
       <div class="slider-group" id="param-f7-t">
@@ -585,7 +585,7 @@ th[data-sort]:hover { color: #e0e0e0; }
         <p>ℓ = <span class="tag">ln(r)</span>（对 r &lt; 1 取对称负 log：−ln(1/r)）</p>
         <p>F<sub>3</sub> = <span class="formula"><span class="frac-top">1</span><span class="frac-bot">1 + e<sup>−ℓ/σ₃</sup></span></span>，其中 σ₃ = <span class="param-hl">F3 指数尺度</span></p>
         <p>核心改进：旧版 r &gt; 4 后基本饱和锁死，"温和放量"和"爆量"拉不开差距；新版让真正异动的标的能涌现出来。对照样本见下图标注点。</p>
-        <p><span class="param-hl">量比窗口</span>：短窗口(5-10日)捕捉短期放量异动，长窗口(20-40日)看中期资金趋势。</p>
+        <p><span class="param-hl">量比窗口</span>：短窗口(5-10日)捕捉短期放量异动，长窗口(20-60日)看中期资金趋势。</p>
         <p><span class="param-hl">F3 指数尺度</span> σ₃：越小越敏感（高位拉得更陡），越大越平滑。当前值以左侧滑块为准。</p>
         <p>下图展示不同 σ₃ 下 r → F<sub>3</sub> 的映射曲线：</p>
         <div style="max-width:520px;margin:6px 0 10px;">
@@ -611,7 +611,7 @@ th[data-sort]:hover { color: #e0e0e0; }
         <p>对数收益可加、中轴天然为 0、涨跌对称。N 日对数收益之和 = ln(close<sub>t</sub> / close<sub>t-N</sub>)，N 由左侧“累计收益窗口”控制。</p>
         <p><b>Step 2: N 日累计对数收益</b></p>
         <p><span class="tag">cum<sub>t</sub> = Σ<sub>i=0</sub><sup>N-1</sup> r<sub>t-i</sub></span></p>
-        <p>窗口 = <span class="param-hl">F7 对数收益偏离</span> 权重滑块旁的 左侧“累计收益窗口”滑块指定的 N 日，≈ 4 个交易周。</p>
+        <p>窗口 = <span class="param-hl">F7 对数收益偏离</span> 权重滑块旁的左侧“累计收益窗口”滑块指定的 N 日；默认 20 日约 4 个交易周，滑块可扩到 60 日。</p>
         <p><b>Step 3: 滚动 Z-score</b></p>
         <p>对 cum<sub>t</sub> 序列，回溯 <span class="tag">lookback</span> = 250 日计算：</p>
         <p><span class="tag">&mu;<sub>t</sub> = mean(cum<sub>t-lookback</sub> … cum<sub>t-1</sub>)</span></p>
