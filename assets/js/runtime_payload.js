@@ -1,5 +1,5 @@
 window.__ETF_REPORT_RUNTIME__ = {
-  "generatedAt": "2026-06-18T16:03:31.615696",
+  "generatedAt": "2026-06-19T16:06:03.780242",
   "klineData": {
     "512400": {
       "name": "有色金属ETF",
@@ -11340,7 +11340,7 @@ window.__ETF_REPORT_RUNTIME__ = {
         }
       ],
       "total_ratio": 49.3,
-      "timestamp": "2026-06-18T16:03:02.052296"
+      "timestamp": "2026-06-19T16:02:56.016417"
     },
     "513120": {
       "name": "港股创新药ETF",
@@ -11350,56 +11350,56 @@ window.__ETF_REPORT_RUNTIME__ = {
         {
           "name": "百济神州",
           "ratio": 9.97,
-          "change": 3.49
+          "change": 4.0
         },
         {
           "name": "信达生物",
           "ratio": 9.61,
-          "change": 1.27
+          "change": 1.74
         },
         {
           "name": "康方生物",
           "ratio": 8.4,
-          "change": 3.58
+          "change": 4.35
         },
         {
           "name": "药明生物",
           "ratio": 8.22,
-          "change": 2.61
+          "change": 3.22
         },
         {
           "name": "中国生物制药",
           "ratio": 7.04,
-          "change": -0.87
+          "change": -0.43
         },
         {
           "name": "石药集团",
           "ratio": 6.87,
-          "change": -1.15
+          "change": -0.58
         },
         {
           "name": "翰森制药",
           "ratio": 6.55,
-          "change": 0.47
+          "change": 0.88
         },
         {
           "name": "药明康德",
           "ratio": 5.09,
-          "change": 4.49
+          "change": 5.06
         },
         {
           "name": "三生制药",
           "ratio": 4.94,
-          "change": 0.5
+          "change": 1.06
         },
         {
           "name": "晶泰控股",
           "ratio": 3.23,
-          "change": -0.91
+          "change": 0.61
         }
       ],
       "total_ratio": 69.92,
-      "timestamp": "2026-06-18T16:03:02.413525"
+      "timestamp": "2026-06-19T16:02:56.453922"
     },
     "512070": {
       "name": "证券保险ETF",
@@ -11458,7 +11458,7 @@ window.__ETF_REPORT_RUNTIME__ = {
         }
       ],
       "total_ratio": 78.93,
-      "timestamp": "2026-06-18T16:03:02.767085"
+      "timestamp": "2026-06-19T16:02:56.790251"
     },
     "515880": {
       "name": "通信设备ETF",
@@ -11517,7 +11517,7 @@ window.__ETF_REPORT_RUNTIME__ = {
         }
       ],
       "total_ratio": 67.23,
-      "timestamp": "2026-06-18T16:03:03.107704"
+      "timestamp": "2026-06-19T16:02:57.150172"
     },
     "159755": {
       "name": "电池ETF广发",
@@ -11576,7 +11576,7 @@ window.__ETF_REPORT_RUNTIME__ = {
         }
       ],
       "total_ratio": 65.2,
-      "timestamp": "2026-06-18T16:03:03.464289"
+      "timestamp": "2026-06-19T16:02:57.487599"
     },
     "159865": {
       "name": "养殖ETF",
@@ -11635,7 +11635,7 @@ window.__ETF_REPORT_RUNTIME__ = {
         }
       ],
       "total_ratio": 69.16,
-      "timestamp": "2026-06-18T16:03:03.806662"
+      "timestamp": "2026-06-19T16:02:57.823558"
     }
   }
 };
