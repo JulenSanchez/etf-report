@@ -576,14 +576,15 @@ def generate_quant_baseline_payload():
     QUANT_CONFIG = os.path.join(PROJECT_ROOT, "config", "quant_universe.yaml")
     preset_params = {}
     try:
-        preset_params = load_quant_preset_params(QUANT_CONFIG, "act-1")
-        logger.info("从 YAML 读取 act-1 参数", {"params": {k: v for k, v in preset_params.items() if k != "start_date"}})
+        preset_params = load_quant_preset_params(QUANT_CONFIG, "gam-2")
+        logger.info("从 YAML 读取 gam-2 参数", {"params": {k: v for k, v in preset_params.items() if k != "start_date"}})
     except Exception as e:
         logger.warn("读取 quant_universe.yaml 失败，使用默认参数", {"error": str(e)})
         preset_params = default_quant_preset_params()
 
     # ── 确保 Tuner 从本仓库启动 ─────────────────────────
-    _ensure_tuner()
+    if not _ensure_tuner():
+        raise RuntimeError("Tuner failed to start; abort quant_payload generation")
 
     # ── 调用 tuner 运行 1yr + 3yr 回测 ─────────────────────
     TUNER_RUN_URL = "http://localhost:5179/api/run"
@@ -634,6 +635,8 @@ def generate_quant_baseline_payload():
 
     bt_1yr = run_backtest("1yr", yr1_start, data_max_date)
     bt_3yr = run_backtest("3yr", yr3_start, data_max_date)
+    if not bt_1yr and not bt_3yr:
+        raise RuntimeError("Both quant backtests failed; keep previous quant_payload.js")
 
     # ── 构建 payload ─────────────────────────────────────────
     def build_template(bt_data):
@@ -712,7 +715,8 @@ def generate_quant_baseline_payload():
                 "rebalanceDays": summary.get("rebalanceDays", len(signal_history)),
                 "commissionPct": summary.get("commissionPct", 0),
                 "initialCapital": 1000000.0,
-                "finalNav": 1000000.0 * (1 + summary.get("totalReturn", 0) / 100)
+                "finalNav": 1000000.0 * (1 + summary.get("totalReturn", 0) / 100),
+                "exposureSummary": summary.get("exposureSummary", {})
             },
             "navSeries": {
                 "dates": nav_dates,

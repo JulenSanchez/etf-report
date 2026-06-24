@@ -181,7 +181,7 @@ if _rows_to_fetch:
         market = 'sh' if code.startswith(('51','56','58','52','50')) else 'sz'
         try:
             r = requests.get(SINA_HIST_URL,
-                           params={'symbol': f'{market}{code}', 'scale': 240, 'ma': 'no', 'datalen': 1024},
+                           params={'symbol': f'{market}{code}', 'scale': 240, 'ma': 'no', 'datalen': 5000},
                            headers=SINA_HDR, timeout=8)
             r.encoding = 'gbk'
             data = json.loads(r.text)
@@ -189,7 +189,7 @@ if _rows_to_fetch:
         except:
             return code, 0
 
-    with ThreadPoolExecutor(max_workers=8) as pool:
+    with ThreadPoolExecutor(max_workers=3) as pool:  # conservative to avoid IP ban
         futures = {pool.submit(_fetch_rows, c): c for c in _rows_to_fetch}
         for f in as_completed(futures):
             code, rows = f.result()
@@ -389,10 +389,18 @@ df_filtered['cg'] = df_filtered.apply(classify, axis=1)
 with open(PROJECT_ROOT / 'config/quant_universe.yaml', 'r', encoding='utf-8') as f:
     cfg = yaml.safe_load(f)
 pool_codes = {e['code'] for e in cfg['universe']}
-# Remove broad-market ETFs (except pool ETFs and 微盘/563300)
+# Remove broad-market ETFs (except pool ETFs, 微盘/563300, and alpha-potential keywords)
 # QD-美国-宽基 = US broad-market (纳指/标普/道琼斯) treated like A-share 宽基指数
 BROAD_CGS = {'宽基指数', '风格', 'QD-美国-宽基'}
-df_filtered['_is_broad'] = df_filtered['cg'].isin(BROAD_CGS) & (~df_filtered['code'].isin(pool_codes)) & (df_filtered['code'] != '563300')
+# Keywords for broad-market ETFs that show alpha characteristics — let through to compete
+BROAD_ALPHA_KWS = ['科创50', '科创100', '创业板指']
+def _has_alpha_kw(row):
+    name = str(row['name'])
+    return any(kw in name for kw in BROAD_ALPHA_KWS)
+df_filtered['_is_broad'] = (df_filtered['cg'].isin(BROAD_CGS)
+    & (~df_filtered['code'].isin(pool_codes))
+    & (df_filtered['code'] != '563300')
+    & (~df_filtered.apply(_has_alpha_kw, axis=1)))
 n_broad = df_filtered['_is_broad'].sum()
 df_filtered = df_filtered[~df_filtered['_is_broad']]
 
@@ -603,10 +611,10 @@ if args.debug:
 
     # Sheet 2: Combined filter (keep all rows, mark excluded in red)
     ws2 = wb.create_sheet("2-基础过滤")
-    cols2 = ['code','name','type','amount_yi','filter_reason','broad_excluded']
+    cols2 = ['code','name','type','amount_yi','history_days','filter_reason','broad_excluded']
     rule_row(ws2, 1, '基础过滤: 成交额<1000万 + 固收/货币/债券型 → filter_reason. 宽基/风格 → broad_excluded.', len(cols2))
     rule_row(ws2, 2, f'{len(df)} ETFs, 基础过滤剔除{len(df)-len(df_filtered)-n_broad}支, 宽基/风格排除{n_broad}支, 保留{len(df_filtered)}支', len(cols2))
-    hdr_row(ws2, 3, ['代码','名称','类型','成交额(亿)','基础排除原因','宽基/风格排除'])
+    hdr_row(ws2, 3, ['代码','名称','类型','成交额(亿)','历史交易日数','基础排除原因','宽基/风格排除'])
     for idx, (_, r) in enumerate(df.sort_values('amount', ascending=False).iterrows()):
         row = 4 + idx
         for ci, col in enumerate(cols2, 1):
@@ -617,7 +625,7 @@ if args.debug:
         if r['filter_reason']:
             for ci in range(1, len(cols2)+1):
                 ws2.cell(row=row, column=ci).fill = FAIL_FILL
-    for c, w in zip('ABCDEF', [10,32,24,14,28,16]): ws2.column_dimensions[c].width = w
+    for c, w in zip('ABCDEFG', [10,32,24,14,14,28,16]): ws2.column_dimensions[c].width = w
 
     # Sheet 3: ALL ETFs per coarse group, sorted by score. Top-1 marked with ★.
     ws3 = wb.create_sheet("3-粗组排名")

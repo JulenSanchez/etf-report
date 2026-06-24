@@ -11,7 +11,22 @@
   "use strict";
 
   var Q = window.__QUANT_RUNTIME__;
-  if (!Q || !Q.templates || Object.keys(Q.templates).length === 0) return;
+
+  function showQuantError(message) {
+    var wrapper = document.getElementById("quant-content-wrapper");
+    if (!wrapper) return;
+    wrapper.innerHTML = '<section class="panel-section" style="grid-column:1/-1;">'
+      + '<h2 style="font-size:15px;color:#e0e0e0;margin:0 0 8px;">量化回测数据不可用</h2>'
+      + '<p style="font-size:13px;color:#94a3b8;margin:0;">' + message + '</p>'
+      + '</section>';
+  }
+
+  if (!Q || !Q.templates || Object.keys(Q.templates).length === 0) {
+    window.__initQuantPanel = function () {
+      showQuantError("quant_payload.js 缺失或未生成有效模板，请重新运行 update_report.py。");
+    };
+    return;
+  }
 
   var LC = window.__etfChartLifecycle || { bindChart: function(){}, resizeAllCharts: function(){} };
 
@@ -110,20 +125,54 @@
   }
 
   // ── Metrics (8 cards) ────────────────────────────────────
+  function metricNumber(s, key) {
+    var value = s ? s[key] : null;
+    return typeof value === "number" && isFinite(value) ? value : null;
+  }
+  function formatPct(value, digits, signed) {
+    if (value == null) return "-";
+    return (signed && value > 0 ? "+" : "") + value.toFixed(digits) + "%";
+  }
+  function formatNum(value, digits) {
+    return value == null ? "-" : value.toFixed(digits);
+  }
   function renderMetrics(tpl) {
-    var s = tpl.summary;
+    var s = tpl.summary || {};
+    var annualReturn = metricNumber(s, "annualReturn");
+    var totalReturn = metricNumber(s, "totalReturn");
+    var maxDrawdown = metricNumber(s, "maxDrawdown");
+    var sharpe = metricNumber(s, "sharpe");
+    var sortino = metricNumber(s, "sortino");
+    var winRate = metricNumber(s, "winRate");
+    var payoffRatio = metricNumber(s, "payoffRatio");
+    var excessReturn = metricNumber(s, "excessReturn");
+    var rebalanceDays = metricNumber(s, "rebalanceDays");
+    var rebalanceCount = metricNumber(s, "rebalanceCount");
+    var commissionPct = metricNumber(s, "commissionPct");
     var map = [
-      {id:"m-annual",  v:s.annualReturn.toFixed(1)+"%", cls:s.annualReturn>=0?"green":"red"},
-      {id:"m-total",   v:s.totalReturn.toFixed(1)+"%", cls:s.totalReturn>=0?"green":"red"},
-      {id:"m-dd",      v:s.maxDrawdown.toFixed(1)+"%", cls:"red"},
-      {id:"m-sharpe",  v:s.sharpe.toFixed(2), cls:"blue"},
-      {id:"m-sortino", v:s.sortino.toFixed(2), cls:"blue"},
-      {id:"m-wr",      v:s.winRate.toFixed(1)+"%", cls:s.winRate>=50?"green":""},
-      {id:"m-payoff",  v:(s.payoffRatio||0).toFixed(2), cls:""},
-      {id:"m-excess",  v:(s.excessReturn>0?"+":"")+(s.excessReturn||0).toFixed(1)+"%", cls:s.excessReturn>=0?"green":"red"},
-      {id:"m-rb",      v:(s.rebalanceDays>0?Math.round(s.rebalanceCount/s.rebalanceDays*100)+"%":"-"), cls:""},
-      {id:"m-comm",    v:(s.commissionPct||0).toFixed(2)+"%", cls:""},
+      {id:"m-annual",  v:formatPct(annualReturn, 1), cls:annualReturn == null ? "" : (annualReturn>=0?"green":"red")},
+      {id:"m-total",   v:formatPct(totalReturn, 1), cls:totalReturn == null ? "" : (totalReturn>=0?"green":"red")},
+      {id:"m-dd",      v:formatPct(maxDrawdown, 1), cls:maxDrawdown == null ? "" : "red"},
+      {id:"m-sharpe",  v:formatNum(sharpe, 2), cls:sharpe == null ? "" : "blue"},
+      {id:"m-sortino", v:formatNum(sortino, 2), cls:sortino == null ? "" : "blue"},
+      {id:"m-wr",      v:formatPct(winRate, 1), cls:winRate != null && winRate>=50?"green":""},
+      {id:"m-payoff",  v:formatNum(payoffRatio, 2), cls:""},
+      {id:"m-excess",  v:formatPct(excessReturn, 1, true), cls:excessReturn == null ? "" : (excessReturn>=0?"green":"red")},
+      {id:"m-rb",      v:(rebalanceDays>0 && rebalanceCount != null?Math.round(rebalanceCount/rebalanceDays*100)+"%":"-"), cls:""},
+      {id:"m-comm",    v:formatPct(commissionPct, 2), cls:""},
     ];
+    // Exposure metrics (only shown when leverage data exists)
+    var expSum = s.exposureSummary || {};
+    if (expSum.avg_exposure > 1.0) {
+      map.push(
+        {id:"m-avg-exp", v:Math.round(expSum.avg_exposure*100)+"%", cls:"blue"},
+        {id:"m-days-lev", v:expSum.days_above_100+"天", cls:""},
+        {id:"m-max-dl",  v:(expSum.max_daily_loss_pct||0).toFixed(1)+"%", cls:"red"},
+        {id:"m-interest", v:(expSum.interest_drag_estimate||0).toFixed(1)+"%", cls:"orange"}
+      );
+      var ids = ["metric-avg-exposure","metric-days-lev","metric-max-dl","metric-interest"];
+      for (var j = 0; j < ids.length; j++) { var el = document.getElementById(ids[j]); if (el) el.style.display = ""; }
+    }
     for (var i = 0; i < map.length; i++) {
       var el = document.getElementById(map[i].id);
       if (el) { el.textContent = map[i].v; el.className = "value " + map[i].cls; }

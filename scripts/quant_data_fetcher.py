@@ -382,8 +382,8 @@ def update_single(etf: dict, full: bool = False, end_date: str = None,
     if sina_batch and code in sina_batch:
         row = sina_batch[code]
         sina_date = datetime.strptime(row["date"], "%Y-%m-%d").date()
-        if sina_date > last_dt:
-            # Sina has data newer than CSV → use it
+        if sina_date > last_dt and sina_date <= expected:
+            # Sina has data newer than CSV AND not beyond cool-off → use it
             new_row = pd.DataFrame([row])
             append_csv(new_row, daily_path)
             full_daily = pd.read_csv(daily_path)

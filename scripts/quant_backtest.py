@@ -466,6 +466,9 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
     confidence_cfg = cfg["confidence"]
     position_cfg = cfg["position"]
     factor_cfg = cfg["factors"]
+    account_cfg = cfg.get("account", {})
+    account_mode = account_cfg.get("mode", "cash")
+    max_gross_exposure = account_cfg.get("max_gross_exposure", 2.0)
 
     weights = scoring_cfg["weights"]
     bias_bonus = scoring_cfg["bias_bonus"]
@@ -856,8 +859,11 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
             avg_conf = confidences.mean() * disp_factor * breadth_factor
             total_target = min(0.95, avg_conf * 1.2)  # 上限 95%
 
-        # 每支目标仓位
-        target_positions = softmax_weights * total_target
+        # 目标仓位
+        actual_exposure = total_target
+        if account_mode == "synthetic_leverage":
+            actual_exposure = min(actual_exposure, max_gross_exposure)
+        target_positions = softmax_weights * actual_exposure
 
         # 离散化（最大余数法：floor 后按余数补回，残量补给最大持仓者）
         in_steps = target_positions / step
@@ -874,6 +880,11 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
         if leftover > 0:
             max_idx = target_positions.idxmax()
             target_positions[max_idx] += leftover
+        elif leftover < 0:
+            # discretization rounding pushed total above target: clip largest position
+            excess = -leftover
+            max_idx = target_positions.idxmax()
+            target_positions[max_idx] = max(0.0, target_positions[max_idx] - excess)
 
         # Fallback: fill missing prices for held ETFs with most recent available close.
         # ETFs whose price comes from fallback (not from today's data) are treated as
@@ -922,6 +933,8 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
             "positions": target_positions.to_dict(),
             "avg_confidence": avg_conf,
             "total_target": total_target,
+            "actual_exposure": actual_exposure,
+            "account_mode": account_mode,
             "regime": regime,
         })
         if return_debug:
@@ -1031,6 +1044,7 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
     signal_idx = 0
     nav_records = []
     total_commission2 = 0.0
+    current_exposure = 0.0
 
     for date in all_dates:
         if False:  # dead code — precomputation eliminated warmup expansion
@@ -1069,6 +1083,7 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
             # 执行调仓
             sig = signal_history[signal_idx]
             target_positions = sig["positions"]
+            current_exposure = sig.get("actual_exposure", sig.get("total_target", 0))
 
             # 获取成交价格 — 统一使用收盘价执行
             trade_field = "close"
@@ -1142,6 +1157,7 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
             "nav_pct": nav / initial_capital * 100,
             "cash": cash2,
             "holdings": len(portfolio2),
+            "exposure": current_exposure,
         })
 
     nav_df = pd.DataFrame(nav_records)
@@ -1193,7 +1209,32 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
         print(f"  交易佣金:    {comm:,.0f} ({comm/initial_capital*100:.2f}% 本金)")
     print("=" * 60)
 
-    return nav_df, signal_history, {"total_commission": comm, "trade_count": actual_trades, "debug_snapshots": debug_snapshots, "trade_log": all_trade_log}
+    # 杠杆风险指标
+    exposure_series = nav_df["exposure"].values
+    avg_exposure = float(np.mean(exposure_series)) if len(exposure_series) > 0 else 0.0
+    max_exposure = float(np.max(exposure_series)) if len(exposure_series) > 0 else 0.0
+    days_above_100 = int(np.sum(exposure_series > 1.0))
+    days_above_150 = int(np.sum(exposure_series > 1.5))
+    avg_excess = float(np.mean(np.maximum(exposure_series - 1.0, 0)))
+    daily_rets = nav_df["nav"].pct_change().fillna(0).values
+    max_daily_loss = float(np.min(daily_rets)) * 100 if len(daily_rets) > 0 else 0.0
+    financing_rate = account_cfg.get("financing_rate_annual", 0.06) if account_mode == "synthetic_leverage" else 0.0
+    interest_drag = avg_excess * financing_rate
+
+    return nav_df, signal_history, {
+        "total_commission": comm, "trade_count": actual_trades,
+        "debug_snapshots": debug_snapshots, "trade_log": all_trade_log,
+        "exposure_series": exposure_series.tolist(),
+        "exposure_summary": {
+            "account_mode": account_mode,
+            "avg_exposure": round(avg_exposure, 4),
+            "max_exposure": round(max_exposure, 4),
+            "days_above_100": days_above_100,
+            "days_above_150": days_above_150,
+            "max_daily_loss_pct": round(max_daily_loss, 2),
+            "interest_drag_estimate": round(interest_drag * 100, 2),
+        },
+    }
 
 
 def main():

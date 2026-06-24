@@ -74,6 +74,14 @@ PARAM_SCHEMA = {
                 {"key": "universe", "label": "参与回测 ETF 代码", "unit": "csv_codes", "engine_path": "runtime.universe_filter"},
             ],
         },
+        {
+            "key": "account",
+            "label": "账户模式",
+            "params": [
+                {"key": "account_mode", "label": "账户模式", "unit": "enum", "engine_path": "account.mode"},
+                {"key": "max_gross_exposure", "label": "最大总暴露", "unit": "ratio", "engine_path": "account.max_gross_exposure"},
+            ],
+        },
     ],
 }
 
@@ -85,28 +93,28 @@ PARAM_BOUNDS = {
     "w1":  {"type": "weight",  "min": 0,  "max": 100, "step": 1},
     "w3":  {"type": "weight",  "min": 0,  "max": 100, "step": 1},
     "w7":  {"type": "weight",  "min": 0,  "max": 100, "step": 1},
-    "bias": {"type": "continuous", "min": 0.0, "max": 10.0, "step": 0.1},
+    "bias": {"type": "continuous", "min": 0.0, "max": 10.0, "step": 0.1, "searchable": False},
     # sensitivity
     "f1_sensitivity": {"type": "continuous", "min": 3.0, "max": 15.0, "step": 0.1},
     "f3_sensitivity": {"type": "continuous", "min": 0.5, "max": 8.0, "step": 0.1},
     "f7_t":           {"type": "continuous", "min": 1.0, "max": 25.0, "step": 1.0},
     "f7_k":           {"type": "continuous", "min": 0.1, "max": 10.0, "step": 0.1},
     # confidence
-    "conf_type":            {"type": "categorical", "choices": ["ma_trend"]},
+    "conf_type":            {"type": "categorical", "choices": ["ma_trend"], "searchable": False},
     "ma_trend_period":      {"type": "integer", "min": 8, "max": 40, "step": 2},
-    "ma_bull_pos":          {"type": "continuous", "min": 0.0, "max": 1.0, "step": 0.01},
+    "ma_bull_pos":          {"type": "continuous", "min": 0.0, "max": 2.0, "step": 0.01},
     "ma_bear_pos":          {"type": "continuous", "min": 0.0, "max": 1.0, "step": 0.01},
-    "ma_direction_confirm": {"type": "categorical", "choices": [True, False]},
-    "dead_zone":            {"type": "continuous", "min": 10, "max": 50, "step": 1},
-    "full_zone":            {"type": "continuous", "min": 40, "max": 90, "step": 1},
+    "ma_direction_confirm": {"type": "categorical", "choices": [True, False], "searchable": False},
+    "dead_zone":            {"type": "continuous", "min": 10, "max": 50, "step": 1, "searchable": False},
+    "full_zone":            {"type": "continuous", "min": 40, "max": 90, "step": 1, "searchable": False},
     # position
     "max_holdings":     {"type": "integer", "min": 1, "max": 8, "step": 1},
     "disc_step":        {"type": "continuous", "min": 0.01, "max": 0.20, "step": 0.01},
     "concentration":    {"type": "continuous", "min": 0.0, "max": 30.0, "step": 0.1},
     "c_sensitivity":    {"type": "continuous", "min": 0.0, "max": 200.0, "step": 2.0},
-    "rebalance_freq":   {"type": "categorical", "choices": ["W-FRI", "daily"]},
-    "execution_timing": {"type": "categorical", "choices": ["same_close"]},
-    "f1_active_days":   {"type": "integer", "min": 0, "max": 31, "step": 1},
+    "rebalance_freq":   {"type": "categorical", "choices": ["W-FRI", "daily"], "searchable": False},
+    "execution_timing": {"type": "categorical", "choices": ["same_close"], "searchable": False},
+    "f1_active_days":   {"type": "integer", "min": 0, "max": 31, "step": 1, "searchable": False},
     "score_band":       {"type": "continuous", "min": 0.0, "max": 20.0, "step": 0.5},
     # factors
     "f1_ema_period":    {"type": "integer", "min": 3, "max": 30, "step": 1},
@@ -114,6 +122,9 @@ PARAM_BOUNDS = {
     "f7_window":        {"type": "integer", "min": 5, "max": 60, "step": 1},
     # universe
     "universe": {"type": "special"},
+    # account
+    "account_mode":       {"type": "categorical", "choices": ["cash", "synthetic_leverage"]},
+    "max_gross_exposure": {"type": "continuous", "min": 1.0, "max": 2.0, "step": 0.1},
 }
 
 _WEIGHT_PARAM_KEYS = frozenset(k for k, v in PARAM_BOUNDS.items() if v.get("type") == "weight")
@@ -142,6 +153,14 @@ def auto_bounds(preset_tuner_params, user_overrides=None):
     for key, b in PARAM_BOUNDS.items():
         if key in overrides:
             result[key] = dict(b, **overrides[key])
+            continue
+        # Non-searchable params: pin to preset baseline value
+        if not b.get("searchable", True):
+            val = preset_tuner_params.get(key)
+            if val is not None:
+                result[key] = {"type": b["type"], "values": [val]}
+            else:
+                result[key] = dict(b)
             continue
         tp = b.get("type", "continuous")
         cur = preset_tuner_params.get(key)
@@ -252,14 +271,12 @@ def tuner_params_to_config_override(params):
             "weights": {
                 "ema_deviation": _as_float(params.get("w1"), 35.0) / 100.0,
                 "volume_ratio": _as_float(params.get("w3"), 50.0) / 100.0,
-                "residual_momentum": _as_float(params.get("w1r"), 0.0) / 100.0,  # DEPRECATED
                 "log_return_deviation": _as_float(params.get("w7"), 0.0) / 100.0,
             },
             "bias_bonus": _as_float(params.get("bias"), 0.0),
             "sensitivity": {
                 "f1": _as_float(params.get("f1_sensitivity"), 8.0),
                 "f3": _as_float(params.get("f3_sensitivity"), 1.0),
-                "f1_residual": _as_float(params.get("f1r_sensitivity"), 5.0),
                 "f7_t": _as_float(params.get("f7_t"), 7.0),
                 "f7_k": _as_float(params.get("f7_k"), 3.0),
             },
@@ -293,6 +310,10 @@ def tuner_params_to_config_override(params):
                 "min_days": 60,
                 "sigma_floor": 0.01,
             },
+        },
+        "account": {
+            "mode": params.get("account_mode", "cash"),
+            "max_gross_exposure": _as_float(params.get("max_gross_exposure"), 2.0),
         },
     }
 
@@ -405,6 +426,8 @@ def build_presets_response(cfg):
             "sector": e.get("sector", ""),
             "bias": bool(e.get("bias", False)),
             "active": e.get("active", True),
+            "marginable": e.get("marginable", True),
+            "group1": e.get("group1", ""),
         }
         for e in cfg.get("universe", [])
     ]
@@ -415,8 +438,27 @@ def build_presets_response(cfg):
 # Preset optimization profiles — default metric + constraints per preset
 # ═══════════════════════════════════════════════════════════════════════════
 PRESET_OPT_PROFILES = {
-    "gam-1": {"metric": "annual_return", "constraints": ["mdd,-20"]},
+    "gam-1": {"metric": "annual_return", "constraints": ["mdd,-25"]},
     "gam-2": {"metric": "annual_return", "constraints": ["mdd,-25"]},
-    "zen-1": {"metric": "sharpe", "constraints": []},
+    "gam-3": {"metric": "annual_return", "constraints": ["mdd,-25"]},
+    "zen-1": {"metric": "sortino", "constraints": []},
     "act-1": {"metric": "calmar", "constraints": ["bear,0.15,0.30"]},
+    "act-2": {"metric": "calmar", "constraints": ["bear,0.15,0.30"]},
+}
+OPT_PERIODS = ["1Y", "3Y", "6Y"]
+
+# ── Initial presets for optimization (neutral starting points) ─────────
+INITIAL_PRESETS = {
+    "signal": {
+        "w1": 33, "w3": 33, "w7": 34,
+        "f7_t": 10.0, "f7_k": 3.0, "f7_window": 20,
+        "f3_vol_window": 30,
+        "f1_sensitivity": 8.0, "f3_sensitivity": 4.0,
+        "f1_ema_period": 4,
+    },
+    "execution": {
+        "gam": {"max_holdings": 4, "ma_bear_pos": 0.50, "ma_bull_pos": 1.0, "disc_step": 0.10, "concentration": 3.0, "c_sensitivity": 30, "score_band": 2.0, "ma_trend_period": 26},
+        "zen": {"max_holdings": 5, "ma_bear_pos": 0.35, "ma_bull_pos": 1.0, "disc_step": 0.08, "concentration": 2.0, "c_sensitivity": 15, "score_band": 1.5, "ma_trend_period": 30},
+        "act": {"max_holdings": 4, "ma_bear_pos": 0.25, "ma_bull_pos": 0.80, "disc_step": 0.10, "concentration": 4.0, "c_sensitivity": 25, "score_band": 2.0, "ma_trend_period": 34},
+    },
 }
