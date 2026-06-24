@@ -17,4 +17,11 @@ def __getattr__(name):
 
 
 if __name__ == "__main__":
-    pass
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Trading calendar helper")
+    parser.add_argument("--is-trading-day", action="store_true", help="exit 0 if today is a trading day, else 1")
+    args = parser.parse_args()
+
+    if args.is_trading_day:
+        raise SystemExit(0 if _impl.is_trading_day() else 1)

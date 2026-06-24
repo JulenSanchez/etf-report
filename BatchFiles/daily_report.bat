@@ -7,7 +7,7 @@ REM Get today's date
 for /f %%i in ('powershell -Command "Get-Date -Format yyyy-MM-dd"') do set TODAY=%%i
 
 REM Skip non-trading days
-python -c "import sys; sys.path.insert(0,'scripts'); from trading_calendar import is_trading_day; sys.exit(0 if is_trading_day() else 1)"
+python scripts\trading_calendar.py --is-trading-day
 if %ERRORLEVEL% NEQ 0 (
     echo [%date% %time%] Non-trading day. Skipping report publish.
     exit /b 0

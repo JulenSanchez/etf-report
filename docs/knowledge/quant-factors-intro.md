@@ -250,8 +250,8 @@ ROE 越高的公司 "应得" 更高的 PB。连一条趋势线:
 - Asness, Moskowitz, Pedersen (2013). *Value and Momentum Everywhere.* Journal of Finance
 
 ### 本知识库内相关
-- `04-ETF估值方法论.md` — 基础指标 + 百分位口径
-- `03-A股行业分类体系对比.md` — 行业选指标时的分类
+- `valuation-methodology.md` — 基础指标 + 百分位口径
+- `sector-classification.md` — 行业选指标时的分类
 
 ---
 

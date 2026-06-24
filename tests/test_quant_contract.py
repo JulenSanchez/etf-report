@@ -4,13 +4,13 @@ from pathlib import Path
 import pytest
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
+sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
-import quant_contract as qc
+from etf_report.core import quant_contract as qc
 
 
 def sample_params(**overrides):
-    """Test params using only active keys (w2/w4/w6/f2/f6 removed in REQ-255/256)."""
+    """Test params using only active keys."""
     params = {
         "w1": 30,
         "w3": 60,

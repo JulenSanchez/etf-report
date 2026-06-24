@@ -1,10 +1,10 @@
 # ETF 贡献分析
 
-> 系统架构见 。
+> 系统架构见 `docs/design/overview.md`。
 
 ---
 
-# ETF 贡献度分析框架
+## ETF 贡献度分析框架
 
 分析每支 ETF 在量化策略回测中的表现和角色。数据由 `run_tuner_backtest` 的 `_compute_etf_contributions()` 自动生成，前端 Tuner 个股回放区 contrib-grid 展示。
 

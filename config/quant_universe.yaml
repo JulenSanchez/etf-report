@@ -1,233 +1,345 @@
+account:
+  mode: synthetic_leverage
+  max_gross_exposure: 2.0
+  financing_rate_annual: 0.06
 universe:
 - code: '512400'
   name: 有色金属ETF
   market: sh
   sector: 资源周期
   bias: true
+  marginable: true
+  group1: 周期博弈
 - code: '513120'
   name: 创新药ETF
   market: sh
   sector: 医药
   bias: true
+  marginable: true
+  group1: 周期博弈
 - code: '159883'
   name: 医疗器械ETF
   market: sz
   sector: 医药
+  marginable: true
+  group1: 周期博弈
 - code: '512070'
   name: 非银ETF
   market: sh
   sector: 金融
   bias: true
+  marginable: true
+  group1: 周期博弈
 - code: '515880'
   name: 通信ETF
   market: sh
   sector: 科技
+  marginable: true
+  group1: 成长进攻
 - code: '588200'
   name: 芯片ETF
   market: sh
   sector: 科技
+  marginable: true
+  group1: 成长进攻
 - code: '159206'
   name: 卫星ETF
   market: sz
   sector: 科技
+  marginable: true
+  group1: 成长进攻
 - code: '513310'
   name: 中韩半导体ETF
   market: sh
-  sector: 另类
+  sector: 海外科技
   qdii: true
+  marginable: true
+  group1: 跨市场另类
 - code: '562500'
   name: 机器人ETF
   market: sh
   sector: 科技
+  marginable: true
+  group1: 成长进攻
 - code: '512980'
   name: 传媒ETF
   market: sh
-  sector: TMT
+  sector: 平台经济
+  marginable: true
+  group1: 防御避险
 - code: '159869'
   name: 游戏ETF
   market: sz
-  sector: TMT
+  sector: 平台经济
+  marginable: true
+  group1: 防御避险
 - code: '159755'
   name: 电池ETF
   market: sz
   sector: 新能源
+  marginable: true
+  group1: 成长进攻
 - code: '515790'
   name: 光伏ETF
   market: sh
   sector: 新能源
+  marginable: true
+  group1: 成长进攻
 - code: '159326'
   name: 电网设备ETF
   market: sz
   sector: 新能源
+  marginable: true
+  group1: 成长进攻
 - code: '159611'
   name: 电力ETF
   market: sz
   sector: 传统
+  marginable: true
+  group1: 防御避险
 - code: '512660'
   name: 军工ETF
   market: sh
   sector: 制造
+  marginable: true
+  group1: 成长进攻
 - code: '560710'
   name: 船舶ETF
   market: sh
   sector: 制造
+  marginable: true
+  group1: 成长进攻
 - code: '560280'
   name: 工程机械ETF
   market: sh
   sector: 制造
+  marginable: true
+  group1: 成长进攻
 - code: '159870'
   name: 化工ETF
   market: sz
   sector: 资源周期
+  marginable: true
+  group1: 周期博弈
 - code: '515220'
   name: 煤炭ETF
   market: sh
   sector: 资源周期
+  marginable: true
+  group1: 周期博弈
 - code: '513090'
   name: 港券ETF
   market: sh
   sector: 金融
+  marginable: true
+  group1: 周期博弈
 - code: '512800'
   name: 银行ETF
   market: sh
   sector: 金融
+  marginable: true
+  group1: 周期博弈
 - code: '512690'
   name: 酒ETF
   market: sh
   sector: 消费
+  marginable: true
+  group1: 防御避险
 - code: '159766'
   name: 旅游ETF
   market: sz
   sector: 消费
+  marginable: true
+  group1: 防御避险
 - code: '159865'
   name: 养殖ETF
   market: sz
   sector: 传统
+  marginable: true
+  group1: 防御避险
 - code: '159698'
   name: 粮食ETF
   market: sz
   sector: 传统
+  marginable: true
+  group1: 防御避险
 - code: '512200'
   name: 房地产ETF
   market: sh
   sector: 传统
+  marginable: true
+  group1: 防御避险
 - code: '513690'
   name: 港股红利ETF
   market: sh
   sector: 传统
+  marginable: true
+  group1: 防御避险
 - code: '563300'
   name: 微盘ETF
   market: sh
   sector: 另类
+  marginable: true
+  group1: 跨市场另类
 - code: '159941'
   name: 纳指ETF
   market: sz
-  sector: 另类
+  sector: 海外科技
   qdii: true
+  marginable: true
+  group1: 跨市场另类
 - code: '518880'
   name: 黄金ETF
   market: sh
   sector: 另类
+  marginable: true
+  group1: 跨市场另类
 - code: '513880'
   name: 日经
   market: sh
-  sector: 另类
+  sector: 海外科技
   qdii: true
+  marginable: true
+  group1: 跨市场另类
 - code: '520870'
   name: 巴西
   market: sh
   sector: 另类
   qdii: true
+  marginable: true
+  group1: 跨市场另类
 - code: '159561'
   name: 德国ETF
   market: sz
   sector: 另类
   qdii: true
+  marginable: true
+  group1: 跨市场另类
 - code: '159509'
   name: 纳指科技ETF
   market: sz
-  sector: 另类
+  sector: 海外科技
   qdii: true
+  marginable: true
+  group1: 跨市场另类
 - code: '513050'
   name: 中概互联ETF
   market: sh
-  sector: TMT
+  sector: 平台经济
+  marginable: true
+  group1: 防御避险
 - code: '159329'
   name: 沙特ETF
   market: sz
   sector: 另类
   qdii: true
+  marginable: true
+  group1: 跨市场另类
 - code: '159518'
   name: 标普油气
   market: sz
   sector: 另类
   qdii: true
+  marginable: true
+  group1: 跨市场另类
 - code: '159502'
   name: 标普生物ETF
   market: sz
   sector: 另类
   qdii: true
+  marginable: true
+  group1: 跨市场另类
 - code: '512880'
   name: 证券ETF
   market: sh
   sector: 金融
+  marginable: true
+  group1: 周期博弈
 - code: '159992'
   name: A股创新药ETF
   market: sz
   sector: 医药
+  marginable: true
+  group1: 周期博弈
 - code: '159131'
   name: 港股信息ETF
   market: sz
-  sector: TMT
+  sector: 科技
+  marginable: true
+  group1: 成长进攻
 - code: '159687'
   name: 亚太精选ETF
   market: sz
-  sector: 另类
+  sector: 海外科技
   qdii: true
+  marginable: true
+  group1: 跨市场另类
 - code: '159985'
   name: 豆粕ETF
   market: sz
   sector: 另类
+  marginable: false
+  group1: 跨市场另类
 - code: '513070'
   name: 港股消费ETF
   market: sh
-  sector: TMT
+  sector: 消费
+  marginable: true
+  group1: 防御避险
 - code: '159732'
   name: 消费电子ETF
   market: sz
   sector: 科技
+  marginable: true
+  group1: 成长进攻
 - code: '510880'
   name: 红利ETF
   market: sh
   sector: 传统
+  marginable: true
+  group1: 防御避险
 - code: '159851'
   name: 金融科技ETF
   market: sz
   sector: 金融
+  marginable: true
+  group1: 周期博弈
 - code: '515210'
   name: 钢铁ETF
   market: sh
   sector: 资源周期
+  marginable: true
+  group1: 周期博弈
 - code: '159996'
   name: 家电ETF
   market: sz
   sector: 消费
+  marginable: true
+  group1: 防御避险
 - code: '159745'
   name: 建材ETF
   market: sz
   sector: 传统
+  marginable: true
+  group1: 防御避险
 - code: '159667'
   name: 工业母机ETF
   market: sz
   sector: 制造
+  marginable: true
+  group1: 成长进攻
 - code: '588010'
   name: 科创新材料ETF
   market: sh
   sector: 科技
+  marginable: false
+  group1: 成长进攻
 - code: '159697'
   name: 石油ETF
   market: sz
   sector: 资源周期
+  marginable: true
+  group1: 周期博弈
 scoring: null
 confidence:
   type: ma_trend
@@ -369,26 +481,23 @@ presets:
         window_days: 32
   gam-1:
     label: 赌徒1
-    description: 赌徒1(#43优化)：F1(58%)+F3(24%)+F7(18%)，C=0.43，MH=4，MA=28w，熊仓73%。6Y TR=+960%/MDD=-22.0%/Sharpe=1.43
-      vs基线667%。信仰：动量优先、均值回归捕捉极端、噪音过滤。
+    description: 赌徒1(T20·mdd=-20%·两阶段分层)：F1(60%)+F3(26%)+F7(14%)，MH=3，MA=34w，bull=89% bear=43%，C=0.47 CS=5.6。三周期composite=1.006(唯一超基线)，6Y TR=+756%/MDD=-19.4%/Sharpe=1.41。信号层13trials+执行层27trials。信仰：保守至上、承认边界、不赚最后一个铜板。
     scoring:
       weights:
-        ema_deviation: 0.58
-        volume_ratio: 0.24
-        residual_momentum: 0.0
-        log_return_deviation: 0.18
+        ema_deviation: 0.60
+        volume_ratio: 0.26
+        log_return_deviation: 0.14
       bias_bonus: 0.0
       sensitivity:
-        f1: 9.0
-        f3: 2.3
-        f1_residual: 5.0
-        f7_t: 9.5
-        f7_k: 3.4
+        f1: 9.8
+        f3: 4.29
+        f7_t: 21.85
+        f7_k: 3.42
     confidence:
       type: ma_trend
-      ma_trend_period: 28
-      ma_bull_pos: 1.0
-      ma_bear_pos: 0.73
+      ma_trend_period: 34
+      ma_bull_pos: 0.89
+      ma_bear_pos: 0.43
       ma_direction_confirm: true
       dead_zone: 17
       full_zone: 65
@@ -402,13 +511,13 @@ presets:
       clarity_threshold: 0.03
       dd_sensitivity: 0.2
     position:
-      max_holdings: 4
-      discretize_step: 0.11
-      concentration: 0.43
-      c_sensitivity: 6.0
+      max_holdings: 3
+      discretize_step: 0.153
+      concentration: 0.47
+      c_sensitivity: 5.6
       rebalance_freq: daily
       execution_timing: same_close
-      score_band: 0.028
+      score_band: 0.058
       commission_rate: 0.00026
       max_holdings_special: 8
       weighting: arithmetic
@@ -417,38 +526,38 @@ presets:
       ema:
         period_weeks: 4
       volume_ratio:
-        window_days: 39
+        window_days: 36
       f6_rsi_thresh: 80.0
       f6_drop_thresh: 0.025
       f6_base_penalty: 0.15
       log_return_deviation:
-        window_days: 34
+        window_days: 20
         lookback_days: 250
         min_days: 60
         sigma_floor: 0.01
   gam-2:
     label: 赌徒2
-    description: 赌徒2(#44优化)：F1(60%)+F3(22%)+F7(18%)，C=0.43，MH=3，MA=28w，熊仓52%。6Y TR=+1069%/MDD=-25.8%/Sharpe=1.48。信仰：年度收益最大化，回撤容忍28%。
+    description: 赌徒2(杠杆优化·mdd=-25%)：F1(71%)+F3(13%)+F7(16%)，MH=2，MA=19w，bull=1.58x
+      bear=54%。1Y/3Y/6Y ann=+335%/+116%/+72%，6Y TR=+2527%/MDD=-23.7%/Sharpe=1.69。杠杆TPE
+      29trials(多周期+mdd,-25)。信仰：趋势为王、集中杠杆、mdd硬约束。
     scoring:
       weights:
-        ema_deviation: 0.6
-        volume_ratio: 0.22
-        residual_momentum: 0.0
-        log_return_deviation: 0.18
+        ema_deviation: 0.71
+        volume_ratio: 0.13
+        log_return_deviation: 0.16
       bias_bonus: 0.0
       sensitivity:
-        f1: 9.0
-        f3: 2.3
-        f1_residual: 5.0
-        f7_t: 10.4
-        f7_k: 3.4
+        f1: 9.6
+        f3: 4.79
+        f7_t: 17.85
+        f7_k: 2.72
     confidence:
       type: ma_trend
-      ma_trend_period: 28
-      ma_bull_pos: 1.0
-      ma_bear_pos: 0.521
+      ma_trend_period: 19
+      ma_bull_pos: 1.58
+      ma_bear_pos: 0.54
       ma_direction_confirm: true
-      dead_zone: 22
+      dead_zone: 17
       full_zone: 65
       regime_base:
         bull_trend: 0.95
@@ -460,27 +569,84 @@ presets:
       clarity_threshold: 0.03
       dd_sensitivity: 0.2
     position:
-      max_holdings: 3
-      discretize_step: 0.049
-      concentration: 0.43
-      c_sensitivity: 6.0
+      max_holdings: 2
+      discretize_step: 0.165
+      concentration: 0.71
+      c_sensitivity: 8.68
       rebalance_freq: daily
       execution_timing: same_close
-      score_band: 0.027999999999999997
+      score_band: 0.03
       commission_rate: 0.00026
       max_holdings_special: 8
       weighting: arithmetic
     factors:
       f1_active_days: 1
       ema:
-        period_weeks: 4
+        period_weeks: 6
       volume_ratio:
-        window_days: 44
+        window_days: 40
       f6_rsi_thresh: 80.0
       f6_drop_thresh: 0.025
       f6_base_penalty: 0.15
       log_return_deviation:
-        window_days: 34
+        window_days: 17
+        lookback_days: 250
+        min_days: 60
+        sigma_floor: 0.01
+  gam-3:
+    label: 赌徒3
+    description: 赌徒3(mdd=-35%·多样本信号+杠杆)：F1(73%)+F3(8%)+F7(19%)，MH=2，MA=21w，bull=1.92x
+      bear=56%，C=1.94 CS=19.2。1Y/3Y/6Y ann=+436%/+102%/+57%，6Y TR=+1626%/MDD=-30.3%/Sharpe=1.40。极端杠杆、近期爆发、长周期有衰减。
+    scoring:
+      weights:
+        ema_deviation: 0.73
+        volume_ratio: 0.08
+        log_return_deviation: 0.19
+      bias_bonus: 0.0
+      sensitivity:
+        f1: 6.5
+        f3: 3.5
+        f7_t: 25.0
+        f7_k: 4.4
+    confidence:
+      type: ma_trend
+      ma_trend_period: 21
+      ma_bull_pos: 1.92
+      ma_bear_pos: 0.56
+      ma_direction_confirm: true
+      dead_zone: 17
+      full_zone: 65
+      regime_base:
+        bull_trend: 0.95
+        choppy_range: 0.75
+        bear_trend: 0.35
+      regime_window: 8
+      regime_threshold: 0.03
+      breadth_weight: 0.2
+      clarity_threshold: 0.03
+      dd_sensitivity: 0.2
+    position:
+      max_holdings: 2
+      discretize_step: 0.15
+      concentration: 1.94
+      c_sensitivity: 19.2
+      rebalance_freq: daily
+      execution_timing: same_close
+      score_band: 0.034
+      commission_rate: 0.00026
+      max_holdings_special: 8
+      weighting: arithmetic
+    factors:
+      f1_active_days: 1
+      ema:
+        period_weeks: 6
+      volume_ratio:
+        window_days: 30
+      f6_rsi_thresh: 80.0
+      f6_drop_thresh: 0.025
+      f6_base_penalty: 0.15
+      log_return_deviation:
+        window_days: 14
         lookback_days: 250
         min_days: 60
         sigma_floor: 0.01
@@ -545,13 +711,11 @@ presets:
       weights:
         ema_deviation: 0.41
         volume_ratio: 0.29
-        residual_momentum: 0.0
         log_return_deviation: 0.3
       bias_bonus: 0.0
       sensitivity:
         f1: 4.0
         f3: 1.4
-        f1_residual: 5.0
         f7_t: 11.9
         f7_k: 3.0
     confidence:

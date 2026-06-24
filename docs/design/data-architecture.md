@@ -6,7 +6,7 @@
 
 | | 筛选池 (Screening) | 量化池 (Quant) |
 |---|---|---|
-| **范围** | 全市场 ~2000 ETF-likes | 45 支已确认的池内 ETF |
+| **范围** | 全市场 ~2000 ETF-likes | 当前 `config/quant_universe.yaml` 中的池内 ETF |
 | **目录** | `data/screening/` | `data/quant/` |
 | **依赖方向** | **不依赖量化池** | 可以依赖筛选池产出 |
 | **用途** | REQ-274 筛选工作流 | 回测、Tuner、正式页 |
@@ -20,7 +20,7 @@ data/
 │   ├── .spot_cache.json         AKShare fund_etf_spot_em 流通市值
 │   └── .holdings_cache.json     AKShare fund_portfolio_hold_em 前十大持仓
 │
-├── quant/              ← 量化池（45支专属）
+├── quant/              ← 量化池（当前 universe 专属）
 │   ├── {code}_daily.csv         腾讯 fqkline 日线
 │   ├── {code}_weekly.csv        rebuild_weekly_from_daily 周线
 │   └── etf_metadata.json        AKShare 单支查询：规模+持仓+上市日期
@@ -44,7 +44,7 @@ data/
 |------|------|------|------|------|
 | 日线(前复权) | 腾讯 `fqkline` period=day | 每日增量/全量 | `{code}_daily.csv` | 3s 间隔 + 800条/次上限 |
 | 周线 | 日线聚合 `rebuild_weekly_from_daily()` | 跟随日线 | `{code}_weekly.csv` | — |
-| 规模+持仓 | AKShare `fetch_etf_metadata.py` (逐支) | ≤30天 TTL | `etf_metadata.json` | 逐支请求，45 支约 1 分钟 |
+| 规模+持仓 | AKShare `fetch_etf_metadata.py` (逐支) | ≤30天 TTL | `etf_metadata.json` | 逐支请求，耗时随当前 universe 规模变化 |
 
 ## 新增 ETF 的数据流
 

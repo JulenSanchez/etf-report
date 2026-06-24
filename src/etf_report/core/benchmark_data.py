@@ -90,6 +90,6 @@ def build_ma_trend_cache(hs_daily, hs_weekly, period):
         tolerance=pd.Timedelta(days=6),
     ).dropna(subset=["above"])
     date_keys = merged["date"].dt.strftime("%Y-%m-%d")
-    above_map = dict(zip(date_keys, merged["above"].fillna(False).astype(bool)))
-    rising_map = dict(zip(date_keys, merged["ma_rising"].fillna(False).astype(bool)))
+    above_map = dict(zip(date_keys, merged["above"].astype("boolean").fillna(False).astype(bool)))
+    rising_map = dict(zip(date_keys, merged["ma_rising"].astype("boolean").fillna(False).astype(bool)))
     return {"above": above_map, "ma_rising": rising_map}

@@ -36,10 +36,18 @@ def rebuild_weekly_from_daily(daily_df):
     df["week"] = df["date"].dt.isocalendar().year.astype(str) + "-" + df["date"].dt.isocalendar().week.astype(str).str.zfill(2)
     df["dow"] = df["date"].dt.dayofweek  # 0=Mon .. 4=Fri
 
-    # Exclude the current incomplete week: if today is before Friday,
-    # drop the current ISO week's bars (they form a partial bar).
+    # Exclude incomplete weeks. Use trading calendar when available,
+    # so holiday-shortened weeks (e.g. Thu before holiday Fri) are
+    # recognised as complete. Falls back to dayofweek if calendar missing.
     today = pd.Timestamp.now().normalize()
-    if today.dayofweek < 4:  # Mon-Thu: current week is incomplete
+    has_future_td = False  # remaining trading days in this ISO week?
+    try:
+        from etf_report.core.trading_calendar import is_trading_day as _is_td
+        mon = today - pd.Timedelta(days=today.dayofweek)
+        has_future_td = any(_is_td(mon + pd.Timedelta(days=i)) for i in range(7) if mon + pd.Timedelta(days=i) > today)
+    except Exception:
+        has_future_td = today.dayofweek < 4  # fallback: Mon-Thu = incomplete
+    if has_future_td:
         cur_iso = today.isocalendar()
         cur_week_str = f"{cur_iso.year}-{cur_iso.week:02d}"
         df = df[df["week"] != cur_week_str]

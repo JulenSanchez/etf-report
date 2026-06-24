@@ -31,8 +31,14 @@ from pathlib import Path
 import requests
 import yaml
 
+PROJECT_ROOT = next(parent for parent in Path(__file__).resolve().parents if (parent / "config").is_dir() and (parent / "scripts").is_dir())
+SRC_DIR = PROJECT_ROOT / "src"
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
+sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
+
 from trading_calendar import load_trading_calendar, latest_allowed_close_date
-from quant_data_utils import rebuild_weekly_from_daily
+from etf_report.core.quant_data_utils import rebuild_weekly_from_daily
 
 sys.stdout.reconfigure(encoding="utf-8")
 
@@ -50,7 +56,6 @@ def _latest_allowed_date() -> str:
         cool_off_minutes=COOL_OFF_MINUTES,
     )
 
-PROJECT_ROOT = next(parent for parent in Path(__file__).resolve().parents if (parent / "config").is_dir() and (parent / "scripts").is_dir())
 CONFIG_PATH = PROJECT_ROOT / "config" / "quant_universe.yaml"
 DATA_DIR = PROJECT_ROOT / "data" / "quant"
 FRESH_MARKER = DATA_DIR / ".fresh_today"
@@ -285,10 +290,62 @@ def append_csv(new_df, path: Path):
         new_df.to_csv(path, index=False, encoding="utf-8")
 
 
-def update_single(etf: dict, full: bool = False, end_date: str = None):
+SINA_BATCH_URL = "https://hq.sinajs.cn/list="
+SINA_HEADERS = {"Referer": "https://finance.sina.com.cn/"}
+
+
+def _fetch_sina_batch(codes: list) -> dict:
+    """Fetch today's OHLCV for multiple ETFs via Sina batch API.
+    Returns {code: {date, open, close, high, low, volume, amount}} for each ETF.
+    Only returns data if market is closed (date field present in response).
+    """
+    if not codes:
+        return {}
+    # Build Sina code list: sh512400, sz159915, ...
+    sina_codes = [f"{mkt}{code}" for code, mkt in codes]
+    url = SINA_BATCH_URL + ",".join(sina_codes)
+    try:
+        resp = __import__('requests').get(url, headers=SINA_HEADERS, timeout=10)
+        if resp.status_code != 200:
+            return {}
+    except Exception:
+        return {}
+
+    result = {}
+    for line in resp.text.strip().split("\n"):
+        if "=" not in line:
+            continue
+        try:
+            sina_code = line.split("=")[0].replace("var hq_str_", "")
+            # Extract code from sina_code (e.g., sh512400 → 512400)
+            code = sina_code[2:]
+            fields = line.split("=")[1].strip('";').split(",")
+            if len(fields) < 10:
+                continue
+            date_str = fields[-3] if len(fields) > 3 else ""
+            if not date_str or date_str == '""':
+                continue  # market still open, no date field
+            result[code] = {
+                "date": date_str,
+                "open": float(fields[1]),
+                "close": float(fields[3]),
+                "high": float(fields[4]),
+                "low": float(fields[5]),
+                "volume": int(float(fields[8])),
+                "amount": float(fields[9]),
+            }
+        except (ValueError, IndexError):
+            continue
+    return result
+
+
+def update_single(etf: dict, full: bool = False, end_date: str = None,
+                  sina_batch: dict = None):
     """Update one ETF's daily + weekly data. Returns (daily_rows, weekly_rows, mode).
     end_date: exclusive end date (YYYY-MM-DD), passed to fetch_etf_kline to exclude
-              incomplete intraday bars when called during market hours."""
+              incomplete intraday bars when called during market hours.
+    sina_batch: pre-fetched Sina batch data {code: {date, open, close, ...}} for
+                single-day incremental updates (much faster than per-ETF Tencent)."""
     code = etf["code"]
     market = etf["market"]
     name = etf["name"]
@@ -320,15 +377,27 @@ def update_single(etf: dict, full: bool = False, end_date: str = None):
     if last_dt >= expected:
         return 0, 0, "fresh"
 
-    # Incremental: only fetch daily rows after last_date, then rebuild weekly from local daily.
-    # Rebuilding avoids Tencent weekly lag during an unfinished trading week.
+    # Incremental: try Sina batch first, fallback to Tencent
+    import pandas as pd
+    if sina_batch and code in sina_batch:
+        row = sina_batch[code]
+        sina_date = datetime.strptime(row["date"], "%Y-%m-%d").date()
+        if sina_date > last_dt and sina_date <= expected:
+            # Sina has data newer than CSV AND not beyond cool-off → use it
+            new_row = pd.DataFrame([row])
+            append_csv(new_row, daily_path)
+            full_daily = pd.read_csv(daily_path)
+            df_weekly = rebuild_weekly_from_daily(full_daily)
+            save_csv(df_weekly, weekly_path)
+            return 1, 0, "sina+batch"
+
+    # Tencent incremental (multi-day gap or Sina unavailable)
     df_daily = fetch_etf_kline(code, market, "daily", start_date=last_daily, end_date=end_date)
     new_daily = len(df_daily)
 
     if new_daily > 0:
         append_csv(df_daily, daily_path)
 
-    import pandas as pd
     full_daily = pd.read_csv(daily_path)
     df_weekly = rebuild_weekly_from_daily(full_daily)
     old_weekly_rows = 0
@@ -430,6 +499,14 @@ def main():
         except Exception:
             pass
 
+    # Pre-fetch Sina batch for incremental mode (single HTTP call for all ETFs).
+    # During market hours Sina returns real-time price (no date) → not written to CSV.
+    # After close Sina returns date field → written to CSV via gap==1 path.
+    sina_batch = None
+    if not args.full and not patch_mode:
+        codes = [(e["code"], e["market"]) for e in universe]
+        sina_batch = _fetch_sina_batch(codes)
+
     ok, fail, fresh = 0, 0, 0
     for i, etf in enumerate(universe, 1):
         code = etf["code"]
@@ -440,7 +517,7 @@ def main():
             if patch_mode:
                 daily_rows, weekly_rows, mode = patch_range(etf, args.start, args.end)
             else:
-                daily_rows, weekly_rows, mode = update_single(etf, full=args.full)
+                daily_rows, weekly_rows, mode = update_single(etf, full=args.full, sina_batch=sina_batch)
             if mode == "fresh":
                 print(f"OK [fresh]")
                 fresh += 1

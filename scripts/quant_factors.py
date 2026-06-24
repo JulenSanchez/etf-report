@@ -6,8 +6,8 @@ REQ-177 M1.1: 三因子计算模块
 
 因子：
   F1: 周线 EMA 偏离度 = (close - EMA_N) / EMA_N
-  F2: 日线 RSI(14) 趋势自适应变换
   F3: 自归一化量比 = vol_z = volume/60d_avg → mean(up_vol_z)/mean(down_vol_z), N日滚动
+  F7: 对数收益偏离 Z-score
 
 评分管线（连续映射版）：
   原始因子 → 连续映射函数 → [0, 1] 绝对分数 → 加权合成 → 信心函数 → 仓位分配
@@ -53,18 +53,6 @@ def factor_ema_deviation(weekly_df: pd.DataFrame, ema_period: int = 16,
     deviation = (close.iloc[-1] - ema.iloc[-1]) / ema.iloc[-1] * 100
     return deviation
 
-
-def f2_daily_ma_deviation(daily_close: np.ndarray, period_days: int) -> float:
-    """
-    F2: 日线 MA 偏离度
-    (close - MA) / MA × 100
-    """
-    if len(daily_close) < period_days:
-        return np.nan
-    ma = daily_close[-period_days:].mean()
-    if ma == 0:
-        return np.nan
-    return float((daily_close[-1] - ma) / ma * 100)
 
 
 def factor_volume_ratio(daily_df: pd.DataFrame, window: int = 20) -> float:
@@ -227,10 +215,9 @@ def compute_all_factors(daily_df: pd.DataFrame, weekly_df: pd.DataFrame,
                         f7_min_days: int = 60,
                         f7_sigma_floor: float = 0.01) -> dict:
     """
-    计算一支 ETF 的全部因子 (F1-F7)
-    返回 dict: {f1_ema_dev, f2_daily_ma, f3_volume_ratio (自归一化),
+    计算一支 ETF 的全部因子
+    返回 dict: {f1_ema_dev, f3_volume_ratio (自归一化),
                 f5_volatility_z, f1_residual_mom, f7_log_return_dev}
-    F2 为日线 MA 偏离度（占位，由 _precompute_factors 在实际回测中提供）。
     """
     f1 = factor_ema_deviation(weekly_df, ema_period)
     f3 = factor_volume_ratio_normalized(daily_df, vol_window, norm_window=60)
@@ -244,11 +231,8 @@ def compute_all_factors(daily_df: pd.DataFrame, weekly_df: pd.DataFrame,
                                       lookback=f7_lookback,
                                       min_days=f7_min_days,
                                       sigma_floor=f7_sigma_floor)
-    # F2 daily MA: 占位，实际回测由 _precompute_factors 提供
-    f2 = 50.0 if len(daily_df) >= (ema_period * 5) else np.nan
     return {
         "f1_ema_dev": f1,
-        "f2_daily_ma": f2,
         "f3_volume_ratio": f3,
         "f5_volatility_z": f5,
         "f1_residual_mom": f1r,
@@ -259,7 +243,7 @@ def compute_all_factors(daily_df: pd.DataFrame, weekly_df: pd.DataFrame,
 def normalize_cross_section(scores: pd.Series, method: str = "percentile_rank") -> pd.Series:
     """
     [已弃用] 截面标准化：将 N 支 ETF 的原始因子值标准化到 0-100
-    保留此函数仅为向后兼容，新代码应使用 map_f1 / map_f2 / map_f3 / map_f4。
+    保留此函数仅为向后兼容，新代码应使用连续映射函数。
     """
     if method == "percentile_rank":
         return scores.rank(pct=True) * 100
@@ -383,7 +367,6 @@ def map_f4(val_score: float, regime: str = "choppy_range") -> float:
 
     if regime_mult < 0.5:
         # 不利 regime：F4 弃权，输出向 0.5（中性）收缩
-        # 跟 F2 死区思想一致：沉默 ≠ 反对，沉默 = 弃权
         return 0.5 + (base - 0.5) * regime_mult
     else:
         # 有利 regime：按 multiplier 放大 F4 影响力
@@ -396,8 +379,8 @@ def composite_score(factors_df: pd.DataFrame, weights: dict,
                     regime: str = None) -> pd.Series:
     """
     合成综合分（连续映射版）
-    factors_df: index=ETF代码, columns=[f1_ema_dev, f2_daily_ma, f3_volume_ratio, ...]
-    weights: {ema_deviation: 0.30, f2_daily_ma: 0.0, volume_ratio: 0.30, ...}
+    factors_df: index=ETF代码, columns=[f1_ema_dev, f3_volume_ratio, ...]
+    weights: {ema_deviation: 0.30, volume_ratio: 0.30, ...}
     bias_map: {code: bonus} 如 {"512400": 0.04, "513120": 0.04, "512070": 0.04}
     sensitivity: {f1: 8.0, f3: 1.5, f7: 1.0} 映射函数参数
     norm_method: "continuous"（默认，使用映射函数）或 "percentile_rank"（旧方法，已弃用）
@@ -412,14 +395,12 @@ def composite_score(factors_df: pd.DataFrame, weights: dict,
 
     if norm_method == "continuous":
         mapped_f1 = factors_df["f1_ema_dev"].apply(lambda v: map_f1(v, f1_sens))
-        mapped_f2 = factors_df["f2_daily_ma"].apply(lambda v: map_f1(v, sensitivity.get("f2", 8.0)))
         mapped_f3 = factors_df["f3_volume_ratio"].apply(lambda v: map_f3(v, f3_sens))
 
         w1 = weights.get("ema_deviation", 0.40)
-        w2 = weights.get("f2_daily_ma", 0.00)
         w3 = weights.get("volume_ratio", 0.55)
 
-        score = mapped_f1 * w1 + mapped_f2 * w2 + mapped_f3 * w3
+        score = mapped_f1 * w1 + mapped_f3 * w3
 
         # F4 估值因子（如果 factors_df 中有 f4_valuation 列）
         w4 = weights.get("valuation", 0.00)
@@ -446,14 +427,12 @@ def composite_score(factors_df: pd.DataFrame, weights: dict,
     else:
         # 旧方法：截面标准化（已弃用，保留兼容）
         norm_f1 = normalize_cross_section(factors_df["f1_ema_dev"], norm_method) / 100.0
-        norm_f2 = normalize_cross_section(factors_df["f2_daily_ma"], norm_method) / 100.0
         norm_f3 = normalize_cross_section(factors_df["f3_volume_ratio"], norm_method) / 100.0
 
         w1 = weights.get("ema_deviation", 0.40)
-        w2 = weights.get("f2_daily_ma", 0.00)
         w3 = weights.get("volume_ratio", 0.55)
 
-        score = norm_f1 * w1 + norm_f2 * w2 + norm_f3 * w3
+        score = norm_f1 * w1 + norm_f3 * w3
 
         w4 = weights.get("valuation", 0.00)
         if w4 > 0 and "f4_valuation" in factors_df.columns:
@@ -640,11 +619,6 @@ def factor_volatility_zscore(daily_df: pd.DataFrame,
       - z << 0：波动率显著低于近期平均水平 → 市场平静 → 高分（偏好低波）
       - z >> 0：波动率显著高于近期平均水平 → 市场动荡 → 低分（规避高波）
       - z ≈ 0：波动率正常 → 中性
-
-    与F2的区别：
-      - F2检测RSI异动（价格动量异常）
-      - F5检测波动率异动（价格振幅异常）
-      - 两者互补：高RSI不一定高波动，高波动不一定高RSI
     """
     if daily_df is None or len(daily_df) < lookback + vol_window + 5:
         return np.nan
@@ -724,7 +698,7 @@ def factor_log_return_deviation(daily_df: pd.DataFrame,
     if daily_df is None or len(daily_df) < window + min_days:
         return np.nan
 
-    close = daily_df["close"].astype(float)
+    close = daily_df["close"].astype(float).where(lambda s: s > 0)
     log_ret = np.log(close / close.shift(1))
     log_ret = log_ret.dropna()
 

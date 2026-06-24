@@ -245,9 +245,9 @@
 
 ## 9. 与发布的关系
 
-- 本文是 `RELEASE_RUNBOOK.md` 的前置依赖
+- 本文是 `docs/runbook/release.md` 的前置审计细则
 - 审计发现的 P0 问题必须修完才能发布
-- 发布前检查清单（git status、secrets 泄露、绝对路径等）见 `RELEASE_RUNBOOK.md`
+- 发布前检查清单（git status、secrets 泄露、绝对路径等）见 `docs/runbook/release.md`
 
 ---
 

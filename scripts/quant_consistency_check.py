@@ -15,9 +15,12 @@ import yaml
 sys.stdout.reconfigure(encoding="utf-8")
 
 PROJECT_ROOT = next(parent for parent in Path(__file__).resolve().parents if (parent / "config").is_dir() and (parent / "scripts").is_dir())
+SRC_DIR = PROJECT_ROOT / "src"
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
 sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
 
-import quant_contract as qc
+from etf_report.core import quant_contract as qc
 from quant_backtest import count_actual_rebalances, run_backtest
 
 CONFIG_PATH = PROJECT_ROOT / "config" / "quant_universe.yaml"

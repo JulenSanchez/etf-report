@@ -28,7 +28,7 @@ python scripts/quant_tuner.py --readonly
 
 ## 参数契约
 
-事实源：`scripts/quant_contract.py`。
+事实源：`src/etf_report/core/quant_contract.py`。
 
 ```text
 config/quant_universe.yaml preset
@@ -42,7 +42,7 @@ config/quant_universe.yaml preset
 
 改参数时必须同步：
 
-- `scripts/quant_contract.py`
+- `src/etf_report/core/quant_contract.py`
 - `templates/tuner.html`
 - `tests/test_quant_contract.py`
 - `config/quant_universe.yaml`（如默认值变化）

@@ -41,14 +41,15 @@ assets/js/quant_payload.js
 | 数据刷新和 CSV | `scripts/quant_data_fetcher.py` | `docs/runbook/v2-quant/data-fetch.md` |
 | ETF 池变更 | `docs/runbook/v2-quant/pool-change.md` | `research/pool/README.md` |
 | 正式页量化展示 | `assets/js/quant-main.js` | `docs/runbook/v1-report.md` |
-| 日常自动化 / preclose push | `BatchFiles/` + `scripts/preclose_push.py` | `docs/runbook/v2-quant/daily-automation.md` |
+| 日常自动化 / preclose push | `batchfiles/` + `scripts/preclose_push.py` | `docs/runbook/v2-quant/daily-automation.md` |
 
 ## 变更路由
 
 | 变更类型 | 先读 | 最小验证 |
 |---|---|---|
 | 改因子 / 回测逻辑 | `docs/design/backtest-engine.md` | `python -m pytest tests/test_quant_* -q` |
-| 改 Tuner 参数 | `docs/runbook/v2-quant/tuner.md` + `scripts/quant_contract.py` | `python -m pytest tests/test_quant_contract.py -q` |
+| 改 Tuner 参数 | `docs/runbook/v2-quant/tuner.md` + `src/etf_report/core/quant_contract.py` | `python -m pytest tests/test_quant_contract.py -q` |
+| 筛选 ETF | `docs/runbook/v2-quant/screening.md` | 生成候选表 + 人工审阅 |
 | 改 ETF 池 | `docs/runbook/v2-quant/pool-change.md` | 逐支拉数 + 回测基线对比 |
 | 改数据源 / CSV | `docs/runbook/v2-quant/data-fetch.md` | `python scripts/quant_data_fetcher.py --start <date> --end <date>` |
 | 改正式页 payload | `docs/runbook/v1-report.md` | `python scripts/quant_build_payload.py` + HTML 验证 |
@@ -69,8 +70,9 @@ assets/js/quant_payload.js
 
 - Tuner 运维：`docs/runbook/v2-quant/tuner.md`
 - 数据刷新：`docs/runbook/v2-quant/data-fetch.md`
+- ETF 筛选：`docs/runbook/v2-quant/screening.md`
 - ETF 池变更：`docs/runbook/v2-quant/pool-change.md`
+- 研究投产：`docs/runbook/v2-quant/promotion.md`
 - 每日自动化：`docs/runbook/v2-quant/daily-automation.md`
-- 参数优化流程：`docs/runbook/v2-quant/optimization.md`
-- 参数优化报告：`docs/runbook/v2-quant/optimization.md`
+- 参数优化流程与报告：`docs/runbook/v2-quant/optimization.md`
 - 回测引擎设计：`docs/design/backtest-engine.md`

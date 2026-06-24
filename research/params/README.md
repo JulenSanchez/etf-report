@@ -47,6 +47,7 @@
 
 | 目录 | 标题 | 日期 | 核心发现 |
 |------|------|------|---------|
+| `archive/early_experiments.json` | 早期参数实验散表归档 | 2026-05-12 | 早期探索记录，已从 params 根目录移入 archive |
 | `F7-optimization/` | F7 因子历史优化 | 2026-05-13 | f7_window=10 最优, w7/k/t 全量扫描 |
 | `F7F6-joint-optimization/` | F7+F6 联合优化 | 2026-05-15 | Phase1 粗扫→Phase2 交叉→Phase3 补充→随机收尾, 全局最优确认 |
 | `concentration-sweep/` | daily_aggressive 浓度参数扫描 | 2026-05-20 | C=0.5 最优（1Y +101.3%, 3Y +124.7%）, C≥0.7 衰退, 换手率随 C 单调递增 |

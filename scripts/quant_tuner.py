@@ -42,10 +42,10 @@ if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
 from quant_factors import calc_ema, calc_rsi
-from quant_data_utils import load_etf_data, rebuild_weekly_from_daily
+from etf_report.core.quant_data_utils import load_etf_data, rebuild_weekly_from_daily
+from etf_report.core import quant_contract as qc
 from benchmark_data import load_hs300_daily_cached, build_hs300_pct, build_hs300_weekly, build_ma_trend_cache
 from trading_calendar import load_trading_calendar, is_trading_day, last_trading_day
-import quant_contract as qc
 
 CONFIG_PATH = CONFIG_DIR / "quant_universe.yaml"
 OVERRIDES_PATH = CONFIG_DIR / "quant_user_overrides.yaml"
@@ -395,32 +395,6 @@ def _reload_csv_to_cache(cfg):
         if daily is not None:
             CACHE["all_daily"][code] = daily
             CACHE["all_weekly"][code] = weekly
-
-
-def _sina_batch_append(cfg, date_str, rt_prices):
-    """Append one day's Sina realtime data to all ETF CSVs (single-day only)."""
-    from quant_data_fetcher import append_csv, save_csv, DATA_DIR as QDATA_DIR
-    import pandas as _pd
-    ok, fail = 0, 0
-    for etf in cfg["universe"]:
-        code = etf["code"]
-        rt = rt_prices.get(code)
-        if not rt or rt["price"] <= 0:
-            fail += 1
-            continue
-        daily_path = QDATA_DIR / f"{code}_daily.csv"
-        weekly_path = QDATA_DIR / f"{code}_weekly.csv"
-        new_row = _pd.DataFrame([{
-            "date": date_str, "open": rt["open"], "close": rt["price"],
-            "high": rt["high"], "low": rt["low"],
-            "volume": int(rt["volume"]), "amount": rt["amount"],
-        }])
-        append_csv(new_row, daily_path)
-        full_daily = _pd.read_csv(daily_path)
-        weekly = rebuild_weekly_from_daily(full_daily)
-        save_csv(weekly, weekly_path)
-        ok += 1
-    return ok, fail
 
 
 def _sina_batch_append(cfg, date_str, rt_prices):
@@ -1351,6 +1325,7 @@ def run_tuner_backtest(params):
     return {
         "strategy": strategy_label,
         "etfNameMap": etf_name_map,
+        "etfHoldings": {code: (meta.get("top10", []) if isinstance(meta, dict) else []) for code, meta in CACHE.get("etf_metadata", {}).items()},
         "hs300": hs_sliced,
         "eqWeight": eq_sliced,
         "drawdown": [round(v, 2) for v in dd],
@@ -1387,10 +1362,12 @@ def run_tuner_backtest(params):
             "intradayTime": ic_time if has_intraday else None,
             "intradayCount": len(CACHE.get("intraday_cache", {})) if has_intraday else 0,
             "haltedEtfs": [code for code, v in CACHE.get("intraday_cache", {}).items() if v.get("halted")],
+            "exposureSummary": extra.get("exposure_summary", {}),
         },
         "nav": {
             "dates": nav_date_strs,
             "pct": [round(float(v), 2) for v in nav_df["nav_pct"]],
+            "exposure": [round(float(e), 3) for e in nav_df["exposure"]] if "exposure" in nav_df.columns else [],
         },
         "benchmarks": {
             "hs300": hs_sliced,
@@ -1688,7 +1665,7 @@ def api_universe_save():
 
 def _save_to_preset(preset_name, overrides):
     """Deep-merge overrides into a specific preset inside quant_universe.yaml.
-    If the preset doesn't exist yet, auto-create it from daily_aggressive template."""
+    If the preset doesn't exist yet, auto-create it from the zen-1 template."""
     with CONFIG_PATH.open("r", encoding="utf-8") as f:
         cfg = yaml.safe_load(f)
     presets = cfg.setdefault("presets", {})

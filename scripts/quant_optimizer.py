@@ -6,9 +6,9 @@ Strategies: grid, random, bayesian (Optuna TPE).
 Independent background execution, checkpoint-resume, structured output.
 
 Usage:
-  python scripts/quant_optimizer.py --preset daily_aggressive --strategy random --n-trials 200
-  python scripts/quant_optimizer.py --preset daily_aggressive --strategy bayesian --auto-bounds --n-trials 100
-  python scripts/quant_optimizer.py --preset daily_aggressive --strategy grid --params "w1=30,40,50 concentration=0,0.5,1"
+  python scripts/quant_optimizer.py --preset gam-1
+  python scripts/quant_optimizer.py --preset zen-1 --n-trials 100
+  python scripts/quant_optimizer.py --preset act-1 --strategy grid --params "w1=30,40,50 concentration=0,0.5,1"
 """
 import argparse
 import json
@@ -28,6 +28,9 @@ import numpy as np
 import pandas as pd
 
 PROJECT_ROOT = next(parent for parent in Path(__file__).resolve().parents if (parent / "config").is_dir() and (parent / "scripts").is_dir())
+SRC_DIR = PROJECT_ROOT / "src"
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
 sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
 
 try:
@@ -35,14 +38,14 @@ try:
 except ImportError:
     optuna = None
 
-from quant_contract import (
-    PARAM_BOUNDS, get_param_bounds, get_param_type, auto_bounds,
+from etf_report.core.quant_contract import (
+    PARAM_BOUNDS, PRESET_OPT_PROFILES, get_param_bounds, get_param_type, auto_bounds,
     tuner_params_to_config_override, validate_tuner_params,
     preset_to_tuner_params,
     _WEIGHT_PARAM_KEYS,
 )
 from quant_backtest import run_backtest, load_config as _load_backtest_config
-from quant_data_utils import load_etf_data as _load_etf_data
+from etf_report.core.quant_data_utils import load_etf_data as _load_etf_data
 
 DATA_DIR = PROJECT_ROOT / "data" / "quant"
 RESEARCH_DIR = PROJECT_ROOT / "research" / "params"
@@ -61,10 +64,10 @@ PERIOD_PRESETS = {
 # ═══════════════════════════════════════════════════════════════════════════
 @dataclass
 class OptimizationConfig:
-    preset: str = "daily_aggressive"
-    strategy: str = "random"
-    n_trials: int = 100
-    metric: str = "calmar"
+    preset: str = "gam-1"
+    strategy: str = "bayesian"
+    n_trials: int = 70
+    metric: str = "annual_return"
     periods: list = field(default_factory=lambda: [("1Y", None, None)])
     param_overrides: dict = field(default_factory=dict)
     auto_bounds_flag: bool = False
@@ -75,6 +78,8 @@ class OptimizationConfig:
     end_date: str = None
     universe_str: str = None
     constraints: list = field(default_factory=list)
+    lock_params: list = field(default_factory=list)
+    two_stage: bool = False
 
     @property
     def multi_period(self):
@@ -90,32 +95,38 @@ def _compute_period(label, end_date_str):
 
 def parse_args(argv=None):
     p = argparse.ArgumentParser(description="Quant Parameter Optimizer")
-    p.add_argument("--preset", default="daily_aggressive",
-                   help="Target preset (default: daily_aggressive)")
-    p.add_argument("--strategy", default="random", choices=["grid", "random", "bayesian"],
-                   help="Search strategy (default: random)")
-    p.add_argument("--n-trials", type=int, default=100,
-                   help="Number of trials, ignored for grid (default: 100)")
-    p.add_argument("--metric", default="calmar", choices=METRIC_NAMES,
-                   help="Optimization objective (default: calmar)")
-    p.add_argument("--periods", default="1Y,3Y",
-                   help="Comma-separated period labels: 1Y,3Y,6Y")
+    p.add_argument("--preset", default="gam-1",
+                   help="Target preset (default: gam-1)")
+    p.add_argument("--strategy", default="bayesian", choices=["grid", "random", "bayesian"],
+                   help="Search strategy (default: bayesian)")
+    p.add_argument("--n-trials", type=int, default=70,
+                   help="Number of trials, ignored for grid (default: 70)")
+    p.add_argument("--metric", default=None, choices=METRIC_NAMES,
+                   help="Optimization objective (default: preset profile metric)")
+    p.add_argument("--periods", default="1Y,3Y,6Y",
+                   help="Comma-separated period labels: 1Y,3Y,6Y (equal-weight composite)")
     p.add_argument("--params", default=None,
                    help='Explicit param space: "w1=20,30,40 concentration=0,0.5,1"')
-    p.add_argument("--auto-bounds", action="store_true", dest="auto_bounds_flag",
-                   help="Derive search ranges from preset current values")
+    p.add_argument("--auto-bounds", action="store_true", dest="auto_bounds_flag", default=True,
+                   help="Derive search ranges from preset current values (default)")
+    p.add_argument("--no-auto-bounds", action="store_false", dest="auto_bounds_flag",
+                   help="Use global bounds instead of preset-centered auto bounds")
     p.add_argument("--seed", type=int, default=42)
     p.add_argument("--output", default=None, dest="output_dir",
                    help="Output directory (auto: research/params/{preset}-{date}/)")
     p.add_argument("--resume", action="store_true", help="Resume from checkpoint")
     p.add_argument("--save-nav", type=int, default=0,
                    help="Save NAV CSVs for top N trials")
-    p.add_argument("--universe", default=None, dest="universe_str",
-                   help="ETF filter: '*'=all, comma-list=subset, omit=active-only")
+    p.add_argument("--universe", default="*", dest="universe_str",
+                   help="ETF filter: '*'=all (default), comma-list=subset, omit/empty=active-only")
     p.add_argument("--constraint", default=None, action="append", dest="constraints",
                    help="Constraint: mdd,-20 = MDD must be >= -20pct, bear,0.15,0.30 = bear pos in [0.15,0.30]. Repeatable.")
     p.add_argument("--end", default=None, dest="end_date",
                    help="End date override (default: today)")
+    p.add_argument("--lock", default=None, dest="lock_params",
+                   help="Comma-separated params to lock at baseline values: ma_bear_pos,max_holdings,disc_step")
+    p.add_argument("--two-stage", action="store_true", dest="two_stage",
+                   help="Auto-run execution layer after signal layer if signal results pass quality check")
     args = p.parse_args(argv)
 
     end_date = args.end_date or datetime.now().strftime("%Y-%m-%d")
@@ -125,18 +136,36 @@ def parse_args(argv=None):
     if args.params:
         param_overrides = _parse_params_arg(args.params)
 
+    lock_params = []
+    if args.lock_params:
+        lock_params = [k.strip() for k in args.lock_params.split(",") if k.strip()]
+
+    profile = PRESET_OPT_PROFILES.get(args.preset, {})
+    metric = args.metric or profile.get("metric", "calmar")
+    constraints = args.constraints if args.constraints is not None else list(profile.get("constraints", []))
+
     output_dir = args.output_dir
     if output_dir:
         output_dir = Path(output_dir)
+        # Auto-bump if directory already exists
+        v = 2
+        while output_dir.exists():
+            output_dir = Path(f"{args.output_dir}-v{v}")
+            v += 1
     else:
         ts = datetime.now().strftime("%Y%m%d")
-        output_dir = RESEARCH_DIR / f"{args.preset}-{ts}"
+        base = RESEARCH_DIR / f"{args.preset}-{ts}"
+        output_dir = base
+        v = 2
+        while output_dir.exists():
+            output_dir = RESEARCH_DIR / f"{args.preset}-{ts}-v{v}"
+            v += 1
 
     return OptimizationConfig(
         preset=args.preset,
         strategy=args.strategy,
         n_trials=args.n_trials,
-        metric=args.metric,
+        metric=metric,
         periods=periods,
         param_overrides=param_overrides,
         auto_bounds_flag=args.auto_bounds_flag,
@@ -145,7 +174,9 @@ def parse_args(argv=None):
         resume=args.resume,
         save_nav=args.save_nav,
         universe_str=args.universe_str,
-        constraints=args.constraints or [],
+        constraints=constraints,
+        lock_params=lock_params,
+        two_stage=args.two_stage,
         end_date=end_date,
     )
 
@@ -279,9 +310,16 @@ class ParamSpace:
                     if "values" in b:
                         params[key] = rng.choice(b["values"])
                     else:
-                        params[key] = float(rng.uniform(b["min"], b["max"]))
+                        step = b.get("step")
+                        if step:
+                            n = int(round((b["max"] - b["min"]) / step))
+                            params[key] = float(b["min"] + rng.integers(0, n + 1) * step)
+                        else:
+                            params[key] = float(rng.uniform(b["min"], b["max"]))
                 elif tp == "integer":
-                    params[key] = int(rng.integers(b["min"], b["max"] + 1))
+                    step = int(b.get("step", 1))
+                    vals = list(range(int(b["min"]), int(b["max"]) + 1, step))
+                    params[key] = int(rng.choice(vals))
                 elif tp == "categorical":
                     params[key] = rng.choice(b["choices"])
                 elif tp == "special":
@@ -321,6 +359,20 @@ class BacktestRunner:
             "all_weekly": all_weekly,
         }
         print(f"  [preload] {len(all_daily)} ETFs loaded", flush=True)
+
+    def run_raw(self, params: dict, start_date: str, end_date: str):
+        """Run backtest and return raw (nav_df, signal_history, extra)."""
+        self._ensure_preloaded()
+        config_override = tuner_params_to_config_override(params)
+        nav_df, signal_history, extra = run_backtest(
+            start_date=start_date,
+            end_date=end_date,
+            preset=self.preset,
+            preloaded=self._preloaded,
+            config_override=config_override,
+            universe_filter=self.universe_filter,
+        )
+        return nav_df, signal_history, extra
 
     def run(self, params: dict, start_date: str, end_date: str) -> dict:
         self._ensure_preloaded()
@@ -558,7 +610,7 @@ class ReportGenerator:
             for i, r in enumerate(top_n):
                 c = r.get("composite", {})
                 vals = " | ".join(f"{c.get(m, 0):.4f}" for m in METRIC_NAMES[:5])
-                kp = ", ".join(f"{k}={v}" for k, v in sorted(r["params"].items()) if v != 0 and k in ("w1", "w2", "w3", "w6", "w7", "concentration", "ema_period", "score_band"))
+                kp = ", ".join(f"{k}={v}" for k, v in sorted(r["params"].items()) if v != 0 and k in ("w1", "w3", "w7", "concentration", "f1_ema_period", "score_band"))
                 lines.append(f"| {i+1} | {vals} | {kp} |")
         lines.append("")
 
@@ -605,7 +657,7 @@ class ReportGenerator:
 # 7. Optimizer Orchestrator
 # ═══════════════════════════════════════════════════════════════════════════
 def _run_baseline(runner: BacktestRunner, cfg: OptimizationConfig):
-    """Run a single backtest with the preset's current values to get baseline."""
+    """Run 6Y backtest, extract 1Y/3Y from NAV slices."""
     yaml_cfg = _load_backtest_config(preset=cfg.preset)
     preset_cfg = yaml_cfg.get("presets", {}).get(cfg.preset)
     if preset_cfg is None:
@@ -613,13 +665,20 @@ def _run_baseline(runner: BacktestRunner, cfg: OptimizationConfig):
         return []
     global_conf = yaml_cfg.get("confidence", {})
     base_params = preset_to_tuner_params(cfg.preset, preset_cfg, global_conf)
+
+    periods_by_label = {lab: (sd, ed) for lab, sd, ed in cfg.periods}
+    sd_6Y, ed_6Y = periods_by_label['6Y']
+    nav_6Y, sig_6Y, ext_6Y = runner.run_raw(base_params, sd_6Y, ed_6Y)
+
     results = []
-    for lab, sd, ed in cfg.periods:
-        print(f"  [baseline] running {lab} ({sd} ~ {ed}) ...", flush=True)
-        m = runner.run(base_params, sd, ed)
-        if m:
-            m["period"] = lab
-            results.append(m)
+    for lab, (sd, ed) in periods_by_label.items():
+        mask = (nav_6Y['date'] >= sd) & (nav_6Y['date'] <= ed)
+        nav_slice = nav_6Y[mask].copy()
+        factor = 1_000_000.0 / nav_slice['nav'].iloc[0]
+        nav_slice['nav'] = nav_slice['nav'] * factor
+        m = _extract_metrics(nav_slice, [], {})
+        m["period"] = lab
+        results.append(m)
     return results
 
 
@@ -660,9 +719,17 @@ def _run_trial_optuna(trial, runner: BacktestRunner, cfg: OptimizationConfig, sp
                 hi = lo + step
             params[key] = trial.suggest_int(key, lo, hi, step=step)
         elif tp == "continuous":
-            params[key] = trial.suggest_float(key, b["min"], b["max"])
+            step = b.get("step")
+            if step:
+                n_steps = int(round((b["max"] - b["min"]) / step))
+                hi = round(b["min"] + n_steps * step, 10)
+                params[key] = trial.suggest_float(key, b["min"], hi, step=step)
+            else:
+                params[key] = trial.suggest_float(key, b["min"], b["max"])
         elif tp == "integer":
-            params[key] = trial.suggest_int(key, b["min"], b["max"])
+            step = int(b.get("step", 1))
+            hi = b["min"] + ((b["max"] - b["min"]) // step) * step
+            params[key] = trial.suggest_int(key, b["min"], hi, step=step)
         elif tp == "categorical":
             params[key] = trial.suggest_categorical(key, b["choices"])
         elif tp == "special":
@@ -672,13 +739,24 @@ def _run_trial_optuna(trial, runner: BacktestRunner, cfg: OptimizationConfig, sp
     err = validate_tuner_params(params)
     if err:
         raise optuna.TrialPruned(f"Validation failed: {err}")
-    # Run all periods (serial — Python GIL makes threads slower for CPU-bound backtests)
+    # Run 6Y backtest once; extract 1Y/3Y from NAV slices
+    periods_by_label = {lab: (sd, ed) for lab, sd, ed in cfg.periods}
+    sd_6Y, ed_6Y = periods_by_label['6Y']
+    nav_6Y, sig_6Y, ext_6Y = runner.run_raw(params, sd_6Y, ed_6Y)
+    if nav_6Y is None or len(nav_6Y) == 0:
+        raise optuna.TrialPruned("6Y backtest failed")
+
     rel_scores = []
     all_metrics = {}
-    for lab, sd, ed in cfg.periods:
-        m = runner.run(params, sd, ed)
-        if m is None:
-            raise optuna.TrialPruned(f"Backtest failed for {lab}")
+    for lab, (sd, ed) in periods_by_label.items():
+        mask = (nav_6Y['date'] >= sd) & (nav_6Y['date'] <= ed)
+        nav_slice = nav_6Y[mask].copy()
+        if len(nav_slice) < 2:
+            raise optuna.TrialPruned(f"Not enough data for {lab}")
+        # Re-base NAV to start at 1M for the sub-period
+        factor = 1_000_000.0 / nav_slice['nav'].iloc[0]
+        nav_slice['nav'] = nav_slice['nav'] * factor
+        m = _extract_metrics(nav_slice, [], {})
         trial.set_user_attr(f"{lab}_metrics", json.dumps(m))
         all_metrics[lab] = m
         raw = m.get(cfg.metric, -9999)
@@ -756,6 +834,24 @@ def run(cfg: OptimizationConfig):
                         bounds[wk] = {"type": "weight", "min": cur, "max": cur, "step": 1}
     else:
         bounds = get_param_bounds()
+
+    # ── Lock mechanism: pin specified params to baseline values ──
+    if cfg.lock_params:
+        lock_cfg = _load_backtest_config(preset=cfg.preset)
+        lock_preset_cfg = lock_cfg.get("presets", {}).get(cfg.preset, {})
+        lock_global_conf = lock_cfg.get("confidence", {})
+        lock_tuner = preset_to_tuner_params(cfg.preset, lock_preset_cfg, lock_global_conf)
+        for key in cfg.lock_params:
+            if key in bounds:
+                val = lock_tuner.get(key)
+                if val is not None:
+                    bounds[key]["values"] = [val]
+                    log(f"  Locked {key} = {val} (baseline)")
+                else:
+                    log(f"  WARNING: --lock {key}: no baseline value in preset {cfg.preset}")
+            else:
+                log(f"  WARNING: --lock {key}: param not in bounds, skipping")
+
     space = ParamSpace(bounds)
     log(f"Param space: {len(space.all_keys)} params")
 
@@ -806,6 +902,9 @@ def run(cfg: OptimizationConfig):
             load_if_exists=cfg.resume,
             sampler=optuna.samplers.TPESampler(seed=cfg.seed),
         )
+        # Store baseline scores in study for analyzer to compute composite
+        study.set_user_attr("baseline_scores", json.dumps(baseline_scores))
+        study.set_user_attr("period_labels", json.dumps([lab for lab, _, _ in cfg.periods]))
 
         def objective(trial):
             return _run_trial_optuna(trial, runner, cfg, space, baseline_scores)
@@ -922,6 +1021,51 @@ def run(cfg: OptimizationConfig):
         log("  analysis.json generated")
     except Exception as e:
         print(f"  WARNING: analyzer failed: {e}", file=sys.stderr)
+
+    # ── Two-stage: auto-run execution layer if signal layer passes quality check ──
+    if cfg.two_stage and all_results and not (cfg.param_overrides and any(
+        k in cfg.param_overrides for k in ['w1','w3','f7_t','f7_k','f7_window'])):
+        # We are in signal layer (搜索信号参数，锁执行层) — check if results are good enough
+        n_passed = len(all_results)
+        best_comp = all_results[0]['composite'].get(cfg.metric, 0) if all_results else 0
+        if n_passed >= 5 and best_comp > 0.95:
+            log(f"Two-stage: signal layer OK ({n_passed} passed, best composite={best_comp:.4f}). Auto-running execution layer...")
+            best_params = all_results[0]['params']
+            # Move signal layer results to signal/ subdirectory
+            parent_dir = cfg.output_dir
+            signal_dir = parent_dir / "signal"
+            signal_dir.mkdir(parents=True, exist_ok=True)
+            import shutil
+            for f in parent_dir.iterdir():
+                if f.is_file() and f.name != '.optimizer_done':
+                    shutil.move(str(f), str(signal_dir / f.name))
+            log(f"  Signal results moved to {signal_dir}")
+            # Build signal param locks from best trial
+            signal_keys = ['w1','w3','w7','f7_t','f7_k','f7_window','f3_vol_window','f1_sensitivity','f3_sensitivity','f1_ema_period']
+            exec_params_str = ' '.join(f'{k}={best_params[k]}' for k in signal_keys if k in best_params)
+            # Run execution layer into exec/ subdirectory
+            stage2_cfg = OptimizationConfig(
+                preset=cfg.preset, strategy=cfg.strategy, n_trials=cfg.n_trials,
+                metric=cfg.metric, periods=cfg.periods,
+                param_overrides=_parse_params_arg(exec_params_str),
+                auto_bounds_flag=True, seed=cfg.seed,
+                constraints=cfg.constraints, end_date=cfg.end_date,
+                universe_str=cfg.universe_str,
+            )
+            stage2_cfg.output_dir = parent_dir / "exec"
+            run(stage2_cfg)
+            # Move final deliverables (analysis.json + report.md) to parent
+            exec_dir = stage2_cfg.output_dir
+            for fname in ['analysis.json', 'report.md']:
+                src = exec_dir / fname
+                if src.exists():
+                    shutil.move(str(src), str(parent_dir / fname))
+            log(f"  Final report: {parent_dir / 'report.md'}")
+            return
+        else:
+            log(f"Two-stage: signal layer FAILED quality check ({n_passed} passed, best composite={best_comp:.4f}). Stopping.")
+            log(f"  Required: >=5 passed, best composite >0.95. Manual review needed.")
+            return
 
     # ── Done marker ──
     marker = cfg.output_dir / ".optimizer_done"

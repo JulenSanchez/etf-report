@@ -526,7 +526,7 @@ def _build_kline_replay_data(etf_name_map, start_date, end_date):
 def load_quant_preset_params(quant_config_path, preset="zen-1"):
     """Load a quant preset and convert it to Tuner parameter shape via quant_contract."""
     import yaml
-    import quant_contract as qc
+    from etf_report.core import quant_contract as qc
 
     with open(quant_config_path, "r", encoding="utf-8") as f:
         qcfg = yaml.safe_load(f)
@@ -541,21 +541,21 @@ def load_quant_preset_params(quant_config_path, preset="zen-1"):
 def default_quant_preset_params():
     """Fallback params matching current preset2 defaults."""
     return {
-        "w1": 0, "w2": 45, "w3": 45, "w4": 0, "w6": 0, "w7": 10, "bias": 0,
+        "w1": 45, "w3": 45, "w7": 10, "bias": 0,
         "conf_type": "ma_trend", "ma_trend_period": 26,
         "ma_bull_pos": 1.0, "ma_bear_pos": 0.3, "ma_direction_confirm": True,
         "max_holdings": 6, "disc_step": 0.05, "concentration": 0.0,
         "rebalance_freq": "daily", "execution_timing": "same_close", "score_band": 3,
-        "ema_period": 5, "vol_window": 20,
-        "f1_sensitivity": 8.0, "f2_sensitivity": 8.0, "f3_sensitivity": 1.5,
-        "f7_t": 15.0, "f7_k": 3.5, "f7_window": 20, "f2_ma_period": 25,
+        "f1_ema_period": 5, "f3_vol_window": 20,
+        "f1_sensitivity": 8.0, "f3_sensitivity": 1.5,
+        "f7_t": 15.0, "f7_k": 3.5, "f7_window": 20,
         "f6_rsi_thresh": 80.0, "f6_drop_thresh": 2.5, "f6_base_penalty": 0.15,
     }
 
 
 def build_quant_payload_config_section(preset_params):
     """Build yr1/yr3 payload config from the same contract used by Tuner /api/run."""
-    import quant_contract as qc
+    from etf_report.core import quant_contract as qc
 
     config_override = qc.tuner_params_to_config_override(preset_params)
     return {
@@ -576,14 +576,15 @@ def generate_quant_baseline_payload():
     QUANT_CONFIG = os.path.join(PROJECT_ROOT, "config", "quant_universe.yaml")
     preset_params = {}
     try:
-        preset_params = load_quant_preset_params(QUANT_CONFIG, "act-1")
-        logger.info("从 YAML 读取 act-1 参数", {"params": {k: v for k, v in preset_params.items() if k != "start_date"}})
+        preset_params = load_quant_preset_params(QUANT_CONFIG, "gam-2")
+        logger.info("从 YAML 读取 gam-2 参数", {"params": {k: v for k, v in preset_params.items() if k != "start_date"}})
     except Exception as e:
         logger.warn("读取 quant_universe.yaml 失败，使用默认参数", {"error": str(e)})
         preset_params = default_quant_preset_params()
 
     # ── 确保 Tuner 从本仓库启动 ─────────────────────────
-    _ensure_tuner()
+    if not _ensure_tuner():
+        raise RuntimeError("Tuner failed to start; abort quant_payload generation")
 
     # ── 调用 tuner 运行 1yr + 3yr 回测 ─────────────────────
     TUNER_RUN_URL = "http://localhost:5179/api/run"
@@ -634,6 +635,8 @@ def generate_quant_baseline_payload():
 
     bt_1yr = run_backtest("1yr", yr1_start, data_max_date)
     bt_3yr = run_backtest("3yr", yr3_start, data_max_date)
+    if not bt_1yr and not bt_3yr:
+        raise RuntimeError("Both quant backtests failed; keep previous quant_payload.js")
 
     # ── 构建 payload ─────────────────────────────────────────
     def build_template(bt_data):
@@ -712,7 +715,8 @@ def generate_quant_baseline_payload():
                 "rebalanceDays": summary.get("rebalanceDays", len(signal_history)),
                 "commissionPct": summary.get("commissionPct", 0),
                 "initialCapital": 1000000.0,
-                "finalNav": 1000000.0 * (1 + summary.get("totalReturn", 0) / 100)
+                "finalNav": 1000000.0 * (1 + summary.get("totalReturn", 0) / 100),
+                "exposureSummary": summary.get("exposureSummary", {})
             },
             "navSeries": {
                 "dates": nav_dates,

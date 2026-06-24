@@ -1,6 +1,6 @@
 # etf-report 系统设计
 
-> 架构总览。子系统设计见 `architecture/`，运维手册见 `ops/`。
+> 架构总览。子系统设计见 `docs/design/`，运维手册见 `docs/runbook/`。
 
 ## 一、系统架构
 
@@ -49,10 +49,11 @@
 
 | 子系统 | 设计文档 | 核心代码 |
 |--------|---------|---------|
-| 因子体系（F1/F3/F7） | `architecture/factors.md` | `scripts/quant_backtest.py:_precompute_factors()` |
-| 回测引擎（循环/仓位/信心/执行） | `architecture/backtest-engine.md` | `scripts/quant_backtest.py::run_backtest()` |
-| ETF 贡献分析 | `architecture/etf-contribution.md` | `scripts/quant_tuner.py:_compute_etf_contributions()` |
-| 参数契约 | `scripts/quant_contract.py` | 三层转换（YAML↔Tuner↔引擎） |
+| 因子体系（F1/F3/F7） | `factors.md` | `scripts/quant_backtest.py:_precompute_factors()` |
+| 回测引擎（循环/仓位/信心/执行） | `backtest-engine.md` | `scripts/quant_backtest.py::run_backtest()` |
+| 两融账户与杠杆风险 | `margin-account-model.md` | v3.9 账户层建模 |
+| ETF 贡献分析 | `etf-contribution.md` | `scripts/quant_tuner.py:_compute_etf_contributions()` |
+| 参数契约 | `src/etf_report/core/quant_contract.py` | 三层转换（YAML↔Tuner↔引擎） |
 
 ## 三、设计原则
 
@@ -76,22 +77,22 @@ config/quant_universe.yaml preset
 
 ### 三因子
 
-当前活跃因子 F1/F3/F7。F2/F4/F5/F6 已于 2026-05~06 退役（权重=0，代码保留）。
+当前活跃因子 F1/F3/F7。F2 已移除；F4/F5/F6 已于 2026-05~06 退役（权重=0，部分兼容代码仍保留）。
 
 ### 检查点/冻结模型（F1 抢跑）
 
-F1 的周线 EMA 偏离通过 bitmask `f1_active_days` 控制更新频率。核心是三分支状态机：检查点（滚 EMA）、冻结（复用上一个检查点）、hold（复用上周值）。详见 `architecture/factors.md`。
+F1 的周线 EMA 偏离通过 bitmask `f1_active_days` 控制更新频率。核心是三分支状态机：检查点（滚 EMA）、冻结（复用上一个检查点）、hold（复用上周值）。详见 `factors.md`。
 
 ## 四、运维手册
 
 | 文档 | 内容 |
 |------|------|
-| `ops/quant/overview.md` | 量化系统运维——启动、刷新、变更路由、排障 |
-| `ops/report.md` | 正式页报告工作流——生成、发布、企微推送 |
-| `ops/release.md` | 发布门禁——验证、审计、GitHub Pages |
-| `ops/audit.md` | 代码审计 |
-| `../scripts/health_check.py` | 健康检查入口 |
+| `../runbook/v2-quant/overview.md` | 量化系统运维——启动、刷新、变更路由、排障 |
+| `../runbook/v1-report.md` | 正式页报告工作流——生成、发布、企微推送 |
+| `../runbook/release.md` | 发布门禁——验证、审计、GitHub Pages |
+| `../runbook/audit.md` | 代码审计 |
+| `../../scripts/health_check.py` | 健康检查入口 |
 
 ## 五、基准数据
 
-当前稳定基线：`research/baselines/current.json`（preset3 TR=818%，2026-06-10）。ETF 池变更时必须与此基线对比。
+当前稳定基线以 `plans/Board.md` 为准。ETF 池变更时必须重新跑当前基线对比，不在设计文档中复制 TR/MDD/Sharpe 等易变数字。

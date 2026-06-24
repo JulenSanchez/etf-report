@@ -16,11 +16,14 @@ import numpy as np
 import pandas as pd
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+SRC_DIR = PROJECT_ROOT / "src"
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
 sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
 
 from quant_data_cache import get_cache
 from quant_backtest import run_backtest
-from quant_contract import tuner_params_to_config_override, preset_to_tuner_params
+from etf_report.core.quant_contract import tuner_params_to_config_override, preset_to_tuner_params, PARAM_BOUNDS
 from quant_tuner import _compute_etf_contributions
 import yaml
 
@@ -34,6 +37,7 @@ def parse_args():
     p.add_argument("--start", default="2020-06-17")
     p.add_argument("--end", default="2026-06-16")
     p.add_argument("--top-n", type=int, default=3, help="Number of top trials to deep-analyze")
+    p.add_argument("--no-bootstrap", action="store_true", help="Skip bootstrap robustness analysis")
     p.add_argument("--output", help="Output JSON path (default: stdout)")
     return p.parse_args()
 
@@ -43,7 +47,7 @@ def resolve_params(trial, bounds_overrides, bl_params):
     from quant_optimizer import ParamSpace
     all_bounds = {}
     # Build bounds from baseline + overrides (same as --auto-bounds --params)
-    for key, b in __import__('quant_contract').PARAM_BOUNDS.items():
+    for key, b in PARAM_BOUNDS.items():
         if key in bounds_overrides:
             all_bounds[key] = dict(b, **bounds_overrides[key])
         else:
@@ -128,36 +132,46 @@ def main():
 
     completed = [t for t in study.trials if t.state == optuna.trial.TrialState.COMPLETE]
 
+    # ── Composite score helper (matches optimizer's multi-period objective) ──
+    baseline_scores = json.loads(study.user_attrs.get("baseline_scores", "{}"))
+    period_labels = json.loads(study.user_attrs.get("period_labels", '["6Y"]'))
+    def _composite(t):
+        score = 0; n = 0
+        for lab in period_labels:
+            m = json.loads(t.user_attrs.get(f"{lab}_metrics", "{}"))
+            raw = m.get('annual_return', 0)
+            bl = baseline_scores.get(lab, 1.0)
+            if bl != 0: score += raw / bl; n += 1
+        return score / max(n, 1)
+
     # ── 1. Convergence trajectory ──
     print("Analyzing convergence...", file=sys.stderr)
+    param_keys = sorted(completed[0].params.keys()) if completed else []
     convergence = []
     best_so_far = -999
     for t in sorted(completed, key=lambda x: x.number):
-        m = json.loads(t.user_attrs['6Y_metrics'])
-        tr = m['total_return']
-        if tr > best_so_far:
-            best_so_far = tr
-            convergence.append({
-                "trial": t.number,
-                "tr": tr,
-                "mdd": m['max_drawdown'],
-                "w1": t.params.get('w1'),
-                "w3": t.params.get('w3'),
-                "max_holdings": t.params.get('max_holdings'),
-                "ma_bear_pos": round(t.params.get('ma_bear_pos', 0), 3),
-                "disc_step": round(t.params.get('disc_step', 0), 4),
-                "f7_t": round(t.params.get('f7_t', 0), 1),
-            })
+        comp = _composite(t)
+        if comp > best_so_far:
+            best_so_far = comp
+            m = json.loads(t.user_attrs['6Y_metrics'])
+            entry = {"trial": t.number, "composite": round(comp, 4), "tr": m['total_return'], "mdd": m['max_drawdown']}
+            for pk in param_keys:
+                entry[pk] = t.params.get(pk)
+            convergence.append(entry)
     result["convergence"] = convergence
 
     # ── 2. Top-Bottom divergence ──
-    by_tr = sorted(completed, key=lambda t: json.loads(t.user_attrs['6Y_metrics'])['total_return'], reverse=True)
+    by_tr = sorted(completed, key=_composite, reverse=True)
     top10 = by_tr[:10]
     bot10 = by_tr[-10:]
     divergence = {}
-    for param in ['w1', 'w3', 'max_holdings', 'disc_step', 'vol_window', 'dead_zone', 'f7_t', 'ma_bear_pos']:
-        if param not in top10[0].params: continue
+    for param in param_keys:
         tv = [t.params[param] for t in top10]
+        # Skip non-numeric params (categorical/enum values can't be averaged)
+        try:
+            float(tv[0])
+        except (ValueError, TypeError):
+            continue
         bv = [t.params[param] for t in bot10]
         divergence[param] = {
             "top10_mean": round(float(np.mean(tv)), 3),
@@ -191,11 +205,13 @@ def main():
             n = len([c for c, w in s.get('positions', {}).items() if w > 0])
             h_counts[n] += 1
 
+        daily_returns = daily.values.tolist()
         top_results.append({
             "trial": t.number,
             "tr": round(tr, 2),
             "mdd": round(mdd, 2),
             "sharpe": round(sh, 2),
+            "daily_returns": daily_returns,
             "trade_count": ext['trade_count'],
             "commission": round(ext.get('total_commission', 0), 0),
             "raw_params": {k: t.params[k] for k in t.params},
@@ -273,6 +289,38 @@ def main():
         "trade_count": ext_bl['trade_count'],
         "commission": round(ext_bl.get('total_commission', 0), 0),
     }
+
+    # ── 7. Bootstrap robustness (daily return reshuffle) ──
+    if not args.no_bootstrap and top_results:
+        print("Bootstrapping daily returns (1000 reshuffles)...", file=sys.stderr)
+        n_bootstrap = 1000
+        bootstrap_results = []
+        for tr in top_results:
+            dr = tr.get("daily_returns", [])
+            if len(dr) < 20:
+                continue
+            finals = []
+            rng = np.random.default_rng(42)
+            for _ in range(n_bootstrap):
+                shuffled = rng.choice(dr, size=len(dr), replace=True)
+                final = np.prod(1.0 + np.array(shuffled))
+                finals.append(final)
+            finals = np.array(finals)
+            geomed = np.exp(np.mean(np.log(np.maximum(finals, 1e-6))))
+            ruin_pct = float(np.mean(finals < 1.0) * 100)
+            bootstrap_results.append({
+                "trial": tr["trial"],
+                "median_final": round(float(np.median(finals)), 2),
+                "p5_final": round(float(np.percentile(finals, 5)), 2),
+                "p1_final": round(float(np.percentile(finals, 1)), 2),
+                "geometric_growth_rate": round(float(np.log(geomed) / (len(dr) / 252.0)), 4),
+                "ruin_probability_pct": round(ruin_pct, 2),
+            })
+        result["bootstrap"] = bootstrap_results
+        # Remove raw daily_returns from output (keep only bootstrap summary)
+        for tr in top_results:
+            tr.pop("daily_returns", None)
+        print(f"  Bootstrap done: {len(bootstrap_results)} trials", file=sys.stderr)
 
     # Output
     output = json.dumps(result, ensure_ascii=False, indent=2, default=str)

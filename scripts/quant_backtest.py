@@ -19,14 +19,16 @@ import yaml
 sys.stdout.reconfigure(encoding="utf-8")
 
 PROJECT_ROOT = next(parent for parent in Path(__file__).resolve().parents if (parent / "config").is_dir() and (parent / "scripts").is_dir())
+SRC_DIR = PROJECT_ROOT / "src"
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
 sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
 
 from quant_factors import (
-    compute_all_factors,
     map_f1, map_f3, map_f4, map_f7,
     confidence_function, regime_confidence, infer_regime_from_nav, dd_trigger_confidence, momentum_crash_confidence, ma_trend_confidence,
 )
-from quant_data_utils import load_etf_data as _load_etf_data, get_price_on_date as _get_price_on_date
+from etf_report.core.quant_data_utils import load_etf_data as _load_etf_data, get_price_on_date as _get_price_on_date
 from benchmark_data import load_hs300_daily_cached, build_hs300_weekly, build_ma_trend_cache
 
 CONFIG_PATH = PROJECT_ROOT / "config" / "quant_universe.yaml"
@@ -233,7 +235,7 @@ from quant_factors import calc_rsi as _precalc_rsi
 def _precompute_factors(all_daily, all_weekly, ema_period, vol_window,
                          f7_window=20, f7_lookback=250, f7_min_days=60, f7_sigma_floor=0.01,
                          f3_norm_window=60, f1_daily_ema=False, f1_daily_ma=False,
-                         f2_ma_period=None, f6_rsi_thresh=80.0, f6_drop_thresh=0.025,
+                         f6_rsi_thresh=80.0, f6_drop_thresh=0.025,
                          f6_vol_thresh=1.5, f6_decay_days=3, f6_base_penalty=0.15,
                          f1_active_days=0):
     '''Precompute F1/F3/F6/F7/RSI series once — O(1) lookup per rebalance date.
@@ -250,8 +252,6 @@ def _precompute_factors(all_daily, all_weekly, ema_period, vol_window,
     import numpy as np
     from quant_factors import calc_ema as _ce
     out = {}
-    f1_daily = f1_daily_ema or f1_daily_ma
-    f2_window = f2_ma_period or (ema_period * 5)
 
     # Bit → offset from last trading day of the ISO week.
     # bit 0 (Fri) = 0 days before last, bit 1 (Thu) = 1 before last, etc.
@@ -286,11 +286,22 @@ def _precompute_factors(all_daily, all_weekly, ema_period, vol_window,
         # Precompute trading-day counts per ISO week from daily data.
         # More reliable than the trading calendar for historical holidays.
         _week_td_map = _daily_week_str.value_counts().to_dict()
-        # Last ISO week in the data is likely incomplete — its actual count
-        # would grow as data is added, making checkpoint conditions unstable.
-        # Clamp to 5 for the last week; complete short weeks are unaffected.
+        # Last ISO week: use actual daily-data count unless calendar says
+        # there are still trading days remaining (truly incomplete week).
         _last_week = _daily_week_str.iloc[-1]
-        _week_td_map[_last_week] = 5
+        try:
+            from trading_calendar import is_trading_day as _is_td_check
+            import pandas as _pd
+            _today = _pd.Timestamp.now().normalize()
+            _mon = _today - _pd.Timedelta(days=_today.dayofweek)
+            _has_future = any(_is_td_check(_mon + _pd.Timedelta(days=i)) for i in range(7) if _mon + _pd.Timedelta(days=i) > _today)
+        except Exception:
+            _has_future = _today.dayofweek < 4
+        if _has_future:
+            # Week is truly incomplete — force 5 to prevent false checkpoint
+            _week_td_map[_last_week] = 5
+        # else: short but complete week (e.g. Thu before holiday Fri)
+        # — keep actual daily-data count so checkpoint fires correctly
 
         # Per-ETF state: checkpoint value for the current ISO week, reset on week boundary.
         checkpoint_f1 = None
@@ -364,7 +375,7 @@ def _precompute_factors(all_daily, all_weekly, ema_period, vol_window,
             f3_val[:f3_norm_window + vol_window] = np.nan
         f7_val = np.full(len(daily_dates), np.nan, dtype=float)
         if len(daily_df) >= f7_window + f7_min_days:
-            cd = daily_df["close"].astype(float)
+            cd = daily_df["close"].astype(float).where(lambda s: s > 0)
             lr = np.log(cd / cd.shift(1))
             cs = lr.rolling(window=f7_window).sum().values
             for i in range(len(cs)):
@@ -376,13 +387,6 @@ def _precompute_factors(all_daily, all_weekly, ema_period, vol_window,
                 mu = np.nanmean(wv); sigma = max(np.nanstd(wv), f7_sigma_floor)
                 if sigma == 0: continue
                 f7_val[i] = float((v - mu) / sigma)
-        # F2: daily MA deviation
-        f2_val = np.full(len(daily_dates), np.nan, dtype=float)
-        if len(daily_df) >= f2_window:
-            cd = daily_df["close"].astype(float).to_numpy()
-            ma = np.convolve(cd, np.ones(f2_window)/f2_window, mode='valid')
-            dev = (cd[f2_window-1:] - ma) / ma * 100
-            f2_val[f2_window-1:] = dev
         rsi_val = np.full(len(daily_dates), np.nan, dtype=float)
         if len(daily_df) >= 15:
             rsi_series = _precalc_rsi(daily_df["close"].astype(float), period=14)
@@ -413,7 +417,7 @@ def _precompute_factors(all_daily, all_weekly, ema_period, vol_window,
                         break
 
         out[code] = {"daily_dates": daily_dates, "weekly_dates": weekly_dates,
-                      "f1": f1_val, "f2": f2_val, "f3": f3_val, "f6": f6_val,
+                      "f1": f1_val, "f3": f3_val, "f6": f6_val,
                       "f7": f7_val, "rsi": rsi_val}
     return out
 
@@ -462,6 +466,9 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
     confidence_cfg = cfg["confidence"]
     position_cfg = cfg["position"]
     factor_cfg = cfg["factors"]
+    account_cfg = cfg.get("account", {})
+    account_mode = account_cfg.get("mode", "cash")
+    max_gross_exposure = account_cfg.get("max_gross_exposure", 2.0)
 
     weights = scoring_cfg["weights"]
     bias_bonus = scoring_cfg["bias_bonus"]
@@ -473,7 +480,6 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
     score_band = position_cfg.get("score_band", 0)
     commission_rate = position_cfg.get("commission_rate", 0)
     f3_sens = sensitivity.get("f3", 1.0)
-    f2_sens = sensitivity.get("f2", 8.0)
     conf_type = confidence_cfg.get("type", "regime")
     # dead_zone/full_zone 在 YAML 中为百分制(如 25/65)，需转为 [0,1]
     dead_zone = confidence_cfg["dead_zone"] / 100.0
@@ -505,7 +511,6 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
     f1_daily_ema = factor_cfg.get("f1_daily_ema", False)
     f1_daily_ma = factor_cfg.get("f1_daily_ma", False)
     f1_active_days = factor_cfg.get("f1_active_days", 0)
-    f2_ma_period = factor_cfg.get("f2_ma_period")
     f6_rsi_thresh   = factor_cfg.get("f6_rsi_thresh", 80.0)
     f6_drop_thresh  = factor_cfg.get("f6_drop_thresh", 0.025)
     f6_base_penalty = factor_cfg.get("f6_base_penalty", 0.15)
@@ -588,7 +593,6 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
         f7_min_days=f7_min_days, f7_sigma_floor=f7_sigma_floor,
         f1_daily_ema=f1_daily_ema, f1_daily_ma=f1_daily_ma,
         f1_active_days=f1_active_days,
-        f2_ma_period=f2_ma_period,
         f6_rsi_thresh=f6_rsi_thresh,
         f6_drop_thresh=f6_drop_thresh,
         f6_vol_thresh=f6_vol_thresh,
@@ -689,9 +693,8 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
             if np.isnan(f6_val):
                 f6_val = 1.0
 
-            f2_val = fs["f2"][daily_end - 1] if daily_end > 0 else np.nan
             factors = {
-                "f1_ema_dev": f1_val, "f2_daily_ma": f2_val,
+                "f1_ema_dev": f1_val,
                 "f3_volume_ratio": f3_val, "f4_valuation": 50.0,
                 "f7_log_return_dev": f7_val, "f6_exhaustion_penalty": f6_val,
             }
@@ -705,18 +708,16 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
         factors_df = pd.DataFrame(factors_data).T
 
         mapped_f1 = factors_df["f1_ema_dev"].apply(lambda v: map_f1(v, f1_sens))
-        mapped_f2 = factors_df["f2_daily_ma"].apply(lambda v: map_f1(v, f2_sens)).fillna(0.5)
         mapped_f3 = factors_df["f3_volume_ratio"].apply(lambda v: map_f3(v, f3_sens))
 
         mapped_f7 = factors_df["f7_log_return_dev"].apply(lambda v: map_f7(v, t=f7_t, k=f7_k)).fillna(0.5)
         w1 = weights.get("ema_deviation", 0.35)
-        w2 = weights.get("f2_daily_ma", 0.0)
         w3 = weights.get("volume_ratio", 0.35)
         w4 = weights.get("valuation", 0.15)
         w6 = weights.get("exhaustion_penalty", 0.0)
         w7 = weights.get("log_return_deviation", 0.0)
 
-        composite = mapped_f1 * w1 + mapped_f2 * w2 + mapped_f3 * w3
+        composite = mapped_f1 * w1 + mapped_f3 * w3
         if w7 > 0:
             composite = composite + mapped_f7 * w7
 
@@ -858,8 +859,11 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
             avg_conf = confidences.mean() * disp_factor * breadth_factor
             total_target = min(0.95, avg_conf * 1.2)  # 上限 95%
 
-        # 每支目标仓位
-        target_positions = softmax_weights * total_target
+        # 目标仓位
+        actual_exposure = total_target
+        if account_mode == "synthetic_leverage":
+            actual_exposure = min(actual_exposure, max_gross_exposure)
+        target_positions = softmax_weights * actual_exposure
 
         # 离散化（最大余数法：floor 后按余数补回，残量补给最大持仓者）
         in_steps = target_positions / step
@@ -876,6 +880,11 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
         if leftover > 0:
             max_idx = target_positions.idxmax()
             target_positions[max_idx] += leftover
+        elif leftover < 0:
+            # discretization rounding pushed total above target: clip largest position
+            excess = -leftover
+            max_idx = target_positions.idxmax()
+            target_positions[max_idx] = max(0.0, target_positions[max_idx] - excess)
 
         # Fallback: fill missing prices for held ETFs with most recent available close.
         # ETFs whose price comes from fallback (not from today's data) are treated as
@@ -924,6 +933,8 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
             "positions": target_positions.to_dict(),
             "avg_confidence": avg_conf,
             "total_target": total_target,
+            "actual_exposure": actual_exposure,
+            "account_mode": account_mode,
             "regime": regime,
         })
         if return_debug:
@@ -961,7 +972,6 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
         if return_details:
             # Convert to plain dicts for O(1) lookup (avoid pandas Series .get() overhead)
             _f1_d = mapped_f1.to_dict()
-            _f2_d = mapped_f2.to_dict()
             _f3_d = mapped_f3.to_dict()
             _f7_d = mapped_f7.to_dict() if "f7_log_return_dev" in factors_df.columns else {}
             _comp_d = composite.to_dict()
@@ -979,7 +989,6 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
                 z = (raw_score - mu) / sigma if sigma > 0 else 0
                 detail[code] = {
                     "f1": round(_f1_d.get(code, 0) * 100, 1),
-                    "f2": round(_f2_d.get(code, 0.5) * 100, 1),
                     "f3": round(_f3_d.get(code, 0) * 100, 1),
                     "f6": round(_f6_d.get(code, 100.0) * 100, 1) if _f6_d else 100.0,
                     "f7": round(_f7_d.get(code, 0.5) * 100, 1) if _has_f7 else None,
@@ -1035,6 +1044,7 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
     signal_idx = 0
     nav_records = []
     total_commission2 = 0.0
+    current_exposure = 0.0
 
     for date in all_dates:
         if False:  # dead code — precomputation eliminated warmup expansion
@@ -1073,6 +1083,7 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
             # 执行调仓
             sig = signal_history[signal_idx]
             target_positions = sig["positions"]
+            current_exposure = sig.get("actual_exposure", sig.get("total_target", 0))
 
             # 获取成交价格 — 统一使用收盘价执行
             trade_field = "close"
@@ -1146,6 +1157,7 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
             "nav_pct": nav / initial_capital * 100,
             "cash": cash2,
             "holdings": len(portfolio2),
+            "exposure": current_exposure,
         })
 
     nav_df = pd.DataFrame(nav_records)
@@ -1197,7 +1209,32 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
         print(f"  交易佣金:    {comm:,.0f} ({comm/initial_capital*100:.2f}% 本金)")
     print("=" * 60)
 
-    return nav_df, signal_history, {"total_commission": comm, "trade_count": actual_trades, "debug_snapshots": debug_snapshots, "trade_log": all_trade_log}
+    # 杠杆风险指标
+    exposure_series = nav_df["exposure"].values
+    avg_exposure = float(np.mean(exposure_series)) if len(exposure_series) > 0 else 0.0
+    max_exposure = float(np.max(exposure_series)) if len(exposure_series) > 0 else 0.0
+    days_above_100 = int(np.sum(exposure_series > 1.0))
+    days_above_150 = int(np.sum(exposure_series > 1.5))
+    avg_excess = float(np.mean(np.maximum(exposure_series - 1.0, 0)))
+    daily_rets = nav_df["nav"].pct_change().fillna(0).values
+    max_daily_loss = float(np.min(daily_rets)) * 100 if len(daily_rets) > 0 else 0.0
+    financing_rate = account_cfg.get("financing_rate_annual", 0.06) if account_mode == "synthetic_leverage" else 0.0
+    interest_drag = avg_excess * financing_rate
+
+    return nav_df, signal_history, {
+        "total_commission": comm, "trade_count": actual_trades,
+        "debug_snapshots": debug_snapshots, "trade_log": all_trade_log,
+        "exposure_series": exposure_series.tolist(),
+        "exposure_summary": {
+            "account_mode": account_mode,
+            "avg_exposure": round(avg_exposure, 4),
+            "max_exposure": round(max_exposure, 4),
+            "days_above_100": days_above_100,
+            "days_above_150": days_above_150,
+            "max_daily_loss_pct": round(max_daily_loss, 2),
+            "interest_drag_estimate": round(interest_drag * 100, 2),
+        },
+    }
 
 
 def main():
