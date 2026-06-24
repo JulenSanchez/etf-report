@@ -1,15 +1,14 @@
 # stable 仓库与计划任务运维
 
-stable 仓库用于日常计划任务和发布：
+stable 仓库用于日常计划任务和发布，本文用 `<STABLE_REPO>` 表示。
+
+开发仓用于日常改代码，本文用 `<DEV_REPO>` 表示。
+
+本机默认示例：
 
 ```text
-C:/Users/julentan/etf-report-stable
-```
-
-开发仓用于日常改代码：
-
-```text
-C:/Users/julentan/etf-report
+STABLE_REPO=C:/Users/julentan/etf-report-stable
+DEV_REPO=C:/Users/julentan/etf-report
 ```
 
 ## 更新策略
@@ -22,7 +21,7 @@ C:/Users/julentan/etf-report
 推荐更新方式：
 
 ```bat
-BatchFiles\GitPull.bat
+batchfiles\GitPull.bat
 ```
 
 或手动：
@@ -36,16 +35,16 @@ git pull --ff-only origin main
 
 | 任务名 | 时间 | 脚本 |
 |---|---:|---|
-| `etf早盘报告` | 11:20 | `BatchFiles/preclose_push.bat` |
-| `etf午盘报告` | 14:50 | `BatchFiles/preclose_push.bat` |
-| `etf盘后数据更新` | 15:15 | `BatchFiles/postmarket_update.bat` |
-| `etf报告发布` | 16:00 | `BatchFiles/daily_report.bat` |
+| `etf早盘报告` | 11:20 | `batchfiles/preclose_push.bat` |
+| `etf午盘报告` | 14:50 | `batchfiles/preclose_push.bat` |
+| `etf盘后数据更新` | 15:15 | `batchfiles/postmarket_update.bat` |
+| `etf报告发布` | 16:00 | `batchfiles/daily_report.bat` |
 
 重新注册：
 
 ```powershell
-C:/Users/julentan/etf-report-stable/BatchFiles/setup_quant_tasks.ps1
-C:/Users/julentan/etf-report-stable/BatchFiles/setup_report_task.ps1
+<STABLE_REPO>/batchfiles/setup_quant_tasks.ps1
+<STABLE_REPO>/batchfiles/setup_report_task.ps1
 ```
 
 检查：
@@ -63,7 +62,7 @@ foreach ($name in $names) {
 - 每个交易日收盘后可抽查四个任务的 `LastTaskResult`。
 - `0` 表示任务脚本正常退出。
 - 非 0 时，手动运行对应 bat 复现；不要直接改计划任务。
-- 若任务路径不是 `C:/Users/julentan/etf-report-stable/BatchFiles/*.bat`，重新运行 setup 脚本。
+- 若任务路径不是 `<STABLE_REPO>/batchfiles/*.bat`，重新运行 setup 脚本。
 
 ## 常见问题
 
@@ -72,4 +71,4 @@ foreach ($name in $names) {
 | stable pull 被拒绝 | 先看 `git status --short`；有本地改动则人工决定提交、stash 或丢弃 |
 | 计划任务未触发 | 检查 Task Scheduler 中触发器和用户权限 |
 | preclose push 未推送 | 检查 Tuner 是否能启动、`config/secrets.yaml` 是否有 Server酱 sendkey |
-| 报告发布失败 | 手动运行 `BatchFiles/daily_report.bat`，再看 `docs/runbook/release.md` |
+| 报告发布失败 | 手动运行 `batchfiles/daily_report.bat`，再看 `docs/runbook/release.md` |

@@ -16,7 +16,9 @@
 | 实现与模板 | `scripts/`、`src/`、`tests/`、`requirements.txt`、`config/*.example.yaml`、`config/holdings.yaml`、根目录 `index.html` | ✅ 按需 | 属于实际功能、测试、公开模板或发布产物 |
 | 运行时配置 | `config/config.yaml` | ✅ 可以 | 已移除本地绝对路径，内容可公开 |
 | 敏感配置 | `config/secrets.yaml` | ❌ 不可 | 含 API 密钥等敏感信息，.gitignore 必须覆盖 |
-| 运行产物与缓存 | `data/`、`logs/`、`_working/`、`.backup/`、`outputs/`、`research/` | ❌ 不可 | 运行缓存、日志、临时输出或备份，本地生成即可 |
+| 运行产物与缓存 | `data/`、`logs/`、`_working/`、`.backup/`、`outputs/` | ❌ 不可 | 运行缓存、日志、临时输出或备份，本地生成即可 |
+| 研究证据 | `research/**/README.md`、`research/**/report.md`、小型 `results.json` / `analysis.json`、`research/promoted/**` | ✅ 按需 | 研究结论、promotion 证据和治理记录 |
+| 研究中间产物 | `research/**/*.csv`、`research/**/*.db`、大型临时 JSON/日志/脚本 | ❌ 不可 | 可重生成或只用于本地调试 |
 
 ### `docs/` 准入标准
 
@@ -109,28 +111,8 @@
 - [ ] 运行 `git diff origin/main HEAD`
 - [ ] 确认没有混入无关提交、调试提交、敏感文件异常
 - [ ] 确认 `docs/` 里只剩稳定公开补充文档
-- [ ] 明确本次走 **PR 路径** 还是 **快速直推路径**
 
-### Phase 7: 推送策略
-
-#### 默认路径：特性分支 + PR
-
-首选以下流程：
-
-1. `git checkout -b feature/<topic>`
-2. `git push origin feature/<topic>`
-3. 在 GitHub 创建 PR
-4. 审查通过后合并到 `main`
-
-#### 快速路径：直接推送到 `main`
-
-只有同时满足以下条件才允许：
-
-- [ ] 用户已明确要求直接推送
-- [ ] 本文前 0~6 阶段已全部完成
-- [ ] 当前改动范围已确认安全、必要、无多余文件
-
-允许后再执行：
+### Phase 7: 推送
 
 1. `git push origin main`
 2. 推送后立即做发布后复核

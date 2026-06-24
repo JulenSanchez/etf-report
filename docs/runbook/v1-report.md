@@ -5,11 +5,7 @@
 
 ## 一、每日自动化
 
-### 定时任务
-
-| 时间 | 任务名 | 脚本 | 做什么 |
-|------|--------|------|--------|
-| 16:00 | `etf报告发布` | `daily_report.bat` | 拉数据 → 生成报告 → GitHub Pages → 微信通知 |
+计划任务的注册、检查和 stable 仓运维统一见 `docs/runbook/stable.md`。本文只说明正式页生成链路。
 
 ### 数据流
 
@@ -17,7 +13,7 @@
 新浪 getKLineData → fix_ma_and_benchmark.py → data/etf_full_kline_data.json
 新浪 hq.sinajs.cn → realtime_data_updater.py → data/etf_realtime_data.json
                                 ↓
-                    update_report.py --publish
+                    update_report.py
                                 ↓
                     index.html (+ quant_payload.js*)
                                 ↓
@@ -37,12 +33,11 @@
 ## 二、手动执行
 
 ```bash
-# 开发模式（仅生成本地报告，不发布）
+# 本地生成报告，不发布、不提交、不推送
 python scripts/update_report.py
-
-# 发布模式（生成 + GitHub Pages + 微信通知）
-python scripts/update_report.py --publish
 ```
+
+发布必须进入 `docs/runbook/release.md` 的 Phase 0-8；不要从本文直接执行 `--publish`。
 
 ### 8 步流程
 
@@ -60,7 +55,7 @@ python scripts/update_report.py --publish
 
 ## 三、GitHub Pages
 
-源码仓的 `main` 分支直接服务 GitHub Pages。`update_report.py --publish` 会更新根目录的 `index.html` 并提交到源码仓。非交易日生成的数据正常显示（日期滞后，不视为异常）。
+源码仓的 `main` 分支直接服务 GitHub Pages。发布、提交、推送统一按 `docs/runbook/release.md` 执行。非交易日生成的数据正常显示（日期滞后，不视为异常）。
 
 ---
 
@@ -78,6 +73,7 @@ cd etf-report
 python scripts/quant_data_fetcher.py --full
 
 # 4. 安装定时任务
+# 详见 docs/runbook/stable.md
 powershell -ExecutionPolicy Bypass -File batchfiles\setup_report_task.ps1
 ```
 
@@ -91,7 +87,7 @@ powershell -ExecutionPolicy Bypass -File batchfiles\setup_report_task.ps1
 | 图表不显示 | `data/etf_full_kline_data.json` 格式异常 | 检查 JSON 结构 |
 | 健康检查 FAIL | 看具体失败项 | 少量 WARN 通常不影响 |
 | 发布失败 | SSH / secrets 问题 | `ssh -T git@github.com` |
-| 量化板块显示"建设中" | 量化回测仅开发环境可用，正式页依赖 Tuner | 见 `docs/runbook/v2-quant/overview.md` |
+| 量化板块为空 | `quant_payload.js` 未生成或字段缺失 | 运行 `python scripts/quant_build_payload.py`，再看 `docs/runbook/v2-quant/overview.md` |
 | 推送内容 ETF 显示代码非中文名 | `preclose_push.py` 的 name map 未更新 | 确认 `config/quant_universe.yaml` 有 `name` 字段 |
 | 定时任务跑了 stable 目录但结果含新 ETF | stable/main 双源分裂：Tuner 进程跑在另一仓库 | `netstat -ano \| findstr 5179`，确认进程路径 |
 | preclose_push 盘中数据不刷新 | 盘中缓存规则：15:10 前不拉取收盘数据 | 检查 `history_days.json` 时间戳；`--force-refresh` 拒绝 pre-close |

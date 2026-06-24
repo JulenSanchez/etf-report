@@ -12,8 +12,8 @@
 筛选                     决策                      执行                    收口
 ─────                    ────                      ────                    ────
 scan_etf_universe.py     → 审阅候选 → 确认清单     → 逐支执行(本文 SOP)     → 更新 research/pool/
-  --debug                → 大换池(5+)开REQ追踪      → 基线链验证             → commit + push
-                         → 小换池直接执行           → 失败不阻塞             → stable pull
+  --debug                → 大换池(5+)开REQ追踪      → 基线链验证             → 生成待提交清单
+                         → 小换池直接执行           → 失败不阻塞             → 发布按 release.md
 ```
 
 | 换池规模 | 追踪方式 | 示例 |
@@ -26,7 +26,7 @@ scan_etf_universe.py     → 审阅候选 → 确认清单     → 逐支执行(
 ## 新增流程
 
 ```
-1. python scripts/quant_backtest.py --preset preset3 --start 2020-05-22 --end <latest>
+1. python scripts/quant_backtest.py --preset gam-1 --start 2023-01-01 --end <latest>
    → 记录 TR/Sharpe/MDD 作为变更前基线
 
 2. python scripts/quant_data_fetcher.py --full --code <code>
@@ -43,7 +43,7 @@ scan_etf_universe.py     → 审阅候选 → 确认清单     → 逐支执行(
 5. 更新 config/quant_universe.yaml
    → 含短名审核（去公司后缀，与池内风格一致，避免重名）
 
-6. python scripts/quant_backtest.py --preset preset3 --start 2020-05-22 --end <latest>
+6. python scripts/quant_backtest.py --preset gam-1 --start 2023-01-01 --end <latest>
    → 对比基线：EXIT=0，无 NaN，TR/Sharpe 无断崖下跌
 
 7. 通过 → 更新基线 → 登记 ✅ → 继续下一支
@@ -53,14 +53,14 @@ scan_etf_universe.py     → 审阅候选 → 确认清单     → 逐支执行(
 ## 移除流程
 
 ```
-1. python scripts/quant_backtest.py --preset preset3 --start 2020-05-22 --end <latest>
+1. python scripts/quant_backtest.py --preset gam-1 --start 2023-01-01 --end <latest>
    → 记录 TR/Sharpe/MDD 作为变更前基线
 
 2. 检查行业覆盖：移除后同粗组是否有替代 ETF
 
 3. 更新 config/quant_universe.yaml（删除条目）
 
-4. python scripts/quant_backtest.py --preset preset3 --start 2020-05-22 --end <latest>
+4. python scripts/quant_backtest.py --preset gam-1 --start 2023-01-01 --end <latest>
    → 对比基线：EXIT=0，TR/Sharpe <±5%，MDD 不恶化
 
 5. 通过 → 更新基线 → 登记 ✅ → 继续
@@ -96,9 +96,13 @@ scan_etf_universe.py     → 审阅候选 → 确认清单     → 逐支执行(
 
 ```
 1. 更新 research/pool/README.md
-   → Current Best 表 + Applied 日志
-2. git commit + push（大换池附 REQ 编号）
-3. stable pull → 计划任务生效
+   → Applied 日志 + 证据链接；不要维护当前 universe 副本
+2. 输出待提交清单
+   → config / research / tests / docs 的变更范围
+3. 发布或提交
+   → 由用户显式触发，按 docs/runbook/release.md 执行
+4. stable 同步
+   → 发布后如需更新计划任务仓，按 docs/runbook/stable.md 执行
 ```
 
 ## 关键约束

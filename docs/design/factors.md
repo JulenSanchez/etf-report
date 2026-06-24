@@ -1,6 +1,6 @@
 # 因子体系
 
-> 回测引擎使用的因子定义、计算公式、映射逻辑。引擎机制见 ，系统架构见 。
+> 回测引擎使用的因子定义、计算公式、映射逻辑。引擎机制见 `docs/design/backtest-engine.md`，系统架构见 `docs/design/overview.md`。
 
 ---
 

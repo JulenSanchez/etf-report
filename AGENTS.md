@@ -63,7 +63,7 @@
 5. 根据领域选择最小阅读范围：
    - 量化 / Tuner / 回测：`docs/runbook/v2-quant/overview.md`、`config/quant_universe.yaml`、`scripts/quant_*.py`
    - 正式页 / 报告 / 发布：`docs/runbook/v1-report.md`、`docs/runbook/release.md`、`scripts/update_report.py`、`scripts/deployer.py`、`assets/js/`
-   - stable / 计划任务：`BatchFiles/`、`docs/runbook/release.md`
+   - stable / 计划任务：`batchfiles/`、`docs/runbook/stable.md`
    - 架构 / 包化：`docs/design/overview.md`、`src/`、`scripts/`
 
 输出：
@@ -101,7 +101,7 @@
 ### ETF 筛选
 
 ```
-用户说"筛选 ETF" → scan_etf_universe.py --debug → 出 Excel → 审阅候选 → 决定 → 进入换池
+用户说"筛选 ETF" → 读 `docs/runbook/v2-quant/screening.md` → scan_etf_universe.py --debug → 出候选 → 审阅 → 决定是否进入换池
 ```
 
 ### 换池
@@ -152,6 +152,7 @@
 - 不使用 `--force` / `--force-with-lease`，除非用户明确要求且说明原因
 - 修改核心逻辑后跑相关最小验证
 - 不扫描或修改 `logs/`、`data/`、`outputs/`、`_working/`，除非任务明确需要
+- **禁止主动询问是否提交** — 提交（git commit / git push）由用户主动发起，AI 不得建议、询问"要提交吗"、"要 push 吗"
 
 ## 术语
 

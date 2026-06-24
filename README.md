@@ -43,6 +43,8 @@ pytest tests -q
 当前 GitHub Pages 直接服务源码仓 `main` 分支的根目录发布面：
 
 - `index.html`
+- `assets/css/report.css`
+- `assets/css/debug.css`
 - `assets/js/runtime_payload.js`
 - `assets/js/quant_payload.js`
 - `assets/js/quant-main.js`
@@ -92,7 +94,10 @@ etf-report/
 | 文档 | 内容 |
 |---|---|
 | `docs/design/overview.md` | 系统架构总览 |
-| `docs/runbook/v1-report.md` | 正式页报告生成与发布链路 |
+| `docs/design/margin-account-model.md` | 两融账户与杠杆风险建模设计 |
+| `docs/knowledge/margin-financing.md` | A 股个人投资者两融与杠杆知识 |
+| `docs/runbook/workflows.md` | 工作流总索引 |
+| `docs/runbook/v1-report.md` | 正式页报告本地生成与排障 |
 | `docs/runbook/v2-quant/overview.md` | 量化系统总览与运维索引 |
 | `docs/runbook/release.md` | GitHub Pages 发布门禁 |
 | `docs/runbook/stable.md` | stable 仓库与计划任务运维 |
