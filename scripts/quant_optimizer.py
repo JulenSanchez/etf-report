@@ -1039,7 +1039,12 @@ def run(cfg: OptimizationConfig):
             import shutil
             for f in parent_dir.iterdir():
                 if f.is_file() and f.name != '.optimizer_done':
-                    shutil.move(str(f), str(signal_dir / f.name))
+                    try:
+                        shutil.move(str(f), str(signal_dir / f.name))
+                    except PermissionError:
+                        shutil.copy2(str(f), str(signal_dir / f.name))
+                        try: f.unlink()
+                        except PermissionError: pass
             log(f"  Signal results moved to {signal_dir}")
             # Build signal param locks from best trial
             signal_keys = ['w1','w3','w7','f7_t','f7_k','f7_window','f3_vol_window','f1_sensitivity','f3_sensitivity','f1_ema_period']

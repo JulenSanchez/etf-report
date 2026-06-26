@@ -531,10 +531,65 @@ presets:
         min_days: 60
         sigma_floor: 0.01
   gam-2:
-    label: 赌徒2
-    description: 赌徒2(杠杆优化·mdd=-25%)：F1(71%)+F3(13%)+F7(16%)，MH=2，MA=19w，bull=1.58x
-      bear=54%。1Y/3Y/6Y ann=+335%/+116%/+72%，6Y TR=+2527%/MDD=-23.7%/Sharpe=1.69。杠杆TPE
-      29trials(多周期+mdd,-25)。信仰：趋势为王、集中杠杆、mdd硬约束。
+    label: 赌徒2(优化)
+    description: 'v3优化: bull=1.32 bear=60% MH=2 MA=25w C=1.51 | 6Y MDD=-21.7% TR=+1947%
+      | 信号(w1=24% w3=45% f7_t=23)'
+    scoring:
+      weights:
+        ema_deviation: 0.24
+        volume_ratio: 0.45
+        log_return_deviation: 0.31
+      bias_bonus: 0.0
+      sensitivity:
+        f1: 8.9
+        f3: 5.4
+        f7_t: 23.0
+        f7_k: 3.0
+    confidence:
+      type: ma_trend
+      ma_trend_period: 25
+      ma_bull_pos: 1.32
+      ma_bear_pos: 0.6
+      ma_direction_confirm: true
+      dead_zone: 17
+      full_zone: 65
+      regime_base:
+        bull_trend: 0.95
+        choppy_range: 0.75
+        bear_trend: 0.35
+      regime_window: 8
+      regime_threshold: 0.03
+      breadth_weight: 0.2
+      clarity_threshold: 0.03
+      dd_sensitivity: 0.2
+    position:
+      max_holdings: 2
+      discretize_step: 0.08
+      concentration: 1.5100000000000002
+      c_sensitivity: 10.0
+      rebalance_freq: daily
+      execution_timing: same_close
+      score_band: 0.046
+      commission_rate: 0.00026
+      max_holdings_special: 8
+      weighting: arithmetic
+    factors:
+      f1_active_days: 1
+      ema:
+        period_weeks: 9
+      volume_ratio:
+        window_days: 17
+      f6_rsi_thresh: 80.0
+      f6_drop_thresh: 0.025
+      f6_base_penalty: 0.15
+      log_return_deviation:
+        window_days: 8
+        lookback_days: 250
+        min_days: 60
+        sigma_floor: 0.01
+  gam-3:
+    label: 赌徒3(原版)
+    description: '原gam-2: bull=1.58 bear=54% MH=2 MA=19w | BUG-038修复前最优 | 高杠杆baseline'
     scoring:
       weights:
         ema_deviation: 0.71
@@ -585,61 +640,6 @@ presets:
       f6_base_penalty: 0.15
       log_return_deviation:
         window_days: 17
-        lookback_days: 250
-        min_days: 60
-        sigma_floor: 0.01
-  gam-3:
-    label: 赌徒3
-    description: gam-3(杠杆优化·保守起点)：bull=1.0x bear=50% MH=4 MA=26w(优化中)
-    scoring:
-      weights:
-        ema_deviation: 0.33
-        volume_ratio: 0.33
-        log_return_deviation: 0.34
-      sensitivity:
-        f1: 8.0
-        f3: 4.0
-        f7_t: 10.0
-        f7_k: 3.0
-    confidence:
-      type: ma_trend
-      ma_trend_period: 26
-      ma_bull_pos: 1.0
-      ma_bear_pos: 0.5
-      ma_direction_confirm: true
-      dead_zone: 17
-      full_zone: 65
-      regime_base:
-        bull_trend: 0.95
-        choppy_range: 0.75
-        bear_trend: 0.35
-      regime_window: 8
-      regime_threshold: 0.03
-      breadth_weight: 0.2
-      clarity_threshold: 0.03
-      dd_sensitivity: 0.2
-    position:
-      max_holdings: 4
-      discretize_step: 0.1
-      concentration: 3.0
-      c_sensitivity: 30
-      rebalance_freq: daily
-      execution_timing: same_close
-      score_band: 0.02
-      commission_rate: 0.00026
-      max_holdings_special: 8
-      weighting: arithmetic
-    factors:
-      f1_active_days: 1
-      ema:
-        period_weeks: 6
-      volume_ratio:
-        window_days: 30
-      f6_rsi_thresh: 80.0
-      f6_drop_thresh: 0.025
-      f6_base_penalty: 0.15
-      log_return_deviation:
-        window_days: 14
         lookback_days: 250
         min_days: 60
         sigma_floor: 0.01
@@ -748,6 +748,62 @@ presets:
       f6_base_penalty: 0.15
       log_return_deviation:
         window_days: 29
+        lookback_days: 250
+        min_days: 60
+        sigma_floor: 0.01
+  gam-0:
+    label: 赌徒0(原gam-2备份)
+    description: 原gam-2(bull=1.58 bear=54% MH=2 MA=19w)。BUG-038修复前的最优参数，保留作为baseline参考。
+    scoring:
+      weights:
+        ema_deviation: 0.71
+        volume_ratio: 0.13
+        log_return_deviation: 0.16
+      bias_bonus: 0.0
+      sensitivity:
+        f1: 9.6
+        f3: 4.79
+        f7_t: 17.85
+        f7_k: 2.72
+    confidence:
+      type: ma_trend
+      ma_trend_period: 19
+      ma_bull_pos: 1.58
+      ma_bear_pos: 0.54
+      ma_direction_confirm: true
+      dead_zone: 17
+      full_zone: 65
+      regime_base:
+        bull_trend: 0.95
+        choppy_range: 0.75
+        bear_trend: 0.35
+      regime_window: 8
+      regime_threshold: 0.03
+      breadth_weight: 0.2
+      clarity_threshold: 0.03
+      dd_sensitivity: 0.2
+    position:
+      max_holdings: 2
+      discretize_step: 0.165
+      concentration: 0.71
+      c_sensitivity: 8.68
+      rebalance_freq: daily
+      execution_timing: same_close
+      score_band: 0.03
+      commission_rate: 0.00026
+      max_holdings_special: 8
+      weighting: arithmetic
+    factors:
+      f1_active_days: 1
+      ema:
+        period_weeks: 6
+      volume_ratio:
+        window_days: 40
+      f6_rsi_thresh: 80.0
+      f6_drop_thresh: 0.025
+      f6_base_penalty: 0.15
+      log_return_deviation:
+        window_days: 17
         lookback_days: 250
         min_days: 60
         sigma_floor: 0.01

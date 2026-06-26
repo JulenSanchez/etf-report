@@ -441,6 +441,7 @@ def build_presets_response(cfg):
 # Preset optimization profiles — default metric + constraints per preset
 # ═══════════════════════════════════════════════════════════════════════════
 PRESET_OPT_PROFILES = {
+    "gam-0": {"metric": "annual_return", "constraints": ["mdd,-25"]},
     "gam-1": {"metric": "annual_return", "constraints": ["mdd,-25"]},
     "gam-2": {"metric": "annual_return", "constraints": ["mdd,-25"]},
     "gam-3": {"metric": "annual_return", "constraints": ["mdd,-25"]},

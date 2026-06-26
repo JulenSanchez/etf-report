@@ -192,7 +192,7 @@ def run_editorial_update():
         return True
 
     # 读取上一版，作为 fallback 基线
-    editorial_path = os.path.join(PROJECT_ROOT, "config", "editorial_content.yaml")
+    editorial_path = os.path.join(PROJECT_ROOT, "data", "editorial_content.yaml")
     previous = {}
     if os.path.exists(editorial_path):
         try:
@@ -1239,7 +1239,7 @@ def _replace_element_by_id(html_content, element_id, new_inner_html, class_name=
 def _get_editorial_content_path():
     files_config = config.get_files_config()
     editorial_filename = files_config.get('editorial_content_file', 'editorial_content.yaml')
-    return os.path.join(PROJECT_ROOT, 'config', editorial_filename)
+    return os.path.join(PROJECT_ROOT, 'data', editorial_filename)
 
 
 

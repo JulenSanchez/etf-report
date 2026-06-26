@@ -669,8 +669,8 @@ def main():
     parser.add_argument("--sources", default=DEFAULT_SOURCES_PATH)
     parser.add_argument("--rules", default=DEFAULT_RULES_PATH)
     parser.add_argument("--output",
-                        default=os.path.join(PROJECT_ROOT, "config", "editorial_content.yaml"),
-                        help="写入目标（默认覆盖 editorial_content.yaml）")
+                        default=os.path.join(PROJECT_ROOT, "data", "editorial_content.yaml"),
+                        help="写入目标（默认覆盖 data/editorial_content.yaml）")
     args = parser.parse_args()
 
     print(f"[editorial_fetcher] 开始抓取")
