@@ -1,7 +1,0 @@
-Tuner server OK
-Checkpoint: 340 combos already done.
-============================================================
-PHASE 1: Coarse sweep
-============================================================
-Total: 490 combos (skip 340 done)
-  [345/490] 345 valid  257s  ETA 124min

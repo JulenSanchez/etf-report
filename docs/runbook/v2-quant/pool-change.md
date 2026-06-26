@@ -39,9 +39,11 @@ scan_etf_universe.py     → 审阅候选 → 确认清单     → 逐支执行(
    → 优先归入已有扇区（参考 Tuner `secPalette`：科技/TMT/新能源/医药/消费/金融/资源周期/传统/制造/另类）
    → 独苗扇区缺乏横向对比、无热力图配色，仅当 ETF 确实无法归入任何已有扇区时才新建
    → 新建扇区须同步更新 `templates/tuner.html` 的 `secPalette` 加配色
+   > **AI 必须暂停**: 扇区归属需用户确认，AI 展示建议后等待确认再继续。
 
 5. 更新 config/quant_universe.yaml
    → 含短名审核（去公司后缀，与池内风格一致，避免重名）
+   > **AI 必须暂停**: 短名需用户确认，AI 展示建议后等待确认再继续。
 
 6. python scripts/quant_backtest.py --preset gam-1 --start 2023-01-01 --end <latest>
    → 对比基线：EXIT=0，无 NaN，TR/Sharpe 无断崖下跌
@@ -49,6 +51,8 @@ scan_etf_universe.py     → 审阅候选 → 确认清单     → 逐支执行(
 7. 通过 → 更新基线 → 登记 ✅ → 继续下一支
    失败 → 回退 config → 登记 ❌ + 实际vs基线数字 → 继续下一支（不阻塞）
 ```
+
+→ **AI 验证**: Step 1 应输出 TR/Sharpe/MDD 三行数字。Step 2 应输出 `OK [full] daily+N weekly+M`。Step 6 应输出 `EXIT=0` 且 TR/Sharpe/MDD 与基线对比在阈值内。
 
 ## 移除流程
 
@@ -77,9 +81,9 @@ scan_etf_universe.py     → 审阅候选 → 确认清单     → 逐支执行(
 |--------|------|------|
 | 数据量 | history_days ≥ 250 | — |
 | 回测通过 | EXIT=0，无 NaN | EXIT=0，无 NaN |
-| TR | 无断崖下跌 | < ±5% |
-| Sharpe | 无断崖下跌 | < ±5% |
-| MDD | 不显著恶化 | 不恶化 |
+| TR | 下降 < 500bps | 变化 < ±5% |
+| Sharpe | 下降 < 0.20 | 变化 < ±5% |
+| MDD | 不恶化 | 不恶化 |
 | 行业覆盖 | 不造成过度集中 | 移除后仍有替代 ETF |
 
 ## 基线链

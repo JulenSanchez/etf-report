@@ -18,7 +18,7 @@ def run_backtest(
     end_date: str = None,
     initial_capital: float = 1000000.0,
     rebalance_freq: str = None,
-    preset: str = "gam-1",  # 当前生产基线: 赌徒1
+    preset: str = None,  # None 时使用 DEFAULT_PRESET (见 quant_contract.py)
     universe_filter: list = None,
     preloaded: dict = None,
     config_override: dict = None,
@@ -37,6 +37,12 @@ def run_backtest(
 |---|---|
 | `nav_df` | 日度组合净值 DataFrame，含 `date/nav` 等列 |
 | `signal_history` | 每个调仓日的信号、分数、目标仓位、成交口径等 |
+
+### 默认策略
+
+所有入口函数的 `preset` 参数默认值为 `None`，解析为 `quant_contract.py::DEFAULT_PRESET`。更改默认策略只需修改该常量，全项目自动生效。
+
+受影响的入口：`run_backtest()`、`load_config()`、`quant_optimizer.py`、`quant_tuner.py`、`preclose_push.py`、`update_report.py`、`quant_consistency_check.py`、`quant_walkforward.py`、`pool_change.py`。
 | `extra` | 附加统计，如总佣金、debug snapshots |
 
 ---

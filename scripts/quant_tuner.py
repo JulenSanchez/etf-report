@@ -70,6 +70,33 @@ CACHE = {
     "ready": False,  # True after preload() completes — frontend polls this
 }
 
+# ── Async task progress ──
+TASK_STORE = {}
+TASK_LOCK = threading.Lock()
+
+def _task_start(task_id, total, message=""):
+    with TASK_LOCK:
+        TASK_STORE[task_id] = {"pct": 0, "message": message, "status": "running", "total": total, "current": 0, "elapsed": 0, "started": time.time()}
+
+def _task_update(task_id, current, message=""):
+    with TASK_LOCK:
+        t = TASK_STORE.get(task_id)
+        if t:
+            t["current"] = current
+            t["pct"] = round(current / max(t["total"], 1) * 100, 1)
+            t["message"] = message
+            t["elapsed"] = round(time.time() - t["started"], 1)
+
+def _task_done(task_id, result=None, error=None):
+    with TASK_LOCK:
+        t = TASK_STORE.get(task_id)
+        if t:
+            t["pct"] = 100
+            t["status"] = "done" if not error else "error"
+            t["message"] = error or "完成"
+            t["elapsed"] = round(time.time() - t["started"], 1)
+            t["result"] = result
+
 
 def _deep_merge(base, override):
     """Merge override dict into base dict recursively (in-place)."""
@@ -401,40 +428,48 @@ def _sina_batch_append(cfg, date_str, rt_prices):
     """Append one day's Sina realtime data to all ETF CSVs (single-day only).
     DESIGN PRINCIPLE: only call this post-market (>=15:10) with confirmed close data.
     Refuses to write if current time < COOL_OFF_TIME as defense-in-depth.
-    Logs every write attempt for audit trail.
     """
     now = datetime.now()
     if now.hour * 60 + now.minute < COOL_OFF_TIME:
         print(f"  [Sina] REFUSED: intraday data must never touch CSV (current time < 15:10)")
         return 0, len(cfg["universe"])
-    # Audit log: record every CSV write from Sina
-    import traceback
-    log_path = DATA_DIR / "quant" / ".sina_write_log.txt"
-    stack = "".join(traceback.format_stack()[-6:-1])
+    # Validate date_str is a real date, not a time string
+    if not __import__('re').match(r'^\d{4}-\d{2}-\d{2}$', str(date_str)):
+        print(f"  [Sina] REFUSED: date_str is not a valid date: {date_str}")
+        return 0, len(cfg["universe"])
+    # Audit log
+    log_path = DATA_DIR / ".sina_write_log.txt"
     log_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(log_path, "a", encoding="utf-8") as lf:
-        lf.write(f"[{now.isoformat()}] date={date_str} etfs={len(cfg['universe'])}\n{stack}\n")
+    try:
+        with open(log_path, "a", encoding="utf-8") as lf:
+            lf.write(f"[{now.isoformat()}] date={date_str} etfs={len(cfg['universe'])}\n")
+    except Exception:
+        pass
     from quant_data_fetcher import append_csv, save_csv, DATA_DIR as QDATA_DIR
     import pandas as _pd
     ok, fail = 0, 0
     for etf in cfg["universe"]:
         code = etf["code"]
         rt = rt_prices.get(code)
-        if not rt or rt["price"] <= 0:
+        if not rt or rt.get("price", 0) <= 0:
             fail += 1
             continue
-        daily_path = QDATA_DIR / f"{code}_daily.csv"
-        weekly_path = QDATA_DIR / f"{code}_weekly.csv"
-        new_row = _pd.DataFrame([{
-            "date": date_str, "open": rt["open"], "close": rt["price"],
-            "high": rt["high"], "low": rt["low"],
-            "volume": int(rt["volume"]), "amount": rt["amount"],
-        }])
-        append_csv(new_row, daily_path)
-        full_daily = _pd.read_csv(daily_path)
-        weekly = rebuild_weekly_from_daily(full_daily)
-        save_csv(weekly, weekly_path)
-        ok += 1
+        try:
+            daily_path = QDATA_DIR / f"{code}_daily.csv"
+            weekly_path = QDATA_DIR / f"{code}_weekly.csv"
+            new_row = _pd.DataFrame([{
+                "date": date_str, "open": rt["open"], "close": rt["price"],
+                "high": rt["high"], "low": rt["low"],
+                "volume": int(float(rt.get("volume", 0))), "amount": rt.get("amount", 0),
+            }])
+            append_csv(new_row, daily_path)
+            full_daily = _pd.read_csv(daily_path)
+            weekly = rebuild_weekly_from_daily(full_daily)
+            save_csv(weekly, weekly_path)
+            ok += 1
+        except Exception as e:
+            print(f"  [Sina] FAIL {code}: {e}")
+            fail += 1
     return ok, fail
 
 
@@ -484,15 +519,18 @@ def refresh_data():
                     break
             if all_yesterday:
                 print(f"  [Refresh] Post-market — trying Sina single-day fast path...")
-                rt = _fetch_sina_realtime(cfg)
-                if rt:
-                    ok, fail = _sina_batch_append(cfg, today_str, rt)
-                    if fail == 0:
-                        used_sina = True
-                        _reload_csv_to_cache(cfg)
-                        print(f"  [Refresh] Sina fast path: {ok} OK, ~2s")
-                    else:
-                        print(f"  [Refresh] Sina fast path partial: {ok} OK, {fail} fail — falling back")
+                try:
+                    rt = _fetch_sina_realtime(cfg)
+                    if rt:
+                        ok, fail = _sina_batch_append(cfg, today_str, rt)
+                        if fail == 0:
+                            used_sina = True
+                            _reload_csv_to_cache(cfg)
+                            print(f"  [Refresh] Sina fast path: {ok} OK, ~2s")
+                        else:
+                            print(f"  [Refresh] Sina fast path partial: {ok} OK, {fail} fail — falling back")
+                except Exception as e:
+                    print(f"  [Refresh] Sina fast path crashed: {e} — falling back to incremental")
                 else:
                     print(f"  [Refresh] Sina API failed — falling back to incremental")
 
@@ -849,6 +887,22 @@ def _load_etf_metadata():
     except Exception as e:
         CACHE["etf_metadata"] = {}
         print(f"  ETF metadata: load failed ({e})")
+    _load_stock_metadata()
+
+
+def _load_stock_metadata():
+    """Load stock business descriptions from disk into CACHE."""
+    path = DATA_DIR / "quant" / "stock_metadata.json"
+    try:
+        if path.exists():
+            with path.open("r", encoding="utf-8") as f:
+                CACHE["stock_metadata"] = json.load(f)
+            print(f"  Stock metadata: {len(CACHE['stock_metadata'])} stocks loaded")
+        else:
+            CACHE["stock_metadata"] = {}
+    except Exception as e:
+        CACHE["stock_metadata"] = {}
+        print(f"  Stock metadata: load failed ({e})")
 
 
 def _precompute_heatmap_returns(lookbacks=(5, 20)):
@@ -1052,7 +1106,7 @@ def _compute_etf_contributions(trade_log, signal_history, etf_name_map, etf_sect
     return result
 
 
-def run_tuner_backtest(params):
+def run_tuner_backtest(params, progress_callback=None):
     """Tuner wrapper → unified quant_backtest.run_backtest().
 
     Builds config_override from frontend params, prepares preloaded data from
@@ -1108,12 +1162,13 @@ def run_tuner_backtest(params):
     nav_df, signal_history, extra = _run_backtest(
         start_date=params.get("start_date"),
         end_date=params.get("end_date"),
-        preset="zen-1",
+        preset=qc.DEFAULT_PRESET,
         universe_filter=universe_filter,
         preloaded=preloaded,
         config_override=config_override,
         return_details=True,
         return_debug=return_debug,
+        progress_callback=progress_callback,
     )
     total_commission = extra.get("total_commission", 0)
 
@@ -1287,7 +1342,7 @@ def run_tuner_backtest(params):
                 c_mult = 1.0 + cs_val * (disp - 0.5)
                 c_eff = round(base_c * max(c_mult, 0.1), 2)
 
-        enriched_history.append({
+        enriched_entry = {
             "date": sig_date.strftime("%Y-%m-%d") if hasattr(sig_date, "strftime") else str(sig_date)[:10],
             "signalDate": s.get("signal_date", sig_date).strftime("%Y-%m-%d") if hasattr(s.get("signal_date", sig_date), "strftime") else str(s.get("signal_date", sig_date))[:10],
             "executionDate": sig_date.strftime("%Y-%m-%d") if hasattr(sig_date, "strftime") else str(sig_date)[:10],
@@ -1301,7 +1356,10 @@ def run_tuner_backtest(params):
             "cashPct": round((1.0 - sum(s.get("positions", {}).values())) * 100, 1),
             "regime": s.get("regime", ""),
             "cEff": c_eff,
-        })
+        }
+        if s.get("benchmark_votes") is not None:
+            enriched_entry["benchmark_votes"] = s["benchmark_votes"]
+        enriched_history.append(enriched_entry)
 
     # Detect intraday estimate: last NAV date matches intraday cache date
     ic_date = CACHE.get("intraday_date")
@@ -1326,6 +1384,7 @@ def run_tuner_backtest(params):
         "strategy": strategy_label,
         "etfNameMap": etf_name_map,
         "etfHoldings": {code: (meta.get("top10", []) if isinstance(meta, dict) else []) for code, meta in CACHE.get("etf_metadata", {}).items()},
+        "stockMetadata": CACHE.get("stock_metadata", {}),
         "hs300": hs_sliced,
         "eqWeight": eq_sliced,
         "drawdown": [round(v, 2) for v in dd],
@@ -1438,19 +1497,66 @@ def _cache_version_hash():
     return h.hexdigest()[:8]
 
 
+@app.route("/api/progress/<task_id>")
+def api_progress(task_id):
+    with TASK_LOCK:
+        task = TASK_STORE.get(task_id)
+    if not task:
+        return jsonify({"status": "not_found"}), 404
+    return jsonify({k: v for k, v in task.items() if k != "result"})
+
+
+@app.route("/api/result/<task_id>")
+def api_result(task_id):
+    with TASK_LOCK:
+        task = TASK_STORE.get(task_id)
+    if not task:
+        return jsonify({"status": "not_found"}), 404
+    if task["status"] == "running":
+        return jsonify({"status": "running", "pct": task["pct"]}), 202
+    if task["status"] == "error":
+        return jsonify({"status": "error", "message": task["message"]}), 500
+    return jsonify({"status": "done", "result": task.get("result")})
+
+
 @app.route("/api/run", methods=["POST"])
 def api_run():
     guard = _require_ready()
     if guard:
         return guard
     params = request.json or {}
+    is_async = request.args.get("async") == "1"
+
+    if is_async:
+        task_id = _cache_version_hash()[:8] + "-bt"
+        print(f"  [ASYNC] Starting backtest task {task_id}")
+        _task_start(task_id, 100, "准备回测...")
+        def _run():
+            try:
+                def _cb(current, total, msg):
+                    pct = int(current / max(total, 1) * 100)
+                    _task_update(task_id, pct, msg)
+                result = run_tuner_backtest(params, progress_callback=_cb)
+                _save_backtest_cache(params, result)
+                _task_done(task_id, result=result)
+                print(f"  [ASYNC] Task {task_id} done, elapsed={TASK_STORE.get(task_id,{}).get('elapsed',0)}s")
+            except Exception as e:
+                import traceback; traceback.print_exc()
+                _task_done(task_id, error=f"{type(e).__name__}: {str(e)}")
+        threading.Thread(target=_run, daemon=True).start()
+        return jsonify({"task_id": task_id})
+
     try:
         result = run_tuner_backtest(params)
     except Exception as e:
         import traceback
         traceback.print_exc()
         return jsonify({"error": f"{type(e).__name__}: {str(e)}"}), 500
-    # Save to disk cache
+    _save_backtest_cache(params, result)
+    return jsonify(result)
+
+
+def _save_backtest_cache(params, result):
     try:
         cache = {"version": _cache_version_hash(), "params": params, "result": result}
         _BACKTEST_CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -1458,7 +1564,8 @@ def api_run():
             json.dump(cache, f, ensure_ascii=False, default=str)
     except Exception:
         pass
-    return jsonify(result)
+
+
 
 
 @app.route("/api/debug_data_state")
@@ -1603,11 +1710,123 @@ def api_refresh_metadata():
                 fail += 1
         save_metadata(existing)
         CACHE["etf_metadata"] = existing
-        return jsonify({"ok": True, "message": f"meta: {ok} OK, {fail} fail", "ok_count": ok, "fail_count": fail})
+        # Also refresh stock business descriptions for all top10 holdings
+        stock_ok, stock_fail = _refresh_stock_metadata()
+        return jsonify({"ok": True, "message": f"meta: {ok} OK, {fail} fail | stock: {stock_ok} OK, {stock_fail} fail",
+                        "ok_count": ok, "fail_count": fail,
+                        "stock_ok": stock_ok, "stock_fail": stock_fail})
     except ImportError:
         return jsonify({"ok": False, "message": "fetch_etf_metadata not available"}), 500
     except Exception as e:
         return jsonify({"ok": False, "message": str(e)}), 500
+
+
+def _refresh_stock_metadata():
+    """Fetch stock business descriptions for all ETF top10 holdings.
+    A-shares → cninfo API, HK stocks → HK company profile API, others → stock name fallback.
+    Returns (ok_count, fail_count)."""
+    import akshare as ak
+    meta = CACHE.get("etf_metadata", {})
+    if not meta:
+        return 0, 0
+
+    # Classify all stocks by market
+    a_codes = set()   # 6-digit, starts with 0/3/6
+    hk_codes = set()  # 4-5 digit, starts with 0
+    other_codes = {}  # code -> stock_name
+    for etf_code, m in meta.items():
+        top10 = m.get("top10") if isinstance(m, dict) else []
+        if not isinstance(top10, list):
+            continue
+        for h in top10:
+            sc = h.get("code", "")
+            name = h.get("name", "")
+            if not sc:
+                continue
+            if len(sc) == 6 and sc[0] in "036":
+                a_codes.add(sc)
+            elif 4 <= len(sc) <= 5 and sc.isdigit() and sc[0] == "0":
+                hk_codes.add(sc.zfill(5))
+            else:
+                other_codes[sc] = name
+
+    # Load existing cache
+    stock_path = DATA_DIR / "quant" / "stock_metadata.json"
+    stock_cache = {}
+    if stock_path.exists():
+        try:
+            with stock_path.open("r", encoding="utf-8") as f:
+                stock_cache = json.load(f)
+        except Exception:
+            pass
+
+    def _extract_short(biz, industry, name_cn):
+        short = biz.split("。")[0].split("；")[0].strip()
+        if len(short) > 18:
+            short = short[:18]
+        return short or industry or name_cn
+
+    ok, fail = 0, 0
+
+    # ── A-shares via cninfo ──
+    for code in sorted(a_codes):
+        if code in stock_cache and stock_cache[code].get("biz"):
+            ok += 1; continue
+        try:
+            info = ak.stock_profile_cninfo(symbol=code)
+            row = info.iloc[0]
+            biz = str(row.get("主营业务", "") or "")
+            industry = str(row.get("所属行业", "") or "")
+            name_cn = str(row.get("公司简称", "") or "")
+            stock_cache[code] = {
+                "name": name_cn, "biz": biz[:200],
+                "biz_short": _extract_short(biz, industry, name_cn),
+                "industry": industry,
+            }
+            ok += 1
+            if ok % 30 == 0:
+                import time as _t; _t.sleep(1.0)
+        except Exception:
+            fail += 1
+            if code not in stock_cache:
+                stock_cache[code] = {"name": "", "biz": "", "biz_short": "", "industry": ""}
+
+    # ── HK stocks via HK company profile ──
+    for code in sorted(hk_codes):
+        if code in stock_cache and stock_cache[code].get("biz"):
+            ok += 1; continue
+        try:
+            info = ak.stock_hk_company_profile_em(symbol=code)
+            row = info.iloc[0]
+            biz = str(info.iloc[0, -1] or "")  # last column = 公司介绍
+            industry = str(row.get("所属行业", "") or "")
+            name_cn = str(row.get("公司名称", "") or "")
+            stock_cache[code] = {
+                "name": name_cn, "biz": biz[:200],
+                "biz_short": _extract_short(biz, industry, name_cn),
+                "industry": industry,
+            }
+            ok += 1
+            if ok % 30 == 0:
+                import time as _t; _t.sleep(1.0)
+        except Exception:
+            fail += 1
+            if code not in stock_cache:
+                stock_cache[code] = {"name": "", "biz": "", "biz_short": "", "industry": ""}
+
+    # ── Other stocks (Korean etc) → fallback to stock name ──
+    for code, name in other_codes.items():
+        if code in stock_cache and stock_cache[code].get("biz_short"):
+            ok += 1; continue
+        stock_cache[code] = {"name": name, "biz": "", "biz_short": name or "-", "industry": ""}
+        ok += 1
+
+    # Save
+    stock_path.parent.mkdir(parents=True, exist_ok=True)
+    with stock_path.open("w", encoding="utf-8") as f:
+        json.dump(stock_cache, f, ensure_ascii=False, indent=2)
+    CACHE["stock_metadata"] = stock_cache
+    return ok, fail
 
 
 @app.route("/api/param_schema")

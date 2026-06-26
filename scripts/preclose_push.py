@@ -11,7 +11,7 @@ from trading_calendar import is_trading_day
 
 TUNER_URL = "http://localhost:5179"
 REFRESH_ONLY = "--refresh-only" in sys.argv
-DEFAULT_PRESET = "gam-1"
+from etf_report.core.quant_contract import DEFAULT_PRESET
 TUNER_STARTUP_TIMEOUT = 60  # max seconds to wait for Tuner
 
 def log(msg):

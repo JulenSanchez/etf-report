@@ -72,7 +72,8 @@ assets/js/quant_payload.js
 - 数据刷新：`docs/runbook/v2-quant/data-fetch.md`
 - ETF 筛选：`docs/runbook/v2-quant/screening.md`
 - ETF 池变更：`docs/runbook/v2-quant/pool-change.md`
-- 研究投产：`docs/runbook/v2-quant/promotion.md`
+- 研究投产：`docs/runbook/v2-quant/preset-change.md`
 - 每日自动化：`docs/runbook/v2-quant/daily-automation.md`
 - 参数优化流程与报告：`docs/runbook/v2-quant/optimization.md`
 - 回测引擎设计：`docs/design/backtest-engine.md`
+- 默认策略管理：`docs/runbook/v2-quant/preset-change.md`

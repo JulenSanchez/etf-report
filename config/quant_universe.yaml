@@ -7,14 +7,12 @@ universe:
   name: 有色金属ETF
   market: sh
   sector: 资源周期
-  bias: true
   marginable: true
   group1: 周期博弈
 - code: '513120'
   name: 创新药ETF
   market: sh
   sector: 医药
-  bias: true
   marginable: true
   group1: 周期博弈
 - code: '159883'
@@ -27,7 +25,6 @@ universe:
   name: 非银ETF
   market: sh
   sector: 金融
-  bias: true
   marginable: true
   group1: 周期博弈
 - code: '515880'
@@ -381,7 +378,6 @@ presets:
         ema_deviation: 0.57
         volume_ratio: 0.17
         log_return_deviation: 0.26
-      bias_bonus: 0.0
       sensitivity:
         f1: 3.4
         f3: 3.9
@@ -434,7 +430,6 @@ presets:
         ema_deviation: 0.55
         volume_ratio: 0.25
         log_return_deviation: 0.2
-      bias_bonus: 0.0
       sensitivity:
         f1: 3.4
         f3: 3.9
@@ -481,13 +476,13 @@ presets:
         window_days: 32
   gam-1:
     label: 赌徒1
-    description: 赌徒1(T20·mdd=-20%·两阶段分层)：F1(60%)+F3(26%)+F7(14%)，MH=3，MA=34w，bull=89% bear=43%，C=0.47 CS=5.6。三周期composite=1.006(唯一超基线)，6Y TR=+756%/MDD=-19.4%/Sharpe=1.41。信号层13trials+执行层27trials。信仰：保守至上、承认边界、不赚最后一个铜板。
+    description: 赌徒1(T20·mdd=-20%·两阶段分层)：F1(60%)+F3(26%)+F7(14%)，MH=3，MA=34w，bull=89%
+      bear=43%，C=0.47 CS=5.6。三周期composite=1.006(唯一超基线)，6Y TR=+756%/MDD=-19.4%/Sharpe=1.41。信号层13trials+执行层27trials。信仰：保守至上、承认边界、不赚最后一个铜板。
     scoring:
       weights:
-        ema_deviation: 0.60
+        ema_deviation: 0.6
         volume_ratio: 0.26
         log_return_deviation: 0.14
-      bias_bonus: 0.0
       sensitivity:
         f1: 9.8
         f3: 4.29
@@ -537,25 +532,22 @@ presets:
         sigma_floor: 0.01
   gam-2:
     label: 赌徒2
-    description: 赌徒2(杠杆优化·mdd=-25%)：F1(71%)+F3(13%)+F7(16%)，MH=2，MA=19w，bull=1.58x
-      bear=54%。1Y/3Y/6Y ann=+335%/+116%/+72%，6Y TR=+2527%/MDD=-23.7%/Sharpe=1.69。杠杆TPE
-      29trials(多周期+mdd,-25)。信仰：趋势为王、集中杠杆、mdd硬约束。
+    description: gam-2(杠杆优化·保守起点)：bull=1.0x bear=50% MH=4 MA=26w(优化中)
     scoring:
       weights:
-        ema_deviation: 0.71
-        volume_ratio: 0.13
-        log_return_deviation: 0.16
-      bias_bonus: 0.0
+        ema_deviation: 0.33
+        volume_ratio: 0.33
+        log_return_deviation: 0.34
       sensitivity:
-        f1: 9.6
-        f3: 4.79
-        f7_t: 17.85
-        f7_k: 2.72
+        f1: 8.0
+        f3: 4.0
+        f7_t: 10.0
+        f7_k: 3.0
     confidence:
       type: ma_trend
-      ma_trend_period: 19
-      ma_bull_pos: 1.58
-      ma_bear_pos: 0.54
+      ma_trend_period: 26
+      ma_bull_pos: 1.0
+      ma_bear_pos: 0.5
       ma_direction_confirm: true
       dead_zone: 17
       full_zone: 65
@@ -569,13 +561,13 @@ presets:
       clarity_threshold: 0.03
       dd_sensitivity: 0.2
     position:
-      max_holdings: 2
-      discretize_step: 0.165
-      concentration: 0.71
-      c_sensitivity: 8.68
+      max_holdings: 4
+      discretize_step: 0.1
+      concentration: 3.0
+      c_sensitivity: 30
       rebalance_freq: daily
       execution_timing: same_close
-      score_band: 0.03
+      score_band: 0.02
       commission_rate: 0.00026
       max_holdings_special: 8
       weighting: arithmetic
@@ -595,24 +587,22 @@ presets:
         sigma_floor: 0.01
   gam-3:
     label: 赌徒3
-    description: 赌徒3(mdd=-35%·多样本信号+杠杆)：F1(73%)+F3(8%)+F7(19%)，MH=2，MA=21w，bull=1.92x
-      bear=56%，C=1.94 CS=19.2。1Y/3Y/6Y ann=+436%/+102%/+57%，6Y TR=+1626%/MDD=-30.3%/Sharpe=1.40。极端杠杆、近期爆发、长周期有衰减。
+    description: gam-3(杠杆优化·保守起点)：bull=1.0x bear=50% MH=4 MA=26w(优化中)
     scoring:
       weights:
-        ema_deviation: 0.73
-        volume_ratio: 0.08
-        log_return_deviation: 0.19
-      bias_bonus: 0.0
+        ema_deviation: 0.33
+        volume_ratio: 0.33
+        log_return_deviation: 0.34
       sensitivity:
-        f1: 6.5
-        f3: 3.5
-        f7_t: 25.0
-        f7_k: 4.4
+        f1: 8.0
+        f3: 4.0
+        f7_t: 10.0
+        f7_k: 3.0
     confidence:
       type: ma_trend
-      ma_trend_period: 21
-      ma_bull_pos: 1.92
-      ma_bear_pos: 0.56
+      ma_trend_period: 26
+      ma_bull_pos: 1.0
+      ma_bear_pos: 0.5
       ma_direction_confirm: true
       dead_zone: 17
       full_zone: 65
@@ -626,13 +616,13 @@ presets:
       clarity_threshold: 0.03
       dd_sensitivity: 0.2
     position:
-      max_holdings: 2
-      discretize_step: 0.15
-      concentration: 1.94
-      c_sensitivity: 19.2
+      max_holdings: 4
+      discretize_step: 0.1
+      concentration: 3.0
+      c_sensitivity: 30
       rebalance_freq: daily
       execution_timing: same_close
-      score_band: 0.034
+      score_band: 0.02
       commission_rate: 0.00026
       max_holdings_special: 8
       weighting: arithmetic
@@ -658,7 +648,6 @@ presets:
         ema_deviation: 0.5
         volume_ratio: 0.4
         log_return_deviation: 0.1
-      bias_bonus: 0.0
       sensitivity:
         f1: 8.0
         f2: 8.0
@@ -712,7 +701,6 @@ presets:
         ema_deviation: 0.41
         volume_ratio: 0.29
         log_return_deviation: 0.3
-      bias_bonus: 0.0
       sensitivity:
         f1: 4.0
         f3: 1.4

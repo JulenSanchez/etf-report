@@ -268,8 +268,40 @@ def get_last_date(csv_path: Path):
         return None
 
 
+def _safe_date_filter(df, path_hint=""):
+    """Strip rows with future dates or today's unconfirmed intraday data.
+    Returns filtered DataFrame. Logs a warning when rows are stripped.
+    """
+    import pandas as pd
+    from datetime import datetime
+    if df.empty:
+        return df
+    df = df.copy()
+    if "date" not in df.columns:
+        return df
+    df["_date_parsed"] = pd.to_datetime(df["date"])
+    today = pd.Timestamp(datetime.now().strftime("%Y-%m-%d"))
+    now = datetime.now()
+    post_market = now.hour * 60 + now.minute >= 910  # 15:10
+
+    # Always reject future dates
+    future_mask = df["_date_parsed"] > today
+    # Reject today's date during market hours (not yet confirmed close)
+    today_mask = (df["_date_parsed"] == today) & (not post_market)
+
+    drop_mask = future_mask | today_mask
+    if drop_mask.any():
+        dropped_dates = df.loc[drop_mask, "date"].unique()
+        print("  [SAFE] Stripping {} rows with unconfirmed dates from {}: {}".format(
+            drop_mask.sum(), path_hint or path, list(dropped_dates)))
+        df = df[~drop_mask]
+    df = df.drop(columns=["_date_parsed"])
+    return df
+
+
 def save_csv(df, path: Path):
     path.parent.mkdir(parents=True, exist_ok=True)
+    df = _safe_date_filter(df, str(path))
     df.to_csv(path, index=False, encoding="utf-8")
 
 
@@ -325,6 +357,10 @@ def _fetch_sina_batch(codes: list) -> dict:
             date_str = fields[-3] if len(fields) > 3 else ""
             if not date_str or date_str == '""':
                 continue  # market still open, no date field
+            # During market hours Sina returns time (e.g. "10:21:13") instead of date.
+            # Validate YYYY-MM-DD format — reject anything that isn't a real date.
+            if not __import__('re').match(r'^\d{4}-\d{2}-\d{2}$', date_str):
+                continue
             result[code] = {
                 "date": date_str,
                 "open": float(fields[1]),
@@ -541,6 +577,80 @@ def main():
 
     total_ok = ok + fresh
     print(f"\n=== Done: OK={total_ok}, FAIL={fail} ===")
+
+    # ── Fetch benchmark indices (always, alongside ETF data) ──
+    fetch_benchmark_indices()
+
+
+# ── Benchmark index fetching ────────────────────────────────────────────
+
+BENCHMARK_INDICES = {
+    "000016": "sh000016",   # SSE 50
+    "000300": "sh000300",   # HS300
+    "000905": "sh000905",   # CSI500
+    "399006": "sz399006",   # ChiNext
+}
+
+
+def fetch_benchmark_indices():
+    """Fetch all benchmark index daily data alongside ETF data.
+
+    Uses the same freshness check as ETF data (latest_allowed_date).
+    Called automatically at the end of every quant_data_fetcher run.
+    Also used by benchmark_data.py on first access as a lazy fallback.
+    """
+    print("\n=== Benchmark indices ===\n")
+    ok, fail = 0, 0
+    for code, symbol in BENCHMARK_INDICES.items():
+        cache_path = DATA_DIR / "{}_daily.csv".format(code)
+        try:
+            fresh = _update_index_csv(code, symbol, cache_path)
+            if fresh:
+                print("  [{}] {} ... OK [fresh]".format(code, INDEX_NAMES.get(code, "")))
+            else:
+                print("  [{}] {} ... OK [updated]".format(code, INDEX_NAMES.get(code, "")))
+            ok += 1
+        except Exception as e:
+            print("  [{}] {} ... FAIL: {}".format(code, INDEX_NAMES.get(code, ""), e))
+            fail += 1
+    print("\n=== Indices: OK={}, FAIL={} ===".format(ok, fail))
+
+
+INDEX_NAMES = {
+    "000016": "上证50",
+    "000300": "沪深300",
+    "000905": "中证500",
+    "399006": "创业板指",
+}
+
+
+def _update_index_csv(code, symbol, cache_path):
+    """Update a single index CSV. Returns True if already fresh, False if updated."""
+    import pandas as pd
+    cache_path = Path(cache_path)
+
+    cached = None
+    if cache_path.exists():
+        try:
+            cached = pd.read_csv(cache_path, parse_dates=["date"])
+            cached = cached.sort_values("date").reset_index(drop=True)
+        except Exception:
+            cached = None
+
+    expected = _latest_allowed_date()
+    if cached is not None and len(cached) > 0:
+        last_date = cached["date"].iloc[-1].strftime("%Y-%m-%d")
+        if last_date >= expected:
+            return True  # Already fresh
+
+    # Fetch full history (akshare returns all available data)
+    import akshare as ak
+    df = ak.stock_zh_index_daily(symbol=symbol)
+    df["date"] = pd.to_datetime(df["date"])
+    df = df.sort_values("date").reset_index(drop=True)
+    cache_path.parent.mkdir(parents=True, exist_ok=True)
+    df.to_csv(cache_path, index=False, encoding="utf-8")
+    return False
 
 
 if __name__ == "__main__":

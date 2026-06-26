@@ -523,7 +523,10 @@ def _build_kline_replay_data(etf_name_map, start_date, end_date):
     return result
 
 
-def load_quant_preset_params(quant_config_path, preset="zen-1"):
+def load_quant_preset_params(quant_config_path, preset=None):
+    if preset is None:
+        from etf_report.core.quant_contract import DEFAULT_PRESET
+        preset = DEFAULT_PRESET
     """Load a quant preset and convert it to Tuner parameter shape via quant_contract."""
     import yaml
     from etf_report.core import quant_contract as qc
@@ -541,9 +544,10 @@ def load_quant_preset_params(quant_config_path, preset="zen-1"):
 def default_quant_preset_params():
     """Fallback params matching current preset2 defaults."""
     return {
-        "w1": 45, "w3": 45, "w7": 10, "bias": 0,
+        "w1": 45, "w3": 45, "w7": 10,
         "conf_type": "ma_trend", "ma_trend_period": 26,
         "ma_bull_pos": 1.0, "ma_bear_pos": 0.3, "ma_direction_confirm": True,
+        "benchmarks": ["000300"],
         "max_holdings": 6, "disc_step": 0.05, "concentration": 0.0,
         "rebalance_freq": "daily", "execution_timing": "same_close", "score_band": 3,
         "f1_ema_period": 5, "f3_vol_window": 20,
@@ -847,7 +851,6 @@ def _build_latest_signal(signal_history, etf_name_map, etf_sector_map=None):
             "confidence": last.get("avgConfidence", 0) / 100,  # 使用平均信心度
             "position": pos,
             "price": code_detail.get("price", 0),
-            "bias": code_detail.get("action", "") == "new"  # 简化：新买入标记为偏好
         })
 
     # 构建 allScores（包含全部）

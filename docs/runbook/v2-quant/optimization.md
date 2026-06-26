@@ -139,7 +139,8 @@ AI 自动串行执行，每完成一个立即写报告。
 | w7 | 100-w1-w3 | F7 权重 | residual 自动计算，保持 sum=100% |
 | bias | 0 | 扇区偏好加分 | 已证实对策略无益 |
 | conf_type | ma_trend | 信心函数类型 | 不搜索 |
-| ma_bull_pos | cash 模式 1.0 | 牛市目标暴露 | 合成杠杆研究见 `docs/design/margin-account-model.md`，不在普通现金账户优化中打开 |
+| account_mode | synthetic_leverage | 账户模式 | 默认杠杆，不搜索。Tuner 前端可选现金/杠杆 |
+| ma_bull_pos | cash 模式 1.0 | 牛市目标暴露 | 杠杆模式下可搜索（执行层）。范围由 `max_gross_exposure`（默认 2.0）决定 |
 | ma_direction_confirm | True | 方向确认 | 防止假突破 |
 | full_zone | 65 | 旧信心函数满配阈值 | conf_type=ma_trend 时不生效 |
 | dead_zone | 基线值 | 死区——分数在此区间不调仓 | **conf_type=ma_trend 下不生效**，即使搜索也无效果。保留在 preset 中仅兼容旧代码 |
@@ -186,7 +187,7 @@ w1=48:65:1 w3=18:30:1 ... w7=20 bias=0 conf_type=ma_trend ...
 | §4 市场阶段归因 | `phase_performance` | 分阶段表，附解读（不是只列数字） |
 | §5 行为诊断 | `behavioral_baseline` | Best / Median / Worst trial 的行为差异对比 |
 | §6 ETF 四象限 | `etf_quadrants` | 四类全列，核心/需排查必须有 P&L + 选中率 + 胜率 + 赔率 |
-| §7 极端场景 | `top_trials[0].holdings_distribution` | 极端集中统计（频率、时长、标的）、MDD 期间持仓明细 |
+| §7 极端场景 | `top_trials[0].holdings_distribution` | 极端集中统计（频率、时长、标的）、MDD 期间持仓明细。**杠杆策略还必须提供 `extreme_analyzer.py` 输出**（整体胜率 + per-ETF 分类 + 裁决，见 preset-change.md §极端集中分析） |
 | §8 局限与后续 | `bootstrap` | ≥2 个具体的后续研究方向 + **Top 3 的 bootstrap 稳健性数据（median_final / P5 / 毁灭概率）** |
 
 #### 参数重要性门禁细则
@@ -212,7 +213,7 @@ w1=48:65:1 w3=18:30:1 ... w7=20 bias=0 conf_type=ma_trend ...
 [ ] §4 有分阶段表 + 解读
 [ ] §5 有 Best/Median/Worst 行为对比
 [ ] §6 四类 ETF 全列，核心/需排查有定量四维数据
-[ ] §7 有极端集中统计 + MDD 持仓明细
+[ ] §7 有极端集中统计 + MDD 持仓明细（杠杆策略还必须附 `extreme_analyzer.py` 输出，见 preset-change.md §极端集中分析）
 [ ] §8 有 ≥2 个具体后续方向 + Top 3 bootstrap 数据
 [ ] 有明确的"是否建议采纳"判断
 [ ] analysis.json 的 `bootstrap` 字段存在且包含 ≥1 个 trial
@@ -238,6 +239,8 @@ w1=48:65:1 w3=18:30:1 ... w7=20 bias=0 conf_type=ma_trend ...
 **Agent 输入**：study name、输出目录、§八 硬模板。
 **Agent 输出**：analysis.json + report.md + 自检清单。
 
+**杠杆策略额外步骤**：若 preset 的 mbull > 1.0，agent 必须在 report §7 中包含 `extreme_analyzer.py` 的输出。运行 `python scripts/extreme_analyzer.py --preset <name>`，将整体胜率、per-ETF 分类、裁决写入 §7。promotion 决策需综合考虑此分析结果。
+
 **常见错误**：optimizer 的自带 report 不包含 analysis.json——agent 必须自己跑 analyzer，不可跳过。
 
 ### 不自动做的事
@@ -245,6 +248,7 @@ w1=48:65:1 w3=18:30:1 ... w7=20 bias=0 conf_type=ma_trend ...
 - **不自动写入 config**（等用户确认）
 - **不自动提交 git**（等用户确认）
 - **不自动删除旧 preset**
+- **不自动跳过极端集中分析**（杠杆策略，见 `docs/runbook/v2-quant/preset-change.md §极端集中分析`）
 
 ## 五、故障排查
 
@@ -371,6 +375,8 @@ P&L 和选中率两个维度交叉：
 | act-1/2 | 精算师 | calmar | bear∈[0.15,0.30] | 信号通用 + 执行精算 | 每单位回撤的回报效率 |
 
 > 初始 preset 的具体数值见本节 §初始 Preset。
+> 
+> **回测窗口**: 使用滚动 6 年（today - 6Y）。窗口选择依据及新冠 MDD 的处理见 `docs/knowledge/backtest-window.md`。
 
 **三周期等权逻辑**：每个 trial 跑一段 6Y 回测，从 NAV 截取 1Y/3Y/6Y 三段各自算 metric，用 baseline 归一化后取均值。1Y 崩塌的策略在三周期下会被直接惩罚。
 

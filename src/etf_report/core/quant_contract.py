@@ -20,8 +20,7 @@ PARAM_SCHEMA = {
                 {"key": "w1", "label": "F1 EMA 偏离度权重", "unit": "ui_percent", "engine_path": "scoring.weights.ema_deviation"},
                 {"key": "w3", "label": "F3 自归一化量比权重", "unit": "ui_percent", "engine_path": "scoring.weights.volume_ratio"},
                 {"key": "w7", "label": "F7 对数收益偏离权重", "unit": "ui_percent", "engine_path": "scoring.weights.log_return_deviation"},
-                {"key": "bias", "label": "偏好加成", "unit": "score_points", "engine_path": "scoring.bias_bonus"},
-            ],
+                ],
         },
         {
             "key": "sensitivity",
@@ -93,7 +92,6 @@ PARAM_BOUNDS = {
     "w1":  {"type": "weight",  "min": 0,  "max": 100, "step": 1},
     "w3":  {"type": "weight",  "min": 0,  "max": 100, "step": 1},
     "w7":  {"type": "weight",  "min": 0,  "max": 100, "step": 1},
-    "bias": {"type": "continuous", "min": 0.0, "max": 10.0, "step": 0.1, "searchable": False},
     # sensitivity
     "f1_sensitivity": {"type": "continuous", "min": 3.0, "max": 15.0, "step": 0.1},
     "f3_sensitivity": {"type": "continuous", "min": 0.5, "max": 8.0, "step": 0.1},
@@ -105,6 +103,7 @@ PARAM_BOUNDS = {
     "ma_bull_pos":          {"type": "continuous", "min": 0.0, "max": 2.0, "step": 0.01},
     "ma_bear_pos":          {"type": "continuous", "min": 0.0, "max": 1.0, "step": 0.01},
     "ma_direction_confirm": {"type": "categorical", "choices": [True, False], "searchable": False},
+    "benchmarks":           {"type": "multi_choice", "choices": ["000016", "000300", "000905", "399006"], "searchable": False},
     "dead_zone":            {"type": "continuous", "min": 10, "max": 50, "step": 1, "searchable": False},
     "full_zone":            {"type": "continuous", "min": 40, "max": 90, "step": 1, "searchable": False},
     # position
@@ -266,14 +265,13 @@ def validate_tuner_params(params):
 
 
 def tuner_params_to_config_override(params):
-    return {
+    result = {
         "scoring": {
             "weights": {
                 "ema_deviation": _as_float(params.get("w1"), 35.0) / 100.0,
                 "volume_ratio": _as_float(params.get("w3"), 50.0) / 100.0,
                 "log_return_deviation": _as_float(params.get("w7"), 0.0) / 100.0,
             },
-            "bias_bonus": _as_float(params.get("bias"), 0.0),
             "sensitivity": {
                 "f1": _as_float(params.get("f1_sensitivity"), 8.0),
                 "f3": _as_float(params.get("f3_sensitivity"), 1.0),
@@ -289,6 +287,7 @@ def tuner_params_to_config_override(params):
             "ma_bear_pos": _as_float(params.get("ma_bear_pos"), 0.3),
             "ma_trend_period": _as_int(params.get("ma_trend_period"), 26),
             "ma_direction_confirm": _as_bool(params.get("ma_direction_confirm"), True),
+            "benchmarks": params.get("benchmarks", ["000300"]),
         },
         "position": {
             "max_holdings": _as_int(params.get("max_holdings"), 6),
@@ -311,11 +310,16 @@ def tuner_params_to_config_override(params):
                 "sigma_floor": 0.01,
             },
         },
-        "account": {
-            "mode": params.get("account_mode", "cash"),
-            "max_gross_exposure": _as_float(params.get("max_gross_exposure"), 2.0),
-        },
     }
+    # Only include account override if frontend explicitly sends account_mode.
+    # Otherwise let the YAML preset's account config pass through untouched.
+    _acct_mode = params.get("account_mode")
+    if _acct_mode:
+        result["account"] = {
+            "mode": _acct_mode,
+            "max_gross_exposure": _as_float(params.get("max_gross_exposure"), 2.0),
+        }
+    return result
 
 
 def tuner_params_to_preset_patch(params, base_cfg=None):
@@ -362,7 +366,6 @@ def preset_to_tuner_params(preset_key, preset_cfg, global_conf=None):
         "description": preset_cfg.get("description", ""),
         "w1": _weight_to_ui_percent(w.get("ema_deviation"), 0.30),
         "w3": _weight_to_ui_percent(w.get("volume_ratio"), 0.30),
-        "bias": scoring.get("bias_bonus", 4.0),
         "conf_type": pc.get("type", "regime"),
         "dead_zone": pc.get("dead_zone", global_conf.get("dead_zone", 25)),
         "full_zone": pc.get("full_zone", global_conf.get("full_zone", 65)),
@@ -384,8 +387,9 @@ def preset_to_tuner_params(preset_key, preset_cfg, global_conf=None):
         "ma_bear_pos": pc.get("ma_bear_pos", global_conf.get("ma_bear_pos", 0.30)),
         "ma_trend_period": pc.get("ma_trend_period", global_conf.get("ma_trend_period", 26)),
         "ma_direction_confirm": pc.get("ma_direction_confirm", global_conf.get("ma_direction_confirm", True)),
+        "benchmarks": pc.get("benchmarks", global_conf.get("benchmarks", ["000300"])),
         "max_holdings": position.get("max_holdings", 6),
-        "disc_step": position.get("discretize_step", 0.05),
+        "disc_step": round(position.get("discretize_step", 0.05), 3),
         "concentration": position.get("concentration", 2.0) * 10,
         "c_sensitivity": position.get("c_sensitivity", 0.0) * 10,
         "f1_ema_period": factors.get("ema", {}).get("period_weeks", 20),
@@ -424,7 +428,6 @@ def build_presets_response(cfg):
             "code": e["code"],
             "name": e.get("name", e["code"]),
             "sector": e.get("sector", ""),
-            "bias": bool(e.get("bias", False)),
             "active": e.get("active", True),
             "marginable": e.get("marginable", True),
             "group1": e.get("group1", ""),
@@ -446,6 +449,7 @@ PRESET_OPT_PROFILES = {
     "act-2": {"metric": "calmar", "constraints": ["bear,0.15,0.30"]},
 }
 OPT_PERIODS = ["1Y", "3Y", "6Y"]
+DEFAULT_PRESET = "gam-2"
 
 # ── Initial presets for optimization (neutral starting points) ─────────
 INITIAL_PRESETS = {

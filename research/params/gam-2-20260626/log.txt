@@ -1,0 +1,7 @@
+[10:09:02] Optimizer start: preset=gam-2 strategy=bayesian metric=annual_return
+[10:09:02]   periods=[('6Y', '2020-06-27', '2026-06-26')] seed=42
+[10:09:02]   output=C:\Users\julentan\etf-report\research\params\gam-2-20260626
+[10:09:03] Computing baseline ...
+[10:10:20]   baseline 6Y: calmar=1.9615 sharpe=1.3397 annual=46.85%
+[10:10:20] Param space: 29 params
+[10:10:21] Bayesian: 70 trials (Optuna TPE)

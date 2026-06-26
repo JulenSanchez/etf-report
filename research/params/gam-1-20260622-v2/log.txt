@@ -1,0 +1,14 @@
+[14:18:28] Optimizer start: preset=gam-1 strategy=bayesian metric=annual_return
+[14:18:28]   periods=[('1Y', '2025-06-22', '2026-06-22'), ('3Y', '2023-06-23', '2026-06-22'), ('6Y', '2020-06-23', '2026-06-22')] seed=42
+[14:18:28]   output=C:\Users\julentan\etf-report\research\params\gam-1-20260622-v2
+[14:18:28] Computing baseline ...
+[14:19:45]   baseline 1Y: calmar=17.0492 sharpe=3.0271 annual=205.98%
+[14:19:45]   baseline 3Y: calmar=3.7363 sharpe=1.7042 annual=68.24%
+[14:19:45]   baseline 6Y: calmar=2.0996 sharpe=1.3572 annual=47.41%
+[14:19:45] Param space: 27 params
+[14:19:47] Bayesian: 70 trials (Optuna TPE)
+[15:47:00] Generating report (53 trials) ...
+[15:47:00] Running optimization_analyzer...
+[15:47:00] DONE. Results in C:\Users\julentan\etf-report\research\params\gam-1-20260622-v2
+[15:47:00]   Best: annual_return=1.4875
+[15:47:00]   Params: {"bias": 0.0, "c_sensitivity": 36.0, "concentration": 2.79, "conf_type": "ma_trend", "dead_zone": 17, "disc_step": 0.183, "execution_timing": "same_close", "f1_active_days": 1, "f1_ema_period": 6, "f1_sensitivity": 9.6, "f3_sensitivity": 4.79, "f3_vol_window": 40, "f7_k": 2.72, "f7_t": 17.85, "f7_window": 17, "full_zone": 65, "ma_bear_pos": 0.439, "ma_bull_pos": 1.0, "ma_direction_confirm": true, "ma_trend_period": 18, "max_holdings": 2, "rebalance_freq": "daily", "score_band": 3.34, "w1": 71, "w3": 13, "w7": 16}

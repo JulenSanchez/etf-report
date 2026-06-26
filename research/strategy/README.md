@@ -1,47 +1,23 @@
-# strategy/ — 策略优化
+# strategy/ — 策略研究证据
 
-> 探索空间。当前生效参数以 `../../config/quant_universe.yaml` 为准。已投产结论见 `../promoted/`。
+> 本目录保存仍可能继续推进的策略假说，不维护当前三派参数。当前生效参数以 `../../config/quant_universe.yaml` 为准，当前版本摘要以 `../../plans/Board.md` 为准。
 
-## 当前三派（已 Promotion → ../promoted/）
+## 当前有效入口
 
-| 人设 | preset | 因子权重 | C/CS | 目标 |
-|------|--------|---------|------|------|
-| 精算师 | preset1 | 47/36/17 | 0.72/5.4 | max 等权 S×C |
-| 禅修者 | preset2 | 50/40/10 | 0.5/0 | max 等权 Sharpe |
-| 赌徒 | preset3 | 56/24/20 | 0.43/6.0 | max 等权 AR |
+| 主题 | 入口 |
+|---|---|
+| 当前三派参数 | `../../config/quant_universe.yaml` |
+| 当前版本摘要 | `../../plans/Board.md` |
+| 参数优化流程 | `../../docs/runbook/v2-quant/optimization.md` |
+| promotion 流程 | `../../docs/runbook/v2-quant/promotion.md` |
 
-详见 `../promoted/persona-declarations-20260528.md`
+## Active / Review Queue
 
-## 进行中探索
+| 文件 | 内容 | 状态 |
+|---|---|---|
+| `mh2-paradigm.md` | MH=2 范式研究 | 待按当前配置复核 |
+| `dynamic-score-band.md` | 动态 score band 假说 | 待按当前配置复核 |
 
-| 目录 | 内容 | 状态 |
-|------|------|------|
-| `f7-dual-role/` | F7 因子价值：交易归因 vs 组合评估 | ✅ **框架修正完成 (2026-06-04)**。结论：F7 在组合层面碾压（+10pp CAGR，-13pp MDD），单笔归因框架不适用于评估因子价值。详见 `f7-dual-role/README.md` |
-| `phase-analysis/` | 精算师退化假说：ETF池扩容 + 市场风格 | ✅ **诊断完成 (2026-06-03)**。结论：未退化，是市场状态依赖型策略。详见 `phase-analysis/actuary-degradation-20260603.md` |
+## 清理说明
 
-## 蓄力区（理论上有潜力但当前数据不支持）
-
-| 假设 | 当前证据 | 可能突破口 |
-|------|---------|-----------|
-| **F2 日线 MA 偏离** | 叠加测试均为负面效果，F1+F3+F7 打不过 | ①替换而非叠加(AB: F1 vs F2) ②独立映射函数 ③只在"周内急转"行情中激活 |
-
-## 历史探索
-
-| 目录 | 标题 | 日期 | 结论 |
-|------|------|------|------|
-| `dynamic-C/` | 动态 C 共识感知 | 2026-05 | CS 维度的仓位控制，已入三派参数 |
-| `kelly/` | 凯利 Bootstrap | 2026-05 | 三人毁灭概率 0% |
-| `MA-TREND-OPT/` | MA Trend 参数粗扫 | 2026-05 | Dir=ON 最大单因子 |
-| `REQ-189/` | 后视镜最优收益 | 2026-05 | 反转>动量<<因子 |
-| `T-sweep-6y/` | C×CS 6Y 全量扫描 | 2026-05 | 网格数据 |
-| `confidence/` | 信心函数对比 | 2026-05 | → REQ-256 清退非MA |
-
-## Tried & Failed
-
-| 尝试 | 结果 |
-|------|------|
-| F6 动能衰竭 | F7 全面碾压，正式清退 |
-| F2 RSI | 调不好，放弃 |
-| F4 估值 | 与趋势策略不搭，清退 |
-| F5 波动率 | 已证明无效，清退 |
-| F1r 残差动量 | 全面负贡献，放弃 |
+旧 preset 命名、缺失脚本入口、已退役因子和无法服务未来研究的历史方法已删除。若需要恢复历史上下文，请从 git 历史读取，不在当前 research 索引中保留。

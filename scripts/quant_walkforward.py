@@ -172,7 +172,8 @@ def preload_data(preset):
 
 def main():
     parser = argparse.ArgumentParser(description="REQ-223 Walk-forward optimization")
-    parser.add_argument("--preset", default="act-1")
+    from etf_report.core.quant_contract import DEFAULT_PRESET
+    parser.add_argument("--preset", default=DEFAULT_PRESET)
     parser.add_argument("--output", type=str, default=None)
     args = parser.parse_args()
 

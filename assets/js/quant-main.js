@@ -171,6 +171,17 @@
         {id:"m-interest", v:(expSum.interest_drag_estimate||0).toFixed(1)+"%", cls:"orange"}
       );
       var ids = ["metric-avg-exposure","metric-days-lev","metric-max-dl","metric-interest"];
+      // Leverage contribution (positive = leverage added value)
+      if (expSum.leverage_contribution_pct != null) {
+        var lc = expSum.leverage_contribution_pct;
+        map.push({id:"m-lev-contrib", v:(lc>=0?"+":"")+lc.toFixed(1)+"%", cls:lc>=0?"green":"red"});
+        ids.push("metric-lev-contrib");
+      }
+      // Extreme leverage days (>180%)
+      if (expSum.days_above_180 != null && expSum.days_above_180 > 0) {
+        map.push({id:"m-days-180", v:expSum.days_above_180+"天", cls:"orange"});
+        ids.push("metric-days-180");
+      }
       for (var j = 0; j < ids.length; j++) { var el = document.getElementById(ids[j]); if (el) el.style.display = ""; }
     }
     for (var i = 0; i < map.length; i++) {

@@ -26,17 +26,20 @@ sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
 
 from quant_factors import (
     map_f1, map_f3, map_f4, map_f7,
-    confidence_function, regime_confidence, infer_regime_from_nav, dd_trigger_confidence, momentum_crash_confidence, ma_trend_confidence,
+    confidence_function, regime_confidence, infer_regime_from_nav, dd_trigger_confidence, momentum_crash_confidence, ma_trend_confidence, multi_benchmark_confidence,
 )
 from etf_report.core.quant_data_utils import load_etf_data as _load_etf_data, get_price_on_date as _get_price_on_date
-from benchmark_data import load_hs300_daily_cached, build_hs300_weekly, build_ma_trend_cache
+from benchmark_data import load_hs300_daily_cached, build_hs300_weekly, build_ma_trend_cache, load_index_daily_cached, build_index_weekly
 
 CONFIG_PATH = PROJECT_ROOT / "config" / "quant_universe.yaml"
 DATA_DIR = PROJECT_ROOT / "data" / "quant"
 OUTPUT_DIR = PROJECT_ROOT / "data" / "quant_results"
 
 
-def load_config(preset: str = "zen-1"):
+def load_config(preset: str = None):
+    if preset is None:
+        from etf_report.core.quant_contract import DEFAULT_PRESET
+        preset = DEFAULT_PRESET
     """加载配置，并用指定 preset 覆盖顶层 scoring/confidence/position/factors。
     preset=None 将报错（顶层不再维护权重）。
     """
@@ -55,7 +58,7 @@ def load_config(preset: str = "zen-1"):
     for block in ("scoring", "confidence", "position", "factors"):
         if block in p:
             cfg[block].update(p[block])
-    for key in ("weights", "bias_bonus", "sensitivity"):
+    for key in ("weights", "sensitivity"):
         if key in p.get("scoring", {}):
             cfg["scoring"][key] = p["scoring"][key]
     return cfg
@@ -97,10 +100,24 @@ def get_price_on_date(all_daily: dict, code: str, date: pd.Timestamp, field: str
     return _get_price_on_date(all_daily, code, date, field)
 
 
+def _log_lev(msg):
+    """Append leverage debug message to log file."""
+    try:
+        from pathlib import Path
+        log_path = Path(__file__).resolve().parent.parent / "data" / "quant" / ".lev_debug.log"
+        from datetime import datetime
+        with open(log_path, "a", encoding="utf-8") as f:
+            f.write(f"[{datetime.now().strftime('%H:%M:%S')}] {msg}\n")
+    except Exception:
+        pass
+
+
 def _execute_rebalance(portfolio, cash, prices, suspended_codes,
                        target_positions, tradable_tv, step, commission_rate, turnover,
-                       trade_lots=None, exec_date_str=""):
+                       trade_lots=None, exec_date_str="",
+                       account_mode="cash", max_gross_exposure=2.0):
     """执行一次调仓：卖出→减仓→加仓。原地修改 portfolio，返回 (commission, new_cash, trade_log)。
+    synthetic_leverage 模式下允许现金为负（借款），上限为 max_gross_exposure × tradable_tv。
 
     trade_lots: {code: [{"buy_date", "buy_price", "shares"}, ...]}  开仓 lot 登记（原地修改）
     trade_log:  [{"code", "buy_date", "sell_date", "buy_price", "sell_price", "shares", "pnl_pct"}, ...]
@@ -181,10 +198,20 @@ def _execute_rebalance(portfolio, cash, prices, suspended_codes,
         diff = target_value - current_value
 
         if is_last:
-            # 最后一支吸收剩余现金，不再设 buy_threshold 门槛
-            buy_value = min(cash, max(diff, 0)) if cash > 0 else 0
+            # 最后一支吸收剩余额度
+            if account_mode == "synthetic_leverage":
+                total_hv = sum(portfolio.get(c, 0) * prices.get(c, 0) for c in portfolio)
+                remaining = max_gross_exposure * tradable_tv - total_hv
+                buy_value = min(max(diff, 0), remaining) if remaining > 0 else 0
+            else:
+                buy_value = min(cash, max(diff, 0)) if cash > 0 else 0
         elif diff > buy_threshold:
-            buy_value = min(diff, cash)
+            if account_mode == "synthetic_leverage":
+                total_hv = sum(portfolio.get(c, 0) * prices.get(c, 0) for c in portfolio)
+                remaining = max_gross_exposure * tradable_tv - total_hv
+                buy_value = min(diff, remaining) if remaining > 0 else 0
+            else:
+                buy_value = min(diff, cash)
         else:
             continue
 
@@ -424,12 +451,14 @@ def _precompute_factors(all_daily, all_weekly, ema_period, vol_window,
 def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
                  initial_capital: float = 1000000.0,
                  rebalance_freq: str = None,
-                 preset: str = "zen-1",
+                 preset: str = None,
                  universe_filter: list = None,
                  preloaded: dict = None,
                  config_override: dict = None,
                  return_details: bool = False,
-                 return_debug: bool = False):
+                 return_debug: bool = False,
+                 return_data: bool = False,
+                 progress_callback=None):
     """
     主回测函数 — CLI 与 Tuner 共用唯一引擎。
 
@@ -447,6 +476,13 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
                 base[k] = v
 
     cfg = load_config(preset=preset)
+    # BUG-038 diagnostic: write to file on every backtest invocation
+    try:
+        from pathlib import Path as _P; from datetime import datetime as _D
+        _lp = _P(__file__).resolve().parent.parent / "data" / "quant" / ".bt_invoke.log"
+        with open(_lp, "a", encoding="utf-8") as _f:
+            _f.write(f"[{_D.now().strftime('%H:%M:%S')}] preset={preset} start={start_date} end={end_date}\n")
+    except Exception: pass
     if config_override:
         for section, values in config_override.items():
             if section in cfg:
@@ -471,7 +507,6 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
     max_gross_exposure = account_cfg.get("max_gross_exposure", 2.0)
 
     weights = scoring_cfg["weights"]
-    bias_bonus = scoring_cfg["bias_bonus"]
     sensitivity = scoring_cfg.get("sensitivity", {})
     f1_sens = sensitivity.get("f1", 8.0)
     # rebalance_freq: 参数优先，否则读配置
@@ -504,6 +539,10 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
     ma_bear_pos = confidence_cfg.get("ma_bear_pos", 0.10)
     ma_trend_period = confidence_cfg.get("ma_trend_period", 26)
     ma_direction_confirm = confidence_cfg.get("ma_direction_confirm", True)
+    benchmarks = confidence_cfg.get("benchmarks", ["000300"])
+    if isinstance(benchmarks, str):
+        benchmarks = [benchmarks]
+    use_multi_benchmark = len(benchmarks) > 1
     max_holdings = position_cfg["max_holdings"]
     step = position_cfg["discretize_step"]
     concentration = position_cfg.get("concentration", 2.0)  # softmax concentration multiplier (higher=more concentrated)
@@ -525,8 +564,6 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
 
     f7_t = sensitivity.get("f7_t", 7.0)
     f7_k = sensitivity.get("f7_k", 3.0)
-    # 构建偏好 map（0-1 尺度）
-    bias_map = {e["code"]: bias_bonus / 100.0 for e in universe if e.get("bias")}
 
     # 加载所有 ETF 数据（优先使用预加载数据）
     if preloaded and preloaded.get("all_daily"):
@@ -560,19 +597,24 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
             except Exception as e:
                 print(f"  [WARN] 加载市场状态失败: {e}")
 
-    # Load HS300 MA trend signal for ma_trend confidence
-    hs300_above_ma_map = {}
-    hs300_ma_rising_map = {}
+    # Load benchmark MA trend caches for ma_trend confidence
+    benchmark_above_maps = {}
+    benchmark_rising_maps = {}
     if conf_type == "ma_trend":
-        try:
-            hs = load_hs300_daily_cached()
-            weekly = build_hs300_weekly(hs)
-            ma_cache = build_ma_trend_cache(hs, weekly, ma_trend_period) or {}
-            hs300_above_ma_map = ma_cache.get("above", {})
-            hs300_ma_rising_map = ma_cache.get("ma_rising", {})
-            print(f"  HS300 MA{ma_trend_period}: {len(hs300_above_ma_map)} days loaded")
-        except Exception as e:
-            print(f"  [WARN] HS300 MA{ma_trend_period} failed: {e}")
+        for idx_code in benchmarks:
+            try:
+                daily = load_index_daily_cached(idx_code)
+                weekly = build_index_weekly(daily)
+                cache = build_ma_trend_cache(daily, weekly, ma_trend_period) or {}
+                benchmark_above_maps[idx_code] = cache.get("above", {})
+                benchmark_rising_maps[idx_code] = cache.get("ma_rising", {})
+                print("  {} MA{}: {} days loaded".format(
+                    idx_code, ma_trend_period, len(benchmark_above_maps[idx_code])))
+            except Exception as e:
+                print("  [WARN] {} MA{} failed: {}".format(idx_code, ma_trend_period, e))
+                # Fallback: empty maps (always vote bull)
+                benchmark_above_maps[idx_code] = {}
+                benchmark_rising_maps[idx_code] = {}
 
     # 确定回测日期范围
     all_dates_set = set()
@@ -638,17 +680,24 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
     regime = "choppy_range"
     nav_list_bt = []
     prev_effective_bull = True
+    prev_index_votes = {}  # {code: bool} per-index previous vote, initial empty→default bull
     trade_lots = {}       # {code: [{"buy_date","buy_price","shares"}, ...]}
     all_trade_log = []    # accumulated closed trades from each rebalance
 
     print("\n开始回测...")
     debug_snapshots = []
 
+    total_rb = len(rebalance_dates)
     for rb_idx, rb_date in enumerate(rebalance_dates):
         # 初始建仓日：回测周期前最后一个调仓日，仅执行首次买入
         is_initial = initial_rb_date is not None and rb_date == initial_rb_date
         if is_initial:
             pass  # 执行初始建仓
+        if progress_callback:
+            # Fire every iteration for short runs (<200), every 5 for long runs
+            cb_every = 1 if total_rb < 200 else 5
+            if rb_idx % cb_every == 0:
+                progress_callback(rb_idx, total_rb, "回测中")
 
         execution_date = get_execution_date(rb_date, all_dates)
         if execution_date is None:
@@ -723,18 +772,22 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
 
         # F4 估值因子（regime-aware）
         rb_date_str = rb_date.strftime("%Y-%m-%d") if hasattr(rb_date, "strftime") else str(rb_date)[:10]
-        hs300_above_ma = hs300_above_ma_map.get(rb_date_str, True)  # default bull if no data
-        hs300_ma_rising = hs300_ma_rising_map.get(rb_date_str, True)
+
+        # Multi-benchmark voting (or single HS300 for backward compat)
+        _benchmark_votes = []
+        for idx_code in benchmarks:
+            _above = benchmark_above_maps.get(idx_code, {}).get(rb_date_str, True)
+            _rising = benchmark_rising_maps.get(idx_code, {}).get(rb_date_str, True)
+            _benchmark_votes.append({"code": idx_code, "above": _above, "rising": _rising})
+
+        _single_bm = benchmarks[0] if benchmarks else "000300"
+        hs300_above_ma = benchmark_above_maps.get(_single_bm, {}).get(rb_date_str, True)
+        hs300_ma_rising = benchmark_rising_maps.get(_single_bm, {}).get(rb_date_str, True)
         market_regime = market_regimes.get(rb_date_str, "choppy_range")
 
         if w4 > 0 and "f4_valuation" in factors_df.columns:
             mapped_f4 = factors_df["f4_valuation"].apply(lambda v: map_f4(v, market_regime))
             composite = composite + mapped_f4 * w4
-
-        # 偏好加成
-        for code, bonus in bias_map.items():
-            if code in composite.index:
-                composite[code] += bonus
 
         # F6 动能衰竭惩罚（加法因子：f6_penalty-1 ∈ [-0.85, 0]，w6=0时无效）
         if w6 > 0 and "f6_exhaustion_penalty" in factors_df.columns:
@@ -836,21 +889,36 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
             total_target = 0.95
             regime = "always_full"
         elif conf_type == "ma_trend":
-            if ma_direction_confirm:
-                both_agree = (hs300_above_ma == hs300_ma_rising)
-                if both_agree:
-                    effective_bull = hs300_above_ma  # 双条件一致→切换
-                else:
-                    effective_bull = prev_effective_bull  # 不一致→维持
+            if use_multi_benchmark:
+                total_target, regime, _vote_details, prev_index_votes = multi_benchmark_confidence(
+                    benchmark_votes=_benchmark_votes,
+                    bull_pos=ma_bull_pos,
+                    bear_pos=ma_bear_pos,
+                    direction_confirm=ma_direction_confirm,
+                    prev_bull=prev_effective_bull,
+                    prev_index_votes=prev_index_votes,
+                )
+                effective_bull = (regime == "ma_above")
+                prev_effective_bull = effective_bull
+                benchmark_vote_details = _vote_details
             else:
-                effective_bull = hs300_above_ma
-            prev_effective_bull = effective_bull
-            total_target = ma_trend_confidence(
-                hs300_above_ma=effective_bull,
-                bull_pos=ma_bull_pos,
-                bear_pos=ma_bear_pos,
-            )
-            regime = "ma_above" if effective_bull else "ma_below"
+                # Single HS300 — backward compatible
+                if ma_direction_confirm:
+                    both_agree = (hs300_above_ma == hs300_ma_rising)
+                    if both_agree:
+                        effective_bull = hs300_above_ma
+                    else:
+                        effective_bull = prev_effective_bull
+                else:
+                    effective_bull = hs300_above_ma
+                prev_effective_bull = effective_bull
+                total_target = ma_trend_confidence(
+                    hs300_above_ma=effective_bull,
+                    bull_pos=ma_bull_pos,
+                    bear_pos=ma_bear_pos,
+                )
+                regime = "ma_above" if effective_bull else "ma_below"
+                benchmark_vote_details = None
         else:
             # Legacy: score-based quadratic confidence
             confidences = top_n.apply(lambda s: confidence_function(s, dead_zone, full_zone))
@@ -918,12 +986,13 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
             portfolio, cash, prices_today, suspended_codes,
             target_positions.to_dict(), tradable_tv, step, commission_rate, turnover_today,
             trade_lots=trade_lots, exec_date_str=exec_key,
+            account_mode=account_mode, max_gross_exposure=max_gross_exposure,
         )
         total_commission += comm
         all_trade_log.extend(trade_log)
 
         # 记录信号
-        signal_history.append({
+        signal_entry = {
             "date": execution_date,
             "signal_date": rb_date,
             "execution_date": execution_date,
@@ -936,7 +1005,12 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
             "actual_exposure": actual_exposure,
             "account_mode": account_mode,
             "regime": regime,
-        })
+        }
+        if conf_type == "ma_trend" and benchmark_vote_details is not None:
+            signal_entry["benchmark_votes"] = benchmark_vote_details
+        else:
+            signal_entry["hs300_above_ma"] = bool(hs300_above_ma)
+        signal_history.append(signal_entry)
         if return_debug:
             top6_snapshot = []
             for code in top_n.index:
@@ -963,6 +1037,7 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
                 "sigma": round(float(sigma), 4),
                 "hs300_above_ma": bool(hs300_above_ma),
                 "hs300_ma_rising": bool(hs300_ma_rising) if conf_type == "ma_trend" else True,
+                "benchmark_votes": benchmark_vote_details if conf_type == "ma_trend" and benchmark_vote_details is not None else None,
                 "nav_before": round(float(total_value), 2),
                 "cash": round(float(cash), 2),
                 "holdings": {code: round(float(shares), 6) for code, shares in portfolio.items()},
@@ -1126,6 +1201,7 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
             comm2, cash2, _ = _execute_rebalance(
                 portfolio2, cash2, prices, suspended_codes2,
                 target_positions, tradable_tv2, step, commission_rate, turnover2,
+                account_mode=account_mode, max_gross_exposure=max_gross_exposure,
             )
             total_commission2 += comm2
 
@@ -1215,13 +1291,28 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
     max_exposure = float(np.max(exposure_series)) if len(exposure_series) > 0 else 0.0
     days_above_100 = int(np.sum(exposure_series > 1.0))
     days_above_150 = int(np.sum(exposure_series > 1.5))
+    days_above_180 = int(np.sum(exposure_series > 1.8))
     avg_excess = float(np.mean(np.maximum(exposure_series - 1.0, 0)))
     daily_rets = nav_df["nav"].pct_change().fillna(0).values
     max_daily_loss = float(np.min(daily_rets)) * 100 if len(daily_rets) > 0 else 0.0
     financing_rate = account_cfg.get("financing_rate_annual", 0.06) if account_mode == "synthetic_leverage" else 0.0
     interest_drag = avg_excess * financing_rate
 
-    return nav_df, signal_history, {
+    # Leverage contribution: estimate what return would be without leverage
+    unlevered_rets = []
+    for i in range(len(daily_rets)):
+        exp = exposure_series[i] if i < len(exposure_series) else 1.0
+        if exp > 0.01:
+            unlevered_rets.append(daily_rets[i] / exp)
+        else:
+            unlevered_rets.append(0)
+    unlevered_nav = 1.0
+    for r in unlevered_rets:
+        unlevered_nav *= (1.0 + r)
+    unlevered_total_return = (unlevered_nav - 1.0) * 100
+    leverage_contribution = total_return - unlevered_total_return
+
+    result_extra = {
         "total_commission": comm, "trade_count": actual_trades,
         "debug_snapshots": debug_snapshots, "trade_log": all_trade_log,
         "exposure_series": exposure_series.tolist(),
@@ -1231,10 +1322,16 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
             "max_exposure": round(max_exposure, 4),
             "days_above_100": days_above_100,
             "days_above_150": days_above_150,
+            "days_above_180": days_above_180,
             "max_daily_loss_pct": round(max_daily_loss, 2),
             "interest_drag_estimate": round(interest_drag * 100, 2),
+            "leverage_contribution_pct": round(leverage_contribution, 2),
+            "unlevered_total_return_pct": round(unlevered_total_return, 2),
         },
     }
+    if return_data:
+        result_extra["all_daily"] = all_daily
+    return nav_df, signal_history, result_extra
 
 
 def main():
@@ -1244,7 +1341,7 @@ def main():
     parser.add_argument("--execution-timing", choices=["same_close"], default=None,
                         help="(已废弃，仅保留兼容性)")
     parser.add_argument("--output", type=str, default=None, help="输出净值 CSV 路径")
-    parser.add_argument("--preset", type=str, default="zen-1",
+    parser.add_argument("--preset", type=str, default=None,
                         help="预设配置名 (default: zen-1)")
     parser.add_argument("--debug", action="store_true", dest="debug",
                         help="输出调试快照到 data/debug_cli.json")

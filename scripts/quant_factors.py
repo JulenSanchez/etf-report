@@ -374,18 +374,17 @@ def map_f4(val_score: float, regime: str = "choppy_range") -> float:
 
 
 def composite_score(factors_df: pd.DataFrame, weights: dict,
-                    bias_map: dict, sensitivity: dict = None,
+                    sensitivity: dict = None,
                     norm_method: str = "continuous",
                     regime: str = None) -> pd.Series:
     """
     合成综合分（连续映射版）
     factors_df: index=ETF代码, columns=[f1_ema_dev, f3_volume_ratio, ...]
     weights: {ema_deviation: 0.30, volume_ratio: 0.30, ...}
-    bias_map: {code: bonus} 如 {"512400": 0.04, "513120": 0.04, "512070": 0.04}
     sensitivity: {f1: 8.0, f3: 1.5, f7: 1.0} 映射函数参数
     norm_method: "continuous"（默认，使用映射函数）或 "percentile_rank"（旧方法，已弃用）
 
-    返回：pd.Series，值域 [0, 1]（加 bias 后可能略超 1）
+    返回：pd.Series，值域 [0, 1]
     """
     if sensitivity is None:
         sensitivity = {}
@@ -438,11 +437,6 @@ def composite_score(factors_df: pd.DataFrame, weights: dict,
         if w4 > 0 and "f4_valuation" in factors_df.columns:
             norm_f4 = normalize_cross_section(factors_df["f4_valuation"], norm_method) / 100.0
             score = score + norm_f4 * w4
-
-    # 偏好加成（0-1 尺度）
-    for code, bonus in bias_map.items():
-        if code in score.index:
-            score[code] += bonus
 
     return score
 
@@ -603,6 +597,88 @@ def ma_trend_confidence(hs300_above_ma: bool,
       bear_pos: 趋势向下时仓位
     """
     return bull_pos if hs300_above_ma else bear_pos
+
+
+def multi_benchmark_confidence(benchmark_votes, bull_pos=0.95, bear_pos=0.10,
+                               direction_confirm=True, prev_bull=None,
+                               prev_index_votes=None):
+    """Multi-index voting confidence function.
+
+    Each index independently votes bull/bear based on its MA trend.
+    With direction_confirm, an index maintains its previous vote when
+    price and MA slope disagree (matching single-HS300 behavior).
+    Majority vote determines the regime.
+
+    Args:
+        benchmark_votes: list of dicts, each with:
+            {code: str, above: bool, rising: bool}
+        bull_pos: position when bull regime
+        bear_pos: position when bear regime
+        direction_confirm: if True, index keeps prev vote when above != rising
+        prev_bull: previous regime (for tie-breaking)
+        prev_index_votes: dict {code: bool} of each index's previous vote (True=bull)
+
+    Returns:
+        total_target: float (bull_pos or bear_pos)
+        regime: str ('ma_above' or 'ma_below')
+        details: dict with vote counts and per-index breakdown
+        next_index_votes: dict {code: bool} for next call
+    """
+    if prev_index_votes is None:
+        prev_index_votes = {}
+
+    bull_votes = 0
+    bear_votes = 0
+    per_index = {}
+    next_index_votes = {}
+
+    for bv in benchmark_votes:
+        code = bv["code"]
+        above = bv["above"]
+        rising = bv["rising"]
+
+        if direction_confirm:
+            both_agree = (above == rising)
+            if both_agree:
+                is_bull = above  # 双条件一致→切换
+            else:
+                is_bull = prev_index_votes.get(code, True)  # 不一致→维持上期
+        else:
+            is_bull = above
+
+        if is_bull:
+            vote = "bull"
+            bull_votes += 1
+        else:
+            vote = "bear"
+            bear_votes += 1
+
+        per_index[code] = {"above": bool(above), "rising": bool(rising), "vote": vote}
+        next_index_votes[code] = is_bull
+
+    total_votes = bull_votes + bear_votes
+
+    if bull_votes > bear_votes:
+        is_bull = True
+    elif bear_votes > bull_votes:
+        is_bull = False
+    else:
+        # Tie — maintain previous
+        is_bull = prev_bull if prev_bull is not None else True
+
+    total_target = bull_pos if is_bull else bear_pos
+    regime = "ma_above" if is_bull else "ma_below"
+
+    details = {
+        "bull_votes": bull_votes,
+        "bear_votes": bear_votes,
+        "total_voting": total_votes,
+        "total_benchmarks": len(benchmark_votes),
+        "per_index": per_index,
+        "regime": regime,
+    }
+
+    return total_target, regime, details, next_index_votes
 
 
 def factor_volatility_zscore(daily_df: pd.DataFrame,

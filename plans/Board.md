@@ -21,7 +21,14 @@
 
 ## done (已完成，待发布)
 
-（空）
+| ID | 标题 | 完成日期 |
+|----|------|---------|
+| REQ-311 | **统一默认策略接口** — DEFAULT_PRESET 常量 + 全项目 8 入口自动读取 | 2026-06-24 |
+| REQ-318 | **极端持仓分析门禁** — `extreme_analyzer.py` + preset-change.md §极端集中分析 | 2026-06-24 |
+| REQ-319 | **回测窗口约定** — 滚动6Y主窗口，新冠MDD作为压力测试参考不进入硬约束 | 2026-06-24 |
+| REQ-307 | **多宽基投票信心函数** — SSE50+HS300+CSI500+ChiNext 四指数投票替代单HS300 | 2026-06-24 |
+| REQ-300 | **正式页合成杠杆摘要** — 均暴露/杠杆贡献/>180%天数/融资压力 | 2026-06-25 |
+| REQ-320 | **异步任务进度系统** — 回测真实%+轮询 / 刷新/元数据进度条+计时 / K线自动渲染 | 2026-06-25 |
 
 ## v4.0.0 规划 → 见 `plans/V4_ROADMAP.md`
 
@@ -60,9 +67,13 @@
 | REQ-304 | **real_margin Tuner 结果展示** | 🟢 Low | v3.10.0 | 担保比例趋势、margin_call 标记 |
 | REQ-305 | **Stage A 候选在 real_margin 下复核** | 🟡 Normal | v3.10.0 | gam/zen/act margin 候选在真实融资成本下重评 |
 | REQ-306 | **宽基 ETF 入库筛选** — 5-8支增强型/smart beta/纯宽基，sector=宽基 | 🟠 High | v3.9.0 | 提供纯β敞口。详见 plans/REQ-306.md |
-| REQ-307 | **多宽基投票信心函数** — 4指数投票替代单HS300，bear/cautious/bull三态 | 🟠 High | v3.9.0 | 依赖REQ-306。详见 plans/REQ-307.md |
-| REQ-309 | **成分股主营业务元数据** — 拉取 top10 持仓股的公司简介，展示在重仓面板 | 🟢 Low | v3.10.0 | 详见 plans/REQ-309.md |
+| REQ-309 | **成分股主营业务元数据** — cninfo API 拉取 322 支 A 股主营业务，十大重仓面板展示 biz_short | 🟢 Low | v3.10.0 | done | 2026-06-25 | 刷新元数据时自动连带拉取 |
 | REQ-310 | **动态分数带** — score_band 随分数分布自适应，解决狗皮膏药效应 | 🟡 Normal | v4.0.0 | 研究笔记见 research/strategy/dynamic-score-band.md |
+| REQ-313 | **real_margin 融资负债与利息引擎** — 逐日计提、卖出还款、利息进 NAV | 🟡 Normal | v3.10.0 | Stage B 发动机 |
+| REQ-314 | **AccountState 序列与维持担保比例** — 每日快照:NLV/担保比例/购买力 | 🟡 Normal | v3.10.0 | 依赖 REQ-313 |
+| REQ-315 | **追保/强平风险标记** — warning(150%)/liquidation(130%) 标记 | 🟡 Normal | v3.10.0 | 第一版只标记不模拟强平 |
+| REQ-316 | **real_margin Tuner 结果展示** — 担保比例趋势+margin_call标记 | 🟢 Low | v3.10.0 | 依赖 REQ-313/314 |
+| REQ-317 | **Stage A 候选在 real_margin 下复核** — gam-2/3 在6%利率下重评 | 🟡 Normal | v3.10.0 | 依赖 REQ-313 |
 
 ## wishlist (远期愿景)
 
@@ -126,6 +137,10 @@
 | BUG-028 | 中概互联(513050) `--full` 分页 bug → CSV 仅 2017-2019 数据 → 不进因子计算 | 🟡 Medium | fixed | v3.2.0-dev | REQ-214 池子扩容 | 2026-05-22 | `fetch_etf_kline` full 模式后处理丢失中间页数据。手动分页重建 2264 行 CSV。后续 full fetch 仍可能有此问题，需统一修复。 | v3.2.0 |
 | BUG-030 | 回测历史信号漂移：全量重拉CSV后6/3煤炭得分从65.3降至62.7，排名从第2跌至第7 | 🔴 Critical | closed | v3.5.0 | — | 2026-06-05 | f1_active_days 重构重写了整个 F1 管线（rebuild_weekly + bitmask），旧基线不可比。若新体系再出现漂移，开 BUG-031。 | — |
 | ~~BUG-031~~ | **交易日历缺失历史节假日** — 已转 REQ-278。当前用日线数据统计 + 最后周硬编码 5 的临时方案可用。 | 🟡 Medium | closed | v3.6.0-dev | REQ-277 | 2026-06-10 | 转为 REQ-278：增加中国节假日后处理修正日历，替换临时硬编码。 | — |
+| BUG-035 | **tuner-metrics 翻页高度跳动** — 杠杆指标第二页(2x5)容器高度与第一页不一致 | 🟡 Medium | fixed | v3.9.0 | — | 2026-06-24 | 占位卡无内部结构导致grid行高塌陷。修复：填充 `.label+.value` 占位内容 | v3.10.0 |
+| BUG-036 | **tuner-snapshot-footer 全选/全不选/反选无响应** — 三个筛选按钮点击不触发sectorFilter变更 | 🟡 Medium | fixed | v3.9.0 | — | 2026-06-24 | `JSON.stringify(allKeys)` 含双引号嵌入 `onclick="..."` 属性导致 HTML 解析截断。修复：全局存储 + 独立函数 | v3.10.0 |
+| BUG-037 | **nav-chart / MDD副图 / K线图缩放平移无联动** — 三个图表各自独立缩放，不支持同步平移 | 🟡 Medium | fixed | v3.9.0 | BUG-035 | 2026-06-24 | 三个图表 `dataZoom` 缺少 `groupId`。修复：统一添加 `groupId:'tuner-zoom'` | v3.10.0 |
+| BUG-038 | **🔴 合成杠杆从未生效 — `_execute_rebalance` 买入金额被现金上限截断** | 🔴 Critical | open | v3.0.0 | 全部杠杆回测 | 2026-06-25 | `buy_value=min(diff,cash)` 阻止借款。mbull>1.0 时杠杆买入被现金截断，有效敞口≤1.0。gam-2/gam-3 全部历史回测为虚假值 | — |
 
 
 
@@ -142,13 +157,13 @@
 
 ## ID 计数器
 
-**下一个需求 ID**: REQ-311
+**下一个需求 ID**: REQ-321
 
 
 
 
 
-**下一个 Bug ID**: BUG-035
+**下一个 Bug ID**: BUG-038
 
 
 

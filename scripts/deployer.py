@@ -4,12 +4,12 @@
 GitHub Pages 部署
 
 Step 8 of --publish mode:
-1. 将项目根目录的 index.html 复制到 GitHub Pages 仓库
+1. 将 GitHub Pages 发布面复制到独立 Pages 仓库
 2. 在 GitHub Pages 仓库中 git add/commit/push
 
 架构说明：
 - 项目源码仓库: etf-report (push 源码改动)
-- Pages 部署仓库: github-pages/etf-report/ (push index.html 供 Pages 展示)
+- Pages 部署仓库: github-pages/etf-report/ (push index.html + assets 供 Pages 展示)
 """
 
 import os
@@ -219,20 +219,37 @@ def _deploy_to_pages_repo(config: dict, project_root: str, html_source_path: str
 
     logger.info("部署到 GitHub Pages 仓库", {"path": pages_root})
 
-    # 复制 index.html
+    publish_files = [
+        "index.html",
+        "assets/css/report.css",
+        "assets/css/debug.css",
+        "assets/js/runtime_payload.js",
+        "assets/js/quant_payload.js",
+        "assets/js/quant-main.js",
+        "assets/js/report-main.js",
+        "assets/js/chart-lifecycle.js",
+        "assets/js/debug-toolbar.js",
+    ]
+    copied_files = []
+
     src_html = html_source_path or os.path.join(project_root, "index.html")
-    dst_html = os.path.join(pages_root, "index.html")
-
-
     if not os.path.exists(src_html):
         logger.error("源 index.html 不存在", {"path": src_html})
         return False
 
-    shutil.copy2(src_html, dst_html)
-    logger.info("index.html 已复制到 Pages 仓库", {
-        "src": src_html,
-        "dst": dst_html,
-        "size_kb": os.path.getsize(dst_html) / 1024
+    for rel_path in publish_files:
+        src_path = src_html if rel_path == "index.html" else os.path.join(project_root, rel_path)
+        dst_path = os.path.join(pages_root, rel_path)
+        if not os.path.exists(src_path):
+            logger.error("发布资源不存在", {"file": rel_path, "path": src_path})
+            return False
+        os.makedirs(os.path.dirname(dst_path), exist_ok=True)
+        shutil.copy2(src_path, dst_path)
+        copied_files.append(rel_path)
+
+    logger.info("发布资源已复制到 Pages 仓库", {
+        "files": copied_files,
+        "count": len(copied_files),
     })
 
     # 检查当前分支
@@ -242,7 +259,7 @@ def _deploy_to_pages_repo(config: dict, project_root: str, html_source_path: str
         _run_git(pages_root, ["checkout", pages_branch])
 
     # Git add
-    _run_git(pages_root, ["add", "index.html"])
+    _run_git(pages_root, ["add"] + copied_files)
 
     # 检查是否有变更
     result = _run_git(pages_root, ["status", "--porcelain"])

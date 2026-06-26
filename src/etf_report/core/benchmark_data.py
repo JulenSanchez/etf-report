@@ -8,11 +8,51 @@ from etf_report.core.trading_calendar import latest_allowed_close_date
 
 PROJECT_ROOT = next(parent for parent in Path(__file__).resolve().parents if (parent / "config").is_dir() and (parent / "scripts").is_dir())
 DATA_DIR = PROJECT_ROOT / "data" / "quant"
-HS300_CACHE_PATH = DATA_DIR / "hs300_daily.csv"
+HS300_CACHE_PATH = DATA_DIR / "000300_daily.csv"  # unified path with quant_data_fetcher
 
 
 def load_hs300_daily_cached(cache_path=HS300_CACHE_PATH):
-    """Load HS300 daily data from local cache, refreshing only when missing/stale."""
+    """Load HS300 daily data from local cache (unified 000300_daily.csv path)."""
+    return _load_index_daily_cached("000300", "sh000300", cache_path)
+
+
+# Index code → akshare symbol mapping
+INDEX_SYMBOL_MAP = {
+    "000016": "sh000016",   # SSE 50
+    "000300": "sh000300",   # HS300
+    "000905": "sh000905",   # CSI500
+    "399006": "sz399006",   # ChiNext
+}
+
+INDEX_NAME_MAP = {
+    "000016": "上证50",
+    "000300": "沪深300",
+    "000905": "中证500",
+    "399006": "创业板指",
+}
+
+INDEX_CACHE_DIR = DATA_DIR
+
+
+def load_index_daily_cached(code: str):
+    """Load any index daily data from local cache, fetching if missing/stale.
+
+    Args:
+        code: Index code (000016, 000300, 000905, 399006)
+
+    Returns:
+        DataFrame with columns: date, open, high, low, close, volume
+    """
+    symbol = INDEX_SYMBOL_MAP.get(code)
+    if symbol is None:
+        raise ValueError("Unknown index code: {} (supported: {})".format(
+            code, list(INDEX_SYMBOL_MAP.keys())))
+    cache_path = INDEX_CACHE_DIR / "{}_daily.csv".format(code)
+    return _load_index_daily_cached(code, symbol, cache_path)
+
+
+def _load_index_daily_cached(code, symbol, cache_path):
+    """Internal: load index daily data with cache logic."""
     cache_path = Path(cache_path)
     cached = None
     if cache_path.exists():
@@ -20,7 +60,7 @@ def load_hs300_daily_cached(cache_path=HS300_CACHE_PATH):
             cached = pd.read_csv(cache_path, parse_dates=["date"])
             cached = cached.sort_values("date").reset_index(drop=True)
         except Exception as e:
-            print(f"  [WARN] HS300 cache read failed: {e}")
+            print("  [WARN] {} cache read failed: {}".format(code, e))
             cached = None
 
     latest_allowed = latest_allowed_close_date()
@@ -28,22 +68,22 @@ def load_hs300_daily_cached(cache_path=HS300_CACHE_PATH):
         last_date = cached["date"].iloc[-1].strftime("%Y-%m-%d")
         cache_mtime = datetime.fromtimestamp(cache_path.stat().st_mtime).strftime("%Y-%m-%d")
         if last_date >= latest_allowed or cache_mtime == datetime.now().strftime("%Y-%m-%d"):
-            print(f"  HS300 cache: {len(cached)} rows ({last_date})")
+            print("  {} cache: {} rows ({})".format(code, len(cached), last_date))
             return cached
 
     try:
         import akshare as ak
-        print("  HS300 cache stale/missing, fetching...")
-        hs = ak.stock_zh_index_daily(symbol="sh000300")
-        hs["date"] = pd.to_datetime(hs["date"])
-        hs = hs.sort_values("date").reset_index(drop=True)
+        print("  {} cache stale/missing, fetching...".format(code))
+        df = ak.stock_zh_index_daily(symbol=symbol)
+        df["date"] = pd.to_datetime(df["date"])
+        df = df.sort_values("date").reset_index(drop=True)
         cache_path.parent.mkdir(parents=True, exist_ok=True)
-        hs.to_csv(cache_path, index=False, encoding="utf-8")
-        print(f"  HS300 cache updated: {len(hs)} rows")
-        return hs
+        df.to_csv(cache_path, index=False, encoding="utf-8")
+        print("  {} cache updated: {} rows".format(code, len(df)))
+        return df
     except Exception as e:
         if cached is not None and len(cached) > 0:
-            print(f"  [WARN] HS300 fetch failed, using stale cache: {e}")
+            print("  [WARN] {} fetch failed, using stale cache: {}".format(code, e))
             return cached
         raise
 
@@ -65,23 +105,31 @@ def build_hs300_pct(hs_daily, date_strs):
 
 def build_hs300_weekly(hs_daily):
     """Build Friday/week-ending HS300 weekly close DataFrame."""
-    hs = hs_daily.copy()
-    hs["week"] = hs["date"].dt.isocalendar().year.astype(str) + "-" + hs["date"].dt.isocalendar().week.astype(str).str.zfill(2)
-    return hs.groupby("week").last().reset_index()[["date", "close"]]
+    return build_index_weekly(hs_daily)
 
 
-def build_ma_trend_cache(hs_daily, hs_weekly, period):
-    """Build HS300 weekly MA above/below and MA direction lookup by daily date."""
-    if hs_daily is None or hs_weekly is None:
+def build_index_weekly(daily_df):
+    """Build Friday/week-ending weekly close DataFrame for any index."""
+    df = daily_df.copy()
+    df["week"] = df["date"].dt.isocalendar().year.astype(str) + "-" + df["date"].dt.isocalendar().week.astype(str).str.zfill(2)
+    return df.groupby("week").last().reset_index()[["date", "close"]]
+
+
+def build_ma_trend_cache(daily_df, weekly_df, period):
+    """Build weekly MA above/below and MA direction lookup by daily date.
+
+    Works for any index (not HS300-specific despite parameter names).
+    """
+    if daily_df is None or weekly_df is None:
         return None
-    w = hs_weekly.copy()
-    ma_col = f"ma{period}"
+    w = weekly_df.copy()
+    ma_col = "ma{}".format(period)
     w[ma_col] = w["close"].rolling(period, min_periods=max(period // 2, 5)).mean()
     w["above"] = w["close"] >= w[ma_col]
     w["ma_rising"] = w[ma_col] > w[ma_col].shift(1)
     w = w.dropna(subset=[ma_col]).copy().sort_values("date")
 
-    d = hs_daily[["date"]].copy().sort_values("date")
+    d = daily_df[["date"]].copy().sort_values("date")
     merged = pd.merge_asof(
         d,
         w[["date", "above", "ma_rising"]],

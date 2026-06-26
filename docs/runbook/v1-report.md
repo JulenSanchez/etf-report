@@ -32,10 +32,12 @@
 
 ## 二、手动执行
 
+> **AI 执行**: `python scripts/update_report.py` 是唯一入口。内部 8 步流程（拉 K 线、取实时行情、抓 editorial、更新量化数据、写 payload）对 AI 透明——AI 只关心最终输出。
+
 ```bash
-# 本地生成报告，不发布、不提交、不推送
 python scripts/update_report.py
 ```
+→ **预期**: EXIT=0。stdout 含 `[OK]` 标记的健康检查（25/25 passed）。`index.html` 和 `assets/js/runtime_payload.js` 更新为当日日期。量化板块（如有 `quant_payload.js`）同步刷新。执行时间约 2-3 分钟（含 editorial 抓取）。
 
 发布必须进入 `docs/runbook/release.md` 的 Phase 0-8；不要从本文直接执行 `--publish`。
 

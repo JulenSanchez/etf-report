@@ -39,7 +39,8 @@ except ImportError:
     optuna = None
 
 from etf_report.core.quant_contract import (
-    PARAM_BOUNDS, PRESET_OPT_PROFILES, get_param_bounds, get_param_type, auto_bounds,
+    PARAM_BOUNDS, PRESET_OPT_PROFILES, DEFAULT_PRESET,
+    get_param_bounds, get_param_type, auto_bounds,
     tuner_params_to_config_override, validate_tuner_params,
     preset_to_tuner_params,
     _WEIGHT_PARAM_KEYS,
@@ -64,7 +65,7 @@ PERIOD_PRESETS = {
 # ═══════════════════════════════════════════════════════════════════════════
 @dataclass
 class OptimizationConfig:
-    preset: str = "gam-1"
+    preset: str = DEFAULT_PRESET
     strategy: str = "bayesian"
     n_trials: int = 70
     metric: str = "annual_return"
@@ -95,8 +96,8 @@ def _compute_period(label, end_date_str):
 
 def parse_args(argv=None):
     p = argparse.ArgumentParser(description="Quant Parameter Optimizer")
-    p.add_argument("--preset", default="gam-1",
-                   help="Target preset (default: gam-1)")
+    p.add_argument("--preset", default=DEFAULT_PRESET,
+                   help=f"Target preset (default: {DEFAULT_PRESET})")
     p.add_argument("--strategy", default="bayesian", choices=["grid", "random", "bayesian"],
                    help="Search strategy (default: bayesian)")
     p.add_argument("--n-trials", type=int, default=70,

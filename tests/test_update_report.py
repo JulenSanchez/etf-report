@@ -26,7 +26,6 @@ def test_load_quant_preset_params_uses_shared_contract(tmp_path, load_module):
                     volume_ratio: 0.40
                     residual_momentum: 0.0
                     log_return_deviation: 0.10
-                  bias_bonus: 0.0
                   sensitivity:
                     f1: 8.0
                     f3: 1.5

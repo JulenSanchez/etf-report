@@ -15,7 +15,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 CONFIG_PATH = PROJECT_ROOT / "config" / "quant_universe.yaml"
 TRACKING_DIR = PROJECT_ROOT / "research" / "pool" / "rounds"
 BACKTEST_CMD = [sys.executable, str(PROJECT_ROOT / "scripts" / "quant_backtest.py"),
-                "--preset", "gam-1", "--start", "2020-05-22", "--end", "2026-06-12"]
+                "--start", "2020-05-22", "--end", "2026-06-12"]
 FETCH_CMD = [sys.executable, str(PROJECT_ROOT / "scripts" / "quant_data_fetcher.py")]
 
 parser = argparse.ArgumentParser(description="Single-ETF pool change (SOP enforced)")

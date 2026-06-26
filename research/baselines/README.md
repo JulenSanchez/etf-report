@@ -1,20 +1,15 @@
-# 回测基线档案
+# 回测基线快照档案
 
-## 规范
+> 本目录保存可回放的历史基线快照，不是当前基线的唯一事实源。当前版本摘要和当前基线以 `../../plans/Board.md` 为准；当前参数和 ETF 池以 `../../config/quant_universe.yaml` 为准。
 
-- **`current.json`** — 唯一权威基线。始终反映当前验证过的 ETF 池 + 各 preset 6y 指标。
-- **`archive/`** — 历史基线。ETF 池变更时，旧 `current.json` 移入此处，文件名为 `<date>_<version>.json`。
-- 基线不纳入日常 git commit（在 `.gitignore` 中），仅在发布时随版本一起提交。
+## 用途
 
-## 使用方式
+- 保存某次发布或研究时的基线快照。
+- 支持后续解释“为什么当时这样决策”。
+- 支持回放历史研究，不参与当前参数裁决。
 
-**查当前基线**：读 `current.json`。
+## 规则
 
-**替换 ETF 前**：读 `current.json` 的 `preset<N>.tr_pct` 作为对比基准。
-
-**替换 ETF 后验证通过**：
-1. `cp current.json archive/2026-06-10_v3.6.0.json`
-2. 更新 `current.json` 为新池 + 新指标
-3. 随版本发布 commit
-
-**替换 ETF 后验证失败（回退）**：不做任何操作，`current.json` 保持不变。
+1. 不在本目录声明“唯一权威”。
+2. 快照文件必须包含生成日期、代码版本、数据截止日、preset、universe 摘要。
+3. 若要更新当前生产基线，必须同步 `plans/Board.md`，并走对应 runbook。
