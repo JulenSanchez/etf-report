@@ -2252,6 +2252,8 @@ function _hideProgress() {
 async function _pollTask(taskId, label, onDone) {
   _showProgress(label);
   var maxPct = 0;
+  var lastMsg = '';
+  var start = Date.now();
   while (true) {
     try {
       var resp = await fetch('/api/progress/' + taskId);
@@ -2270,6 +2272,13 @@ async function _pollTask(taskId, label, onDone) {
       var pct = data.pct || 0;
       if (pct > maxPct) maxPct = pct;
       _updateProgress(maxPct);
+      // Show phase label from backend
+      var msg = data.message || '';
+      if (msg && msg !== lastMsg) {
+        lastMsg = msg;
+        var elapsed = Math.round((Date.now() - start) / 1000);
+        $id('tuner-progress-text').textContent = label + ' · ' + msg + ' … ' + elapsed + 's';
+      }
     } catch(e) {}
     await new Promise(function(r) { setTimeout(r, 400); });
   }

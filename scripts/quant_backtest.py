@@ -100,18 +100,6 @@ def get_price_on_date(all_daily: dict, code: str, date: pd.Timestamp, field: str
     return _get_price_on_date(all_daily, code, date, field)
 
 
-def _log_lev(msg):
-    """Append leverage debug message to log file."""
-    try:
-        from pathlib import Path
-        log_path = Path(__file__).resolve().parent.parent / "data" / "quant" / ".lev_debug.log"
-        from datetime import datetime
-        with open(log_path, "a", encoding="utf-8") as f:
-            f.write(f"[{datetime.now().strftime('%H:%M:%S')}] {msg}\n")
-    except Exception:
-        pass
-
-
 def _execute_rebalance(portfolio, cash, prices, suspended_codes,
                        target_positions, tradable_tv, step, commission_rate, turnover,
                        trade_lots=None, exec_date_str="",
@@ -259,6 +247,49 @@ def count_actual_rebalances(signal_history: list) -> int:
 
 from quant_factors import calc_rsi as _precalc_rsi
 
+# ── Factor cache ──────────────────────────────────────────────────────
+import hashlib, pickle, os as _os
+
+def _factor_cache_key(all_daily, ema_period, vol_window, f7_window,
+                       f7_lookback, f7_min_days, f7_sigma_floor,
+                       f1_daily_ema, f1_daily_ma, f1_active_days):
+    """Build a cache key from CSV mtimes + all factor parameters."""
+    h = hashlib.sha256()
+    for code in sorted(all_daily.keys()):
+        df = all_daily[code]
+        h.update(code.encode())
+        h.update(str(len(df)).encode())
+        h.update(str(df["date"].iloc[-1]).encode())
+        h.update(str(df["close"].iloc[-1]).encode())
+    for v in [ema_period, vol_window, f7_window, f7_lookback, f7_min_days,
+              f7_sigma_floor, f1_daily_ema, f1_daily_ma, f1_active_days]:
+        h.update(str(v).encode())
+    return h.hexdigest()[:16]
+
+def _factor_cache_path(key):
+    from pathlib import Path
+    d = Path(__file__).resolve().parent.parent / "data" / "quant" / ".factor_cache"
+    d.mkdir(parents=True, exist_ok=True)
+    return d / f"fc_{key}.pickle"
+
+def _factor_cache_load(key):
+    p = _factor_cache_path(key)
+    if p.exists():
+        try:
+            with open(p, "rb") as f:
+                return pickle.load(f)
+        except Exception:
+            p.unlink(missing_ok=True)
+    return None
+
+def _factor_cache_save(key, data):
+    try:
+        with open(_factor_cache_path(key), "wb") as f:
+            pickle.dump(data, f, protocol=pickle.HIGHEST_PROTOCOL)
+    except Exception:
+        pass
+
+
 def _precompute_factors(all_daily, all_weekly, ema_period, vol_window,
                          f7_window=20, f7_lookback=250, f7_min_days=60, f7_sigma_floor=0.01,
                          f3_norm_window=60, f1_daily_ema=False, f1_daily_ma=False,
@@ -278,6 +309,15 @@ def _precompute_factors(all_daily, all_weekly, ema_period, vol_window,
     '''
     import numpy as np
     from quant_factors import calc_ema as _ce
+
+    # ── Cache check ──
+    cache_key = _factor_cache_key(all_daily, ema_period, vol_window, f7_window,
+                                    f7_lookback, f7_min_days, f7_sigma_floor,
+                                    f1_daily_ema, f1_daily_ma, f1_active_days)
+    cached = _factor_cache_load(cache_key)
+    if cached is not None:
+        return cached
+
     out = {}
 
     # Bit → offset from last trading day of the ISO week.
@@ -446,6 +486,7 @@ def _precompute_factors(all_daily, all_weekly, ema_period, vol_window,
         out[code] = {"daily_dates": daily_dates, "weekly_dates": weekly_dates,
                       "f1": f1_val, "f3": f3_val, "f6": f6_val,
                       "f7": f7_val, "rsi": rsi_val}
+    _factor_cache_save(cache_key, out)
     return out
 
 def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
@@ -476,13 +517,6 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
                 base[k] = v
 
     cfg = load_config(preset=preset)
-    # BUG-038 diagnostic: write to file on every backtest invocation
-    try:
-        from pathlib import Path as _P; from datetime import datetime as _D
-        _lp = _P(__file__).resolve().parent.parent / "data" / "quant" / ".bt_invoke.log"
-        with open(_lp, "a", encoding="utf-8") as _f:
-            _f.write(f"[{_D.now().strftime('%H:%M:%S')}] preset={preset} start={start_date} end={end_date}\n")
-    except Exception: pass
     if config_override:
         for section, values in config_override.items():
             if section in cfg:
@@ -572,14 +606,19 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
         print(f"  使用预加载数据 {len(all_daily)}/{len(universe)} 支 ETF")
     else:
         print("加载数据...")
+        if progress_callback:
+            progress_callback(0, 100, "加载数据")
         all_daily = {}
         all_weekly = {}
-        for etf in universe:
+        n_etfs = len(universe)
+        for i, etf in enumerate(universe):
             code = etf["code"]
             daily, weekly = load_etf_data(code)
             if daily is not None:
                 all_daily[code] = daily
                 all_weekly[code] = weekly
+            if progress_callback and i % 10 == 9:
+                progress_callback(int(i / max(n_etfs,1) * 15), 100, "加载数据")
         print(f"  成功加载 {len(all_daily)}/{len(universe)} 支 ETF")
 
     # 加载市场状态（F4 regime-aware 映射需要）
@@ -626,6 +665,8 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
     user_end = pd.Timestamp(end_date) if end_date else all_dates_full[-1]
 
     # Always precompute factor series and price lookup (no fast/slow path distinction)
+    if progress_callback:
+        progress_callback(15, 100, "因子预计算")
     print("预计算因子序列...")
     factor_series = _precompute_factors(
         all_daily, all_weekly,
@@ -641,10 +682,11 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
         f6_decay_days=f6_decay_days,
         f6_base_penalty=f6_base_penalty,
     )
-    price_lookup = {
-        code: {str(row["date"])[:10]: row for _, row in df.iterrows()}
-        for code, df in all_daily.items()
-    }
+    price_lookup = {}
+    for code, df in all_daily.items():
+        dates = df["date"].astype(str).str[:10].tolist()
+        rows = df.to_dict('records')
+        price_lookup[code] = dict(zip(dates, rows))
 
     # Find initial trade date: last rebalance date before user_start
     all_dates_full_reb = get_rebalance_dates(
@@ -697,7 +739,8 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
             # Fire every iteration for short runs (<200), every 5 for long runs
             cb_every = 1 if total_rb < 200 else 5
             if rb_idx % cb_every == 0:
-                progress_callback(rb_idx, total_rb, "回测中")
+                pct = 25 + int(rb_idx / max(total_rb, 1) * 60)  # 25-85% range
+                progress_callback(pct, 100, "回测中")
 
         execution_date = get_execution_date(rb_date, all_dates)
         if execution_date is None:
@@ -716,10 +759,10 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
 
             # Price & turnover: O(1) from precomputed lookup
             row = price_lookup.get(code, {}).get(exec_key)
-            if row is None or price_field not in row.index:
+            if row is None or price_field not in row:
                 continue
             exec_price = float(row[price_field])
-            amt_col = "amount" if "amount" in row.index else None
+            amt_col = "amount" if "amount" in row else None
             if amt_col:
                 turnover_today[code] = float(row[amt_col])
 
@@ -1109,6 +1152,8 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
     # ============================================================
     # 逐日计算 NAV（从第一个调仓日到最后一个交易日）
     # ============================================================
+    if progress_callback:
+        progress_callback(85, 100, "计算净值")
     print("\n计算逐日 NAV...")
 
     # 重新跑一遍，但这次逐日记录净值
@@ -1121,7 +1166,10 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
     total_commission2 = 0.0
     current_exposure = 0.0
 
-    for date in all_dates:
+    n_dates = len(all_dates)
+    for di, date in enumerate(all_dates):
+        if progress_callback and di % 200 == 0:
+            progress_callback(85 + int(di / max(n_dates, 1) * 13), 100, "计算净值")
         if False:  # dead code — precomputation eliminated warmup expansion
             # 慢路径预热期：执行调仓但不记录 NAV
             if signal_idx < len(signal_history) and date >= signal_history[signal_idx]["date"]:
@@ -1170,7 +1218,7 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
                     prices[code] = p
                 # 成交额 from price_lookup row
                 row2 = price_lookup.get(code, {}).get(date.strftime("%Y-%m-%d"))
-                if row2 is not None and "amount" in row2.index:
+                if row2 is not None and "amount" in row2:
                     turnover2[code] = float(row2["amount"])
 
             # Fallback: fill missing prices for held ETFs with most recent available close.

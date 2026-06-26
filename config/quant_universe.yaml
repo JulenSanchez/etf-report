@@ -475,7 +475,7 @@ presets:
       log_return_deviation:
         window_days: 32
   gam-1:
-    label: 赌徒1
+    label: '1'
     description: 赌徒1(T20·mdd=-20%·两阶段分层)：F1(60%)+F3(26%)+F7(14%)，MH=3，MA=34w，bull=89%
       bear=43%，C=0.47 CS=5.6。三周期composite=1.006(唯一超基线)，6Y TR=+756%/MDD=-19.4%/Sharpe=1.41。信号层13trials+执行层27trials。信仰：保守至上、承认边界、不赚最后一个铜板。
     scoring:
@@ -531,7 +531,7 @@ presets:
         min_days: 60
         sigma_floor: 0.01
   gam-2:
-    label: 赌徒2(优化)
+    label: '2'
     description: 'v3优化: bull=1.32 bear=60% MH=2 MA=25w C=1.51 | 6Y MDD=-21.7% TR=+1947%
       | 信号(w1=24% w3=45% f7_t=23)'
     scoring:
@@ -588,7 +588,7 @@ presets:
         min_days: 60
         sigma_floor: 0.01
   gam-3:
-    label: 赌徒3(原版)
+    label: '3'
     description: '原gam-2: bull=1.58 bear=54% MH=2 MA=19w | BUG-038修复前最优 | 高杠杆baseline'
     scoring:
       weights:
@@ -752,7 +752,7 @@ presets:
         min_days: 60
         sigma_floor: 0.01
   gam-0:
-    label: 赌徒0(原gam-2备份)
+    label: '0'
     description: 原gam-2(bull=1.58 bear=54% MH=2 MA=19w)。BUG-038修复前的最优参数，保留作为baseline参考。
     scoring:
       weights:

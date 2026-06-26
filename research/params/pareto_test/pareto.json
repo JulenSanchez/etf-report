@@ -1,0 +1,90 @@
+[
+ {
+  "mdd": -24.49,
+  "composite": -4.73,
+  "value": -4.73,
+  "params": {
+   "conf_type": "ma_trend",
+   "ma_direction_confirm": true,
+   "bias": 0,
+   "account_mode": "synthetic_leverage"
+  }
+ },
+ {
+  "mdd": -24.49,
+  "composite": -4.73,
+  "value": -4.73,
+  "params": {
+   "conf_type": "ma_trend",
+   "ma_direction_confirm": true,
+   "bias": 0,
+   "account_mode": "synthetic_leverage"
+  }
+ },
+ {
+  "mdd": -24.49,
+  "composite": -4.73,
+  "value": -4.73,
+  "params": {
+   "conf_type": "ma_trend",
+   "ma_direction_confirm": true,
+   "bias": 0,
+   "account_mode": "synthetic_leverage"
+  }
+ },
+ {
+  "mdd": -24.49,
+  "composite": -4.73,
+  "value": -4.73,
+  "params": {
+   "conf_type": "ma_trend",
+   "ma_direction_confirm": true,
+   "bias": 0,
+   "account_mode": "synthetic_leverage"
+  }
+ },
+ {
+  "mdd": -24.49,
+  "composite": -4.73,
+  "value": -4.73,
+  "params": {
+   "conf_type": "ma_trend",
+   "ma_direction_confirm": true,
+   "bias": 0,
+   "account_mode": "synthetic_leverage"
+  }
+ },
+ {
+  "mdd": -24.49,
+  "composite": -4.73,
+  "value": -4.73,
+  "params": {
+   "conf_type": "ma_trend",
+   "ma_direction_confirm": true,
+   "bias": 0,
+   "account_mode": "synthetic_leverage"
+  }
+ },
+ {
+  "mdd": -24.49,
+  "composite": -4.73,
+  "value": -4.73,
+  "params": {
+   "conf_type": "ma_trend",
+   "ma_direction_confirm": true,
+   "bias": 0,
+   "account_mode": "synthetic_leverage"
+  }
+ },
+ {
+  "mdd": -24.49,
+  "composite": -4.73,
+  "value": -4.73,
+  "params": {
+   "conf_type": "ma_trend",
+   "ma_direction_confirm": true,
+   "bias": 0,
+   "account_mode": "synthetic_leverage"
+  }
+ }
+]

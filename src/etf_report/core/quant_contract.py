@@ -467,3 +467,68 @@ INITIAL_PRESETS = {
         "act": {"max_holdings": 4, "ma_bear_pos": 0.25, "ma_bull_pos": 0.80, "disc_step": 0.10, "concentration": 4.0, "c_sensitivity": 25, "score_band": 2.0, "ma_trend_period": 34},
     },
 }
+
+
+# ── Preset library (for Pareto optimizer warm-start) ────────────────
+
+def presets_as_warm_start(preset_names, reliable_only=True):
+    """从预设库提取参数列表，供优化器 warm-start 使用。
+
+    Args:
+        preset_names: 预设名列表，如 ['gam-1', 'gam-2']
+        reliable_only: True 时跳过标记为不可靠的预设
+
+    Returns:
+        [{"params": {...}, "source": "gam-1"}, ...]
+    """
+    import yaml, pathlib
+    cfg_path = pathlib.Path(__file__).resolve().parent.parent.parent.parent / "config" / "quant_universe.yaml"
+    with open(cfg_path, "r", encoding="utf-8") as f:
+        cfg = yaml.safe_load(f)
+    presets = cfg.get("presets", {})
+    trials = []
+    for name in preset_names:
+        p = presets.get(name)
+        if not p:
+            continue
+        if reliable_only and p.get("_unreliable"):
+            continue
+        # Extract all params from preset
+        params = {}
+        sc = p.get("scoring", {})
+        params["w1"] = int(sc.get("weights", {}).get("ema_deviation", 0.33) * 100)
+        params["w3"] = int(sc.get("weights", {}).get("volume_ratio", 0.33) * 100)
+        sens = sc.get("sensitivity", {})
+        params["f1_sensitivity"] = sens.get("f1", 8.0)
+        params["f3_sensitivity"] = sens.get("f3", 4.0)
+        params["f7_t"] = sens.get("f7_t", 10.0)
+        params["f7_k"] = sens.get("f7_k", 3.0)
+        cf = p.get("confidence", {})
+        params["ma_bull_pos"] = cf.get("ma_bull_pos", 1.0)
+        params["ma_bear_pos"] = cf.get("ma_bear_pos", 0.5)
+        params["ma_trend_period"] = cf.get("ma_trend_period", 26)
+        params["ma_direction_confirm"] = cf.get("ma_direction_confirm", True)
+        pos = p.get("position", {})
+        params["max_holdings"] = pos.get("max_holdings", 4)
+        params["concentration"] = pos.get("concentration", 3.0) * 10  # config→UI
+        params["c_sensitivity"] = pos.get("c_sensitivity", 30) * 10
+        params["score_band"] = pos.get("score_band", 0.02) * 100
+        params["disc_step"] = pos.get("discretize_step", 0.10)
+        fac = p.get("factors", {})
+        params["f1_ema_period"] = fac.get("ema", {}).get("period_weeks", 4)
+        params["f3_vol_window"] = fac.get("volume_ratio", {}).get("window_days", 30)
+        params["f7_window"] = fac.get("log_return_deviation", {}).get("window_days", 20)
+        trials.append({"params": params, "source": name})
+    return trials
+
+
+def mark_preset_unreliable(name):
+    """标记预设不可靠（如 BUG 修复后旧参数失效）。下次 warm-start 自动跳过。"""
+    import yaml, pathlib
+    cfg_path = pathlib.Path(__file__).resolve().parent.parent.parent.parent / "config" / "quant_universe.yaml"
+    with open(cfg_path, "r", encoding="utf-8") as f:
+        cfg = yaml.safe_load(f)
+    if name in cfg.get("presets", {}):
+        cfg["presets"][name]["_unreliable"] = True
+        with open(cfg_path, "w", encoding="utf-8") as f:
+            yaml.dump(cfg, f, allow_unicode=True, sort_keys=False)
