@@ -532,22 +532,25 @@ presets:
         sigma_floor: 0.01
   gam-2:
     label: 赌徒2
-    description: gam-2(杠杆优化·保守起点)：bull=1.0x bear=50% MH=4 MA=26w(优化中)
+    description: 赌徒2(杠杆优化·mdd=-25%)：F1(71%)+F3(13%)+F7(16%)，MH=2，MA=19w，bull=1.58x
+      bear=54%。1Y/3Y/6Y ann=+335%/+116%/+72%，6Y TR=+2527%/MDD=-23.7%/Sharpe=1.69。杠杆TPE
+      29trials(多周期+mdd,-25)。信仰：趋势为王、集中杠杆、mdd硬约束。
     scoring:
       weights:
-        ema_deviation: 0.33
-        volume_ratio: 0.33
-        log_return_deviation: 0.34
+        ema_deviation: 0.71
+        volume_ratio: 0.13
+        log_return_deviation: 0.16
+      bias_bonus: 0.0
       sensitivity:
-        f1: 8.0
-        f3: 4.0
-        f7_t: 10.0
-        f7_k: 3.0
+        f1: 9.6
+        f3: 4.79
+        f7_t: 17.85
+        f7_k: 2.72
     confidence:
       type: ma_trend
-      ma_trend_period: 26
-      ma_bull_pos: 1.0
-      ma_bear_pos: 0.5
+      ma_trend_period: 19
+      ma_bull_pos: 1.58
+      ma_bear_pos: 0.54
       ma_direction_confirm: true
       dead_zone: 17
       full_zone: 65
@@ -561,13 +564,13 @@ presets:
       clarity_threshold: 0.03
       dd_sensitivity: 0.2
     position:
-      max_holdings: 4
-      discretize_step: 0.1
-      concentration: 3.0
-      c_sensitivity: 30
+      max_holdings: 2
+      discretize_step: 0.165
+      concentration: 0.71
+      c_sensitivity: 8.68
       rebalance_freq: daily
       execution_timing: same_close
-      score_band: 0.02
+      score_band: 0.03
       commission_rate: 0.00026
       max_holdings_special: 8
       weighting: arithmetic
