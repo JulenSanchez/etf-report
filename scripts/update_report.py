@@ -163,10 +163,10 @@ def run_realtime_update():
 
 
 def run_editorial_update():
-    """REQ-158：抓取 editorial（研究卡 + 宏观卡）并写入 config/editorial_content.yaml。
+    """REQ-158：抓取 editorial（研究卡 + 宏观卡）并写入 data/editorial_content.yaml。
 
     失败策略：
-      - 任何源抓取失败：不抛出，logger.warn 记录，保留上一版 editorial_content.yaml
+      - 任何源抓取失败：不抛出，logger.warn 记录，保留上一版 data/editorial_content.yaml
       - 部分 ETF 成功部分失败：按"保留 final>0 的新条目，final=0 的回退到上一版"合并
       - 全部成功：完整覆盖
 

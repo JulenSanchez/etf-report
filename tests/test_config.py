@@ -43,7 +43,9 @@ def test_get_editorial_content_reads_optional_yaml(load_module, temp_config_dir)
     config_manager = load_module("config_manager")
     config = config_manager.ConfigManager(str(temp_config_dir))
 
-    (Path(temp_config_dir) / "editorial_content.yaml").write_text(
+    data_dir = Path(temp_config_dir).parent / "data"
+    data_dir.mkdir(parents=True, exist_ok=True)
+    (data_dir / "editorial_content.yaml").write_text(
         'content_date: "2026-04-16"\netf_cards:\n  "510000":\n    research_cards:\n      - "示例研究卡"\n',
         encoding="utf-8",
     )

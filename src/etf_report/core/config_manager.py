@@ -153,7 +153,7 @@ class ConfigManager:
     def get_editorial_content(self) -> Dict:
         """获取解释层内容配置（研究卡 / 宏观卡等）"""
         editorial_filename = self.get('files.editorial_content_file', 'editorial_content.yaml')
-        editorial_path = self._get_config_path(editorial_filename)
+        editorial_path = os.path.join(os.path.dirname(str(self._config_dir)), 'data', editorial_filename)
 
         if not os.path.exists(editorial_path):
             return {}

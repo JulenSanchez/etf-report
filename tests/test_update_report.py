@@ -914,9 +914,9 @@ def test_run_editorial_update_writes_new_yaml(tmp_path, monkeypatch, load_module
 
     # 构造临时 PROJECT_ROOT 与 config 目录
     project_root = tmp_path
-    config_dir = project_root / "config"
-    config_dir.mkdir()
-    editorial_path = config_dir / "editorial_content.yaml"
+    data_dir = project_root / "data"
+    data_dir.mkdir(parents=True, exist_ok=True)
+    editorial_path = data_dir / "editorial_content.yaml"
     editorial_path.write_text(
         "content_date: '2026-04-16'\netf_cards: {}\nmacro_cards: {}\n",
         encoding="utf-8",
@@ -969,9 +969,9 @@ def test_run_editorial_update_falls_back_on_empty_etf(tmp_path, monkeypatch, loa
     module = load_module("update_report")
 
     project_root = tmp_path
-    config_dir = project_root / "config"
-    config_dir.mkdir()
-    editorial_path = config_dir / "editorial_content.yaml"
+    data_dir = project_root / "data"
+    data_dir.mkdir(parents=True, exist_ok=True)
+    editorial_path = data_dir / "editorial_content.yaml"
     # 上一版含 513120 的历史卡片
     editorial_path.write_text(
         _yaml.safe_dump({
@@ -1020,9 +1020,9 @@ def test_run_editorial_update_survives_fetcher_exception(tmp_path, monkeypatch, 
     module = load_module("update_report")
 
     project_root = tmp_path
-    config_dir = project_root / "config"
-    config_dir.mkdir()
-    editorial_path = config_dir / "editorial_content.yaml"
+    data_dir = project_root / "data"
+    data_dir.mkdir(parents=True, exist_ok=True)
+    editorial_path = data_dir / "editorial_content.yaml"
     original = "content_date: '2026-04-16'\netf_cards: {}\nmacro_cards: {}\n"
     editorial_path.write_text(original, encoding="utf-8")
 
