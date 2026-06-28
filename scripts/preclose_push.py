@@ -7,11 +7,12 @@ from pathlib import Path
 
 PROJECT_ROOT = next(parent for parent in Path(__file__).resolve().parents if (parent / "config").is_dir() and (parent / "scripts").is_dir())
 sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
+sys.path.insert(0, str(PROJECT_ROOT / "src"))
 from trading_calendar import is_trading_day
 
 TUNER_URL = "http://localhost:5179"
 REFRESH_ONLY = "--refresh-only" in sys.argv
-DEFAULT_PRESET = "gam-2"
+from etf_report.core.quant_contract import DEFAULT_PRESET
 TUNER_STARTUP_TIMEOUT = 60  # max seconds to wait for Tuner
 
 def log(msg):
