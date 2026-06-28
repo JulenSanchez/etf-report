@@ -450,7 +450,7 @@ PRESET_OPT_PROFILES = {
     "act-2": {"metric": "calmar", "constraints": ["bear,0.15,0.30"]},
 }
 OPT_PERIODS = ["1Y", "3Y", "6Y"]
-DEFAULT_PRESET = "gam-2"
+DEFAULT_PRESET = "gam-0"
 
 # ── Initial presets for optimization (neutral starting points) ─────────
 INITIAL_PRESETS = {
