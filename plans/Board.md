@@ -4,11 +4,9 @@
 
 | 字段 | 值 |
 |------|------|
-| **当前版本** | **v3.9.0** |
-| **发布日期** | 2026-06-24 |
-| **三派终局** | 赌徒1(bull=0.89 bear=0.43 MH=3 mdd=-20%)、赌徒2(bull=1.58 bear=0.54 MH=2 mdd=-25%)、赌徒3(bull=1.92 bear=0.56 MH=2 mdd=-35%) |
-| **下一目标版本** | **v4.0.0** (多主体策略治理) |
-| **基线** | gam-2 TR=+2527% MDD=-23.7% Sharpe=1.83，ETF 54支（全量 active；2026-06-24） |
+| **当前版本** | **v3.9.0** (BUG-038 已修，杠杆生效) |
+| **生产预设** | **gam-0** (bull=1.58 bear=0.54 MH=2 MA=19w, 6Y TR=+8457% MDD=-30.4%) |
+| **下一目标版本** | **v3.10.0** (6Y AR 前沿重跑 + 点击选点 UI) |
 | **池子** | 54支，全部默认打开 |
 
 
@@ -17,20 +15,42 @@
 
 ## in_progress (开发中)
 
-（空）
+| ID | 标题 | 状态 |
+|----|------|------|
+| REQ-325 | **前沿点击选点 UI** — 散点图交互完成，待数据重跑后生效 | 前端就绪，数据待刷新 |
 
-## done (已完成，待发布)
+## done (已完成)
 
 | ID | 标题 | 完成日期 |
 |----|------|---------|
-| REQ-311 | **统一默认策略接口** — DEFAULT_PRESET 常量 + 全项目 8 入口自动读取 | 2026-06-24 |
-| REQ-318 | **极端持仓分析门禁** — `extreme_analyzer.py` + preset-change.md §极端集中分析 | 2026-06-24 |
-| REQ-319 | **回测窗口约定** — 滚动6Y主窗口，新冠MDD作为压力测试参考不进入硬约束 | 2026-06-24 |
-| REQ-307 | **多宽基投票信心函数** — SSE50+HS300+CSI500+ChiNext 四指数投票替代单HS300 | 2026-06-24 |
-| REQ-300 | **正式页合成杠杆摘要** — 均暴露/杠杆贡献/>180%天数/融资压力 | 2026-06-25 |
-| REQ-320 | **异步任务进度系统** — 回测真实%+轮询 / 刷新/元数据进度条+计时 / K线自动渲染 | 2026-06-25 |
+| REQ-327 | **🔴 帕累托优化引擎修复** — 迭代缩界 TPE 收敛 | 2026-06-29 |
+| REQ-322 | **回测性能优化 Phase 2** — F6清除+F7向量化+缓存粒度, 63s→26s | 2026-06-29 |
+| REQ-331 | **优化目标修正** — 伪COMP→纯3Y AR + w1+w3≤100约束 + end_date固定 | 2026-06-29 |
+| REQ-307 | **多宽基投票信心函数** | 2026-06-24 |
+| REQ-311 | **统一默认策略接口** | 2026-06-24 |
+| REQ-318 | **极端持仓分析门禁** | 2026-06-24 |
+| REQ-319 | **回测窗口约定** | 2026-06-24 |
+| REQ-300 | **正式页合成杠杆摘要** | 2026-06-25 |
+| REQ-309 | **成分股主营业务元数据** | 2026-06-25 |
+| REQ-320 | **异步任务进度系统** | 2026-06-25 |
 
-## v4.0.0 规划 → 见 `plans/V4_ROADMAP.md`
+## 版本规划
+
+| 版本 | 主题 | 核心交付 |
+|------|------|---------|
+| **v3.10.0** | 3Y AR 前沿 + 点击选点 | REQ-328 (5 target 重跑) → REQ-325 (UI 收尾) |
+| **v3.11.0** | Walk-Forward 验证 | REQ-323 (单轨迹) → REQ-324 (全量 WF 前沿) |
+| **v3.12.0** | Zen/Actuary 优化 | REQ-329 (Zen) + REQ-330 (Actuary) |
+| **v4.0.0** | 生产化 + 仪表盘 | WF 纳入 daily bat + real_margin (REQ-301) + 人设仪表盘 |
+
+> ⚠️ 6/29: 优化目标从伪COMP修正为纯3Y AR，此前产出的 2071 trials 全部失效，需重跑。优化引擎 (REQ-327) 和 UI (REQ-325) 本体已验证可用。
+
+## 当前阻塞
+
+| 阻塞项 | 影响 |
+|--------|------|
+| 前沿数据失效 | REQ-325 UI 无有效数据展示；需 REQ-328 重跑 |
+| 3Y vs 6Y 窗口分歧 | 前沿为 3Y 优化，Tuner 默认 6Y 回测 → MDD 严重偏离 |
 
 
 
@@ -49,31 +69,45 @@
 
 ## backlog (待开发)
 
-| ID | 标题 | 优先级 | 目标版本 | 备注 |
-|----|------|--------|---------|------|
-| REQ-270 | **v4 人设仪表盘** — 独立页面 `dashboard.html` + payload 管线 | 🔴 P0 | v4.0.0 | v4 旗舰交付。详见 plans/REQ-270.md |
-| REQ-272 | **版本演化协议** — 软分叉 + 会话内裁决 + 策略版本记录 | 🟠 P1 | v4.0.0 | 依赖 REQ-270。详见 plans/REQ-272.md |
-| REQ-194 | **统一数据获取管线** — 合并多个数据脚本为统一入口 | 🟠 High | v4.0.0 | 与 REQ-279 联动，v4 地基 |
-| REQ-285 | **GitHub Pages 发布面二期迁移** — 评估 `web/` / `dist/` / Actions Pages | 🟡 Normal | v4.0.0 | 源码与发布产物分离 |
-| REQ-279 | **data/ 目录结构优化** — 合并散落子目录，移 debug_*.json 到 _working/ | 🟢 Low | v4.0.0 | 与 REQ-194 联动，需完整回归测试 |
-| REQ-275 | **基准版本数据快照** — 回测因子分数/总分/NAV/指标快照存档 | 🟡 Normal | v4.1.0 | 详见 plans/REQ-275.md |
-| REQ-276 | **策略看门狗** — AI 定期分析运行状态、发现异常、提出研究方向 | 🟠 High | v4.1.0 | 待规划。详见 plans/REQ-276.md |
-| REQ-293 | **回测引擎与 Tuner 包装函数结构性拆分** — 降低量化主链维护风险 | 🟠 High | v4.1.0 | v4.0.0 形态落定后推进。详见 plans/REQ-293.md |
-| REQ-288 | **双仓拆分评估** — 包化和发布面迁移后评估是否拆仓 | 🟢 Low | v4.1.0 | 详见 plans/REQ-288.md |
-| REQ-299 | **三派合成杠杆参数优化与 promotion 裁决** | 🟠 High | v3.9.0 | 输出 act/zen/gam margin 候选。详见 plans/REQ-299.md |
-| REQ-301 | **real_margin 账户负债与利息引擎** | 🟡 Normal | v3.10.0 | Stage B。margin_debt 逐日计提、利息进 NAV。详见 docs/design/margin-account-model.md §4 |
-| REQ-302 | **AccountState 序列与维持担保比例** | 🟡 Normal | v3.10.0 | 每日快照：NLV/担保比例/可用购买力 |
-| REQ-303 | **追保/强平风险标记** | 🟡 Normal | v3.10.0 | warning(150%)/liquidation(130%) 标记 |
-| REQ-304 | **real_margin Tuner 结果展示** | 🟢 Low | v3.10.0 | 担保比例趋势、margin_call 标记 |
-| REQ-305 | **Stage A 候选在 real_margin 下复核** | 🟡 Normal | v3.10.0 | gam/zen/act margin 候选在真实融资成本下重评 |
-| REQ-306 | **宽基 ETF 入库筛选** — 5-8支增强型/smart beta/纯宽基，sector=宽基 | 🟠 High | v3.9.0 | 提供纯β敞口。详见 plans/REQ-306.md |
-| REQ-309 | **成分股主营业务元数据** — cninfo API 拉取 322 支 A 股主营业务，十大重仓面板展示 biz_short | 🟢 Low | v3.10.0 | done | 2026-06-25 | 刷新元数据时自动连带拉取 |
-| REQ-310 | **动态分数带** — score_band 随分数分布自适应，解决狗皮膏药效应 | 🟡 Normal | v4.0.0 | 研究笔记见 research/strategy/dynamic-score-band.md |
-| REQ-313 | **real_margin 融资负债与利息引擎** — 逐日计提、卖出还款、利息进 NAV | 🟡 Normal | v3.10.0 | Stage B 发动机 |
-| REQ-314 | **AccountState 序列与维持担保比例** — 每日快照:NLV/担保比例/购买力 | 🟡 Normal | v3.10.0 | 依赖 REQ-313 |
-| REQ-315 | **追保/强平风险标记** — warning(150%)/liquidation(130%) 标记 | 🟡 Normal | v3.10.0 | 第一版只标记不模拟强平 |
-| REQ-316 | **real_margin Tuner 结果展示** — 担保比例趋势+margin_call标记 | 🟢 Low | v3.10.0 | 依赖 REQ-313/314 |
-| REQ-317 | **Stage A 候选在 real_margin 下复核** — gam-2/3 在6%利率下重评 | 🟡 Normal | v3.10.0 | 依赖 REQ-313 |
+### v3.10.0: 3Y AR 前沿重跑 + 点击选点 UI
+
+| ID | 标题 | 优先级 | 备注 |
+|----|------|--------|------|
+| REQ-328 | **5 target 重跑** — 用修正后的 3Y AR 目标重跑 (-20/-25/-30/-35/-40) | 🔴 P0 | 上次 2071 trials 指标错误，全部作废 |
+| REQ-325 | **前沿点击选点 UI 收尾** — 数据刷新后验证交互 | 🟠 P1 | 前端已完成，待数据 |
+| REQ-301 | **real_margin 融资引擎** — margin_debt 逐日计提 | 🔴 P0 | 可并行，不阻塞前沿 |
+
+### v3.11.0: Walk-Forward 验证
+
+| ID | 标题 | 优先级 | 备注 |
+|----|------|--------|------|
+| REQ-323 | **WF Phase 1** — 单 MDD x 3 段验证 | 🟠 P1 | 依赖 REQ-328 |
+| REQ-324 | **WF Phase 2** — 5 MDD 全量前沿 | 🔴 P0 | 依赖 REQ-323 |
+
+### v3.12.0: Zen/Actuary 优化
+
+| ID | 标题 | 优先级 | 备注 |
+|----|------|--------|------|
+| REQ-329 | **Zen 前沿升级** — Sortino 优化 | 🟡 P1 | 预留 |
+| REQ-330 | **Actuary 前沿升级** — bear 约束优化 | 🟡 P1 | 预留 |
+
+### v4.0.0: 生产化 + 仪表盘
+
+| ID | 标题 | 优先级 | 备注 |
+|----|------|--------|------|
+| REQ-270 | **v4 人设仪表盘** — `dashboard.html` + payload 管线 | 🔴 P0 | |
+| REQ-272 | **版本演化协议** — 软分叉 + 会话内裁决 + 策略版本记录 | 🟠 P1 | |
+| REQ-194 | **统一数据获取管线** — 合并数据脚本为统一入口 | 🟠 P1 | |
+| REQ-326 | **Walk-Forward 生产化** — 纳入 daily bat, 前沿定期更新 | 🔴 P0 | 依赖 REQ-324 |
+
+### 远期 (v4.1+)
+
+| ID | 标题 | 备注 |
+|----|------|------|
+| REQ-275 | 基准版本数据快照 | |
+| REQ-276 | 策略看门狗 | |
+| REQ-293 | 回测引擎与 Tuner 结构性拆分 | |
+| REQ-310 | 动态分数带 | 见 research/strategy/dynamic-score-band.md |
 
 ## wishlist (远期愿景)
 
@@ -140,7 +174,9 @@
 | BUG-035 | **tuner-metrics 翻页高度跳动** — 杠杆指标第二页(2x5)容器高度与第一页不一致 | 🟡 Medium | fixed | v3.9.0 | — | 2026-06-24 | 占位卡无内部结构导致grid行高塌陷。修复：填充 `.label+.value` 占位内容 | v3.10.0 |
 | BUG-036 | **tuner-snapshot-footer 全选/全不选/反选无响应** — 三个筛选按钮点击不触发sectorFilter变更 | 🟡 Medium | fixed | v3.9.0 | — | 2026-06-24 | `JSON.stringify(allKeys)` 含双引号嵌入 `onclick="..."` 属性导致 HTML 解析截断。修复：全局存储 + 独立函数 | v3.10.0 |
 | BUG-037 | **nav-chart / MDD副图 / K线图缩放平移无联动** — 三个图表各自独立缩放，不支持同步平移 | 🟡 Medium | fixed | v3.9.0 | BUG-035 | 2026-06-24 | 三个图表 `dataZoom` 缺少 `groupId`。修复：统一添加 `groupId:'tuner-zoom'` | v3.10.0 |
-| BUG-038 | **🔴 合成杠杆从未生效 — `_execute_rebalance` 买入金额被现金上限截断** | 🔴 Critical | open | v3.0.0 | 全部杠杆回测 | 2026-06-25 | `buy_value=min(diff,cash)` 阻止借款。mbull>1.0 时杠杆买入被现金截断，有效敞口≤1.0。gam-2/gam-3 全部历史回测为虚假值 | — |
+| BUG-038 | **🔴 合成杠杆从未生效 — `_execute_rebalance` 买入金额被现金上限截断** | 🔴 Critical | fixed | v3.0.0 | 全部杠杆回测 | 2026-06-25 | 3 处修复: `_execute_rebalance` buy_value 上限改为 max_gross_exposure×tv + `tuner_params_to_config_override` 不再覆盖 account.mode + Tuner 前端账户模式选择器 | v3.10.0 |
+| BUG-039 | **echarts.init() 清空 #nav-chart 子元素 → kline-freq-tabs 按钮被抹除** | 🟡 Medium | fixed | v3.9.0 | REQ-328 | 2026-06-29 | ECharts 5.5.1 `init(dom)` 清空容器 innerHTML，导致 `#kline-freq-tabs`（日K/周K按钮）自实现以来从未可见。修复: `#kline-freq-tabs` 移出 `#nav-chart` 到父级 `#tuner-nav-section` 下作为兄弟节点 | v3.11.0 |
+| BUG-040 | **preclose_push 杀 dev Tuner — 端口 5179 冲突** | 🟡 Medium | fixing | v3.2.0 | preclose_push | 2026-06-29 | `_ensure_tuner()` 无条件 `taskkill /f` 端口 5179 上的进程，stable 收盘前信号触发时杀掉 dev 的 Tuner。修复: `quant_tuner.py` 加 `--port` 参数 + `preclose_push.py` 改用 5180 | — |
 
 
 
@@ -157,13 +193,13 @@
 
 ## ID 计数器
 
-**下一个需求 ID**: REQ-321
+**下一个需求 ID**: REQ-332
 
 
 
 
 
-**下一个 Bug ID**: BUG-038
+**下一个 Bug ID**: BUG-041
 
 
 
