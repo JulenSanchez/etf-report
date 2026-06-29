@@ -1123,17 +1123,15 @@ def run_tuner_backtest(params, progress_callback=None):
     config_override = qc.tuner_params_to_config_override(params)
 
     # ── Prepare preloaded data ──
+    # Factor computation uses CSV-only data (stable cache key).
+    # Execution price lookup uses intraday-merged data (all_daily_exec).
     all_daily = dict(CACHE["all_daily"])
     all_weekly = dict(CACHE["all_weekly"])
-    # Merge intraday cache into daily data ONLY (for execution price lookup).
-    # Weekly data stays as CSV-original — never rebuild from intraday.
-    # rebuild_weekly_from_daily() would shift the current week's bar date
-    # forward, causing searchsorted() to skip it for prior rebalance dates
-    # within the same week → different F1 value → lookahead bias.
+    all_daily_exec = None
     if CACHE.get("intraday_cache"):
-        all_daily = {}
+        all_daily_exec = {}
         for code in CACHE["all_daily"]:
-            all_daily[code] = _get_daily_with_cache(code)
+            all_daily_exec[code] = _get_daily_with_cache(code)
         # all_weekly stays as CSV snapshot — no intraday rebuild
 
     universe_filter, _universe_mode = _parse_universe_filter(params)
@@ -1169,6 +1167,7 @@ def run_tuner_backtest(params, progress_callback=None):
         return_details=True,
         return_debug=return_debug,
         progress_callback=progress_callback,
+        all_daily_exec=all_daily_exec,
     )
     total_commission = extra.get("total_commission", 0)
 
@@ -1466,6 +1465,9 @@ def gc_after_request(response):
 
 @app.route("/")
 def index():
+    # AI AGENTS: send_from_directory reads from disk on every request.
+    # Changes to tuner.html take effect IMMEDIATELY — no server restart needed.
+    # Only restart when .py files change or __pycache__ may be stale.
     return send_from_directory(TEMPLATES_DIR, "tuner.html")
 
 
@@ -1845,6 +1847,49 @@ def api_presets():
     return jsonify(qc.build_presets_response(cfg))
 
 
+@app.route("/api/frontier")
+def api_frontier():
+    """Return Pareto frontier data for all schools.
+
+    Gambler: continuous MDD slider with frontier points.
+    Zen/Actuary: discrete presets (placeholder for future optimization).
+    """
+    import json as _json
+    import pathlib as _pl
+
+    # Load pre-computed gambler frontier
+    frontier_path = _pl.Path(__file__).resolve().parent.parent / "research" / "params" / "frontier_gambler.json"
+    if frontier_path.exists():
+        try:
+            frontier_data = _json.loads(frontier_path.read_text("utf-8"))
+        except Exception:
+            frontier_data = {}
+    else:
+        frontier_data = {}
+
+    gambler = frontier_data.get("gambler", {
+        "type": "slider",
+        "risk_axis": "MDD",
+        "risk_unit": "%",
+        "risk_range": [-40, -20],
+        "risk_step": 0.5,
+        "points": [],
+    })
+
+    # Zen/Actuary: discrete fallback (upgraded later by REQ-329/330)
+    cfg = CACHE.get("cfg") or load_config()
+    presets = cfg.get("presets", {})
+
+    zen_presets = [k for k in presets if k.startswith("zen-")]
+    act_presets = [k for k in presets if k.startswith("act-")]
+
+    return jsonify({
+        "gambler": gambler,
+        "zen": {"type": "discrete", "presets": zen_presets},
+        "actuary": {"type": "discrete", "presets": act_presets},
+    })
+
+
 @app.route("/api/universe/save", methods=["POST"])
 def api_universe_save():
     """Persist ETF active states to quant_universe.yaml."""
@@ -1920,7 +1965,7 @@ def api_save():
         # Build config fragment from shared parameter contract
         overrides = qc.tuner_params_to_preset_patch(params, load_config())
 
-        if preset_name:
+        if preset_name and not preset_name.startswith("frontier"):
             _save_to_preset(preset_name, overrides)
         else:
             # Fallback: no preset selected → save to overrides file
@@ -2216,7 +2261,12 @@ if __name__ == "__main__":
                          help="Hot-swap: preload synchronously, signal via file, then wait for old process to be killed before binding port")
     _parser.add_argument("--readonly", action="store_true",
                          help="Disable write endpoints — for stable/production use")
+    _parser.add_argument("--port", type=int, default=5179,
+                         help="HTTP server port (default: 5179)")
     _args = _parser.parse_args()
+
+    if _args.port != 5179:
+        TUNER_PORT = _args.port
 
     _hot_swap = _args.preload_then_wait
     CACHE["readonly"] = _args.readonly

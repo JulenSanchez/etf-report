@@ -10,7 +10,8 @@ sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 from trading_calendar import is_trading_day
 
-TUNER_URL = "http://localhost:5179"
+TUNER_PORT = 5180  # stable uses 5180 to avoid conflict with dev Tuner on 5179
+TUNER_URL = f"http://localhost:{TUNER_PORT}"
 REFRESH_ONLY = "--refresh-only" in sys.argv
 from etf_report.core.quant_contract import DEFAULT_PRESET
 TUNER_STARTUP_TIMEOUT = 60  # max seconds to wait for Tuner
@@ -33,18 +34,19 @@ def _tuner_ready():
         return False
 
 def _ensure_tuner():
-    """Kill any existing Tuner, then start a fresh one from THIS repo.
-    Guarantees the Tuner uses this repo's config+data, not another repo's."""
-    # Kill any Tuner already on port 5179 (could be from another repo)
+    """Kill any existing Tuner on TUNER_PORT, then start a fresh one from THIS repo.
+    Uses a dedicated port (5180) to avoid conflict with dev Tuner on 5179."""
+    port_str = f":{TUNER_PORT}"
+    # Kill any Tuner already on TUNER_PORT (could be from another repo)
     if sys.platform == "win32":
         try:
             result = subprocess.run(
                 ["netstat", "-ano"], capture_output=True, text=True, timeout=5
             )
             for line in result.stdout.split("\n"):
-                if ":5179" in line and "LISTENING" in line:
+                if port_str in line and "LISTENING" in line:
                     pid = line.strip().split()[-1]
-                    log(f"Tuner: killing existing PID {pid} (from other repo)")
+                    log(f"Tuner: killing existing PID {pid} on port {TUNER_PORT}")
                     subprocess.run(["taskkill", "/f", "/pid", pid],
                                    capture_output=True, timeout=5)
                     time.sleep(2)
@@ -52,10 +54,10 @@ def _ensure_tuner():
         except Exception as e:
             log(f"Tuner: failed to kill existing process: {e}")
 
-    log("Tuner: starting fresh from this repo...")
+    log(f"Tuner: starting fresh from this repo on port {TUNER_PORT}...")
     tuner_script = os.path.join(PROJECT_ROOT, "scripts", "quant_tuner.py")
     subprocess.Popen(
-        ["python", tuner_script, "--readonly", "--no-browser"],
+        ["python", tuner_script, "--readonly", "--no-browser", "--port", str(TUNER_PORT)],
         cwd=PROJECT_ROOT,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
