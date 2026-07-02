@@ -37,7 +37,7 @@
 ```bash
 python scripts/update_report.py
 ```
-→ **预期**: EXIT=0。stdout 含 `[OK]` 标记的健康检查（25/25 passed）。`index.html` 和 `assets/js/runtime_payload.js` 更新为当日日期。量化板块（如有 `quant_payload.js`）同步刷新。执行时间约 2-3 分钟（含 editorial 抓取）。
+→ **预期**: EXIT=0。stdout 含 `[OK]` 标记，健康检查全部 passed（具体数量以脚本输出为准）。`index.html` 和 `assets/js/runtime_payload.js` 更新为当日日期。量化板块（如有 `quant_payload.js`）同步刷新。执行时间约 2-3 分钟（含 editorial 抓取）。
 
 发布必须进入 `docs/runbook/release.md` 的 Phase 0-8；不要从本文直接执行 `--publish`。
 
@@ -49,7 +49,7 @@ python scripts/update_report.py
 | 2 | 获取沪深 300 基准指数 | ~2-3s |
 | 3 | 获取实时行情 + 成分股涨跌幅（新浪 hq.sinajs.cn）| ~2-3s |
 | 4 | 生成 index.html（注入 K 线数据 + 量化 payload） | ~0.8s |
-| 5 | 健康检查（26 项） | ~0.8s |
+| 5 | 健康检查（全量，数量以脚本输出为准） | ~0.8s |
 | 6-7 | 企微通知（发布模式） | ~1-2s |
 | 8 | GitHub Pages 部署（发布模式） | ~2-3s |
 

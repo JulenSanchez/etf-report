@@ -1,0 +1,22 @@
+# 生产预设 (gam-0) 6Y 滚动窗口关键指标
+# 全局唯一基线来源，文档中禁止硬编码指标值，统一引用此文件。
+# 重新生成: python scripts/quant_backtest.py --preset gam-0
+
+updated: "2026-07-02"
+preset: gam-0
+window: "6Y rolling (today - 6 years)"
+
+metrics:
+  annual_return_pct: 102.6
+  max_drawdown_pct: -30.9
+  sortino: 2.48
+  calmar: 3.32
+  sharpe: 1.70
+  total_interest_accrued_pct: 74.6   # 融资利息总额 / 初始本金 × 100（6Y 累计）
+
+config_signature:
+  ma_bull_pos: 1.58
+  ma_bear_pos: 0.54
+  max_holdings: 2
+  ma_trend_period: 19
+  financing_rate_annual: 0.06

@@ -1,5 +1,4 @@
 account:
-  mode: synthetic_leverage
   max_gross_exposure: 2.0
   financing_rate_annual: 0.06
 universe:
@@ -362,7 +361,7 @@ position:
   weighting: arithmetic
   rebalance_freq: W-FRI
   execution_timing: same_close
-  score_band: 0
+  band: 0
   commission_rate: 0.00026
 factors:
   ema:
@@ -372,22 +371,22 @@ factors:
 presets:
   act-1:
     label: 精算师1
-    description: 精算师1：F1(57%)+F3(17%)+F7(26%)，C=0.78，CS=3.1。子参数TPE：MH=5，MA=39周，牛80%熊18%。等权S×C=46.6(+12%)，Sharpe=2.60。信仰：风险调整后收益最大化。
+    description: pool优化 6Y TR=+335%/MDD=-21.3%/Sortino=1.39/Calmar=1.31 F1(5%)+F3(7%)+F7(88%) bull=1.49 bear=0.17 MH=3 MA=34w
     scoring:
       weights:
-        ema_deviation: 0.57
-        volume_ratio: 0.17
-        log_return_deviation: 0.26
+        ema_deviation: 0.05
+        volume_ratio: 0.07
+        log_return_deviation: 0.88
       sensitivity:
-        f1: 3.4
-        f3: 3.9
-        f7_t: 23.7
-        f7_k: 3.4
+        f1: 11.3
+        f3: 4.8
+        f7_t: 23.0
+        f7_k: 5.2
     confidence:
       type: ma_trend
-      ma_trend_period: 39
-      ma_bull_pos: 0.8
-      ma_bear_pos: 0.18
+      ma_trend_period: 34
+      ma_bull_pos: 1.49
+      ma_bear_pos: 0.17
       ma_direction_confirm: true
       dead_zone: 25
       full_zone: 65
@@ -401,79 +400,24 @@ presets:
       clarity_threshold: 0.03
       dd_sensitivity: 0.2
     position:
-      max_holdings: 5
-      discretize_step: 0.1
-      concentration: 0.78
-      c_sensitivity: 3.1
-      rebalance_freq: daily
-      execution_timing: same_close
-      score_band: 0.028
-      commission_rate: 0.00026
-      max_holdings_special: 8
-      weighting: arithmetic
-    factors:
-      f1_active_days: 1
-      ema:
-        period_weeks: 4
-      volume_ratio:
-        window_days: 45
-      f6_rsi_thresh: 80.0
-      f6_drop_thresh: 0.025
-      f6_base_penalty: 0.15
-      log_return_deviation:
-        window_days: 32
-  act-2:
-    label: 精算师2
-    description: 精算师2(#50优化)：F1(55%)+F3(25%)+F7(20%)，C=0.78，MH=3，MA=39w，熊仓25%。6Y TR=+850%/MDD=-18.8%/Sharpe=1.63。信仰：风险调整收益最大化，熊仓<30%。
-    scoring:
-      weights:
-        ema_deviation: 0.55
-        volume_ratio: 0.25
-        log_return_deviation: 0.2
-      sensitivity:
-        f1: 3.4
-        f3: 3.9
-        f7_t: 21.2
-        f7_k: 3.4
-    confidence:
-      type: ma_trend
-      ma_trend_period: 39
-      ma_bull_pos: 0.8
-      ma_bear_pos: 0.254
-      ma_direction_confirm: true
-      dead_zone: 31
-      full_zone: 65
-      regime_base:
-        bull_trend: 0.95
-        choppy_range: 0.75
-        bear_trend: 0.35
-      regime_window: 8
-      regime_threshold: 0.03
-      breadth_weight: 0.2
-      clarity_threshold: 0.03
-      dd_sensitivity: 0.2
-    position:
       max_holdings: 3
-      discretize_step: 0.168
-      concentration: 0.78
-      c_sensitivity: 3.1
-      rebalance_freq: daily
+      discretize_step: 0.03
+      concentration: 2.11
+      c_sensitivity: 12.02
+      rebalance_freq: W-FRI
       execution_timing: same_close
-      score_band: 0.028
+      band: 0.115
       commission_rate: 0.00026
       max_holdings_special: 8
       weighting: arithmetic
     factors:
       f1_active_days: 1
       ema:
-        period_weeks: 4
+        period_weeks: 22
       volume_ratio:
-        window_days: 45
-      f6_rsi_thresh: 80.0
-      f6_drop_thresh: 0.025
-      f6_base_penalty: 0.15
+        window_days: 14
       log_return_deviation:
-        window_days: 32
+        window_days: 35
   gam-1:
     label: '1'
     description: 赌徒1(T20·mdd=-20%·两阶段分层)：F1(60%)+F3(26%)+F7(14%)，MH=3，MA=34w，bull=89%
@@ -494,7 +438,7 @@ presets:
       ma_bull_pos: 0.89
       ma_bear_pos: 0.43
       ma_direction_confirm: true
-      dead_zone: 17
+      dead_zone: 25
       full_zone: 65
       regime_base:
         bull_trend: 0.95
@@ -505,14 +449,16 @@ presets:
       breadth_weight: 0.2
       clarity_threshold: 0.03
       dd_sensitivity: 0.2
+      benchmarks:
+      - '000300'
     position:
       max_holdings: 3
-      discretize_step: 0.153
-      concentration: 0.47
+      discretize_step: 0.15
+      concentration: 0.47000000000000003
       c_sensitivity: 5.6
       rebalance_freq: daily
       execution_timing: same_close
-      score_band: 0.058
+      band: 0.057999999999999996
       commission_rate: 0.00026
       max_holdings_special: 8
       weighting: arithmetic
@@ -522,9 +468,6 @@ presets:
         period_weeks: 4
       volume_ratio:
         window_days: 36
-      f6_rsi_thresh: 80.0
-      f6_drop_thresh: 0.025
-      f6_base_penalty: 0.15
       log_return_deviation:
         window_days: 20
         lookback_days: 250
@@ -569,7 +512,7 @@ presets:
       c_sensitivity: 10.0
       rebalance_freq: daily
       execution_timing: same_close
-      score_band: 0.046
+      band: 0.046
       commission_rate: 0.00026
       max_holdings_special: 8
       weighting: arithmetic
@@ -579,9 +522,6 @@ presets:
         period_weeks: 9
       volume_ratio:
         window_days: 17
-      f6_rsi_thresh: 80.0
-      f6_drop_thresh: 0.025
-      f6_base_penalty: 0.15
       log_return_deviation:
         window_days: 8
         lookback_days: 250
@@ -625,7 +565,7 @@ presets:
       c_sensitivity: 8.68
       rebalance_freq: daily
       execution_timing: same_close
-      score_band: 0.03
+      band: 0.03
       commission_rate: 0.00026
       max_holdings_special: 8
       weighting: arithmetic
@@ -635,9 +575,6 @@ presets:
         period_weeks: 6
       volume_ratio:
         window_days: 40
-      f6_rsi_thresh: 80.0
-      f6_drop_thresh: 0.025
-      f6_base_penalty: 0.15
       log_return_deviation:
         window_days: 17
         lookback_days: 250
@@ -680,7 +617,7 @@ presets:
       concentration: 1.0
       rebalance_freq: daily
       execution_timing: same_close
-      score_band: 0.03
+      band: 0.03
       commission_rate: 0.00026
       max_holdings_special: 8
       weighting: arithmetic
@@ -690,30 +627,26 @@ presets:
         period_weeks: 5
       volume_ratio:
         window_days: 20
-      f6_rsi_thresh: 80.0
-      f6_drop_thresh: 0.025
-      f6_base_penalty: 0.15
       log_return_deviation:
         window_days: 20
   zen-1:
     label: 禅修者1
-    description: 禅修者1(#57优化)：F1(41%)+F3(29%)+F7(30%)，C=0.35，CS=0，MH=4，MA=26w，熊仓25%。6Y
-      TR=+975%/MDD=-11.5%/Sharpe=1.82。信仰：风险调整收益最大化。
+    description: pool优化 6Y TR=+166%/MDD=-13.6%/Sortino=1.53 F1(21%)+F3(17%)+F7(62%) bull=0.89 bear=0.46 MH=5 MA=22w
     scoring:
       weights:
-        ema_deviation: 0.41
-        volume_ratio: 0.29
-        log_return_deviation: 0.3
+        ema_deviation: 0.21
+        volume_ratio: 0.17
+        log_return_deviation: 0.62
       sensitivity:
-        f1: 4.0
-        f3: 1.4
-        f7_t: 11.9
-        f7_k: 3.0
+        f1: 10.2
+        f3: 5.95
+        f7_t: 25.0
+        f7_k: 4.5
     confidence:
       type: ma_trend
-      ma_trend_period: 26
-      ma_bull_pos: 1.0
-      ma_bear_pos: 0.25
+      ma_trend_period: 22
+      ma_bull_pos: 0.89
+      ma_bear_pos: 0.46
       ma_direction_confirm: true
       dead_zone: 28
       full_zone: 65
@@ -727,33 +660,32 @@ presets:
       clarity_threshold: 0.03
       dd_sensitivity: 0.2
     position:
-      max_holdings: 4
-      discretize_step: 0.041
-      concentration: 0.35
-      c_sensitivity: 0.0
-      rebalance_freq: daily
+      max_holdings: 5
+      discretize_step: 0.10
+      concentration: 2.87
+      c_sensitivity: 9.6
+      rebalance_freq: W-FRI
       execution_timing: same_close
-      score_band: 0.03
+      band: 0.06
       commission_rate: 0.00026
       max_holdings_special: 8
       weighting: arithmetic
     factors:
       f1_active_days: 1
       ema:
-        period_weeks: 5
+        period_weeks: 24
       volume_ratio:
-        window_days: 22
-      f6_rsi_thresh: 80.0
-      f6_drop_thresh: 0.025
-      f6_base_penalty: 0.15
+        window_days: 34
       log_return_deviation:
-        window_days: 29
+        window_days: 21
         lookback_days: 250
         min_days: 60
         sigma_floor: 0.01
   gam-0:
     label: '0'
-    description: 原gam-2(bull=1.58 bear=54% MH=2 MA=19w)。BUG-038修复前的最优参数，保留作为baseline参考。
+    description: 原gam-2(bull=1.58 bear=54% MH=2 MA=19w)。synthetic_leverage模式。6Y AR=110% MDD=-30.4%。
+    account:
+      max_gross_exposure: 2.0
     scoring:
       weights:
         ema_deviation: 0.71
@@ -789,7 +721,7 @@ presets:
       c_sensitivity: 8.68
       rebalance_freq: daily
       execution_timing: same_close
-      score_band: 0.03
+      band: 0.03
       commission_rate: 0.00026
       max_holdings_special: 8
       weighting: arithmetic
@@ -799,9 +731,6 @@ presets:
         period_weeks: 6
       volume_ratio:
         window_days: 40
-      f6_rsi_thresh: 80.0
-      f6_drop_thresh: 0.025
-      f6_base_penalty: 0.15
       log_return_deviation:
         window_days: 17
         lookback_days: 250

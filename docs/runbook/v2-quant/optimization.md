@@ -1,121 +1,132 @@
-# 参数优化规范（帕累托前沿）
+# 参数优化规范（pool.json 种子库 + 迭代缩界 TPE）
 
-> **触发词**: "优化 <preset>"。AI 自动执行三轮收敛，产出 (risk, target) 前沿。
+> **最后更新**: 2026-07-01 (默认值统一 + fill-slots + 前沿展示策略)
 
-## 一、设计
+## 一、核心设计
 
-```
-输入:  参数空间 + target指标 + risk指标 + (可选的 warm-start trial 列表)
-输出:  (risk, target) 帕累托前沿 → 一组 {params, risk, target}
+一个 school 一次只跑一个优化进程。每轮从 pool 中取全量 valid trial 推導搜索界。
 
-Round 1 泼墨    Sobol 80    无约束         覆盖全空间
-Round 2 扩散    TPE 80      warm-start     前沿外推
-Round 3 收敛    TPE 50      warm-start     前沿光滑化
+**非搜索参数默认值**：TPE 只搜索 17 个参数。其余参数默认值来自 `config/defaults.yaml`（唯一来源）。参见 §九。
 
-不 prune —— 每 trial 都是前沿样本
-```
+**前沿展示策略**：Gambler 用非支配前沿（AR 随 MDD 单调）；Zen/Actuary 用每槽最优（Sortino/Calmar 不单调，强制非支配会丢失信息）。
 
-## 二、引擎接口
-
-引擎是纯方法。不知道任何 preset 名称或参数值。
+**pool.json = 宽松种子库**。存入任何 params（预设、手动、优化产出），不区分来源。种子条目在首次加载时自动回测填 MDD/COMP。每轮结束后按 MDD 槽位自动减负（band=1.0%，每槽保留最优）。
 
 ```
-optimize(
-    param_space:   Dict[str, Distribution]    # 搜哪些参数、各自范围
-    target:        "annual_return" | "sortino" | "calmar"
-    risk:          "mdd" | "bear" | null
-    warm_start:    List[Trial] | null          # 可选：已有 trial 数据
-    fixed_params:  Dict[str, value]            # 固定参数
-) → List[{params, risk_value, target_value}]
+一次优化:
+  加载 pool.json (< 5 valid → 冷启动: YAML 种子 → Sobol → TPE 全界)
+  → narrow_bounds_from_trials(全量 valid, top-N by COMP)
+  → TPE 每轮 30 trial → merge → prune (流派槽位) → save
+  → 重复直到收敛
+
+迭代:
+  第二次跑 → pool 已有上次产出 → 更窄的界 → 更快收敛
 ```
 
-**target 均为三周期等权**。6Y 全窗口，1Y/3Y/6Y 从同一条 NAV 截取。
+## 二、执行
 
-```
-target_value = (1Y_AR + 3Y_AR + 6Y_AR) / 3
-```
+```bash
+# 单次优化 (默认 5 轮 × 30 trial)
+python scripts/iterative_optimizer.py --school gambler
 
-## 三、warm-start 逻辑
+# 自动补密度 (每批 4 轮, 最多 5 批, 前沿满 21 槽自动停)
+python scripts/iterative_optimizer.py --school zen --fill-slots
 
-引擎不关心 trial 从哪来——可能是预设库、上次优化结果、或人工构造。
-
-```
-if warm_start 非空:
-    # 验证每个 trial 的 params 都在 param_space 内
-    valid = warm_start.filter(params ⊆ param_space)
-    if len(valid) >= 2:
-        R1 采样: 40% Sobol + 30% valid邻域 + 30% 两两交叉变异
-    elif len(valid) == 1:
-        R1 采样: 50% Sobol + 50% valid邻域
-    else:
-        R1 采样: 100% Sobol
-else:
-    R1 采样: 100% Sobol
+# 不同流派可并行 (独立 pool)
+python scripts/iterative_optimizer.py --school gambler &
+python scripts/iterative_optimizer.py --school zen &
+python scripts/iterative_optimizer.py --school actuary &
 ```
 
-**交叉变异**：随机取两个 valid trial，各一半参数混合。目的是产生"gam-1 信号 × gam-2 执行"这种意外组合——但引擎不知道也不关心这些名字。
+## 三、选项
 
-**如果 warm_start 数据不可靠**（如 BUG-038 修复后的情况）：不传 warm_start，引擎纯 Sobol 起步，不依赖任何旧数据。
+| 参数 | 默认 | 说明 |
+|------|------|------|
+| `--school` | (必选) | gambler / zen / actuary |
+| `--trials-per-round` | 30 | 每轮 TPE trial 数 |
+| `--max-rounds` | 5 | 最大轮数 |
+| `--cold-trials` | 50 | 冷启动 Sobol trial 数 |
+| `--top-n` | 15 | 缩界用 top-N trial |
+| `--preset` | 按 school 自动 | YAML preset 名 |
+| `--target-metric` | 按 school 自动 | 6y_ar / 6y_sortino |
+| `--start-date` | 2020-06-25 | 回测起点 |
+| `--seed` | 42 | 随机种子 |
+| `--prune-band` | 1.0 | MDD 槽位宽度 (%) |
+| `--prune-per-band` | 1 | 每槽保留数 |
+| `--sobol-every` | 0 | 每 N 轮注入 Sobol（0=关闭） |
+| `--bounds-margin` | 0.3 | 窄界松弛系数 |
+| `--bounds-band` | 5 | 分栏宽度（%，0=全局 top-N） |
+| `--fill-slots` | false | 自动补密度直到前沿覆盖 21 个 MDD 槽位 |
 
-## 四、Round 细节
+## 四、三派差异
 
-### Round 1 — 泼墨
+参数空间、范围、步长、横轴（MDD [-40, -20]）、prune（MDD 槽位 band=1.0%）全部相同。差异仅在纵轴指标和展示策略。
 
-| 项 | 值 |
-|----|-----|
-| 算法 | Sobol |
-| trials | 80 |
-| 约束 | 仅 bull > bear |
-| 参数界 | param_space 全范围 |
+| | gambler | zen | actuary |
+|---|---|---|---|
+| 目标指标 | 6y_ar | 6y_sortino | 6y_calmar |
+| 前沿展示 | 非支配前沿 | 每槽最优 | 每槽最优 |
+| 冷启动种子 | gam-0/1/2/3 | zen-1 | act-1 |
 
-**门禁**：存活 ≥ 60。目标 risk 区间前沿点 < 5 → 追加 30 trial。
-
-### Round 2 — 扩散
-
-| 项 | 值 |
-|----|-----|
-| 算法 | TPE |
-| trials | 80 |
-| warm-start | Round 1 全部 trial |
-| objective | target |
-| 参数界 | Round 1 存活区 × 1.5 |
-
-**门禁**：前沿改善 > 2% → Round 3。否则收敛完成。
-
-### Round 3 — 收敛
-
-| 项 | 值 |
-|----|-----|
-| 算法 | TPE |
-| trials | 50 |
-| warm-start | Round 2 全部 |
-| objective | target |
-| 参数界 | Round 2 top-30% × 1.2 |
-
-**门禁**：改善 < 1% → 完成。
-
-## 五、预设库
-
-预设库是使用引擎的**调用方**，不在引擎内部。由回测系统的 `quant_universe.yaml` 和 `quant_contract.py` 管理。
+## 五、目录结构
 
 ```
-预设库 = {
-    "gam-1": {params, ...},
-    "gam-2": {params, ...},
-    ...
-}
+research/params/
+├── gambler/pool.json        ← 种子库 (读+写)
+├── zen/pool.json
+├── actuary/pool.json
+├── frontier_gambler.json    ← 前端消费 (从 pool 派生)
+├── frontier_zen.json
+└── frontier_actuary.json
 ```
 
-调用方负责：
-1. 从预设库提取 trial 列表 → 作为 warm_start 传入引擎
-2. 从引擎输出的前沿曲线中选择参数 → 写回预设库
-3. 标记不可靠的预设（如 BUG-038 后）→ 不传入 warm_start
+## 六、手动加种子
 
-引擎不反向依赖预设库。
+```json
+// 在 pool.json 中加一行:
+{"params": {"w1": 40, "w3": 30, ...}, "source": "manual"}
+```
 
-## 六、设计原则
+不需要 MDD/COMP。下次加载池子时自动回测填入。
 
-- **引擎无预设依赖**：不知道 gam-1、gam-2 等名字，只接收 param_space + target + risk
-- **warm-start 外部化**：已有 trial 数据由调用方传入，不可靠则不传
-- **不 prune**：每个 trial 都是前沿样本
-- **事后决策**：约束值从前沿曲线上选取，优化时不预设
+## 七、产出前沿
+
+优化跑完后，重建前沿让前端看到最新结果：
+
+```bash
+python -c "
+from etf_report.core.quant_contract import build_frontier_output
+build_frontier_output(school='gambler')
+build_frontier_output(school='zen')
+build_frontier_output(school='actuary')
+"
+# → 产出 frontier_gambler.json / frontier_zen.json / frontier_actuary.json
+# → 重启 Tuner 后 /api/frontier 自动读取
+```
+
+Gambler 产出非支配前沿点，Zen/Actuary 产出每槽最优（覆盖 [-40,-20] 全部 21 个 MDD 槽位）。gam-0 参考点自动注入 Gambler 图表。参见 §四。
+
+## 八、设计原则
+
+- **宽松入库**：任何 params 可入 pool，不要求 MDD/COMP
+- **全量信息**：缩界使用全量有效 trial，不做 MDD 邻域过滤
+- **串行迭代**：同 school 串行（利用上一轮的 warm-start），不同 school 可并行
+- **自行减负**：每轮结束后按 MDD 槽位自动精简，防止池子膨胀
+- **前沿即查询**：前沿从池子实时生成
+- **默认值单一来源**：非搜索参数默认值只定义在 `config/defaults.yaml`。禁止在代码、YAML 顶层全局块中重复定义。新增参数时先在 `defaults.yaml` 加默认值。参见下文 §九。
+- **优化闭环**：优化完成 → 重建前沿 → 重启 Tuner。全流程跑完即可在前端看到结果。
+
+## 九、默认值规范
+
+**规则**：非搜索参数的默认值唯一来源是 `config/defaults.yaml`。
+
+**禁止**：
+- 在 `quant_backtest.py` 里写 `variable = cfg.get("key", 某个数字)`
+- 在 `quant_contract.py` 里硬编码 fallback 值
+- 在 `quant_universe.yaml` 顶层全局块里定义会被 preset 覆盖的默认值
+
+**正确做法**：
+- 新增参数 → `defaults.yaml` 加一行
+- 修改默认值 → 只改 `defaults.yaml`
+- YAML preset 可以覆盖默认值（如 gam-0 的 `dead_zone=17` 覆盖全局 `25`）
+- 验证：`python tests/test_defaults.py` 检查所有代码中的硬编码值是否与 `defaults.yaml` 一致

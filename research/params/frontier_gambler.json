@@ -1,0 +1,128 @@
+{
+  "gambler": {
+    "type": "slider",
+    "risk_axis": "MDD",
+    "risk_unit": "%",
+    "risk_range": [
+      -50,
+      -15
+    ],
+    "risk_step": 0.5,
+    "points": [
+      {
+        "mdd": -35.2,
+        "ar_6y": 111.4,
+        "params": {
+          "ma_bull_pos": 1.69,
+          "ma_bear_pos": 0.66,
+          "max_holdings": 2,
+          "ma_trend_period": 22,
+          "concentration": 8.72,
+          "c_sensitivity": 24,
+          "score_band": 0.5,
+          "disc_step": 0.2,
+          "f7_t": 5,
+          "f7_k": 3.07,
+          "f7_window": 19,
+          "f3_vol_window": 41,
+          "f1_sensitivity": 8.4,
+          "f3_sensitivity": 1.5,
+          "f1_ema_period": 12,
+          "w1": 63,
+          "w3": 9,
+          "w7": 28
+        },
+        "sortino": 2.409,
+        "calmar": 3.17
+      },
+      {
+        "mdd": -31.8,
+        "ar_6y": 103.8,
+        "params": {
+          "ma_bull_pos": 1.58,
+          "ma_bear_pos": 0.54,
+          "max_holdings": 2,
+          "ma_trend_period": 19,
+          "concentration": 7.1,
+          "c_sensitivity": 86,
+          "score_band": 3.0,
+          "disc_step": 0.17,
+          "f7_t": 17,
+          "f7_k": 2.72,
+          "f7_window": 17,
+          "f3_vol_window": 40,
+          "f1_sensitivity": 9.6,
+          "f3_sensitivity": 4.8,
+          "f1_ema_period": 6,
+          "w1": 71,
+          "w3": 13,
+          "w7": 16
+        },
+        "sortino": 2.447,
+        "calmar": 3.27
+      },
+      {
+        "mdd": -26.6,
+        "ar_6y": 58.5,
+        "params": {
+          "ma_bull_pos": 1.32,
+          "ma_bear_pos": 0.6,
+          "max_holdings": 2,
+          "ma_trend_period": 25,
+          "concentration": 15.1,
+          "c_sensitivity": 100,
+          "score_band": 4.6,
+          "disc_step": 0.08,
+          "f7_t": 23,
+          "f7_k": 3.0,
+          "f7_window": 8,
+          "f3_vol_window": 17,
+          "f1_sensitivity": 8.9,
+          "f3_sensitivity": 5.4,
+          "f1_ema_period": 9,
+          "w1": 24,
+          "w3": 45,
+          "w7": 31
+        },
+        "sortino": 1.784,
+        "calmar": 2.2
+      },
+      {
+        "mdd": -19.7,
+        "ar_6y": 42.0,
+        "params": {
+          "ma_bull_pos": 0.89,
+          "ma_bear_pos": 0.43,
+          "max_holdings": 3,
+          "ma_trend_period": 34,
+          "concentration": 4.7,
+          "c_sensitivity": 56,
+          "score_band": 5.8,
+          "disc_step": 0.15,
+          "f7_t": 21,
+          "f7_k": 3.42,
+          "f7_window": 20,
+          "f3_vol_window": 36,
+          "f1_sensitivity": 9.8,
+          "f3_sensitivity": 4.3,
+          "f1_ema_period": 4,
+          "w1": 60,
+          "w3": 26,
+          "w7": 14
+        },
+        "sortino": 1.944,
+        "calmar": 2.13
+      }
+    ],
+    "references": [
+      {
+        "label": "gam-0",
+        "mdd": -30.9,
+        "ar_6y": 102.6,
+        "sortino": 2.475,
+        "calmar": 3.32
+      }
+    ],
+    "updated": "2026-07-02"
+  }
+}

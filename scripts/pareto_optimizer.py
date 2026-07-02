@@ -1,36 +1,43 @@
 #!/usr/bin/env python3
-"""帕累托前沿优化器 — 三轮无 prune 收敛, warm-start 缩界。"""
+"""冷启动优化器 — Sobol + TPE 三轮收敛，用于无 warm-start 数据时的初始探索。
+有 warm-start 数据时优先使用 iterative_optimizer.py（迭代缩界 TPE）。"""
 import sys, json, pathlib, argparse, numpy as np, pandas as pd
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent / "src"))
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-from etf_report.core.quant_contract import tuner_params_to_config_override, PARAM_BOUNDS
+from etf_report.core.quant_contract import tuner_params_to_config_override, PARAM_BOUNDS, compute_frontier, create_optuna_objective
 from quant_backtest import run_backtest
 import optuna
 
-# ── Default parameter bounds (from PARAM_BOUNDS) ─────────────────────
-DEFAULT_BOUNDS = {
+# ── Cold-start search bounds (narrower than PARAM_BOUNDS for unguided exploration) ──
+COLD_BOUNDS = {
+    k: (v["min"], v["max"], v.get("step", 1))
+    for k, v in PARAM_BOUNDS.items()
+    if v.get("type") in ("weight", "continuous", "integer")
+}
+# Override a few key params with narrower cold-start ranges
+COLD_BOUNDS.update({
     "w1": (10, 60, 1), "w3": (10, 60, 1),
     "ma_bull_pos": (0.80, 2.0, 0.01), "ma_bear_pos": (0.20, 0.80, 0.01),
-    "max_holdings": (1, 8, 1), "ma_trend_period": (8, 40, 2),
-    "concentration": (0.5, 6.0, 0.1), "c_sensitivity": (0, 200, 2),
-    "score_band": (0.5, 8.0, 0.1), "disc_step": (0.03, 0.15, 0.01),
-    "f7_t": (3, 25, 1), "f7_k": (1.5, 5.5, 0.1), "f7_window": (5, 40, 1),
-    "f3_vol_window": (10, 60, 1), "f1_sensitivity": (3, 15, 0.1),
-    "f3_sensitivity": (1, 8, 0.1), "f1_ema_period": (2, 10, 1),
-}
+    "concentration": (0.5, 6.0, 0.1), "band": (0.5, 8.0, 0.1),
+    "f7_window": (5, 40, 1), "f1_ema_period": (2, 10, 1),
+})
 
 
 def shrink_bounds(warm_params, margin=0.3):
     """从 warm-start trial 数据推导缩小的参数搜索界。"""
     bounds = {}
-    for k, (dlo, dhi, step) in DEFAULT_BOUNDS.items():
+    for k, (dlo, dhi, step) in COLD_BOUNDS.items():
         vals = [p.get(k) for p in warm_params if k in p and p.get(k) is not None]
         if len(vals) >= 3:
             lo, hi = min(vals), max(vals)
             m = max((hi - lo) * margin, step * 2)
-            bounds[k] = (max(dlo, lo - m), min(dhi, hi + m), step)
+            lo = max(dlo, lo - m); hi = min(dhi, hi + m)
         else:
-            bounds[k] = (dlo, dhi, step)
+            lo, hi = dlo, dhi
+        # Align to step to avoid Optuna warnings
+        lo = round(lo / step) * step if step > 0 else lo
+        hi = round(hi / step) * step if step > 0 else hi
+        bounds[k] = (max(dlo, lo), min(dhi, hi), step)
     return bounds
 
 
@@ -44,57 +51,8 @@ def crossover_params(p1, p2):
 
 
 # ── Objective ────────────────────────────────────────────────────────
-
-def make_objective(preset, bounds):
-    def objective(trial):
-        p = {}
-        for k, (lo, hi, step) in bounds.items():
-            if isinstance(step, int) and step >= 1 and k not in ("ma_bull_pos", "ma_bear_pos",
-                    "concentration", "score_band", "disc_step", "f7_k"):
-                p[k] = trial.suggest_int(k, int(lo), int(hi), step=step)
-            else:
-                p[k] = trial.suggest_float(k, lo, hi, step=step)
-        if "w1" in p: p["w1"] = int(p["w1"]); p["w3"] = int(p["w3"]); p["w7"] = 100 - p["w1"] - p["w3"]
-        p["conf_type"] = "ma_trend"; p["ma_direction_confirm"] = True; p["bias"] = 0
-        p["account_mode"] = "synthetic_leverage"
-        if p.get("ma_bull_pos", 1) <= p.get("ma_bear_pos", 0.3):
-            return -9999
-        try:
-            ov = tuner_params_to_config_override(p)
-            nav, _, _ = run_backtest(start_date="2020-06-25", preset=preset,
-                                      config_override=ov, return_data=False)
-            if nav is None: return -9999
-            N = len(nav); L = nav["date"].iloc[-1]
-            y1 = L - pd.DateOffset(years=1); y3 = L - pd.DateOffset(years=3)
-            i1 = max(0, min(nav["date"].searchsorted(y1), N - 1))
-            i3 = max(0, min(nav["date"].searchsorted(y3), N - 1))
-            def _ar(s, e):
-                if e <= s: return 0
-                d = (nav["date"].iloc[e] - nav["date"].iloc[s]).days
-                return (nav["nav"].iloc[e] / nav["nav"].iloc[s]) ** (365.0 / d) - 1 if d > 0 else 0
-            a1, a3, a6 = _ar(i1, N - 1), _ar(i3, N - 1), _ar(0, N - 1)
-            comp = round((a1 + a3 + a6) / 3 * 100, 2)
-            mdd = ((nav["nav"] - nav["nav"].cummax()) / nav["nav"].cummax() * 100).min()
-            trial.set_user_attr("mdd", round(mdd, 2))
-            trial.set_user_attr("composite", comp)
-            trial.set_user_attr("params", json.dumps(p))
-            return comp
-        except Exception:
-            return -9999
-    return objective
-
-
-# ── Pareto ───────────────────────────────────────────────────────────
-
-def compute_frontier(trials):
-    pts = [(t.user_attrs.get("mdd"), t.user_attrs.get("composite", t.value), t)
-           for t in trials if (t.value is not None and t.value > -9000)]
-    pts.sort(key=lambda x: x[0])
-    f, mx = [], -9999
-    for m, c, t in pts:
-        if c > mx: mx = c; f.append((m, c, t))
-    return f
-
+# make_objective removed — use create_optuna_objective from quant_contract
+# ── Pareto (uses quant_contract.compute_frontier) ──────────────────────
 
 def _save(path, trials):
     data = []
@@ -147,11 +105,11 @@ def main():
             print(f"  +{min(10, len(ws1), len(ws2))} crossover params")
 
     # ── Derive bounds ──
-    bounds = shrink_bounds(warm_all) if warm_all else DEFAULT_BOUNDS
+    bounds = shrink_bounds(warm_all) if warm_all else COLD_BOUNDS
     if warm_all:
         print("Bounds shrunk from warm-start data")
 
-    objective = make_objective(args.preset, bounds)
+    objective = create_optuna_objective(args.preset, bounds, "2020-06-25")  # account_mode hardcoded
     all_trials = []
 
     # ── Round 1: Sobol ──
@@ -184,7 +142,7 @@ def main():
             bounds3 = shrink_bounds(r2_params, margin=0.2)
 
             print(f"\n=== R3 TPE {args.r3_trials} (narrower bounds) ===")
-            obj3 = make_objective(args.preset, bounds3)
+            obj3 = create_optuna_objective(args.preset, bounds3, "2020-06-25")
             r3 = optuna.create_study(direction="maximize", sampler=optuna.samplers.TPESampler(seed=44))
             r3.optimize(obj3, n_trials=args.r3_trials, n_jobs=1)
             r3t = [t for t in r3.trials if (t.value is not None and t.value > -9000)]

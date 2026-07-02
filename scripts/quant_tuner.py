@@ -509,7 +509,7 @@ def refresh_data():
     if post_market:
         now_minutes = now.hour * 60 + now.minute
         if now_minutes >= COOL_OFF_TIME:
-            from quant_data_fetcher import get_last_date, DATA_DIR as QDATA_DIR
+            from quant_data_fetcher import get_last_date, DATA_DIR as QDATA_DIR, _latest_allowed_date
             prev_td = last_trading_day(now)
             all_yesterday = True
             for etf in cfg["universe"]:
@@ -534,16 +534,34 @@ def refresh_data():
                 else:
                     print(f"  [Refresh] Sina API failed — falling back to incremental")
 
-    # ── Incremental fetch (Tencent per-ETF, fallback or non-post-market) ──
-    if not used_sina and (post_market or not trading or pre_market):
-        print(f"  [Refresh] Running incremental fetch...")
-        ok, fail = _run_incremental_fetch(cfg)
+    # ── Step 1: Fetch today's data (Sina fast path or intraday cache) ──
+    # ── Step 2: Always check for historical gaps and fill them ──
+    from quant_data_fetcher import get_last_date, DATA_DIR as QDATA_DIR, _latest_allowed_date
+    gap_ok, gap_fail = 0, 0
+    need_gap_fill = False
+    _expected_date = _latest_allowed_date(now) if intraday else today_str
+    for etf in cfg["universe"]:
+        last = get_last_date(QDATA_DIR / f"{etf['code']}_daily.csv")
+        if last is None or last < _expected_date:
+            need_gap_fill = True
+            break
+    if need_gap_fill:
+        print(f"  [Refresh] Historical gaps detected — running incremental fetch...")
+        gap_ok, gap_fail = _run_incremental_fetch(cfg)
         ran_fetch = True
-        _reload_csv_to_cache(cfg)  # reload cache after CSV updates
+        _reload_csv_to_cache(cfg)
+    elif not used_sina and not intraday:
+        # No gaps, not intraday, not already fetched via Sina → still need fetch
+        print(f"  [Refresh] Running incremental fetch...")
+        gap_ok, gap_fail = _run_incremental_fetch(cfg)
+        ran_fetch = True
+        _reload_csv_to_cache(cfg)
     elif intraday:
         print(f"  [Refresh] Intraday — CSV write skipped (live data → cache only)")
         _reload_csv_to_cache(cfg)
 
+    ok = max(ok, gap_ok)
+    fail = max(fail, gap_fail)
     if used_sina:
         gap_msg = f"Sina batch | {ok} OK, {fail} fail"
     elif ran_fetch:
@@ -1123,16 +1141,18 @@ def run_tuner_backtest(params, progress_callback=None):
     config_override = qc.tuner_params_to_config_override(params)
 
     # ── Prepare preloaded data ──
-    # Factor computation uses CSV-only data (stable cache key).
-    # Execution price lookup uses intraday-merged data (all_daily_exec).
     all_daily = dict(CACHE["all_daily"])
     all_weekly = dict(CACHE["all_weekly"])
     all_daily_exec = None
     if CACHE.get("intraday_cache"):
+        # Merge intraday bars into daily data for both factor computation and execution
         all_daily_exec = {}
         for code in CACHE["all_daily"]:
-            all_daily_exec[code] = _get_daily_with_cache(code)
-        # all_weekly stays as CSV snapshot — no intraday rebuild
+            merged = _get_daily_with_cache(code)
+            all_daily_exec[code] = merged
+        # Use merged data for factor precomputation too (BUG-041)
+        all_daily = all_daily_exec
+        all_daily_exec = None  # engine falls back to all_daily when None
 
     universe_filter, _universe_mode = _parse_universe_filter(params)
     if universe_filter is not None:
@@ -1177,9 +1197,10 @@ def run_tuner_backtest(params, progress_callback=None):
     elapsed = time.time() - t0
     initial_cap = 1000000.0
     final_nav_val = float(nav_df["nav"].iloc[-1])
-    total_return = (final_nav_val / initial_cap - 1) * 100
+    start_nav_val = float(nav_df["nav"].iloc[0])
+    total_return = (final_nav_val / start_nav_val - 1) * 100
     days = (nav_df["date"].iloc[-1] - nav_df["date"].iloc[0]).days
-    annual_return = ((final_nav_val / initial_cap) ** (365 / max(days, 1)) - 1) * 100 if days > 0 else 0
+    annual_return = ((final_nav_val / start_nav_val) ** (365 / max(days, 1)) - 1) * 100 if days > 0 else 0
 
     cummax = nav_df["nav"].cummax()
     dd = (nav_df["nav"] - cummax) / cummax * 100
@@ -1852,41 +1873,47 @@ def api_frontier():
     """Return Pareto frontier data for all schools.
 
     Gambler: continuous MDD slider with frontier points.
-    Zen/Actuary: discrete presets (placeholder for future optimization).
+    Zen/Actuary: loaded from frontier_{school}.json if available,
+    otherwise fall back to YAML preset list.
     """
     import json as _json
     import pathlib as _pl
 
-    # Load pre-computed gambler frontier
-    frontier_path = _pl.Path(__file__).resolve().parent.parent / "research" / "params" / "frontier_gambler.json"
-    if frontier_path.exists():
-        try:
-            frontier_data = _json.loads(frontier_path.read_text("utf-8"))
-        except Exception:
-            frontier_data = {}
-    else:
-        frontier_data = {}
+    _params = _pl.Path(__file__).resolve().parent.parent / "research" / "params"
 
-    gambler = frontier_data.get("gambler", {
-        "type": "slider",
-        "risk_axis": "MDD",
-        "risk_unit": "%",
-        "risk_range": [-40, -20],
-        "risk_step": 0.5,
-        "points": [],
-    })
+    # ── Load per-school frontier files ──
+    def _load(school):
+        fp = _params / f"frontier_{school}.json"
+        if fp.exists():
+            try:
+                return _json.loads(fp.read_text("utf-8")).get(school)
+            except Exception:
+                pass
+        return None
 
-    # Zen/Actuary: discrete fallback (upgraded later by REQ-329/330)
-    cfg = CACHE.get("cfg") or load_config()
-    presets = cfg.get("presets", {})
+    gambler = _load("gambler") or {
+        "type": "slider", "risk_axis": "MDD", "risk_unit": "%",
+        "risk_range": [-40, -20], "risk_step": 0.5, "points": [],
+        "references": [], "updated": "N/A",
+    }
 
-    zen_presets = [k for k in presets if k.startswith("zen-")]
-    act_presets = [k for k in presets if k.startswith("act-")]
+    zen = _load("zen")
+    actuary = _load("actuary")
+
+    # Fallback: YAML preset list if no frontier file yet
+    if zen is None:
+        cfg = CACHE.get("cfg") or load_config()
+        presets = cfg.get("presets", {})
+        zen = {"type": "discrete", "presets": [k for k in presets if k.startswith("zen-")]}
+    if actuary is None:
+        cfg = CACHE.get("cfg") or load_config()
+        presets = cfg.get("presets", {})
+        actuary = {"type": "discrete", "presets": [k for k in presets if k.startswith("act-")]}
 
     return jsonify({
         "gambler": gambler,
-        "zen": {"type": "discrete", "presets": zen_presets},
-        "actuary": {"type": "discrete", "presets": act_presets},
+        "zen": zen,
+        "actuary": actuary,
     })
 
 

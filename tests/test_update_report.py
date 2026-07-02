@@ -18,7 +18,7 @@ def test_load_quant_preset_params_uses_shared_contract(tmp_path, load_module):
               dead_zone: 25
               full_zone: 65
             presets:
-              zen-1:
+              gam-0:
                 label: 波动探测
                 scoring:
                   weights:
@@ -43,7 +43,7 @@ def test_load_quant_preset_params_uses_shared_contract(tmp_path, load_module):
                   concentration: 0.0
                   rebalance_freq: daily
                   execution_timing: same_close
-                  score_band: 0.03
+                  band: 0.03
                 factors:
                   ema:
                     period_weeks: 5
@@ -67,7 +67,7 @@ def test_load_quant_preset_params_uses_shared_contract(tmp_path, load_module):
     assert params["disc_step"] == 0.05
     assert params["execution_timing"] == "same_close"
     assert params["concentration"] == 0.0
-    assert params["score_band"] == 3
+    assert params["band"] == 3
 
 
 def test_build_quant_payload_config_section_uses_shared_contract(load_module):
@@ -83,7 +83,7 @@ def test_build_quant_payload_config_section_uses_shared_contract(load_module):
     assert yr1["position"]["discretize_step"] == 0.05
     assert yr1["position"]["execution_timing"] == "same_close"
     assert yr1["position"]["concentration"] == 0.0
-    assert yr1["position"]["score_band"] == 0.03
+    assert yr1["position"]["band"] == 0.03
     assert yr1["factors"]["log_return_deviation"]["window_days"] == 20
     assert yr3 == yr1
     assert yr3 is not yr1

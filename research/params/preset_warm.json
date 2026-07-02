@@ -1,6 +1,29 @@
 [
  {
   "params": {
+   "w1": 71,
+   "w3": 13,
+   "f1_sensitivity": 9.6,
+   "f3_sensitivity": 4.79,
+   "f7_t": 17.85,
+   "f7_k": 2.72,
+   "ma_bull_pos": 1.58,
+   "ma_bear_pos": 0.54,
+   "ma_trend_period": 19,
+   "ma_direction_confirm": true,
+   "max_holdings": 2,
+   "concentration": 7.1,
+   "c_sensitivity": 86.8,
+   "score_band": 3.0,
+   "disc_step": 0.165,
+   "f1_ema_period": 6,
+   "f3_vol_window": 40,
+   "f7_window": 17
+  },
+  "source": "gam-0"
+ },
+ {
+  "params": {
    "w1": 60,
    "w3": 26,
    "f1_sensitivity": 9.8,

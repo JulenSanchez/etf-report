@@ -1,41 +1,53 @@
 # params/ — 参数优化证据
 
-> 本目录记录参数优化报告和证据，不维护当前生效参数。当前生效值以 `../../config/quant_universe.yaml` 为准；参数映射契约见 `../../src/etf_report/core/quant_contract.py`。
+> 最后更新: 2026-06-29 (pool.json 设计)
 
-## 当前执行流程
+## 当前目录结构
 
-参数优化统一按：
-
-```text
-../../docs/runbook/v2-quant/optimization.md
+```
+research/params/
+├── gambler/pool.json          ← gambler 种子库 (自适应, 永不膨胀)
+├── zen/pool.json              ← zen 种子库
+├── actuary/pool.json          ← actuary 种子库
+├── frontier_gambler.json      ← 前端消费的前沿 (build_frontier_output 产出)
+├── frontier_zen.json
+├── frontier_actuary.json
+└── archive/                   ← 旧 iter_*/pareto_*/v3_* 归档
 ```
 
-执行。旧目录中的早期阶段划分和旧 preset 命名均为历史记录，不作为当前流程。
+## 优化流程
 
-## Latest Evidence Reports
+```bash
+# 单流派优化 (自动冷启动 → 迭代收敛 → prune → save)
+python scripts/iterative_optimizer.py --school gambler
 
-| 目录 | 内容 | 状态 |
-|---|---|---|
-| `gam-3-20260623/` | gam-3 参数优化 | 最新证据，是否 promotion 需走 promotion runbook |
-| `gam-1-20260622-v2/` | gam-1 修复后优化报告 | 证据，需确认 analyzer 口径 |
-| `gam-2-20260622/` | gam-2 优化报告 | 证据，需确认 analyzer 口径 |
-| `gam-1-20260618/` | gam-1 v3.8 后优化记录 | 历史证据 |
-| `act-1-20260617/` | act-1 参数优化 | 历史证据 |
-| `zen-1-20260617/` | zen-1 参数优化 | 历史证据 |
-| `gam-2-20260617/` | gam-2 参数优化 | 历史证据 |
+# 产出前沿
+python -c "from etf_report.core.quant_contract import build_frontier_output; build_frontier_output(school='gambler')"
 
-## Historical Snapshots
+# 三派并行
+python scripts/iterative_optimizer.py --school gambler &
+python scripts/iterative_optimizer.py --school zen &
+python scripts/iterative_optimizer.py --school actuary &
+```
 
-早期参数研究曾使用旧 preset 命名。它们只代表当时实验上下文，不代表当前配置。
+## 池子行为
 
-当前命名以 `../../config/quant_universe.yaml` 中的 `act-*` / `zen-*` / `gam-*` 为准。
+- `< 5 valid` → 冷启动: YAML 预设 → [不够] Sobol 50 → [不够] TPE 全界 30
+- `>= 5` → 正常迭代: narrow_bounds → TPE → merge → prune (每轮) → save
+- prune 规则: gambler 每 0.1% MDD 留最优 AR / zen 留 top-20 Sortino / actuary 每 0.01 bear 留最优 Sortino
 
-## 已废弃或不再推荐复用的旧方法
+## 手动加种子
 
-以下内容不再作为当前研究入口：
+在 pool.json 中加一行:
+```json
+{"params": {"w1": 40, "w3": 30, ...}, "source": "manual"}
+```
+不需要 MDD/COMP。下次优化时自动回测填入。
 
-- F2 / F4 / F5 / F6 相关旧扫描。
-- 旧 preset 命名相关报告。
-- 单因子粗扫 → 交叉 → 随机收尾的旧方法论。
+## 历史目录 (可归档)
 
-如需重新研究，按 `../../docs/runbook/v2-quant/optimization.md` 重跑，不复用旧结论。
+- `iter_mdd20/` ~ `iter_mdd40/` — 旧多 target 设计 (已被 pool 取代)
+- `iter_act/`, `iter_zen/` — 旧单次优化产出 (数据已迁移到 pool)
+- `pareto_gam-2/`, `pareto_test/`, `pareto_verify/` — 旧 pareto_optimizer 产出
+- `v3_pareto_full/` — 旧全量 trial
+- `gam-*-2026*/`, `act-1-2026*/`, `zen-1-2026*/` — 旧 quant_optimizer 产出

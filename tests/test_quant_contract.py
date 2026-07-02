@@ -25,9 +25,11 @@ def sample_params(**overrides):
         "max_holdings": 6,
         "disc_step": 0.05,
         "concentration": 2.0,
+        "c_sensitivity": 30,
         "rebalance_freq": "daily",
         "execution_timing": "same_close",
-        "score_band": 3,
+        "band": 3,
+        "band_sensitivity": 30,
         "f1_ema_period": 16,
         "f3_vol_window": 20,
         "f1_sensitivity": 8.0,
@@ -68,7 +70,7 @@ def test_tuner_params_to_config_override_unit_conversions():
     assert override["scoring"]["weights"]["volume_ratio"] == pytest.approx(0.60)
     assert override["scoring"]["weights"]["log_return_deviation"] == pytest.approx(0.10)
 
-    assert override["position"]["score_band"] == pytest.approx(0.03)
+    assert override["position"]["band"] == pytest.approx(0.03)
     assert override["position"]["execution_timing"] == "same_close"
     assert override["position"]["discretize_step"] == pytest.approx(0.05)
     assert override["factors"]["log_return_deviation"]["window_days"] == 20
@@ -88,7 +90,7 @@ def test_preset_to_tuner_params_round_trip_core_fields():
             "sensitivity": {"f1": 8, "f3": 1.0, "f7_t": 15, "f7_k": 3.5},
         },
         "confidence": {"type": "ma_trend", "ma_bull_pos": 1.0, "ma_bear_pos": 0.3, "ma_trend_period": 26},
-        "position": {"max_holdings": 6, "discretize_step": 0.05, "concentration": 2.0, "rebalance_freq": "daily", "execution_timing": "same_close", "score_band": 0.03},
+        "position": {"max_holdings": 6, "discretize_step": 0.05, "concentration": 2.0, "rebalance_freq": "daily", "execution_timing": "same_close", "band": 0.03},
         "factors": {"ema": {"period_weeks": 16}, "volume_ratio": {"window_days": 20}, "log_return_deviation": {"window_days": 20}},
     }
 
@@ -98,7 +100,7 @@ def test_preset_to_tuner_params_round_trip_core_fields():
     assert params["w1"] == 30
     assert params["w3"] == 60
     assert params["w7"] == 10
-    assert params["score_band"] == 3
+    assert params["band"] == 3
     assert params["execution_timing"] == "same_close"
 
 
@@ -133,7 +135,7 @@ def test_param_schema_contains_all_core_tuner_params():
             assert key in keys, f"Missing key in schema: {key}"
 
     assert "execution_timing" not in keys
-    assert "score_band" in keys
+    assert "band" in keys
     assert "f7_window" in keys
 
 
@@ -141,6 +143,43 @@ def test_param_schema_is_a_copy():
     schema = qc.get_param_schema()
     schema["groups"].clear()
     assert qc.get_param_schema()["groups"]
+
+
+def test_account_max_gross_exposure_writes_override():
+    """REQ-338: account_mode removed; max_gross_exposure always written to account."""
+    params = sample_params(max_gross_exposure=2.0)
+    override = qc.tuner_params_to_config_override(params)
+    assert "account" in override
+    assert override["account"]["max_gross_exposure"] == 2.0
+
+
+def test_account_max_gross_exposure_default():
+    """Without explicit max_gross_exposure, default is written to account."""
+    params = sample_params()  # no max_gross_exposure
+    override = qc.tuner_params_to_config_override(params)
+    assert "account" in override
+    assert "max_gross_exposure" in override["account"]
+
+
+def test_preset_to_tuner_params_includes_max_gross_exposure():
+    """REQ-338: account_mode removed; only max_gross_exposure remains."""
+    preset = {
+        "scoring": {"weights": {}},
+        "confidence": {},
+        "position": {},
+        "factors": {},
+        "account": {"max_gross_exposure": 2.0},
+    }
+    params = qc.preset_to_tuner_params("test", preset, {})
+    assert params["max_gross_exposure"] == 2.0
+    assert "account_mode" not in params
+
+
+def test_account_section_always_present():
+    """REQ-338: account section always present (max_gross_exposure)."""
+    params = sample_params()
+    override = qc.tuner_params_to_config_override(params)
+    assert "account" in override
 
 
 def test_tuner_params_to_preset_patch_preserves_existing_sections():
@@ -157,4 +196,4 @@ def test_tuner_params_to_preset_patch_preserves_existing_sections():
     assert patch["confidence"]["regime_base"] == {"bull_trend": 0.95}
     assert patch["position"]["max_holdings_special"] == 8
     assert patch["factors"]["existing_factor"] == {"enabled": True}
-    assert patch["position"]["score_band"] == pytest.approx(0.03)
+    assert patch["position"]["band"] == pytest.approx(0.03)

@@ -73,7 +73,7 @@ etf-report/
 │   ├── runbook/               # report / quant / release / audit 运维文档
 │   └── knowledge/             # 长期知识材料
 ├── research/                  # 研究记录与 promotion 证据
-├── plans/                     # 历史需求治理材料
+├── plans/                     # 当前需求治理、版本看板与历史记录
 ├── data/                      # ignored，运行数据与缓存
 ├── logs/                      # ignored，运行日志
 └── requirements.txt

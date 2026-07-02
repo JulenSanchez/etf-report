@@ -129,10 +129,7 @@ th[data-sort]:hover { color: #e0e0e0; }
 .metrics { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 16px; }
 .metric-card { background: #1a2332; border: 1px solid #2a3a4a; border-radius: 8px; padding: 10px; text-align: center; position: relative; display:flex; flex-direction:column; justify-content:center; }
 .metric-card .label { font-size: 11px; color: #6b7280; display:flex; align-items:center; justify-content:center; gap:3px; }
-.metrics-arrow { cursor:pointer;font-size:18px;color:#4b5563;user-select:none;transition:color 0.15s; }
-.metrics-arrow:hover { color:#94a3b8; }
 .metric-card .value { font-size: 18px; font-weight: 700; }
-/* Flip card for Sortino/Sharpe */
 .flip-card { perspective: 600px; cursor: pointer; }
 .flip-inner { position: relative; width: 100%; height: 100%; transition: transform 0.4s; transform-style: preserve-3d; }
 .flip-card.flipped .flip-inner { transform: rotateY(180deg); }
@@ -251,9 +248,9 @@ th[data-sort]:hover { color: #e0e0e0; }
 <div id="shortcuts-overlay" onclick="if(event.target===this)toggleShortcuts()">
   <div id="shortcuts-card">
     <h3>Keyboard Shortcuts</h3>
-    <div class="shortcut-row"><span class="shortcut-key">1</span><span class="shortcut-desc">赌徒1 (gam-1)</span></div>
-    <div class="shortcut-row"><span class="shortcut-key">2</span><span class="shortcut-desc">禅修者1 (zen-1)</span></div>
-    <div class="shortcut-row"><span class="shortcut-key">3</span><span class="shortcut-desc">精算师1 (act-1)</span></div>
+    <div class="shortcut-row"><span class="shortcut-key">1</span><span class="shortcut-desc">禅修者1 (zen-1)</span></div>
+    <div class="shortcut-row"><span class="shortcut-key">2</span><span class="shortcut-desc">精算师1 (act-1)</span></div>
+    <div class="shortcut-row"><span class="shortcut-key">3</span><span class="shortcut-desc">自定义 (cst-1)</span></div>
     <div class="shortcut-row"><span class="shortcut-key">R</span><span class="shortcut-desc">Run Backtest</span></div>
     <div class="shortcut-row"><span class="shortcut-key">S</span><span class="shortcut-desc">Save YAML</span></div>
     <div class="shortcut-hint">Press ? or ESC to close</div>
@@ -382,13 +379,6 @@ th[data-sort]:hover { color: #e0e0e0; }
         <button onclick="setConfType('ma_trend')" class="active">MA趋势</button>
       </div>
     </div>
-    <div class="slider-group" id="param-acct-mode" aria-label="账户模式">
-      <div class="slider-label"><span class="name">账户模式</span><span class="val" id="v-acct-mode">合成杠杆</span></div>
-      <div class="btn-row" id="acct-mode-group">
-        <button onclick="setAccountMode('cash')" id="acct-cash">现金</button>
-        <button onclick="setAccountMode('synthetic_leverage')" class="active" id="acct-lev">杠杆</button>
-      </div>
-    </div>
     <div id="ma-trend-params" class="factor-sub">
       <div class="slider-group" id="param-ma-period" aria-label="MA趋势周期">
         <div class="slider-label"><span class="name">趋势周期</span><span class="val" id="v-ma-period">26 周</span></div>
@@ -450,9 +440,13 @@ th[data-sort]:hover { color: #e0e0e0; }
       </div>
     </div>
     <div class="factor-sub">
-      <div class="slider-group" id="param-score-band" aria-label="分数带">
-        <div class="slider-label"><span class="name">分数带</span><span class="val" id="v-score-band">0%</span></div>
-        <input type="range" id="score_band" min="0" max="20" step="0.5" value="0" oninput="$id('v-score-band').textContent=parseFloat(this.value).toFixed(1)+'%'" aria-label="分数带">
+      <div class="slider-group" id="param-band" aria-label="B 分数带">
+        <div class="slider-label"><span class="name">B 分数带</span><span class="val" id="v-band">0%</span></div>
+        <input type="range" id="band" min="0" max="20" step="0.5" value="0" oninput="$id('v-band').textContent=parseFloat(this.value).toFixed(1)+'%'" aria-label="B 分数带">
+      </div>
+      <div class="slider-group" id="param-band-sensitivity" aria-label="BS 分数带灵敏度">
+        <div class="slider-label"><span class="name">BS 分数带灵敏度</span><span class="val" id="v-band-sensitivity">0</span></div>
+        <input type="range" id="band_sensitivity" min="0" max="100" step="1" value="0" oninput="$id('v-band-sensitivity').textContent=this.value" aria-label="BS 分数带灵敏度">
       </div>
     </div>
   </section>
@@ -779,40 +773,26 @@ th[data-sort]:hover { color: #e0e0e0; }
               <div id="intraday-estimate-banner" style="display:none;background:rgba(245,158,11,0.10);border:1px solid rgba(245,158,11,0.35);color:#fbbf24;border-radius:6px;padding:2px 8px;font-size:11px;line-height:1.3;">盘中估算：本次回测包含实时行情与预估全天成交额，适合收盘前调仓参考；正式复盘请以收盘确认数据为准。</div>
             </div>
             <div id="tuner-perf-block" style="background:#1a2332;border:1px solid #2a3a4a;border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:8px;">
-              <div style="display:flex;align-items:center;gap:4px;">
-                <span class="metrics-arrow" id="m-arrow-l" onclick="flipMetricsPage(-1)" style="visibility:hidden;">◂</span>
-                <div class="metrics" id="tuner-metrics" style="margin-bottom:0;flex:1;">
+              <div class="metrics" id="tuner-metrics" style="margin-bottom:0;">
                   <div class="metric-card metrics-page-1" id="metric-annual" aria-label="年化收益"><div class="label">年化收益</div><div class="value green" id="m-annual">-</div></div>
                   <div class="metric-card metrics-page-1" id="metric-total" aria-label="总收益"><div class="label">总收益</div><div class="value green" id="m-total">-</div></div>
-                  <div class="metric-card metrics-page-1" id="metric-excess" aria-label="超额收益"><div class="label">超额收益<i class="tip-icon">?<span class="tip-text">策略总收益 − 同期沪深300总收益。正值表示跑赢大盘。</span></i></div><div class="value" id="m-excess">-</div></div>
-                  <div class="metric-card metrics-page-1" id="metric-winrate" aria-label="胜率"><div class="label">胜率<i class="tip-icon">?<span class="tip-text">逐笔配对胜率 = 盈利交易笔数 ÷ 已平仓交易总数。FIFO配对，期末按收盘价虚拟平仓。</span></i></div><div class="value" id="m-wr">-</div></div>
-                  <div class="metric-card metrics-page-1" id="metric-payoff" aria-label="赔率"><div class="label">赔率<i class="tip-icon">?<span class="tip-text">盈亏比 = 盈利交易平均收益% ÷ 亏损交易平均亏损%（取绝对值）。>1 表示赚一次够亏一次以上。</span></i></div><div class="value" id="m-payoff">-</div></div>
-                  <div class="metric-card flip-card metrics-page-1" id="metric-sortino-sharpe" onclick="flipSortinoSharpe()"><span class="flip-icon">↻</span><div class="flip-inner"><div class="flip-front"><div class="label">Sortino<i class="tip-icon">?<span class="tip-text">下行风险调整收益 = (年化收益 - 无风险利率) / 下行标准差。只惩罚亏损波动，比 Sharpe 更宽容上涨波动</span></i></div><div class="value blue" id="m-sortino">-</div></div><div class="flip-back"><div class="label">Sharpe<i class="tip-icon">?<span class="tip-text">风险调整收益指标 = (年化收益 - 无风险利率) / 收益率标准差。>1 为优，>2 为极优</span></i></div><div class="value blue" id="m-sharpe">-</div></div></div></div>
-                  <div class="metric-card metrics-page-1" id="metric-calmar" aria-label="Calmar"><div class="label">Calmar<i class="tip-icon">?<span class="tip-text">年化收益 ÷ 最大回撤绝对值。衡量\"冒一单位回撤能赚多少\"。>2 为优</span></i></div><div class="value blue" id="m-calmar">-</div></div>
-                  <div class="metric-card metrics-page-1" id="metric-dd" aria-label="最大回撤"><div class="label">最大回撤</div><div class="value red" id="m-dd">-</div></div>
-                  <div class="metric-card metrics-page-1" id="metric-rebalance" aria-label="换仓率"><div class="label">换仓率<i class="tip-icon">?<span class="tip-text">实际发生换仓的调仓日 ÷ 总调仓日数。低比率说明策略稳定、持仓延续性强。</span></i></div><div class="value" id="m-rb">-</div></div>
+                  <div class="metric-card metrics-page-1" id="metric-lev-contrib" aria-label="杠杆贡献"><div class="label">杠杆贡献<i class="tip-icon">?<span class="tip-text">总收益 - 去杠杆等效收益</span></i></div><div class="value" id="m-lev-contrib">-</div></div>
+                  <div class="metric-card metrics-page-1" id="metric-interest" aria-label="融资利息"><div class="label">融资利息</div><div class="value" id="m-interest">-</div></div>
                   <div class="metric-card metrics-page-1" id="metric-commission" aria-label="交易佣金"><div class="label">交易佣金</div><div class="value" id="m-comm">-</div></div>
-                  <div class="metric-card metrics-page-2" id="metric-avg-exposure" aria-label="平均暴露"><div class="label">均暴露<i class="tip-icon">?<span class="tip-text">逐日 actual_exposure 均值。&gt;100% 时使用了合成杠杆。</span></i></div><div class="value" id="m-avg-exp">-</div></div>
-                  <div class="metric-card metrics-page-2" id="metric-days-lev" aria-label="杠杆天数"><div class="label">&gt;100%天数<i class="tip-icon">?<span class="tip-text">actual_exposure 超过 100% 的交易日数。ma_bull_pos &gt; 100% 时牛市触发。</span></i></div><div class="value" id="m-days-lev">-</div></div>
-                  <div class="metric-card metrics-page-2" id="metric-max-dl" aria-label="最大单日亏损"><div class="label">最差单日</div><div class="value red" id="m-max-dl">-</div></div>
-                  <div class="metric-card metrics-page-2" id="metric-interest" aria-label="融资压力"><div class="label">融资压力<i class="tip-icon">?<span class="tip-text">avg_excess × 年利率。仅压力估算，不进NAV。Stage A 为零成本合成杠杆模型。</span></i></div><div class="value yellow" id="m-interest">-</div></div>
-                  <div class="metric-card metrics-page-2" style="visibility:hidden;"><div class="label">&nbsp;</div><div class="value">&nbsp;</div></div>
-                  <div class="metric-card metrics-page-2" style="visibility:hidden;"><div class="label">&nbsp;</div><div class="value">&nbsp;</div></div>
-                  <div class="metric-card metrics-page-2" style="visibility:hidden;"><div class="label">&nbsp;</div><div class="value">&nbsp;</div></div>
-                  <div class="metric-card metrics-page-2" style="visibility:hidden;"><div class="label">&nbsp;</div><div class="value">&nbsp;</div></div>
-                  <div class="metric-card metrics-page-2" style="visibility:hidden;"><div class="label">&nbsp;</div><div class="value">&nbsp;</div></div>
-                  <div class="metric-card metrics-page-2" style="visibility:hidden;"><div class="label">&nbsp;</div><div class="value">&nbsp;</div></div>
+                  <div class="metric-card flip-card metrics-page-1" id="metric-sortino-sharpe" onclick="flipSortinoSharpe()"><span class="flip-icon">↻</span><div class="flip-inner"><div class="flip-front"><div class="label">Sortino<i class="tip-icon">?<span class="tip-text">(年化收益 - 无风险利率) / 下行标准差</span></i></div><div class="value blue" id="m-sortino">-</div></div><div class="flip-back"><div class="label">Sharpe<i class="tip-icon">?<span class="tip-text">(年化收益 - 无风险利率) / 收益率标准差</span></i></div><div class="value blue" id="m-sharpe">-</div></div></div></div>
+                  <div class="metric-card metrics-page-1" id="metric-calmar" aria-label="Calmar"><div class="label">Calmar<i class="tip-icon">?<span class="tip-text">年化收益 ÷ |最大回撤|</span></i></div><div class="value blue" id="m-calmar">-</div></div>
+                  <div class="metric-card metrics-page-1" id="metric-dd" aria-label="最大回撤"><div class="label">最大回撤</div><div class="value red" id="m-dd">-</div></div>
+                  <div class="metric-card metrics-page-1" id="metric-winrate-payoff" aria-label="胜率赔率"><div class="label">胜率/赔率<i class="tip-icon">?<span class="tip-text">盈利交易数 ÷ 已平仓交易总数 / 盈利平均收益% ÷ 亏损平均亏损%</span></i></div><div class="value" id="m-wr-po">-</div></div>
+                  <div class="metric-card metrics-page-1" id="metric-rebalance" aria-label="换仓率"><div class="label">换仓率<i class="tip-icon">?<span class="tip-text">实际发生换仓的调仓日 ÷ 总调仓日数</span></i></div><div class="value" id="m-rb">-</div></div>
                 </div>
-                <span class="metrics-arrow" id="m-arrow-r" onclick="flipMetricsPage(1)">▸</span>
-              </div>
 
               <!-- 净值 + 回撤区: 左标题 + 右 freq Tab -->
-              <div id="tuner-nav-section" aria-label="净值与回撤图">
+              <div id="tuner-nav-section" aria-label="净值与回撤图" style="position:relative;">
+                <div id="kline-freq-tabs" style="position:absolute; top:6px; right:8px; display:flex; gap:2px; z-index:10; background:rgba(15,20,25,0.85); border-radius:6px; padding:2px;">
+                  <button id="kline-freq-daily"  class="kline-tab active" onclick="switchKlineFreq('daily')">日 K</button>
+                  <button id="kline-freq-weekly" class="kline-tab"        onclick="switchKlineFreq('weekly')">周 K</button>
+                </div>
                 <div id="nav-chart" style="height:320px;position:relative;">
-                  <div id="kline-freq-tabs" style="position:absolute; top:6px; right:8px; display:flex; gap:2px; z-index:10; background:rgba(15,20,25,0.85); border-radius:6px; padding:2px;">
-                    <button id="kline-freq-daily"  class="kline-tab active" onclick="switchKlineFreq('daily')">日 K</button>
-                    <button id="kline-freq-weekly" class="kline-tab"        onclick="switchKlineFreq('weekly')">周 K</button>
-                  </div>
                 </div>
                 <div id="dd-chart" style="height:100px;"></div>
               </div>
@@ -999,17 +979,6 @@ function renderHoldingsTable(code) {
   }
   $id('kline-holdings-body').innerHTML = html;
 }
-var metricsPage = 1;  // 1=core metrics, 2=exposure
-function flipMetricsPage(dir) {
-  metricsPage = (metricsPage === 1 && dir > 0) ? 2 : (metricsPage === 2 && dir < 0) ? 1 : metricsPage;
-  var p1 = document.querySelectorAll('.metrics-page-1');
-  var p2 = document.querySelectorAll('.metrics-page-2');
-  for (var i = 0; i < p1.length; i++) p1[i].style.display = metricsPage === 1 ? '' : 'none';
-  for (var i = 0; i < p2.length; i++) p2[i].style.display = metricsPage === 2 ? '' : 'none';
-  $id('m-arrow-l').style.visibility = metricsPage === 2 ? 'visible' : 'hidden';
-  $id('m-arrow-r').style.visibility = metricsPage === 1 ? 'visible' : 'hidden';
-}
-flipMetricsPage(0);  // init: show page 1
 var lastResult = null;
 var lastBacktestData = null;  // last full backtest response for redraws
 var navDates = [];  // current nav-chart x-axis dates (post-resample)
@@ -1482,22 +1451,6 @@ function setConfType(t) {
   renderParamSchemaTable();
 }
 
-var accountMode = 'synthetic_leverage';
-function setAccountMode(mode) {
-  accountMode = mode;
-  $id('v-acct-mode').textContent = mode === 'synthetic_leverage' ? '杠杆' : '现金';
-  $id('acct-cash').classList.toggle('active', mode === 'cash');
-  $id('acct-lev').classList.toggle('active', mode === 'synthetic_leverage');
-  // Adjust bull_pos max: cash=1.0, leverage=2.0
-  var bullSlider = $id('ma_bull_pos');
-  bullSlider.max = mode === 'synthetic_leverage' ? '2.0' : '1.0';
-  if (parseFloat(bullSlider.value) > parseFloat(bullSlider.max)) {
-    bullSlider.value = bullSlider.max;
-    $id('v-ma-bull').textContent = Math.round(parseFloat(bullSlider.max) * 100) + '%';
-  }
-  validateRunInputs();
-}
-
 var maDirConfirm = true;
 function setMaDirConfirm(v) {
   maDirConfirm = v;
@@ -1767,7 +1720,6 @@ function getParams() {
     ma_bear_pos: parseFloat($id('ma_bear_pos').value),
     ma_direction_confirm: maDirConfirm,
     benchmarks: selectedBenchmarks,
-    account_mode: accountMode,
     max_holdings: parseInt($id('max_holdings').value),
     disc_step: parseInt($id('disc_step').value) / 100.0,
     concentration: parseFloat($id('concentration').value),
@@ -1778,7 +1730,8 @@ function getParams() {
     f3_sensitivity: parseFloat($id('f3_sensitivity').value),
     rebalance_freq: rebalanceFreq,
     f1_active_days: f1ActiveDays,
-    score_band: parseFloat($id('score_band').value),  // 0-20，单位%
+    band: parseFloat($id('band').value),  // 0-20，单位%
+    band_sensitivity: parseInt($id('band_sensitivity').value),  // 0-100
     f7_t: parseFloat($id('f7_t').value),
     f7_k: parseFloat($id('f7_k').value),
     f7_window: parseInt($id('f7_window').value),
@@ -1836,7 +1789,8 @@ function setParams(p) {
   if (p.f1_active_days != null) { setF1ActiveDays(p.f1_active_days); }
   if (p.f1_sensitivity != null) { setSlider('f1_sensitivity', p.f1_sensitivity); $id('v-f1s').textContent = parseFloat(p.f1_sensitivity).toFixed(1); }
   if (p.f3_sensitivity != null) { setSlider('f3_sensitivity', p.f3_sensitivity); $id('v-f3s').textContent = parseFloat(p.f3_sensitivity).toFixed(1); }
-  if (p.score_band != null) { setSlider('score_band', p.score_band); $id('v-score-band').textContent = parseFloat(p.score_band).toFixed(1) + '%'; }
+  if (p.band != null) { setSlider('band', p.band); $id('v-band').textContent = parseFloat(p.band).toFixed(1) + '%'; }
+  if (p.band_sensitivity != null) { setSlider('band_sensitivity', p.band_sensitivity); $id('v-band-sensitivity').textContent = p.band_sensitivity; }
   if (p.f7_t != null) { setSlider('f7_t', p.f7_t); $id('v-f7-t').textContent = p.f7_t; }
   if (p.f7_k != null) { setSlider('f7_k', p.f7_k); $id('v-f7-k').textContent = parseFloat(p.f7_k).toFixed(2); }
   if (p.f7_window != null) { setSlider('f7_window', p.f7_window); $id('v-f7-window').textContent = p.f7_window + ' 日'; }
@@ -1846,7 +1800,6 @@ function setParams(p) {
   if (p.c_sensitivity != null) { setSlider('c_sensitivity', p.c_sensitivity); $id('v-csens').textContent = (p.c_sensitivity / 10).toFixed(1); }
   if (p.max_holdings != null) { setSlider('max_holdings', p.max_holdings); $id('v-maxh').textContent = p.max_holdings + ' 支'; }
   if (p.conf_type) setConfType(p.conf_type);
-  if (p.account_mode) setAccountMode(p.account_mode);
   if (p.universe != null) setUniverseFromParam(p.universe);
   validateRunInputs();
 }
@@ -1983,10 +1936,110 @@ async function loadPresets() {
 
 var SCHOOLS = [
   {id:'gambler', name:'赌徒', target:'max AR', constraint:'MDD<35%', presets:['gam-0','gam-1','gam-2','gam-3'], def:'gam-2'},
-{id:'zen', name:'禅修者(搁置)', target:'max Sortino', constraint:'—', presets:['zen-1'], def:'zen-1'},
-{id:'actuary', name:'精算师(搁置)', target:'max Calmar', constraint:'bear<30%', presets:['act-1','act-2'], def:'act-1'},
+{id:'zen', name:'禅修者', target:'max Sortino', constraint:'—', presets:['zen-1'], def:'zen-1'},
+{id:'actuary', name:'精算师', target:'max Calmar', constraint:'MDD<40%', presets:['act-1'], def:'act-1'},
   {id:'custom', name:'自定义', target:'自定义', constraint:'—', presets:['cst-1'], def:'cst-1'},
 ];
+
+var FRONTIER = null;             // loaded from /api/frontier
+var FRONTIER_CHARTS = {};        // per-school ECharts instances
+var SELECTED = null;             // {type:'frontier'|'preset', schoolId?, idx?, name?}
+
+// ── Clear all selection state across entire page ──
+function clearSelection() {
+  SELECTED = null;
+  document.querySelectorAll('.preset-card').forEach(function(c) { c.classList.remove('active'); });
+  Object.keys(FRONTIER_CHARTS).forEach(function(sid) { renderFrontierChart(sid, -1); });
+}
+
+/* ── Frontier loader ── */
+async function loadFrontier() {
+  try {
+    var resp = await fetch('/api/frontier');
+    if (!resp.ok) return;
+    FRONTIER = await resp.json();
+  } catch(e) { FRONTIER = null; }
+}
+
+/* ── Apply a frontier point ── */
+function applyFrontierPoint(schoolId, idx) {
+  var pts = FRONTIER[schoolId].points;
+  if (!pts || idx < 0 || idx >= pts.length) return;
+  var pt = pts[idx];
+  SELECTED = { type: 'frontier', schoolId: schoolId, idx: idx };
+  document.querySelectorAll('.preset-card').forEach(function(c) { c.classList.remove('active'); });
+  if (pt.params) {
+    setParams(pt.params);
+    CURRENT_PRESET = 'frontier';
+  }
+  // Re-render all charts: only the selected school shows gold highlight
+  Object.keys(FRONTIER_CHARTS).forEach(function(sid) {
+    renderFrontierChart(sid, sid === schoolId ? idx : -1);
+  });
+}
+
+/* ── Render frontier scatter chart (click-to-select, minimal) ── */
+function renderFrontierChart(schoolId, selectedIdx) {
+  var dom = $id('frontier-chart-' + schoolId);
+  if (!dom) return;
+  if (!FRONTIER_CHARTS[schoolId]) {
+    FRONTIER_CHARTS[schoolId] = echarts.init(dom);
+    var chart = FRONTIER_CHARTS[schoolId];
+    chart.on('click', function(params) {
+      if (params.seriesIndex === 0 && params.data && params.data.idx != null) {
+        applyFrontierPoint(schoolId, params.data.idx);
+      } else if (params.seriesIndex === 1 && params.data && params.data.presetName) {
+        applyPreset(params.data.presetName);
+      }
+    });
+  }
+  var chart = FRONTIER_CHARTS[schoolId];
+  var schoolData = FRONTIER[schoolId] || {};
+  var pts = schoolData.points || [];
+  var yLabel = schoolId === 'gambler' ? '6Y AR %' : (schoolId === 'zen' ? 'Sortino' : 'Calmar');
+  var yField = schoolId === 'gambler' ? 'ar_6y' : (schoolId === 'zen' ? 'sortino' : 'calmar');
+  var isThisSchoolSelected = SELECTED && SELECTED.type === 'frontier' && SELECTED.schoolId === schoolId;
+  var selIdx = (selectedIdx != null) ? selectedIdx : (isThisSchoolSelected ? SELECTED.idx : -1);
+
+  var allData = [];
+  for (var i = 0; i < pts.length; i++) {
+    var isSel = (i === selIdx);
+    allData.push({
+      value: [pts[i].mdd, pts[i][yField]],
+      idx: i,
+      symbolSize: isSel ? 14 : 10,
+      itemStyle: isSel
+        ? { color: '#f59e0b', borderColor: '#fbbf24', borderWidth: 2 }
+        : { color: '#3b82f6', borderColor: '#60a5fa', borderWidth: 0.5 }
+    });
+  }
+
+  var refs = (schoolData.references || []).map(function(r) {
+    var isRefSel = SELECTED && SELECTED.type === 'preset' && SELECTED.name === r.label;
+    return {
+      value: [r.mdd, r[yField]], presetName: r.label,
+      symbolSize: isRefSel ? 16 : 10,
+      itemStyle: isRefSel
+        ? { color: '#f59e0b', borderColor: '#fbbf24', borderWidth: 2, opacity: 1 }
+        : { color: '#3b82f6', opacity: 0.5 }
+    };
+  });
+
+  chart.setOption({
+    animation: false,
+    grid: { top: 8, right: 12, bottom: 28, left: 44 },
+    xAxis: { type: 'value', name: 'MDD %', nameLocation: 'center', nameGap: 16,
+             min: -40, max: -20, axisLabel: { fontSize: 9 } },
+    yAxis: { type: 'value', name: yLabel, nameLocation: 'center', nameGap: 30,
+             min: 0, axisLabel: { fontSize: 9 } },
+    series: [
+      { type: 'scatter', data: allData, cursor: 'pointer',
+        emphasis: { scale: 1.4, itemStyle: { color: '#f59e0b' } } },
+      { type: 'scatter', data: refs, symbolSize: 10, symbol: 'diamond', cursor: 'pointer',
+        emphasis: { scale: 1.3, itemStyle: { color: '#f59e0b', opacity: 1 } } },
+    ]
+  }, false);
+}
 
 function renderPresetCards() {
   var container = $id('preset-cards');
@@ -1996,6 +2049,39 @@ function renderPresetCards() {
   SCHOOLS.forEach(function(school) {
     var group = document.createElement('div');
     group.className = 'school-group';
+
+    // ── Slider-type schools: clickable scatter chart ──
+    var schoolFrontier = FRONTIER && FRONTIER[school.id];
+    if (schoolFrontier && schoolFrontier.type === 'slider' && schoolFrontier.points && schoolFrontier.points.length > 0) {
+      var pts = schoolFrontier.points;
+      var bestIdx = 0;
+      var yf = school.id === 'gambler' ? 'ar_6y' : (school.id === 'zen' ? 'sortino' : 'calmar');
+      for (var i = 1; i < pts.length; i++) { if ((pts[i][yf]||0) > (pts[bestIdx][yf]||0)) bestIdx = i; }
+
+      var hdrRow = document.createElement('div');
+      hdrRow.className = 'school-row';
+      var hdr = document.createElement('div');
+      hdr.className = 'school-header';
+      hdr.textContent = school.name + ' (点击选点)';
+      hdrRow.appendChild(hdr);
+      group.appendChild(hdrRow);
+
+      var chartRow = document.createElement('div');
+      chartRow.style.cssText = 'margin-top:2px;';
+      var chartDiv = document.createElement('div');
+      chartDiv.id = 'frontier-chart-' + school.id;
+      chartDiv.style.cssText = 'width:100%;height:160px;';
+      chartRow.appendChild(chartDiv);
+      group.appendChild(chartRow);
+
+      container.appendChild(group);
+
+      var sid = school.id;
+      setTimeout(function() { renderFrontierChart(sid, -1); }, 100);
+      return; // skip normal card rendering for this school
+    }
+
+    // ── Fallback: original card buttons ──
     var row = document.createElement('div');
     row.className = 'school-row';
     var header = document.createElement('div');
@@ -2009,7 +2095,6 @@ function renderPresetCards() {
       var p = PRESETS[key];
       if (!p) return;
       var label = (p.label || key).replace(/（推荐）/, '');
-      // Strip school name, keep only number suffix
       var short = label.match(/\d+$/);
       label = short ? short[0] : label;
       var card = document.createElement('div');
@@ -2023,8 +2108,8 @@ function renderPresetCards() {
     container.appendChild(group);
   });
 
-  // Auto-select default on first load only; subsequent reloads keep current preset.
-  if (!window._presetsFirstLoad && PRESETS && PRESETS['gam-1']) {
+  // Fallback auto-select if no frontier loaded
+  if (!window._presetsFirstLoad && PRESETS && PRESETS['gam-1'] && !(FRONTIER && FRONTIER.gambler)) {
     window._presetsFirstLoad = true;
     applyPreset('gam-1');
   }
@@ -2034,8 +2119,21 @@ function renderPresetCards() {
 renderPresetCards();
 
 function applyPreset(name) {
+  // Frontier mode: params applied by applyFrontierPoint()
+  if (name === 'frontier') {
+    CURRENT_PRESET = 'frontier';
+    document.querySelectorAll('.preset-card').forEach(function(c) { c.classList.remove('active'); });
+    renderParamSchemaTable();
+    return;
+  }
+  // Clear all frontier selections when switching to a preset
+  clearSelection();
+  SELECTED = { type: 'preset', name: name };
+  // Re-render charts so reference diamond gets yellow highlight
+  Object.keys(FRONTIER_CHARTS).forEach(function(sid) { renderFrontierChart(sid, -1); });
+
   CURRENT_PRESET = name;
-  document.querySelectorAll('.preset-card').forEach(c => c.classList.remove('active'));
+  document.querySelectorAll('.preset-card').forEach(function(c) { c.classList.remove('active'); });
   var card = $id('preset-' + name);
   if (card) card.classList.add('active');
   if (PRESETS[name]) {
@@ -2360,24 +2458,22 @@ function renderResults(data) {
   $id('m-annual').textContent = (s.annualReturn>0?'+':'') + s.annualReturn + '%';
   $id('m-total').textContent = (s.totalReturn>0?'+':'') + s.totalReturn + '%';
   $id('m-dd').textContent = s.maxDrawdown + '%';
-  $id('m-sharpe').textContent = s.sharpe.toFixed(2);
   $id('m-sortino').textContent = s.sortino.toFixed(2);
+  $id('m-sharpe').textContent = s.sharpe.toFixed(2);
   $id('m-calmar').textContent = (s.calmar||0).toFixed(2);
-  $id('m-wr').textContent = s.winRate + '%';
-  $id('m-payoff').textContent = s.payoffRatio.toFixed(2);
-  var ex = s.excessReturn || 0;
-  $id('m-excess').textContent = (ex > 0 ? '+' : '') + ex.toFixed(1) + '%';
-  $id('m-excess').className = 'value ' + (ex >= 0 ? 'green' : 'red');
+  $id('m-wr-po').textContent = s.winRate + '% / ' + s.payoffRatio.toFixed(1) + 'x';
   var rbPct = s.rebalanceDays > 0 ? Math.round(s.rebalanceCount / s.rebalanceDays * 100) : 0;
   $id('m-rb').textContent = rbPct + '%';
   $id('m-comm').textContent = (s.commissionPct || 0) + '%';
-  // Exposure metrics
+  // Financing & leverage metrics
   var es = s.exposureSummary || {};
-  if (es.avg_exposure > 0) {
-    $id('m-avg-exp').textContent = Math.round(es.avg_exposure * 100) + '%';
-    $id('m-days-lev').textContent = (es.days_above_100 || 0) + '天';
-    $id('m-max-dl').textContent = (es.max_daily_loss_pct || 0).toFixed(1) + '%';
-    $id('m-interest').textContent = (es.interest_drag_estimate || 0).toFixed(1) + '%/yr';
+  var interestPct = es.total_interest_accrued_pct != null ? es.total_interest_accrued_pct : (es.interest_drag_estimate || 0);
+  $id('m-interest').textContent = interestPct.toFixed(1) + '%';
+  var levContrib = es.leverage_contribution_pct;
+  if (levContrib != null) {
+    var nearZero = Math.abs(levContrib) < 0.05;
+    $id('m-lev-contrib').textContent = nearZero ? '0.0%' : ((levContrib >= 0 ? '+' : '') + levContrib.toFixed(1) + '%');
+    $id('m-lev-contrib').className = 'value' + (nearZero ? '' : (levContrib >= 0 ? ' green' : ' red'));
   }
   var intradayBanner = $id('intraday-estimate-banner');
   if (intradayBanner) {
@@ -2497,6 +2593,82 @@ function renderNavChart(data) {
     hs300 = hsW;
     eqWeight = eqW;
   }
+  // ── Alpha heat band: deviation from self-trendline ──
+  // Compare strategy NAV against its own constant-CAGR trend (start→end exponential curve).
+  // Green = strategy ahead of its own average pace, Red = behind.
+  var W = Math.max(10, Math.round(dates.length / 12));
+  var alphaSignals = null;
+
+  if (dates.length >= W && navPct.length === dates.length) {
+    var T = dates.length - 1;  // number of intervals (trading days - 1)
+    var lastNav = navPct[navPct.length - 1];
+    if (T > 0 && lastNav > 0) {
+      // Constant-CAGR trend: Trend(t) = 100 * (lastNav/100)^(t/T)
+      // Deviation: (navPct[t] / Trend[t] - 1) * 100  →  percentage relative to trend
+      var cagrRatio = lastNav / 100;  // S(T) / S(0)
+      var deviation = [];
+      for (var ti = 0; ti < dates.length; ti++) {
+        if (navPct[ti] != null && navPct[ti] > 0) {
+          var trend = 100 * Math.pow(cagrRatio, ti / T);
+          deviation[ti] = (navPct[ti] / trend - 1) * 100;  // percentage
+        } else { deviation[ti] = NaN; }
+      }
+      // Rolling window average of deviation
+      var rollingExcess = new Array(dates.length);
+      for (var ti = 0; ti < dates.length; ti++) {
+        var start = Math.max(0, ti - W + 1);
+        var sum = 0, cnt = 0;
+        for (var j = start; j <= ti; j++) {
+          if (!isNaN(deviation[j])) { sum += deviation[j]; cnt++; }
+        }
+        rollingExcess[ti] = (cnt > 0) ? (sum / cnt) : NaN;
+      }
+      // Build signal array for buildHeatBand (skip leading NaN window)
+      alphaSignals = [];
+      for (var ti = 0; ti < dates.length; ti++) {
+        if (!isNaN(rollingExcess[ti])) {
+          alphaSignals.push({ date: dates[ti], rollingExcess: rollingExcess[ti] });
+        }
+      }
+      // ── Distribution statistics for threshold tuning ──
+      (function() {
+        var vals = [];
+        for (var i = 0; i < rollingExcess.length; i++) {
+          if (!isNaN(rollingExcess[i])) vals.push(rollingExcess[i]);
+        }
+        if (vals.length === 0) return;
+        vals.sort(function(a,b){return a-b;});
+        var n = vals.length;
+        var mean = vals.reduce(function(s,v){return s+v;},0) / n;
+        var variance = vals.reduce(function(s,v){return s+(v-mean)*(v-mean);},0) / n;
+        var std = Math.sqrt(variance);
+        var pct = function(p) {
+          var idx = (n - 1) * p / 100;
+          var lo = Math.floor(idx), hi = Math.ceil(idx);
+          return lo === hi ? vals[lo] : vals[lo] + (vals[hi] - vals[lo]) * (idx - lo);
+        };
+        var red = 0, orange = 0, yellow = 0, green = 0;
+        for (var i = 0; i < vals.length; i++) {
+          var v = vals[i];
+          if (v <= -20) red++;
+          else if (v <= -7) orange++;
+          else if (v <= 7) yellow++;
+          else green++;
+        }
+        console.log('=== Alpha Heat Band | trend-deviation distribution (W=' + W + ', CAGR=' + ((Math.pow(cagrRatio, 1/(T/252))-1)*100).toFixed(1) + '%) ===');
+        console.log('N:', n, ' Mean:', mean.toFixed(2), ' Median:', pct(50).toFixed(2));
+        console.log('Min:', vals[0].toFixed(2), ' Max:', vals[n-1].toFixed(2), ' Std:', std.toFixed(2));
+        console.log('P1:', pct(1).toFixed(2), ' P5:', pct(5).toFixed(2), ' P10:', pct(10).toFixed(2),
+                    ' P25:', pct(25).toFixed(2), ' P75:', pct(75).toFixed(2),
+                    ' P90:', pct(90).toFixed(2), ' P95:', pct(95).toFixed(2), ' P99:', pct(99).toFixed(2));
+        console.log('Buckets (<=-20% red | (-20,-7]% orange | (-7,7]% yellow | >7% green):');
+        console.log('  Red:', red, '(' + (red/n*100).toFixed(1) + '%)');
+        console.log('  Orange:', orange, '(' + (orange/n*100).toFixed(1) + '%)');
+        console.log('  Yellow:', yellow, '(' + (yellow/n*100).toFixed(1) + '%)');
+        console.log('  Green:', green, '(' + (green/n*100).toFixed(1) + '%)');
+      })();
+    }
+  }
   navDates = dates;  // remember for click handler
 
   var curDate = currentSelectedDate;
@@ -2573,16 +2745,18 @@ function renderNavChart(data) {
     }
     return {
       name: opts.name, type:'line', data:[], showSymbol:false,
-      lineStyle:{width:0}, itemStyle:{color:'transparent'},
+      lineStyle:{width:1.5, color: opts.color || '#9ca3af'},
+      itemStyle:{color: opts.color || '#9ca3af'},
       markArea:{silent:true, data:areas, label:{show:false}},
       tooltip:{show:false}, z: opts.z || 0,
     };
   }
 
-  // Concentration heat band
+  // ── Heat bands (both always present; legend toggles mutual exclusion) ──
   if (tunerSignalHistory && tunerSignalHistory.length > 1) {
     series.unshift(buildHeatBand(tunerSignalHistory, dates, {
       name: '仓位集中度',
+      color: '#60a5fa',
       z: 0,
       levels: [
         {max:0.25, color:'rgba(34,197,94,0.08)'},
@@ -2598,8 +2772,20 @@ function renderNavChart(data) {
       },
     }));
   }
-
-  // (Future) additional heat bands here — same buildHeatBand, different name + getValue + levels
+  if (alphaSignals && alphaSignals.length > 1) {
+    series.unshift(buildHeatBand(alphaSignals, dates, {
+      name: '超额区间',
+      color: '#60a5fa',
+      z: 0,
+      levels: [
+        {max: -20,      color: 'rgba(239,68,68,0.12)'},
+        {max:  -7,      color: 'rgba(249,115,22,0.10)'},
+        {max:   7,      color: 'rgba(250,204,21,0.08)'},
+        {max: Infinity, color: 'rgba(34,197,94,0.08)'},
+      ],
+      getValue: function(sig) { return sig.rollingExcess; },
+    }));
+  }
 
   navChart.setOption({
     backgroundColor:'transparent',
@@ -2623,7 +2809,7 @@ function renderNavChart(data) {
         return html;
       },
     },
-    legend:{data:series.filter(s=>!s.name.startsWith('_')).map(s=>s.name), textStyle:{color:'#9ca3af', fontSize:11}, top:0},
+    legend:{data:series.filter(s=>!s.name.startsWith('_')).map(s=>s.name), textStyle:{color:'#9ca3af', fontSize:11}, top:0, selected:{'仓位集中度':true, '超额区间':false}},
     grid:{left:50, right:20, top:30, bottom:30},
     xAxis:{type:'category', data:dates, boundaryGap:false, axisLabel:{fontSize:10, color:'#6b7280'}, axisLine:{lineStyle:{color:'#2a3a4a'}}},
     yAxis:{type:'value', scale:true, axisLabel:{fontSize:10, color:'#6b7280', formatter:'{value}%'}, splitLine:{lineStyle:{color:'rgba(255,255,255,0.06)'}}},
@@ -2635,6 +2821,23 @@ function renderNavChart(data) {
   // Single owner for markLine — set after full redraw
   updateNavMarkLine();
   if (ddChart) echarts.connect(klineReplayChart ? [navChart, ddChart, klineReplayChart] : [navChart, ddChart]);
+
+  // ── Heat band mutual exclusion via legend ──
+  navChart.off('legendselectchanged');
+  navChart.on('legendselectchanged', function(params) {
+    var heatNames = ['仓位集中度', '超额区间'];
+    var changed = params.name;
+    if (heatNames.indexOf(changed) === -1) return;  // not a heat band
+    var isSelected = params.selected[changed];
+    if (isSelected) {
+      // User turned ON one heat band → turn OFF the other
+      var other = (changed === '仓位集中度') ? '超额区间' : '仓位集中度';
+      if (params.selected[other]) {
+        navChart.setOption({ legend: { selected: (function() { var s = {}; s[other] = false; return s; })() } });
+      }
+    }
+    // If user turned OFF the last visible heat band → both off (00), allowed
+  });
 
   // Click on NAV chart → switch snapshot (does NOT trigger kline-replay redraw)
   navChart.getZr().off('click');
@@ -2654,9 +2857,10 @@ function renderNavChart(data) {
 function updateNavMarkLine() {
   if (!navChart || !currentSelectedDate) return;
   // Clear old markLine first, then set new one (ECharts merge appends arrays by default)
-  navChart.setOption({ series: [{ markLine: null }] }, false);
+  navChart.setOption({ series: [{ name: '策略净值', markLine: null }] }, false);
   navChart.setOption({
     series: [{
+      name: '策略净值',
       markLine: {
         silent: true, symbol: 'none',
         data: [{ xAxis: currentSelectedDate, lineStyle:{color:'#ef4444',width:1.5,type:'dashed'} }],
@@ -3600,10 +3804,14 @@ window.addEventListener('load', async function() {
       }
     } catch(e) { console.warn('Cache restore skipped:', e); }
   }
+  await loadFrontier();
   await loadPresets();
-  // renderPresetCards() already auto-selects preset1; this is a safety net
-  var defaultPreset = PRESETS['gam-1'] ? 'gam-1' : Object.keys(PRESETS)[0];
-  if (defaultPreset && CURRENT_PRESET !== defaultPreset) applyPreset(defaultPreset);
+  // Note: renderPresetCards() inside loadPresets() now uses FRONTIER for gambler slider.
+  // Safety net for non-frontier schools:
+  if (CURRENT_PRESET === null || CURRENT_PRESET === undefined) {
+    var defaultPreset = PRESETS['gam-1'] ? 'gam-1' : Object.keys(PRESETS)[0];
+    if (defaultPreset) applyPreset(defaultPreset);
+  }
 });
 window.addEventListener('resize', () => {
   navChart && navChart.resize();
@@ -3624,10 +3832,9 @@ document.addEventListener('keydown', function(e) {
   }
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) return;
   if (e.key === '?') { e.preventDefault(); toggleShortcuts(); }
-  else if (e.key === '1') { e.preventDefault(); applyPreset('gam-1'); }
-  else if (e.key === '2') { e.preventDefault(); applyPreset('zen-1'); }
-  else if (e.key === '3') { e.preventDefault(); applyPreset('act-1'); }
-  else if (e.key === '4') { e.preventDefault(); applyPreset('cst-1'); }
+  else if (e.key === '1') { e.preventDefault(); applyPreset('zen-1'); }
+  else if (e.key === '2') { e.preventDefault(); applyPreset('act-1'); }
+  else if (e.key === '3') { e.preventDefault(); applyPreset('cst-1'); }
   else if (e.key === 'r' || e.key === 'R') { e.preventDefault(); runBacktest(); }
   else if (e.key === 's' || e.key === 'S') { e.preventDefault(); saveYAML(); }
   else if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && currentSelectedDate && navDates.length) {

@@ -54,8 +54,9 @@
 
 ### Phase 1: 本地验证与审计
 
-先确认本地生成与检查链路正常：
+先确认测试全量与本地生成链路正常：
 
+- [ ] 运行 `pytest tests -q`（硬门禁——任何失败必须先修复）
 - [ ] 运行 `python scripts/update_report.py`（不带 `--publish`）
 - [ ] 检查生成的 `index.html` / `runtime_payload.js` / 关键数据文件是否完整
 - [ ] 查看健康检查、日志、关键页面表现是否正常

@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
 """
-Unified Parameter Optimization Framework for etf-report quant system.
+DEPRECATED — v3.x 统一优化框架。
+已由 iterative_optimizer.py（主力，迭代缩界 TPE）和 pareto_optimizer.py（冷启动备份）取代。
+保留仅供历史 trial 复现参考。新优化任务请使用 iterative_optimizer.py。
 
+原用途: Unified Parameter Optimization Framework for etf-report quant system.
 Strategies: grid, random, bayesian (Optuna TPE).
-Independent background execution, checkpoint-resume, structured output.
-
-Usage:
-  python scripts/quant_optimizer.py --preset gam-1
-  python scripts/quant_optimizer.py --preset zen-1 --n-trials 100
-  python scripts/quant_optimizer.py --preset act-1 --strategy grid --params "w1=30,40,50 concentration=0,0.5,1"
 """
+import warnings
+warnings.warn("quant_optimizer.py is deprecated. Use iterative_optimizer.py.", DeprecationWarning)
 import argparse
 import json
 import os
@@ -611,7 +610,7 @@ class ReportGenerator:
             for i, r in enumerate(top_n):
                 c = r.get("composite", {})
                 vals = " | ".join(f"{c.get(m, 0):.4f}" for m in METRIC_NAMES[:5])
-                kp = ", ".join(f"{k}={v}" for k, v in sorted(r["params"].items()) if v != 0 and k in ("w1", "w3", "w7", "concentration", "f1_ema_period", "score_band"))
+                kp = ", ".join(f"{k}={v}" for k, v in sorted(r["params"].items()) if v != 0 and k in ("w1", "w3", "w7", "concentration", "f1_ema_period", "band"))
                 lines.append(f"| {i+1} | {vals} | {kp} |")
         lines.append("")
 
