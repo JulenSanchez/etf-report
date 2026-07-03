@@ -23,7 +23,9 @@
    "f7_window": 26,
    "conf_type": "ma_trend",
    "ma_direction_confirm": true,
-   "bias": 0
+   "bias": 0,
+   "band": 3.0,
+   "band_sensitivity": 0
   },
   "source": "iter_r4"
  },
@@ -51,7 +53,9 @@
    "f7_window": 17,
    "conf_type": "ma_trend",
    "ma_direction_confirm": true,
-   "bias": 0
+   "bias": 0,
+   "band": 3.0,
+   "band_sensitivity": 0
   },
   "source": "iter_r1"
  },
@@ -82,7 +86,9 @@
    "bias": 0,
    "account_mode": "synthetic_leverage",
    "rebalance_freq": "W-FRI",
-   "max_gross_exposure": 2.0
+   "max_gross_exposure": 2.0,
+   "band": 3.0,
+   "band_sensitivity": 0
   },
   "source": "sobol_cold"
  },
@@ -110,7 +116,9 @@
    "f7_window": 36,
    "conf_type": "ma_trend",
    "ma_direction_confirm": true,
-   "bias": 0
+   "bias": 0,
+   "band": 3.0,
+   "band_sensitivity": 0
   },
   "source": "iter_r2"
  },
@@ -138,7 +146,9 @@
    "f7_window": 11,
    "conf_type": "ma_trend",
    "ma_direction_confirm": true,
-   "bias": 0
+   "bias": 0,
+   "band": 3.0,
+   "band_sensitivity": 0
   },
   "source": "iter_r1"
  },
@@ -166,7 +176,9 @@
    "f7_window": 17,
    "conf_type": "ma_trend",
    "ma_direction_confirm": true,
-   "bias": 0
+   "bias": 0,
+   "band": 3.0,
+   "band_sensitivity": 0
   },
   "source": "iter_r4"
  },
@@ -194,7 +206,9 @@
    "f7_window": 34,
    "conf_type": "ma_trend",
    "ma_direction_confirm": true,
-   "bias": 0
+   "bias": 0,
+   "band": 3.0,
+   "band_sensitivity": 0
   },
   "source": "iter_r1"
  },
@@ -222,7 +236,9 @@
    "f7_window": 15,
    "conf_type": "ma_trend",
    "ma_direction_confirm": true,
-   "bias": 0
+   "bias": 0,
+   "band": 3.0,
+   "band_sensitivity": 0
   },
   "source": "iter_r1"
  },
@@ -250,7 +266,9 @@
    "f7_window": 30,
    "conf_type": "ma_trend",
    "ma_direction_confirm": true,
-   "bias": 0
+   "bias": 0,
+   "band": 3.0,
+   "band_sensitivity": 0
   },
   "source": "iter_r1"
  },
@@ -278,7 +296,9 @@
    "f7_window": 11,
    "conf_type": "ma_trend",
    "ma_direction_confirm": true,
-   "bias": 0
+   "bias": 0,
+   "band": 3.0,
+   "band_sensitivity": 0
   },
   "source": "iter_r2"
  },
@@ -306,7 +326,9 @@
    "f7_window": 15,
    "conf_type": "ma_trend",
    "ma_direction_confirm": true,
-   "bias": 0
+   "bias": 0,
+   "band": 3.0,
+   "band_sensitivity": 0
   },
   "source": "iter_r1"
  },
@@ -334,7 +356,9 @@
    "f7_window": 26,
    "conf_type": "ma_trend",
    "ma_direction_confirm": true,
-   "bias": 0
+   "bias": 0,
+   "band": 3.0,
+   "band_sensitivity": 0
   },
   "source": "iter_r2"
  },
@@ -362,7 +386,9 @@
    "f7_window": 14,
    "conf_type": "ma_trend",
    "ma_direction_confirm": true,
-   "bias": 0
+   "bias": 0,
+   "band": 3.0,
+   "band_sensitivity": 0
   },
   "source": "iter_r1"
  },
@@ -390,7 +416,9 @@
    "f7_window": 25,
    "conf_type": "ma_trend",
    "ma_direction_confirm": true,
-   "bias": 0
+   "bias": 0,
+   "band": 3.0,
+   "band_sensitivity": 0
   },
   "source": "iter_r1"
  },
@@ -418,7 +446,9 @@
    "max_gross_exposure": 2.0,
    "dead_zone": 17,
    "full_zone": 65,
-   "f1_active_days": 1
+   "f1_active_days": 1,
+   "band": 3.0,
+   "band_sensitivity": 0
   },
   "mdd": -30.4,
   "composite": 3.62,
@@ -448,7 +478,9 @@
    "f7_window": 11,
    "conf_type": "ma_trend",
    "ma_direction_confirm": true,
-   "bias": 0
+   "bias": 0,
+   "band": 3.0,
+   "band_sensitivity": 0
   },
   "source": "iter_r4"
  },
@@ -476,7 +508,9 @@
    "f7_window": 15,
    "conf_type": "ma_trend",
    "ma_direction_confirm": true,
-   "bias": 0
+   "bias": 0,
+   "band": 3.0,
+   "band_sensitivity": 0
   },
   "source": "iter_r1"
  },
@@ -504,7 +538,9 @@
    "f7_window": 13,
    "conf_type": "ma_trend",
    "ma_direction_confirm": true,
-   "bias": 0
+   "bias": 0,
+   "band": 3.0,
+   "band_sensitivity": 0
   },
   "source": "iter_r2"
  },
@@ -532,7 +568,9 @@
    "f7_window": 9,
    "conf_type": "ma_trend",
    "ma_direction_confirm": true,
-   "bias": 0
+   "bias": 0,
+   "band": 3.0,
+   "band_sensitivity": 0
   },
   "source": "iter_r1"
  },
@@ -560,7 +598,9 @@
    "f7_window": 15,
    "conf_type": "ma_trend",
    "ma_direction_confirm": true,
-   "bias": 0
+   "bias": 0,
+   "band": 3.0,
+   "band_sensitivity": 0
   },
   "source": "iter_r1"
  },
@@ -588,7 +628,9 @@
    "f7_window": 12,
    "conf_type": "ma_trend",
    "ma_direction_confirm": true,
-   "bias": 0
+   "bias": 0,
+   "band": 3.0,
+   "band_sensitivity": 0
   },
   "source": "iter_r1"
  }

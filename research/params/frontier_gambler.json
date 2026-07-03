@@ -10,8 +10,35 @@
     "risk_step": 0.5,
     "points": [
       {
-        "mdd": -35.2,
-        "ar_6y": 111.4,
+        "mdd": -39.2,
+        "ar_6y": 127.0,
+        "params": {
+          "ma_bull_pos": 1.773,
+          "ma_bear_pos": 0.76,
+          "max_holdings": 2,
+          "ma_trend_period": 20,
+          "concentration": 24.7,
+          "c_sensitivity": 40,
+          "band": 2.93,
+          "band_sensitivity": 15,
+          "disc_step": 0.19,
+          "f7_t": 8,
+          "f7_k": 2.94,
+          "f7_window": 18,
+          "f3_vol_window": 47,
+          "f1_sensitivity": 9.9,
+          "f3_sensitivity": 2.2,
+          "f1_ema_period": 13,
+          "w1": 41,
+          "w3": 31,
+          "w7": 28
+        },
+        "sortino": 2.589,
+        "calmar": 3.24
+      },
+      {
+        "mdd": -38.4,
+        "ar_6y": 84.5,
         "params": {
           "ma_bull_pos": 1.69,
           "ma_bear_pos": 0.66,
@@ -19,7 +46,8 @@
           "ma_trend_period": 22,
           "concentration": 8.72,
           "c_sensitivity": 24,
-          "score_band": 0.5,
+          "band": 3.2,
+          "band_sensitivity": 8,
           "disc_step": 0.2,
           "f7_t": 5,
           "f7_k": 3.07,
@@ -32,12 +60,12 @@
           "w3": 9,
           "w7": 28
         },
-        "sortino": 2.409,
-        "calmar": 3.17
+        "sortino": 1.948,
+        "calmar": 2.2
       },
       {
-        "mdd": -31.8,
-        "ar_6y": 103.8,
+        "mdd": -32.1,
+        "ar_6y": 101.6,
         "params": {
           "ma_bull_pos": 1.58,
           "ma_bear_pos": 0.54,
@@ -45,7 +73,8 @@
           "ma_trend_period": 19,
           "concentration": 7.1,
           "c_sensitivity": 86,
-          "score_band": 3.0,
+          "band": 2.1,
+          "band_sensitivity": 49,
           "disc_step": 0.17,
           "f7_t": 17,
           "f7_k": 2.72,
@@ -58,12 +87,39 @@
           "w3": 13,
           "w7": 16
         },
-        "sortino": 2.447,
-        "calmar": 3.27
+        "sortino": 2.425,
+        "calmar": 3.17
       },
       {
-        "mdd": -26.6,
-        "ar_6y": 58.5,
+        "mdd": -26.8,
+        "ar_6y": 89.1,
+        "params": {
+          "ma_bull_pos": 1.846,
+          "ma_bear_pos": 0.47,
+          "max_holdings": 5,
+          "ma_trend_period": 20,
+          "concentration": 26.1,
+          "c_sensitivity": 28,
+          "band": 2.18,
+          "band_sensitivity": 42,
+          "disc_step": 0.04,
+          "f7_t": 4,
+          "f7_k": 2.85,
+          "f7_window": 20,
+          "f3_vol_window": 15,
+          "f1_sensitivity": 10.2,
+          "f3_sensitivity": 2.1,
+          "f1_ema_period": 14,
+          "w1": 32,
+          "w3": 15,
+          "w7": 53
+        },
+        "sortino": 2.36,
+        "calmar": 3.32
+      },
+      {
+        "mdd": -25.7,
+        "ar_6y": 61.1,
         "params": {
           "ma_bull_pos": 1.32,
           "ma_bear_pos": 0.6,
@@ -71,7 +127,8 @@
           "ma_trend_period": 25,
           "concentration": 15.1,
           "c_sensitivity": 100,
-          "score_band": 4.6,
+          "band": 2.6,
+          "band_sensitivity": 50,
           "disc_step": 0.08,
           "f7_t": 23,
           "f7_k": 3.0,
@@ -84,12 +141,39 @@
           "w3": 45,
           "w7": 31
         },
-        "sortino": 1.784,
-        "calmar": 2.2
+        "sortino": 1.825,
+        "calmar": 2.38
       },
       {
-        "mdd": -19.7,
-        "ar_6y": 42.0,
+        "mdd": -24.1,
+        "ar_6y": 50.1,
+        "params": {
+          "ma_bull_pos": 1.356,
+          "ma_bear_pos": 0.995,
+          "max_holdings": 5,
+          "ma_trend_period": 20,
+          "concentration": 0.2,
+          "c_sensitivity": 20,
+          "band": 1.78,
+          "band_sensitivity": 29,
+          "disc_step": 0.16,
+          "f7_t": 17,
+          "f7_k": 2.93,
+          "f7_window": 8,
+          "f3_vol_window": 53,
+          "f1_sensitivity": 7.9,
+          "f3_sensitivity": 1.1,
+          "f1_ema_period": 5,
+          "w1": 30,
+          "w3": 1,
+          "w7": 69
+        },
+        "sortino": 1.867,
+        "calmar": 2.08
+      },
+      {
+        "mdd": -21.4,
+        "ar_6y": 41.5,
         "params": {
           "ma_bull_pos": 0.89,
           "ma_bear_pos": 0.43,
@@ -97,7 +181,8 @@
           "ma_trend_period": 34,
           "concentration": 4.7,
           "c_sensitivity": 56,
-          "score_band": 5.8,
+          "band": 2.6,
+          "band_sensitivity": 34,
           "disc_step": 0.15,
           "f7_t": 21,
           "f7_k": 3.42,
@@ -110,19 +195,19 @@
           "w3": 26,
           "w7": 14
         },
-        "sortino": 1.944,
-        "calmar": 2.13
+        "sortino": 1.953,
+        "calmar": 1.94
       }
     ],
     "references": [
       {
         "label": "gam-0",
         "mdd": -30.9,
-        "ar_6y": 102.6,
-        "sortino": 2.475,
-        "calmar": 3.32
+        "ar_6y": 102.9,
+        "sortino": 2.479,
+        "calmar": 3.33
       }
     ],
-    "updated": "2026-07-02"
+    "updated": "2026-07-03"
   }
 }

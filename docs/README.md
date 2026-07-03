@@ -18,6 +18,7 @@
 | `design/backtest-engine.md` | 量化回测引擎 |
 | `design/data-architecture.md` | 筛选池 / 量化池数据架构 |
 | `design/margin-account-model.md` | 杠杆与融资账户建模 |
+| `design/tuner-ui.md` | Tuner UI 设计文档（布局+交互+配色+组件） |
 | `design/etf-contribution.md` | ETF 贡献度分析 |
 
 ## 知识文档

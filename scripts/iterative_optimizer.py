@@ -53,7 +53,7 @@ def _valid(trials):
 
 
 def _run_trials(preset, bounds, start_date, end_date, metric, n, label, seed=42,
-                sampler='tpe', enqueue_seeds=None):
+                sampler='tpe', enqueue_seeds=None, recovery_path=None):
     s = optuna.samplers.QMCSampler(seed=seed) if sampler == 'sobol' \
         else optuna.samplers.TPESampler(seed=seed)
     obj = create_optuna_objective(preset, bounds, start_date, end_date, metric)
@@ -62,7 +62,43 @@ def _run_trials(preset, bounds, start_date, end_date, metric, n, label, seed=42,
         for sp in enqueue_seeds:
             try: study.enqueue_trial(sp)
             except Exception: pass
-    study.optimize(obj, n_trials=n, n_jobs=1, show_progress_bar=(n >= 20))
+
+    # ── Incremental save: flush partial results to recovery file every 10 trials ──
+    callbacks = []
+    if recovery_path:
+        _rp = pathlib.Path(recovery_path)
+        def _save_recovery(study, trial):
+            if trial.number > 0 and trial.number % 10 == 0:
+                partial = []
+                for t in study.trials:
+                    if t.value is not None and t.value > -9000:
+                        md = t.user_attrs.get('mdd', -99)
+                        if -40 <= md <= -20:
+                            partial.append({
+                                'mdd': md,
+                                'composite': t.user_attrs['composite'],
+                                'params': json.loads(t.user_attrs.get('params', '{}')),
+                                'source': label,
+                            })
+                if partial:
+                    try:
+                        _rp.parent.mkdir(parents=True, exist_ok=True)
+                        _rp.write_text(json.dumps(partial, ensure_ascii=False, indent=1),
+                                       encoding='utf-8')
+                    except Exception:
+                        pass  # never crash the optimize loop for recovery IO
+        callbacks.append(_save_recovery)
+
+    study.optimize(obj, n_trials=n, n_jobs=1, show_progress_bar=(n >= 20),
+                   callbacks=callbacks or None)
+
+    # ── Clean up recovery file on successful completion ──
+    if recovery_path:
+        _rp = pathlib.Path(recovery_path)
+        if _rp.exists():
+            try: _rp.unlink()
+            except Exception: pass
+
     results = []
     dropped = 0
     for t in study.trials:
@@ -274,7 +310,38 @@ def main():
     pool = load_pool(args.school, args.pool_dir)
     n_valid = len(_valid(pool))
     n_seeds = len([t for t in pool if t.get('mdd') is None])
+    # Backfill new params (B/BS) into old pool trials with slight random jitter
+    # to ensure narrow_bounds has a non-degenerate range for these params.
+    import random as _random
+    _backfilled = 0
+    for _ti, t in enumerate(pool):
+        p = t.get('params', {})
+        if 'band' not in p:
+            p['band'] = round(2.0 + _random.random() * 2.0, 1)  # [2.0, 4.0]
+            _backfilled += 1
+        if 'band_sensitivity' not in p:
+            p['band_sensitivity'] = _random.randint(0, 50)  # [0, 50]
+            _backfilled += 1
+    if _backfilled:
+        print(f'  Backfilled {_backfilled} missing B/BS params in pool')
+        save_pool(args.school, pool, args.pool_dir)
     print(f'Loaded {len(pool)} entries, {n_valid} valid, {n_seeds} unvalidated')
+
+    # ── Recover partial results from previous crashed run ──
+    import glob as _glob
+    _recovery_pattern = str(pathlib.Path(args.pool_dir) / f".recovery_{args.school}_*.json")
+    for _rf in sorted(_glob.glob(_recovery_pattern)):
+        try:
+            _rec = json.loads(pathlib.Path(_rf).read_text('utf-8'))
+            if isinstance(_rec, list) and _rec:
+                pool.extend(_rec)
+                print(f'  Recovered {len(_rec)} trials from {pathlib.Path(_rf).name}')
+                pathlib.Path(_rf).unlink()
+        except Exception:
+            pass
+    if _glob.glob(_recovery_pattern):
+        n_valid = len(_valid(pool))
+        print(f'  After recovery: {len(pool)} entries, {n_valid} valid')
 
     # ── Always validate seeds (fill MDD/COMP so they participate in search) ──
     if n_seeds > 0:
@@ -471,6 +538,14 @@ def main():
 
                 _bw = args.bounds_band if args.bounds_band > 0 else None
                 bounds = narrow_bounds_from_trials(v, args.top_n, margin_pct=args.bounds_margin, band_width=_bw) if len(v) >= 3 else _full_bounds()
+                # Backfill missing or degenerate params from PARAM_BOUNDS
+                for _k, _v in PARAM_BOUNDS.items():
+                    if _v.get("type") in ("weight", "special", "categorical"):
+                        continue
+                    if not _v.get("searchable", True):
+                        continue
+                    if _k not in bounds or bounds[_k][0] == bounds[_k][1]:  # missing or degenerate
+                        bounds[_k] = (_v["min"], _v["max"], _v["step"])
                 print(f'  Bounds: {len(bounds)} params (margin={args.bounds_margin}, band={args.bounds_band})')
 
                 if args.sobol_every > 0 and rnd % args.sobol_every == 0:
@@ -486,9 +561,11 @@ def main():
                     continue
 
                 seed_params = [t['params'] for t in v[:5] if t.get('params')]
+                _rec_path = str(pathlib.Path(args.pool_dir) / f".recovery_{args.school}_iter_r{rnd}.json")
                 new_trials = _run_trials(preset, bounds, args.start_date, args.end_date,
                                          metric, args.trials_per_round, f'iter_r{rnd}',
-                                         seed=args.seed + rnd, enqueue_seeds=seed_params)
+                                         seed=args.seed + rnd, enqueue_seeds=seed_params,
+                                         recovery_path=_rec_path)
                 pool.extend(new_trials)
                 before = len(pool)
                 pool = prune_pool(pool, args.school, **prune_kw)

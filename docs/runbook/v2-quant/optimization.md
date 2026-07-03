@@ -130,3 +130,75 @@ Gambler 产出非支配前沿点，Zen/Actuary 产出每槽最优（覆盖 [-40,
 - 修改默认值 → 只改 `defaults.yaml`
 - YAML preset 可以覆盖默认值（如 gam-0 的 `dead_zone=17` 覆盖全局 `25`）
 - 验证：`python tests/test_defaults.py` 检查所有代码中的硬编码值是否与 `defaults.yaml` 一致
+
+## 十、新增搜索参数审计清单
+
+> **完整的新增/修改/退役流程见 [`param-lifecycle.md`](param-lifecycle.md)**。以下保留新增参数的快速清单，详细说明（含修改和退役）以 param-lifecycle.md 为准。
+
+新增一个搜索参数（即需要 TPE 优化的参数，在 `PARAM_BOUNDS` 中 `searchable: true`）必须按顺序检查以下 17 个位置：
+
+### 定义层（5 处）
+
+| # | 文件 | 改动 | 说明 |
+|---|------|------|------|
+| 1 | `quant_contract.py` — `PARAM_SCHEMA` | 加 `{"key": "...", "label": "...", "unit": "...", "engine_path": "..."}` | Tuner 前端渲染控件用；`unit` 决定 UI↔引擎值的转换公式 |
+| 2 | `quant_contract.py` — `PARAM_BOUNDS` | 加 `{"type": "continuous", "min": ..., "max": ..., "step": ...}` | TPE 搜索空间定义 |
+| 3 | `quant_contract.py` — `_REQUIRED_PARAMS` | 加参数名到 frozenset | 缺参时 `tuner_params_to_config_override` 抛 ValueError |
+| 4 | `config/defaults.yaml` | 加默认值 | 唯一默认值来源；被 preset 覆盖前的基础值 |
+| 5 | `quant_contract.py` — `INITIAL_PRESETS` | 加 gambler/zen/act 三派初始值 | 冷启动种子使用 |
+
+### 转换层（4 处）
+
+| # | 文件 | 改动 | 说明 |
+|---|------|------|------|
+| 6 | `quant_contract.py` — `tuner_params_to_config_override` | UI→引擎值转换 + fallback | `_as_float(params.get("new_param"), defaults_val) / scale` |
+| 7 | `quant_contract.py` — `preset_to_tuner_params` | 引擎→UI 值反向转换 + fallback | 从 YAML preset 读取，乘以 scale，fallback 到 defaults.yaml |
+| 8 | `quant_contract.py` — `seed_params_from_presets` | 从 YAML 预设提取参数 | 冷启动种子生成的关键路径 |
+| 9 | `quant_contract.py` — `build_frontier_output` | 前沿输出 + 旧 trial backfill | 前沿 JSON 包含该参数 + 旧 pool trial 缺参时填默认值 |
+
+### 预设 + UI 层（4 处）
+
+| # | 文件 | 改动 | 说明 |
+|---|------|------|------|
+| 10 | **`config/quant_universe.yaml`** — 全部 7 个预设 | 每个 preset 的对应 section 加该参数 | ← **最容易漏**。不加的话所有 preset 都 fallback 到 defaults.yaml |
+| 11 | `templates/tuner.html` — HTML slider | `<input type="range" id="new_param" min="..." max="..." step="...">` | 控件 id 必须与 PARAM_SCHEMA 的 key 一致 |
+| 12 | `templates/tuner.html` — JS `getTunerParams()` | `new_param: parseFloat($id('new_param').value)` | 前端读值 |
+| 13 | `templates/tuner.html` — JS `setParams()` | `setSlider('new_param', p.new_param)` + value display 更新 | 前端写值 |
+
+### 优化器 + 引擎层（3 处）
+
+| # | 文件 | 改动 | 说明 |
+|---|------|------|------|
+| 14 | `scripts/iterative_optimizer.py` — backfill block | 旧 pool trial 缺参时填随机值 | 放在 main() 的 pool 加载后、cold start 前 |
+| 15 | `scripts/quant_backtest.py` — 引擎读取 + 逻辑 | `cfg.get("new_param", default)` + 业务逻辑 | 如果参数影响运行时行为 |
+| 16 | `scripts/update_report.py` — `default_quant_preset_params()` | 加 fallback 值 | 正式页报告生成用 |
+
+### 测试层（1 处）
+
+| # | 文件 | 改动 |
+|---|------|------|
+| 17 | `tests/test_quant_contract.py` — `sample_params()` | 加该参数 + 测试值 |
+
+### 追加检查（非搜索参数）
+
+如果新增的是**非搜索参数**（`searchable: false`，如 `financing_rate_annual`），则跳过 #2（PARAM_BOUNDS 搜索空间定义）和 #14（优化器 backfill），但必须覆盖其余 15 个位置。
+
+### 验证命令
+
+```bash
+# 转换链路完整性
+python -c "
+from etf_report.core.quant_contract import tuner_params_to_config_override, preset_to_tuner_params, seed_params_from_presets
+# 测试 UI→engine
+ov = tuner_params_to_config_override({...所有参数含新参...})
+# 测试 YAML→seeds
+seeds = seed_params_from_presets('gambler')
+print('OK' if all('new_param' in s.get('params',{}) for s in seeds) else 'FAIL')
+"
+
+# 回测验证（新参不影响旧 baseline 回测结果）
+python scripts/quant_backtest.py --preset gam-0 --start 2020-07-03
+
+# 测试套件
+python -m pytest tests/test_quant_contract.py -q
+```

@@ -419,7 +419,7 @@ scripts/quant_consistency_check.py
 
 ### 11.4 修改 preset 或参数契约
 
-必须检查：
+> 完整的新增/修改/退役参数操作清单见 [`docs/runbook/v2-quant/param-lifecycle.md`](../runbook/v2-quant/param-lifecycle.md)。以下列出设计层面必须检查的系统位置：
 
 ```text
 config/quant_universe.yaml

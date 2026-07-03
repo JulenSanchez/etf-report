@@ -599,7 +599,7 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
                 all_daily[code] = daily
                 all_weekly[code] = weekly
             if progress_callback and i % 10 == 9:
-                progress_callback(int(i / max(n_etfs,1) * 10), 100, "加载数据")
+                progress_callback(int(i / max(n_etfs,1) * 3), 100, "加载数据")
         print(f"  成功加载 {len(all_daily)}/{len(universe)} 支 ETF")
 
     # 加载市场状态（F4 regime-aware 映射需要）
@@ -651,7 +651,7 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
 
     # Always precompute factor series and price lookup (no fast/slow path distinction)
     if progress_callback:
-        progress_callback(10, 100, "因子预计算")
+        progress_callback(3, 100, "因子预计算")
     print("预计算因子序列...")
     factor_series = _precompute_factors(
         all_daily, all_weekly,
@@ -710,6 +710,17 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
     debug_snapshots = []
 
     total_rb = len(rebalance_dates)
+    # ── Dynamic progress segments (REQ-343): allocate % by measured cost ──
+    # I/O phases (加载数据 + 因子预计算) use fixed 0-5%.
+    # Pass 1 vs Pass 2 split dynamically: Pass 2 daily iteration ~2.5× Pass 1.
+    _n_days_prog = len(all_dates)
+    _cost_reb = 1.0
+    _cost_day = 2.5
+    _total_work = total_rb * _cost_reb + _n_days_prog * _cost_day
+    _prog_io_end  = 5  # fixed for I/O phases
+    _prog_pass1_end  = _prog_io_end + max(1, int(total_rb * _cost_reb * (100 - _prog_io_end) / _total_work))
+    # _prog_pass1_end → 100 is Pass 2
+
     for rb_idx, rb_date in enumerate(rebalance_dates):
         # 初始建仓日：回测周期前最后一个调仓日，仅执行首次买入
         is_initial = initial_rb_date is not None and rb_date == initial_rb_date
@@ -719,7 +730,7 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
             # Fire every iteration for short runs (<200), every 5 for long runs
             cb_every = 1 if total_rb < 200 else 5
             if rb_idx % cb_every == 0:
-                pct = 10 + int(rb_idx / max(total_rb, 1) * 85)  # 10-95% range
+                pct = _prog_io_end + int(rb_idx / max(total_rb, 1) * (_prog_pass1_end - _prog_io_end))
                 progress_callback(pct, 100, "回测中")
 
         execution_date = get_execution_date(rb_date, all_dates)
@@ -1143,7 +1154,7 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
     # 逐日计算 NAV（从第一个调仓日到最后一个交易日）
     # ============================================================
     if progress_callback:
-        progress_callback(95, 100, "计算净值")
+        progress_callback(_prog_pass1_end, 100, "计算净值")
     print("\n计算逐日 NAV...")
 
     # 重新跑一遍，但这次逐日记录净值
@@ -1158,9 +1169,10 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
     current_exposure = 0.0
 
     n_dates = len(all_dates)
+    _cb_every_nav = max(1, n_dates // 50)  # ~50 updates per run, at least every iteration
     for di, date in enumerate(all_dates):
-        if progress_callback and di % 200 == 0:
-            progress_callback(85 + int(di / max(n_dates, 1) * 13), 100, "计算净值")
+        if progress_callback and di % _cb_every_nav == 0:
+            progress_callback(_prog_pass1_end + int(di / max(n_dates, 1) * (100 - _prog_pass1_end)), 100, "计算净值")
         if False:  # dead code — precomputation eliminated warmup expansion
             # 慢路径预热期：执行调仓但不记录 NAV
             if signal_idx < len(signal_history) and date >= signal_history[signal_idx]["date"]:
@@ -1282,6 +1294,8 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
             "total_interest_accrued": round(total_interest2, 2),
         })
 
+    if progress_callback:
+        progress_callback(100, 100, "计算净值")
     nav_df = pd.DataFrame(nav_records)
 
     # ============================================================

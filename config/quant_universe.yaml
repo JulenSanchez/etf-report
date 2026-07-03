@@ -371,7 +371,8 @@ factors:
 presets:
   act-1:
     label: 精算师1
-    description: pool优化 6Y TR=+335%/MDD=-21.3%/Sortino=1.39/Calmar=1.31 F1(5%)+F3(7%)+F7(88%) bull=1.49 bear=0.17 MH=3 MA=34w
+    description: pool优化 6Y TR=+335%/MDD=-21.3%/Sortino=1.39/Calmar=1.31 F1(5%)+F3(7%)+F7(88%)
+      bull=1.49 bear=0.17 MH=3 MA=34w
     scoring:
       weights:
         ema_deviation: 0.05
@@ -407,6 +408,7 @@ presets:
       rebalance_freq: W-FRI
       execution_timing: same_close
       band: 0.115
+      band_sensitivity: 0.0
       commission_rate: 0.00026
       max_holdings_special: 8
       weighting: arithmetic
@@ -459,6 +461,7 @@ presets:
       rebalance_freq: daily
       execution_timing: same_close
       band: 0.057999999999999996
+      band_sensitivity: 0.0
       commission_rate: 0.00026
       max_holdings_special: 8
       weighting: arithmetic
@@ -513,6 +516,7 @@ presets:
       rebalance_freq: daily
       execution_timing: same_close
       band: 0.046
+      band_sensitivity: 0.0
       commission_rate: 0.00026
       max_holdings_special: 8
       weighting: arithmetic
@@ -569,6 +573,7 @@ presets:
       commission_rate: 0.00026
       max_holdings_special: 8
       weighting: arithmetic
+      band_sensitivity: 0.0
     factors:
       f1_active_days: 1
       ema:
@@ -618,6 +623,7 @@ presets:
       rebalance_freq: daily
       execution_timing: same_close
       band: 0.03
+      band_sensitivity: 0.0
       commission_rate: 0.00026
       max_holdings_special: 8
       weighting: arithmetic
@@ -631,7 +637,8 @@ presets:
         window_days: 20
   zen-1:
     label: 禅修者1
-    description: pool优化 6Y TR=+166%/MDD=-13.6%/Sortino=1.53 F1(21%)+F3(17%)+F7(62%) bull=0.89 bear=0.46 MH=5 MA=22w
+    description: pool优化 6Y TR=+166%/MDD=-13.6%/Sortino=1.53 F1(21%)+F3(17%)+F7(62%)
+      bull=0.89 bear=0.46 MH=5 MA=22w
     scoring:
       weights:
         ema_deviation: 0.21
@@ -661,12 +668,13 @@ presets:
       dd_sensitivity: 0.2
     position:
       max_holdings: 5
-      discretize_step: 0.10
+      discretize_step: 0.1
       concentration: 2.87
       c_sensitivity: 9.6
       rebalance_freq: W-FRI
       execution_timing: same_close
       band: 0.06
+      band_sensitivity: 0.0
       commission_rate: 0.00026
       max_holdings_special: 8
       weighting: arithmetic
@@ -683,7 +691,8 @@ presets:
         sigma_floor: 0.01
   gam-0:
     label: '0'
-    description: 原gam-2(bull=1.58 bear=54% MH=2 MA=19w)。synthetic_leverage模式。6Y AR=110% MDD=-30.4%。
+    description: 原gam-2(bull=1.58 bear=54% MH=2 MA=19w)。synthetic_leverage模式。6Y AR=110%
+      MDD=-30.4%。
     account:
       max_gross_exposure: 2.0
     scoring:
@@ -725,6 +734,7 @@ presets:
       commission_rate: 0.00026
       max_holdings_special: 8
       weighting: arithmetic
+      band_sensitivity: 0.0
     factors:
       f1_active_days: 1
       ema:

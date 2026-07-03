@@ -77,4 +77,4 @@ def latest_allowed_close_date(now=None, market_close_hour=15, market_close_minut
     close_time = n.replace(hour=market_close_hour, minute=market_close_minute, second=0, microsecond=0)
     if n >= close_time + timedelta(minutes=cool_off_minutes):
         return last_trading_day(n)
-    return last_trading_day(n - timedelta(minutes=1))
+    return last_trading_day(n - timedelta(days=1))

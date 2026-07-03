@@ -7,6 +7,7 @@ This module is the single place for converting between:
 """
 import json
 from copy import deepcopy
+from datetime import datetime
 
 
 _WEIGHT_KEYS = ("w1", "w3", "w7")
@@ -276,7 +277,11 @@ def load_defaults():
 def tuner_params_to_config_override(params):
     missing = [k for k in _REQUIRED_PARAMS if k not in params]
     if missing:
-        raise ValueError(f"Missing required params: {missing}")
+        raise ValueError(
+            f"Missing required params: {missing}. "
+            f"Old pool trials may lack params added in newer versions. "
+            f"Re-run iterative_optimizer.py to auto-backfill, or call build_frontier_output which backfills automatically."
+        )
     df = load_defaults()
     sc_df = df.get("scoring", {})
     sens_df = sc_df.get("sensitivity", {})
@@ -515,6 +520,21 @@ def build_frontier_output(school="gambler", data_dir="research/params",
 
     all_data = load_pool(school, data_dir)
 
+    # Backfill missing B/BS params in pool trials so re-validation doesn't drop them.
+    # Unlike iterative_optimizer's random backfill, we use deterministic defaults
+    # so frontier generation is reproducible.
+    _bf_count = 0
+    for _t in all_data:
+        _p = _t.get('params', {})
+        if 'band' not in _p:
+            _p['band'] = 2.0
+            _bf_count += 1
+        if 'band_sensitivity' not in _p:
+            _p['band_sensitivity'] = 20
+            _bf_count += 1
+    if _bf_count:
+        print(f"  Backfilled {_bf_count} missing B/BS params in pool (defaults)")
+
     # Gambler: Pareto frontier (AR monotonic with MDD)
     # Zen/Actuary: per-slot best (Sortino/Calmar not monotonic, dominance meaningless)
     if school == 'gambler':
@@ -553,6 +573,7 @@ def build_frontier_output(school="gambler", data_dir="research/params",
                 "concentration": round(float(p.get("concentration", 2.0)), 2),
                 "c_sensitivity": int(float(str(p.get("c_sensitivity", 200)))),
                 "band": round(float(p.get("band", 0)), 2),
+                "band_sensitivity": int(float(str(p.get("band_sensitivity", 0)))),
                 "disc_step": round(float(p.get("disc_step", 0.05)), 2),
                 "f7_t": int(float(str(p.get("f7_t", 5)))),
                 "f7_k": round(float(p.get("f7_k", 1.0)), 2),
@@ -576,7 +597,7 @@ def build_frontier_output(school="gambler", data_dir="research/params",
             "risk_step": 0.5,
             "points": pts,
             "references": [],
-            "updated": "2026-06-29",
+            "updated": datetime.now().strftime("%Y-%m-%d"),
         }
     }
     # Re-validate each frontier point with current data.

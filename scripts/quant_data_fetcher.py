@@ -48,9 +48,10 @@ MARKET_CLOSE_MIN = 0
 COOL_OFF_MINUTES = 10  # only allow data >= close_time + cool_off (REQ-195: 15:10 即可拉取，为盘后交易预留时间)
 
 
-def _latest_allowed_date() -> str:
+def _latest_allowed_date(now=None) -> str:
     """Return the latest date (YYYY-MM-DD) for which closed K-line data is safe to fetch."""
     return latest_allowed_close_date(
+        now=now,
         market_close_hour=MARKET_CLOSE_HOUR,
         market_close_minute=MARKET_CLOSE_MIN,
         cool_off_minutes=COOL_OFF_MINUTES,

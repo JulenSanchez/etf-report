@@ -69,7 +69,7 @@ config/quant_universe.yaml preset
   → Tuner API / CLI / 正式页
 ```
 
-所有参数映射集中在 `quant_contract.py`。新增参数必须改 contract、Tuner 控件、引擎消费、测试——四项对齐。
+所有参数映射集中在 `quant_contract.py`。新增参数必须改 contract、Tuner 控件、引擎消费、测试——四项对齐。完整生命周期（新增/修改/退役）见 [`docs/runbook/v2-quant/param-lifecycle.md`](../runbook/v2-quant/param-lifecycle.md)。
 
 ### 日调仓 + 分数带
 

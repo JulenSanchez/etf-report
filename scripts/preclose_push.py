@@ -13,6 +13,7 @@ from trading_calendar import is_trading_day
 TUNER_PORT = 5180  # stable uses 5180 to avoid conflict with dev Tuner on 5179
 TUNER_URL = f"http://localhost:{TUNER_PORT}"
 REFRESH_ONLY = "--refresh-only" in sys.argv
+OUTPUT_MD = "--output-md" in sys.argv   # REQ-353: write markdown to Desktop instead of push
 from etf_report.core.quant_contract import DEFAULT_PRESET
 TUNER_STARTUP_TIMEOUT = 60  # max seconds to wait for Tuner
 
@@ -185,44 +186,44 @@ log(f"  WinRate: {s['winRate']}% | MDD: {s['maxDrawdown']:.1f}% | Elapsed: {s['e
 # Stage 5: Build signal table
 # ═══════════════════════════════════════════════════════════════
 log("=" * 50)
-log("Stage 5: Build signal table")
+log("Stage 5: Build execution reference table")
 
 history = result["signalHistory"]
 latest = history[-1]
 detail = latest.get("detail", {})
 positions = latest.get("positions", {})
-prev_positions = history[-2].get("positions", {}) if len(history) >= 2 else {}
 
-rows = []
-for c, d in detail.items():
-    score = d.get("score", 0)
-    pos = positions.get(c, 0) * 100
-    prev = prev_positions.get(c, 0) * 100
-    if pos < 0.5 and prev < 0.5:
-        action = ""
-    elif pos > 0.5 and prev < 0.5:
-        action = "NEW"
-    elif pos < 0.5 and prev > 0.5:
-        action = "OUT"
-    elif pos > prev + 0.5:
-        action = f"+{(pos-prev):.1f}%"
-    elif pos < prev - 0.5:
-        action = f"-{(prev-pos):.1f}%"
-    else:
-        action = ""
-    rows.append((c, score, pos, action))
+# Filter: only buy positions (>0.5% = >0.005)
+buy_list = []
+for code, target in sorted(positions.items(), key=lambda x: -x[1]):
+    if target > 0.005:
+        d = detail.get(code, {})
+        name = short(code)
+        close_price = d.get("close", 0)
+        if close_price <= 0:
+            close_price = d.get("price", 0)
+        buy_list.append({
+            "code": code, "name": name,
+            "target": target, "price": float(close_price),
+            "targetPct": f"{target*100:.0f}%"
+        })
 
-rows.sort(key=lambda x: -x[1])
-top10 = rows[:12]
+if not buy_list:
+    log("ERROR: No buy positions found")
+    sys.exit(1)
 
-# ═══════════════════════════════════════════════════════════════
-# Stage 6: Push to WeChat
-# ═══════════════════════════════════════════════════════════════
-log("=" * 50)
-log("Stage 6: Push to WeChat")
+log(f"  Buy positions: {len(buy_list)}")
+
+# Build execution reference table
+AMOUNTS = list(range(500000, 605000, 10000))  # 50w - 60w, step 1w
 
 now = datetime.now()
-session = "上午" if now.hour < 13 else "下午"
+md_lines = [
+    f"## 实盘调仓执行参照表",
+    "",
+    f"**策略**: 赌徒 | **日期**: {now:%Y-%m-%d}",
+    "",
+]
 
 # Halt check
 halted_codes = []
@@ -232,37 +233,62 @@ try:
         halted_codes = r_status.json().get("haltedEtfs", [])
 except Exception:
     pass
-
-halt_note = ""
 if halted_codes:
     names = [short(c) for c in halted_codes]
-    halt_note = f" | 停牌: {', '.join(names)}"
+    md_lines.append(f"> ⚠️ 停牌: {', '.join(names)}")
+    md_lines.append("")
 
-md_lines = [
-    f"策略: 赌徒  |  {now:%H:%M}{halt_note}",
-    "",
-    "| # | ETF | 得分 | 仓位 | 动作 |",
-    "|---|-----|------|------|------|",
-]
-for i, (c, s, pct, act) in enumerate(top10, 1):
-    ps = f"**{pct:.0f}%**" if pct > 0 else "-"
-    md_lines.append(f"| {i} | {short(c)} | {s:.1f} | {ps} | {act} |")
+# Table: codes in header row, target/price as first two data rows
+col_labels = [f"{b['name']} {b['code']}" for b in buy_list]
+md_lines.append(f"|  | {' | '.join(col_labels)} |")
+md_lines.append(f"|--------|{''.join('------|' for _ in buy_list)}")
+
+# Target row
+target_cols = [f"{b['targetPct']}" for b in buy_list]
+md_lines.append(f"| 目标 | {' | '.join(target_cols)} |")
+
+# Price row
+price_cols = [f"{b['price']:.3f}" for b in buy_list]
+md_lines.append(f"| 现价 | {' | '.join(price_cols)} |")
+
+# Data rows: 金额/股数 in same cell
+for amt in AMOUNTS:
+    cols = [f"**{amt//10000}w**"]
+    for b in buy_list:
+        alloc = amt * b['target']
+        shares = int(alloc / b['price'] / 100) * 100
+        cols.append(f"{alloc/10000:.1f}w / {shares:,}")
+    md_lines.append(f"| {' | '.join(cols)} |")
 
 content_str = "\n".join(md_lines)
-title = f"{now:%m/%d} {session}收盘前 | 赌徒{halt_note}"
 
-print(title)
-print(content_str)
+# ═══════════════════════════════════════════════════════════════
+# Stage 6: Output
+# ═══════════════════════════════════════════════════════════════
+log("=" * 50)
 
-r = requests.post(f"https://sctapi.ftqq.com/{sendkey}.send",
-                  data={"title": title, "desp": content_str}, timeout=10)
-resp = r.json()
-if resp.get("code") == 0:
-    pushid = resp.get("data", {}).get("pushid", "?")
-    log(f"Push sent OK (id={pushid})")
+if OUTPUT_MD:
+    # REQ-353 test mode: write to Desktop
+    import os as _os
+    desktop = Path(_os.environ["USERPROFILE"]) / "Desktop" / f"调仓执行表_{now:%Y%m%d}.md"
+    desktop.write_text(content_str, encoding="utf-8")
+    log(f"Stage 6: Written to {desktop}")
 else:
-    log(f"ERROR: Push failed — {resp}")
-    sys.exit(1)
+    log("Stage 6: Push to WeChat")
+    title = f"{now:%m/%d} 收盘前 | 赌徒"
+
+    print(title)
+    print(content_str)
+
+    r = requests.post(f"https://sctapi.ftqq.com/{sendkey}.send",
+                      data={"title": title, "desp": content_str}, timeout=10)
+    resp = r.json()
+    if resp.get("code") == 0:
+        pushid = resp.get("data", {}).get("pushid", "?")
+        log(f"Push sent OK (id={pushid})")
+    else:
+        log(f"ERROR: Push failed — {resp}")
+        sys.exit(1)
 
 log("=" * 50)
 log("Done.")
