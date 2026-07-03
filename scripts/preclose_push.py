@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
-"""Pre-close push: auto-start Tuner → refresh intraday → backtest → push top-12 to WeChat via Server酱.
-   --refresh-only: stop after data refresh (post-market use, no backtest/push)."""
+"""Signal push: auto-start Tuner → refresh data → backtest → push execution table to WeChat via Server酱.
+   Behavior (intraday vs post-market CSV write) is controlled by COOL_OFF_TIME in quant_tuner.py.
+   --refresh-only: stop after data refresh (no backtest/push).
+   --output-md: write markdown to Desktop instead of push."""
 import sys, os, time, subprocess, requests, yaml
 from datetime import datetime
 from pathlib import Path
@@ -108,14 +110,14 @@ if not _ensure_tuner():
     sys.exit(1)
 
 # ═══════════════════════════════════════════════════════════════
-# Stage 2: Refresh intraday data
+# Stage 2: Refresh market data (intraday or post-market, per COOL_OFF_TIME)
 # ═══════════════════════════════════════════════════════════════
 log("=" * 50)
-log("Stage 2: Refresh intraday data")
+log("Stage 2: Refresh market data")
 
 r = requests.post(f"{TUNER_URL}/api/refresh_data", timeout=60)
 status = r.json()
-log(f"  Status: {status.get('status', '?')} | {status.get('count', 0)} ETFs")
+log(f"  Status: {status.get('status', '?')} | {status.get('count', status.get('fetchOk', 0))} ETFs")
 halted = status.get("haltedCount", 0)
 if halted:
     log(f"  Halted ETFs detected: {halted}")
@@ -275,7 +277,7 @@ if OUTPUT_MD:
     log(f"Stage 6: Written to {desktop}")
 else:
     log("Stage 6: Push to WeChat")
-    title = f"{now:%m/%d} 收盘前 | 赌徒"
+    title = f"{now:%m/%d} 赌徒 调仓信号"
 
     print(title)
     print(content_str)

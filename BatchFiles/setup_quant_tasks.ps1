@@ -6,7 +6,7 @@ $settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -MultipleInstances 
 
 $tasks = @(
     @{Name="etf早盘报告";     Time="11:20"; Script="preclose_push.bat"},
-    @{Name="etf午盘报告";     Time="14:50"; Script="preclose_push.bat"},
+    @{Name="etf午盘报告";     Time="15:10"; Script="preclose_push.bat"},
     @{Name="etf盘后数据更新"; Time="15:15"; Script="postmarket_update.bat"}
 )
 

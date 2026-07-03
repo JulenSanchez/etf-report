@@ -38,7 +38,7 @@ git pull --ff-only origin main
 | 任务名 | 时间 | 脚本 |
 |---|---:|---|
 | `etf早盘报告` | 11:20 | `batchfiles/preclose_push.bat` |
-| `etf午盘报告` | 14:50 | `batchfiles/preclose_push.bat` |
+| `etf午盘报告` | 15:10 | `batchfiles/preclose_push.bat` |
 | `etf盘后数据更新` | 15:15 | `batchfiles/postmarket_update.bat` |
 | `etf报告发布` | 16:00 | `batchfiles/daily_report.bat` |
 
@@ -74,3 +74,28 @@ foreach ($name in $names) {
 | 计划任务未触发 | 检查 Task Scheduler 中触发器和用户权限 |
 | preclose push 未推送 | 检查 Tuner 是否能启动、`config/secrets.yaml` 是否有 Server酱 sendkey |
 | 报告发布失败 | 手动运行 `batchfiles/daily_report.bat`，再看 `docs/runbook/release.md` |
+
+## 数据清理
+
+当池子缩容或替换 ETF 后，`data/quant/` 会残留已退出 ETF 的 CSV 文件。清理方法：
+
+```bash
+python -c "
+from pathlib import Path
+import yaml
+d = Path('data/quant')
+with open('config/quant_universe.yaml', 'r', encoding='utf-8') as f:
+    cfg = yaml.safe_load(f)
+universe = set(e['code'] for e in cfg['universe'])
+benchmarks = {'000016', '000300', '000905', '399006'}
+keep = universe | benchmarks
+for f in sorted(d.glob('*.csv')):
+    code = f.stem.split('_')[0]
+    if code not in keep:
+        f.unlink()
+        print(f'DEL {f.name}')
+print('Done.')
+"
+```
+
+> 只删 CSV，不动 `.fresh_today`、`cache/`、`trading_days_*` 等运行时文件。
