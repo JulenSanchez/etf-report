@@ -8,7 +8,10 @@
 
 一个 school 一个进程。不同 school 可并行（独立 pool）。
 """
-import sys, json, pathlib, argparse
+import sys, json, pathlib, argparse, warnings, random
+# Suppress optuna distribution alignment warnings — we snap bounds to step already
+warnings.filterwarnings('ignore', message='The distribution is specified by')
+warnings.filterwarnings('ignore', message='Fixed parameter')
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent / "src"))
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from etf_report.core.quant_contract import (
@@ -16,6 +19,11 @@ from etf_report.core.quant_contract import (
     narrow_bounds_from_trials, PARAM_BOUNDS,
     load_pool, save_pool, prune_pool, seed_params_from_presets,
 )
+from resolved_params import (
+    SIGNAL_PARAM_KEYS, EXECUTION_PARAM_KEYS, ALL_PARAM_KEYS,
+    pin_params, normalize_weights, layer_keys,
+)
+from pareto_optimizer import crossover_params
 import optuna
 
 
@@ -53,12 +61,27 @@ def _valid(trials):
 
 
 def _run_trials(preset, bounds, start_date, end_date, metric, n, label, seed=42,
-                sampler='tpe', enqueue_seeds=None, recovery_path=None):
+                sampler='tpe', enqueue_seeds=None, recovery_path=None, pinned_params=None):
     s = optuna.samplers.QMCSampler(seed=seed) if sampler == 'sobol' \
         else optuna.samplers.TPESampler(seed=seed)
-    obj = create_optuna_objective(preset, bounds, start_date, end_date, metric)
+    # Merge pinned params into bounds with fixed (value, value, 1) so the
+    # objective function always samples the full 19-param set.
+    _active_bounds = dict(bounds)
+    if pinned_params:
+        for k, v in pinned_params.items():
+            _active_bounds[k] = (v, v, 1)  # fixed = no search freedom
+    obj = create_optuna_objective(preset, _active_bounds, start_date, end_date, metric)
     study = optuna.create_study(direction='maximize', sampler=s)
     if enqueue_seeds:
+        # Expand bounds to cover seed values (avoid "Fixed parameter out of range" warnings)
+        for sp in enqueue_seeds:
+            for k, v in sp.items():
+                if k in bounds:
+                    lo, hi, step = bounds[k]
+                    if v < lo:
+                        bounds[k] = (v, hi, step)
+                    elif v > hi:
+                        bounds[k] = (lo, v, step)
         for sp in enqueue_seeds:
             try: study.enqueue_trial(sp)
             except Exception: pass
@@ -168,6 +191,108 @@ def _frontier_seeds(school, pool_dir='research/params'):
         return []
 
 
+def _cross_frontier_seeds(school, pool_dir='research/params'):
+    """Extract frontier params from ALL OTHER schools for cross-pollination."""
+    other_schools = {'gambler', 'zen', 'actuary'} - {school}
+    seeds = []
+    for other in other_schools:
+        for pt in _frontier_seeds(other, pool_dir):
+            pt['source'] = f'cross:{other}'
+            seeds.append(pt)
+    return seeds
+
+
+def _sobol_random_seeds(n, seed=42, label='sobol'):
+    """Generate n random param sets using full bounds (no backtest)."""
+    import optuna as _optuna
+    fb = _full_bounds()
+    if not fb:
+        return []
+    sampler = _optuna.samplers.QMCSampler(seed=seed)
+    study = _optuna.create_study(direction='maximize', sampler=sampler)
+    study.optimize(lambda t: 0.0, n_trials=n, n_jobs=1)
+    seeds = []
+    for t in study.trials:
+        p = {}
+        for k, (lo, hi, step) in fb.items():
+            if isinstance(step, int) or (isinstance(step, float) and step == int(step)):
+                p[k] = int(t.suggest_float(k, lo, hi, step=int(step)))
+            else:
+                p[k] = t.suggest_float(k, lo, hi, step=step)
+        normalize_weights(p)
+        seeds.append({'params': p, 'source': label})
+    return seeds
+
+
+def _crossover_seeds(pool, n, label='crossover'):
+    """Generate n crossover children from existing pool trials."""
+    if len(pool) < 2:
+        return []
+    valid = [t for t in pool if t.get('params')]
+    if len(valid) < 2:
+        return []
+    seeds = []
+    for i in range(n):
+        p1 = random.choice(valid)['params']
+        p2 = random.choice(valid)['params']
+        child = crossover_params(p1, p2)
+        normalize_weights(child)
+        seeds.append({'params': child, 'source': label})
+    return seeds
+
+
+def generate_multi_seeds(school, sources='all', n_sobol=30, n_crossover=10,
+                          pool_dir='research/params', existing_pool=None):
+    """Generate seed trials from multiple sources in parallel.
+
+    Args:
+        school: 'gambler' | 'zen' | 'actuary'
+        sources: comma-separated list or 'all'
+        n_sobol: number of Sobol QMC random seeds
+        n_crossover: number of crossover children
+        pool_dir: directory for frontier files
+        existing_pool: optional list of existing trial dicts (for crossover)
+
+    Returns:
+        list of seed dicts [{params: {...}, source: '...'}]
+    """
+    if sources == 'all':
+        source_list = ['presets', 'frontier', 'cross-frontier', 'sobol', 'crossover']
+    else:
+        source_list = [s.strip() for s in sources.split(',')]
+
+    seeds = []
+    for src in source_list:
+        if src == 'presets':
+            generated = seed_params_from_presets(school)
+        elif src == 'frontier':
+            generated = _frontier_seeds(school, pool_dir)
+        elif src == 'cross-frontier':
+            generated = _cross_frontier_seeds(school, pool_dir)
+        elif src == 'sobol':
+            seed_offset = hash(school) % 10000
+            generated = _sobol_random_seeds(n_sobol, seed=42 + seed_offset, label='sobol')
+        elif src == 'crossover':
+            generated = _crossover_seeds(existing_pool or [], n_crossover, label='crossover')
+        else:
+            print(f'  [WARN] Unknown seed source: {src}')
+            continue
+        if generated:
+            print(f'  [{src}] -> {len(generated)} seeds')
+            seeds.extend(generated)
+
+    # Deduplicate by params hash
+    seen, unique = set(), []
+    for s in seeds:
+        h = json.dumps(s.get('params', {}), sort_keys=True)
+        if h not in seen:
+            seen.add(h)
+            unique.append(s)
+    if len(unique) < len(seeds):
+        print(f'  Dedup: {len(seeds)} -> {len(unique)} unique')
+    return unique
+
+
 def _full_bounds():
     b = {}
     for k, v in PARAM_BOUNDS.items():
@@ -187,7 +312,8 @@ ZONE_ORDER = ['A', 'B', 'C', 'D']
 
 def _run_zone_round(pool_snapshot, zone_label, zone_range, preset,
                     start_date, end_date, metric, n_trials, seed,
-                    top_n, bounds_margin, bounds_band):
+                    top_n, bounds_margin, bounds_band, pool_dir=None,
+                    pinned_params=None, active_keys=None):
     """Top-level worker for --multi-zone parallel execution. Must be picklable.
 
     Runs one round of TPE optimized for a single 5% MDD zone.
@@ -205,19 +331,28 @@ def _run_zone_round(pool_snapshot, zone_label, zone_range, preset,
     if len(zone_trials) >= 3:
         _bw = bounds_band if bounds_band > 0 else None
         bounds = narrow_bounds_from_trials(
-            zone_trials, top_n, margin_pct=bounds_margin, band_width=_bw)
+            zone_trials, top_n, margin_pct=bounds_margin, band_width=_bw,
+            param_keys=active_keys)
         if not bounds:
             bounds = _full_bounds()
     else:
         bounds = _full_bounds()
+    # Filter to active layer
+    if active_keys:
+        bounds = {k: v for k, v in bounds.items() if k in active_keys}
 
+    _active_count = len(bounds)
+    if pinned_params:
+        _active_count = len(bounds)
     print(f'  [Zone {zone_label}] {len(zone_trials)} zone trials, '
-          f'{len(bounds)} narrowed params')
+          f'{_active_count} narrowed params')
 
     # ── TPE run ──
+    _rec_path = str(pathlib.Path(pool_dir) / f'.recovery_mz_{zone_label.lower()}.json') if pool_dir else None
     new_trials = _run_trials(preset, bounds, start_date, end_date,
                              metric, n_trials, f'mz_{zone_label}',
-                             seed=seed)
+                             seed=seed, recovery_path=_rec_path,
+                             pinned_params=pinned_params)
 
     # ── Filter to this zone's exact MDD range (out-of-zone trials go to shared pool via merge) ──
     zone_new = [t for t in new_trials
@@ -275,16 +410,26 @@ def main():
     p.add_argument('--bounds-margin', type=float, default=0.3,
                    help='窄界松弛系数 (default: 0.3, 调大=更宽探索)')
     p.add_argument('--bounds-band', type=float, default=5,
-                   help='分栏宽度%%, 0=全局top-N (default: 5)')
+                   help='Band width in pct, 0=global top-N (default: 5)')
     p.add_argument('--fill-slots', action='store_true',
-                   help='自动补密度直到 MDD [-40,-20] 每 1% 槽位均被覆盖')
+                   help='Auto-fill MDD slots until full coverage')
     p.add_argument('--output', default=None,
-                   help='额外写入 runs/ 的一次性产出 (多 seed 并行用)')
+                   help='Extra output file for multi-seed parallel runs')
     # ── Prune tuning ──
     p.add_argument('--prune-band', type=float, default=None,
-                   help='MDD 槽位宽度 (default: 1.0%%)')
+                   help='MDD slot width (default: 1.0)')
     p.add_argument('--prune-per-band', type=int, default=None,
                    help='每槽位保留数 (default: 1)')
+    p.add_argument('--frontier', action='store_true',
+                   help='优化完成后自动重建前沿文件')
+    p.add_argument('--layer', choices=['signal', 'execution', 'all'], default='all',
+                   help='Optimization layer: signal (10 params) | execution (9 params) | all (default)')
+    p.add_argument('--seed-sources', default=None,
+                   help='Multi-source seeds: all | presets,frontier,cross-frontier,sobol,crossover')
+    p.add_argument('--n-sobol', type=int, default=30,
+                   help='Number of Sobol random seeds (default: 30)')
+    p.add_argument('--n-crossover', type=int, default=10,
+                   help='Number of crossover children (default: 10)')
     args = p.parse_args()
 
     if args.multi_zone and args.zone:
@@ -329,17 +474,23 @@ def main():
 
     # ── Recover partial results from previous crashed run ──
     import glob as _glob
-    _recovery_pattern = str(pathlib.Path(args.pool_dir) / f".recovery_{args.school}_*.json")
-    for _rf in sorted(_glob.glob(_recovery_pattern)):
-        try:
-            _rec = json.loads(pathlib.Path(_rf).read_text('utf-8'))
-            if isinstance(_rec, list) and _rec:
-                pool.extend(_rec)
-                print(f'  Recovered {len(_rec)} trials from {pathlib.Path(_rf).name}')
-                pathlib.Path(_rf).unlink()
-        except Exception:
-            pass
-    if _glob.glob(_recovery_pattern):
+    _recovery_patterns = [
+        str(pathlib.Path(args.pool_dir) / f".recovery_{args.school}_*.json"),
+        str(pathlib.Path(args.pool_dir) / f".recovery_mz_*.json"),
+    ]
+    _any_recovered = False
+    for _pat in _recovery_patterns:
+        for _rf in sorted(_glob.glob(_pat)):
+            try:
+                _rec = json.loads(pathlib.Path(_rf).read_text('utf-8'))
+                if isinstance(_rec, list) and _rec:
+                    pool.extend(_rec)
+                    print(f'  Recovered {len(_rec)} trials from {pathlib.Path(_rf).name}')
+                    pathlib.Path(_rf).unlink()
+                    _any_recovered = True
+            except Exception:
+                pass
+    if _any_recovered:
         n_valid = len(_valid(pool))
         print(f'  After recovery: {len(pool)} entries, {n_valid} valid')
 
@@ -361,51 +512,42 @@ def main():
             pool = seed_params_from_presets(args.school) or []
 
     # ══════════════════════════════════════════════════════════════
-    # Self-seeding: pool 缺数据时主动找种子
+    # Self-seeding: multi-source parallel injection (cold-start) or
+    # warm-start crossover injection
     # ══════════════════════════════════════════════════════════════
+    _seed_sources = args.seed_sources
+    if n_valid < 5 and not _seed_sources:
+        _seed_sources = 'all'  # default for cold-start
+
     if n_valid < 5:
-        print('\n=== Pool sparse — seeking seeds ===')
+        print(f'\n=== Pool sparse — multi-source seed injection ({_seed_sources}) ===')
 
-        # 1. Frontier (validated points → highest quality params)
-        if not pool:
-            fseeds = _frontier_seeds(args.school, args.pool_dir)
-            if fseeds:
-                pool.extend(fseeds)
-                print(f'  frontier → {len(fseeds)} seeds')
+        # Parallel injection from all sources
+        seeds = generate_multi_seeds(
+            school=args.school, sources=_seed_sources,
+            n_sobol=args.n_sobol, n_crossover=args.n_crossover,
+            pool_dir=args.pool_dir, existing_pool=pool,
+        )
+        if seeds:
+            pool.extend(seeds)
+            print(f'  Total: {len(seeds)} seeds injected (unvalidated)')
+            n_seeds = len([t for t in pool if t.get('mdd') is None])
+            pool = _validate_seeds(pool, preset, args.start_date, args.end_date, metric)
+            n_valid = len(_valid(pool))
+            print(f'  After validation: {n_valid} valid')
 
-        # 2. YAML presets
-        if not pool:
-            yseeds = seed_params_from_presets(args.school)
-            if yseeds:
-                pool = yseeds
-                print(f'  YAML → {len(yseeds)} seeds')
-
-        # 3. Sobol — broad space coverage
+        # Fallback: if still insufficient, run Sobol + TPE full bounds
         if len(_valid(pool)) < 5:
             fb = _full_bounds()
             n = max(args.cold_trials, 20)
             new_t = _run_trials(preset, fb, args.start_date, args.end_date,
-                               metric, n, 'sobol', seed=args.seed, sampler='sobol')
+                               metric, n, 'sobol_fallback', seed=args.seed, sampler='sobol')
             pool.extend(new_t)
             before = len(pool)
             pool = prune_pool(pool, args.school, **prune_kw)
-            print(f'  Sobol {n} → {len(new_t)} ok → prune {before}→{len(pool)}')
+            print(f'  Sobol fallback {n} -> {len(new_t)} ok -> prune {before}->{len(pool)}')
             save_pool(args.school, pool, args.pool_dir)
 
-        # 4. Random — broader than Sobol for some spaces
-        if len(_valid(pool)) < 5:
-            import random as _random
-            fb = _full_bounds()
-            new_t = _run_trials(preset, fb, args.start_date, args.end_date,
-                               metric, 30, 'random', seed=args.seed + 99999,
-                               sampler='sobol')  # QMC with far seed ≈ quasi-random
-            pool.extend(new_t)
-            before = len(pool)
-            pool = prune_pool(pool, args.school, **prune_kw)
-            print(f'  Random 30 → {len(new_t)} ok → prune {before}→{len(pool)}')
-            save_pool(args.school, pool, args.pool_dir)
-
-        # 5. TPE full bounds — last resort
         if len(_valid(pool)) < 3:
             fb = _full_bounds()
             new_t = _run_trials(preset, fb, args.start_date, args.end_date,
@@ -413,7 +555,7 @@ def main():
             pool.extend(new_t)
             before = len(pool)
             pool = prune_pool(pool, args.school, **prune_kw)
-            print(f'  TPE full 30 → {len(new_t)} ok → prune {before}→{len(pool)}')
+            print(f'  TPE full 30 -> {len(new_t)} ok -> prune {before}->{len(pool)}')
             save_pool(args.school, pool, args.pool_dir)
 
     # ══════════════════════════════════════════════════════════════
@@ -428,6 +570,15 @@ def main():
         zone_prev_best = {z: -999.0 for z in ZONE_ORDER}
         zone_results = {}
         _metric_label = {'6y_ar': 'AR', '3y_ar': 'AR', '6y_sortino': 'Sortino', '6y_calmar': 'Calmar'}.get(metric, 'COMP')
+
+        # ── Layer-aware setup for multi-zone ──
+        _mz_active_keys = layer_keys(args.layer) if args.layer != 'all' else None
+        _mz_pinned = None
+        if args.layer != 'all' and pool:
+            _v = _valid(pool)
+            if _v:
+                _best = max(_v, key=lambda r: r.get('composite', -999))
+                _mz_pinned = pin_params(_best, args.layer, args.school)
 
         for outer_round in range(1, args.max_rounds + 1):
             active = [z for z in ZONE_ORDER if zone_active[z]]
@@ -454,6 +605,8 @@ def main():
                         preset, args.start_date, args.end_date, metric,
                         args.trials_per_round, seed_val,
                         args.top_n, args.bounds_margin, args.bounds_band,
+                        args.pool_dir,
+                        _mz_pinned, _mz_active_keys,
                     )
                     futures[fut] = label
 
@@ -537,23 +690,44 @@ def main():
                     print(f'\n=== Round {rnd}: 0 valid, cold starting with full bounds ===')
 
                 _bw = args.bounds_band if args.bounds_band > 0 else None
-                bounds = narrow_bounds_from_trials(v, args.top_n, margin_pct=args.bounds_margin, band_width=_bw) if len(v) >= 3 else _full_bounds()
-                # Backfill missing or degenerate params from PARAM_BOUNDS
+
+                # ── Layer-aware bounds ──
+                _active_keys = layer_keys(args.layer) if args.layer != 'all' else None
+                bounds = narrow_bounds_from_trials(v, args.top_n, margin_pct=args.bounds_margin,
+                                                   band_width=_bw, param_keys=_active_keys) if len(v) >= 3 else _full_bounds()
+                # Filter bounds to active layer if layered mode
+                if _active_keys:
+                    bounds = {k: v for k, v in bounds.items() if k in _active_keys}
+
+                # Backfill missing or degenerate params from PARAM_BOUNDS (only active layer)
                 for _k, _v in PARAM_BOUNDS.items():
                     if _v.get("type") in ("weight", "special", "categorical"):
                         continue
                     if not _v.get("searchable", True):
                         continue
+                    if _active_keys and _k not in _active_keys:
+                        continue
                     if _k not in bounds or bounds[_k][0] == bounds[_k][1]:  # missing or degenerate
                         bounds[_k] = (_v["min"], _v["max"], _v["step"])
+
+                # ── Pinned params (opposite layer fixed to best trial) ──
+                pinned = None
+                if args.layer != 'all' and v:
+                    best = max(v, key=lambda r: r.get('composite', -999))
+                    pinned = pin_params(best, args.layer, args.school)
+                    print(f'  Layer: {args.layer} ({len(bounds)} params), '
+                          f'{len(pinned)} pinned from best trial')
                 print(f'  Bounds: {len(bounds)} params (margin={args.bounds_margin}, band={args.bounds_band})')
 
                 if args.sobol_every > 0 and rnd % args.sobol_every == 0:
                     print(f'  [Sobol inject] {args.trials_per_round} trials with full bounds')
                     fb = _full_bounds()
+                    if _active_keys:
+                        fb = {k: v for k, v in fb.items() if k in _active_keys}
                     sobol_inject = _run_trials(preset, fb, args.start_date, args.end_date,
                                                metric, args.trials_per_round, f'sobol_r{rnd}',
-                                               seed=args.seed + rnd + 9999, sampler='sobol')
+                                               seed=args.seed + rnd + 9999, sampler='sobol',
+                                               pinned_params=pinned)
                     pool.extend(sobol_inject)
                     pool = prune_pool(pool, args.school, **prune_kw)
                     save_pool(args.school, pool, args.pool_dir)
@@ -561,11 +735,17 @@ def main():
                     continue
 
                 seed_params = [t['params'] for t in v[:5] if t.get('params')]
+                # ── Warm-start crossover injection ──
+                if args.seed_sources and 'crossover' in args.seed_sources:
+                    _cross = _crossover_seeds(pool, args.n_crossover)
+                    if _cross:
+                        seed_params = list(seed_params)
+                        seed_params.extend([s['params'] for s in _cross])
                 _rec_path = str(pathlib.Path(args.pool_dir) / f".recovery_{args.school}_iter_r{rnd}.json")
                 new_trials = _run_trials(preset, bounds, args.start_date, args.end_date,
                                          metric, args.trials_per_round, f'iter_r{rnd}',
                                          seed=args.seed + rnd, enqueue_seeds=seed_params,
-                                         recovery_path=_rec_path)
+                                         recovery_path=_rec_path, pinned_params=pinned)
                 pool.extend(new_trials)
                 before = len(pool)
                 pool = prune_pool(pool, args.school, **prune_kw)
@@ -620,6 +800,12 @@ def main():
         out.write_text(json.dumps(pool, ensure_ascii=False, indent=1))
         print(f'Wrote {out}')
     print('Done.')
+
+    if args.frontier:
+        print(f'\n=== Building frontier for {args.school} ===')
+        from etf_report.core.quant_contract import build_frontier_output
+        result = build_frontier_output(school=args.school, start_date=args.start_date)
+        print(f'Frontier: {result["points"]} points')
 
 
 if __name__ == '__main__':

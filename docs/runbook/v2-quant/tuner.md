@@ -65,3 +65,37 @@ config/quant_universe.yaml preset
 python -m pytest tests/test_quant_contract.py -q
 python -m pytest tests/test_quant_consistency.py -q
 ```
+
+## 配色系统维护
+
+Tuner 所有语义色通过两级集中定义管理，**改主题色只需改这两处**：
+
+### 事实源
+
+| 层级 | 位置 | 格式 |
+|------|------|------|
+| CSS | `templates/tuner.html` → `<style>` 顶部 `:root { ... }` 块 | `--name: #hex;` |
+| JS | `templates/tuner.html` → `<script>` 顶部 `var TC = { ... };` | `name: '#hex',` |
+
+设计文档：`docs/design/tuner-ui.md` §4。
+
+### 改主题色
+
+1. 改 `:root` 块中对应变量的色值
+2. 改 `TC` 对象中对应 key 的色值（必须与 CSS 变量**同步**）
+3. 刷新浏览器 → 生效（无需重启 Tuner）
+
+### 加新颜色
+
+1. `:root` 块末尾加 `--new-name: #xxx;`
+2. `TC` 对象末尾加 `newName: '#xxx',`
+3. CSS 中用 `var(--new-name)`，JS 中用 `TC.newName`
+
+### 不改动区
+
+以下色值**不需要也**不应该强行 var 化（原因见 `docs/design/tuner-ui.md` §4.4）：
+- 热力图 diverging 色阶
+- 涨跌分布 bin 色阶
+- 数据新鲜度 badge 背景
+- 扇区/Group1 色表（已是 JS 集中定义）
+- 因子曲线色表（已是 JS 集中定义）
