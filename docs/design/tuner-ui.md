@@ -82,25 +82,119 @@
 
 ## §4 配色系统
 
-### 4.1 主题基调
+### 4.1 架构
 
-深色主题，背景色 `#0f1419`，卡片/面板底色 `#1a2332`。
+所有语义色通过 CSS 自定义属性（`:root` 块）集中定义，HTML/CSS/JS 通过 `var(--name)` 或 `TC.name` 引用。**改主题色只需改 `:root` 块和 `TC` 对象中的色值**，无需搜索替换。
 
-### 4.2 指标颜色语义
+- CSS 侧：`templates/tuner.html` 内 `<style>` 顶部的 `:root { ... }` 块（~58 行）
+- JS 侧：`<script>` 顶部的 `var TC = { ... };` 对象（~33 行）
+- 两者必须同步——JS 对象是 CSS 变量的镜像，供 JS 内联样式引用
 
-| 颜色 | 色值 | 语义 |
+### 4.2 CSS 变量表
+
+#### 强调/交互
+| 变量 | 色值 | 用途 |
 |------|------|------|
-| 绿 | `#22c55e` | 正向（收益、胜率、上涨） |
-| 红 | `#ef4444` | 负向（回撤、亏损、下跌） |
-| 蓝 | `#3b82f6` | 中性/比率（Sharpe、Sortino、Calmar） |
-| 白 | `#e0e0e0` | 中性数值（佣金、利息、换仓率） |
+| `--accent` | `#3b82f6` | 主强调色：active 边框、section 标题、滑块 thumb、选中态 |
+| `--accent-light` | `#60a5fa` | 浅强调：tab active 文字、slider value、链接色 |
+| `--accent-bg` | `rgba(59,130,246,0.12)` | 强调态半透明背景 |
+| `--accent-border` | `rgba(59,130,246,0.15)` | 强调态半透明边框 |
+| `--accent-soft` | `rgba(59,130,246,0.10)` | 弱强调背景 |
+| `--blue-dark` | `#2563eb` | 按钮/控件深蓝（hover/pressed） |
+| `--blue-darker` | `#1d4ed8` | 按钮更深蓝 |
 
-### 4.3 图表配色
+#### 语义色
+| 变量 | 色值 | 语义 |
+|------|------|------|
+| `--positive` | `#10b981` | 正向：盈利、买入 NEW、高置信度、权重达标 |
+| `--negative` | `#ef4444` | 负向：亏损、卖出 OUT、MDD、低置信度 |
+| `--warning` | `#f59e0b` | 警告/中性：刷新按钮、进度条、检查点、中置信度、RSI |
+| `--highlight` | `#fbbf24` | 高亮：前沿选中点、高集中度、Z=0 参考线 |
 
-- NAV 曲线：`#3b82f6`（蓝）
-- 基准/等权：`#f59e0b`（黄）、`#8b5cf6`（紫）
-- 回撤填充：`rgba(239,68,68,0.15)`
-- K 线涨/跌：`#22c55e` / `#ef4444`
+#### 表面/背景
+| 变量 | 色值 | 用途 |
+|------|------|------|
+| `--bg-body` | `#0f1419` | 页面底色 |
+| `--bg-panel` | `#1a2332` | 卡片/面板背景 |
+| `--bg-hover` | `#1e293b` | hover 态、行交替、细分隔线 |
+| `--bg-active` | `#1e3050` | active 卡片/选中行背景 |
+| `--bg-input` | `#1e2d3d` | 输入框、进度条 track、因子配置背景 |
+
+#### 边框
+| 变量 | 色值 | 用途 |
+|------|------|------|
+| `--border` | `#2a3a4a` | 主边框：面板、卡片、表格、图表轴线 |
+| `--border-light` | `#1e293b` | 细分隔线（与 `--bg-hover` 同色） |
+| `--border-muted` | `#334155` | 弱边框：toggle pill、快捷键、disabled 态 |
+| `--border-disabled` | `#374151` | 更弱边框：disabled 按钮 |
+
+#### 文字
+| 变量 | 色值 | 用途 |
+|------|------|------|
+| `--text-heading` | `#f0f0f0` | 标题、卡片 value |
+| `--text-body` | `#e0e0e0` | 正文、slider label、图表 tooltip |
+| `--text-secondary` | `#94a3b8` | 副文本、school header、K 线价格线 |
+| `--text-muted` | `#6b7280` | 弱文本：axis label、表头、disabled 态 |
+| `--text-dim` | `#4b5563` | 最弱文本：placeholder、锁定参数值 |
+| `--text-link` | `#60a5fa` | 链接/代码（同 `--accent-light`） |
+
+#### 按钮
+| 变量 | 色值 | 用途 |
+|------|------|------|
+| `--btn-save` | `#22c55e` | Save 按钮边框/文字（绿） |
+| `--btn-save-hover` | `rgba(34,197,94,0.1)` | Save 按钮 hover 背景 |
+| `--btn-refresh` | `#f59e0b` | Refresh 按钮边框/文字（同 `--warning`） |
+| `--btn-refresh-hover` | `rgba(245,158,11,0.1)` | Refresh 按钮 hover 背景 |
+
+#### 图表
+| 变量 | 色值 | 用途 |
+|------|------|------|
+| `--chart-nav` | `#3b82f6` | NAV 策略曲线 |
+| `--chart-bench` | `#f59e0b` | 基准线（沪深300） |
+| `--chart-eqwt` | `#8b5cf6` | 等权持有基准线 |
+| `--chart-mdd` | `#ef4444` | 回撤线/区域填充 |
+
+#### 流派主题色（预留，尚未应用）
+| 变量 | 色值 | 流派 |
+|------|------|------|
+| `--school-gambler` | `#f97316` | 赌徒 |
+| `--school-zen` | `#14b8a6` | 禅修者 |
+| `--school-actuary` | `#6366f1` | 精算师 |
+
+### 4.3 JS 色表（`TC` 对象）
+
+与 CSS 变量一一对应，供 JS 内联样式引用。键名使用 camelCase：
+
+```javascript
+var TC = {
+  accent:       '#3b82f6',   // --accent
+  accentLight:  '#60a5fa',   // --accent-light
+  positive:     '#10b981',   // --positive
+  negative:     '#ef4444',   // --negative
+  warning:      '#f59e0b',   // --warning
+  highlight:    '#fbbf24',   // --highlight
+  // ... 完整列表见 tuner.html
+};
+```
+
+JS 中引用示例：`el.style.color = TC.positive;`
+
+### 4.4 不改动区
+
+以下色值逻辑复杂（多色渐变、阈值阶梯、动态计算），保留局部硬编码：
+
+| 区域 | 原因 |
+|------|------|
+| 热力图 diverging 色阶 (`#8b1515`…`#3cdb78`) | 9 级渐变，已在 `visualMap.inRange.color` 集中定义 |
+| 涨跌分布 bin 色阶 | 7 级灰度渐变 |
+| 数据新鲜度 badge 背景 | 3 个独立 bg+text 组合（confirmed/intraday/stale） |
+| 扇区/Group1 色表 | 已在 `GROUP1_COLORS` / `HM_SEC_COLOR` 集中定义 |
+| 因子曲线色表（F1/F3/F7 guide curves） | 每图 3-5 条曲线，已在各自 `curves` 数组中集中定义 |
+| 动态阈值色（`pos >= 30 ? '#fbbf24' : ...`） | 条件判断逻辑，替换为 `TC.xxx` 仍需保持逻辑，已替换常量部分 |
+
+### 4.5 主题基调
+
+深色主题，背景色 `var(--bg-body)` = `#0f1419`，卡片/面板底色 `var(--bg-panel)` = `#1a2332`。
 
 ## §5 组件模式
 
@@ -117,14 +211,14 @@
 
 ### 5.3 按钮
 
-- 主操作（Run Backtest / Save YAML）：`#3b82f6` 蓝底白字
+- 主操作（Run Backtest / Save YAML）：`var(--accent)` 蓝底白字
 - 切换/选项（周期、频率、流派）：暗底边框，选中态高亮
 
 ### 5.4 Tooltip
 
 - 深色半透明底 `rgba(10,25,47,0.95)`
 - 蓝色边框 `rgba(59,130,246,0.2)`
-- 字体 11px `#e0e0e0`
+- 字体 11px `var(--text-body)`
 
 ## §6 已知偏差
 

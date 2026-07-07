@@ -629,6 +629,20 @@ def build_frontier_output(school="gambler", data_dir="research/params",
             print(f"  [WARN] frontier point re-validation failed: {e} — dropped")
 
     output[school]["points"] = validated
+
+    # ── Re-filter: re-validation can change AR/MDD such that previously
+    #     non-dominated points become dominated. Run compute_frontier again
+    #     using the re-validated ar_6y as the composite metric. ──
+    if school == 'gambler' and len(validated) > 1:
+        _rv_trials = [{'mdd': pt['mdd'], 'composite': pt['ar_6y']} for pt in validated]
+        _rv_frontier = compute_frontier(_rv_trials, mdd_range=mdd_range)
+        _rv_mdds = {round(r['mdd'], 1) for r in _rv_frontier}
+        _dropped = [pt for pt in validated if round(pt['mdd'], 1) not in _rv_mdds]
+        for pt in _dropped:
+            print(f"  [WARN] frontier point MDD={pt['mdd']:.1f}% dominated after re-validation — dropped")
+        validated = [pt for pt in validated if round(pt['mdd'], 1) in _rv_mdds]
+        output[school]["points"] = validated
+
     # ── Auto-add gam-0 reference (gambler only) ──
     if school == 'gambler':
         try:
@@ -870,7 +884,7 @@ def create_optuna_objective(preset, bounds, start_date, end_date=None,
 # Shared bounds narrowing (used by iterative_optimizer + pareto_optimizer)
 # ═══════════════════════════════════════════════════════════════════════════
 
-def narrow_bounds_from_trials(trials, top_n=15, margin_pct=0.3, band_width=5):
+def narrow_bounds_from_trials(trials, top_n=15, margin_pct=0.3, band_width=5, param_keys=None):
     """Derive narrowed search bounds from per-MDD-band top trials.
 
     Each MDD band contributes its best trial equally to the KDE,
@@ -881,6 +895,7 @@ def narrow_bounds_from_trials(trials, top_n=15, margin_pct=0.3, band_width=5):
         top_n: max number of trials for bounds derivation
         margin_pct: expand bounds by fraction beyond observed range
         band_width: MDD band width for balanced sampling (None=global top-N)
+        param_keys: optional set of param keys to include (None=all searchable)
 
     Returns:
         dict: {param_key: (lo, hi, step)}
@@ -931,6 +946,8 @@ def narrow_bounds_from_trials(trials, top_n=15, margin_pct=0.3, band_width=5):
             continue
         if not pb.get("searchable", True):
             continue
+        if param_keys is not None and k not in param_keys:
+            continue
 
         vals = [r['params'].get(k) for r in top
                 if k in r.get('params', {}) and r['params'].get(k) is not None]
@@ -953,6 +970,14 @@ def narrow_bounds_from_trials(trials, top_n=15, margin_pct=0.3, band_width=5):
 
         if hi <= lo:
             hi = min(lo * 1.5, ghi)
+
+        # Snap to step alignment to avoid optuna "range not divisible by step" warnings
+        if step > 0:
+            import math
+            lo = math.floor(lo / step) * step
+            hi = math.ceil(hi / step) * step
+            if hi <= lo:
+                hi = lo + step
 
         bounds[k] = (lo, hi, step)
 

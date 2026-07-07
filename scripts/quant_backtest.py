@@ -995,12 +995,14 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
         leftover = total_target - target_positions.sum()
         if leftover > 0:
             max_idx = target_positions.idxmax()
-            target_positions[max_idx] += leftover
+            if not pd.isna(max_idx):
+                target_positions[max_idx] += leftover
         elif leftover < 0:
             # discretization rounding pushed total above target: clip largest position
             excess = -leftover
             max_idx = target_positions.idxmax()
-            target_positions[max_idx] = max(0.0, target_positions[max_idx] - excess)
+            if not pd.isna(max_idx):
+                target_positions[max_idx] = max(0.0, target_positions[max_idx] - excess)
 
         # Fallback: fill missing prices for held ETFs with most recent available close.
         # ETFs whose price comes from fallback (not from today's data) are treated as

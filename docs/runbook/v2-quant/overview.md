@@ -53,6 +53,7 @@ assets/js/quant_payload.js
 | 改 ETF 池 | `docs/runbook/v2-quant/pool-change.md` | 逐支拉数 + 回测基线对比 |
 | 改数据源 / CSV | `docs/runbook/v2-quant/data-fetch.md` | `python scripts/quant_data_fetcher.py --start <date> --end <date>` |
 | 改正式页 payload | `docs/runbook/v1-report.md` | `python scripts/quant_build_payload.py` + HTML 验证 |
+| 改 Tuner UI / 配色 | `docs/runbook/v2-quant/tuner.md` + `docs/design/tuner-ui.md` | 浏览器刷新，肉眼对比改前后 |
 | 改日常推送 | `docs/runbook/v2-quant/daily-automation.md` | 检查计划任务 + dry-run/手动运行 |
 | 参数优化 | `docs/runbook/v2-quant/optimization.md` | 人类说"优化 <preset>"拉起，AI 自检→搜索→分析器→报告 |
 
@@ -62,6 +63,7 @@ assets/js/quant_payload.js
 |---|---|
 | Tuner 白屏 / API 报错 | `docs/runbook/v2-quant/tuner.md` |
 | CSV 缺失 / 数据不新 | `docs/runbook/v2-quant/data-fetch.md` |
+| 某 ETF 净值异常跳变（拆股） | `docs/runbook/v2-quant/tuner.md` → 拆股自愈流程 |
 | preclose push 失败 | `docs/runbook/v2-quant/daily-automation.md` |
 | ETF 池变更后回测异常 | `docs/runbook/v2-quant/pool-change.md` |
 | 正式页量化为空 | `docs/runbook/v1-report.md` |

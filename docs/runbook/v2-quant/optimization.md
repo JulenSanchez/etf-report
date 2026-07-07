@@ -56,6 +56,11 @@ python scripts/iterative_optimizer.py --school actuary &
 | `--sobol-every` | 0 | 每 N 轮注入 Sobol（0=关闭） |
 | `--bounds-margin` | 0.3 | 窄界松弛系数 |
 | `--bounds-band` | 5 | 分栏宽度（%，0=全局 top-N） |
+| `--layer` | all | 分层优化: signal(10参数)/execution(9参数)/all(全部)。配对`--multi-zone`使用效果最佳 |
+| `--seed-sources` | (冷启动自动all) | 多源种子注入: all/presets,frontier,cross-frontier,sobol,crossover |
+| `--n-sobol` | 30 | Sobol 随机种子数 |
+| `--n-crossover` | 10 | 交叉变异子代数 |
+| `--frontier` | false | 优化完成后自动重建前沿文件 |
 | `--fill-slots` | false | 自动补密度直到前沿覆盖 21 个 MDD 槽位 |
 
 ## 四、三派差异
