@@ -63,6 +63,7 @@ assets/js/quant_payload.js
 |---|---|
 | Tuner 白屏 / API 报错 | `docs/runbook/v2-quant/tuner.md` |
 | CSV 缺失 / 数据不新 | `docs/runbook/v2-quant/data-fetch.md` |
+| 某 ETF 净值异常跳变（拆股） | `docs/runbook/v2-quant/tuner.md` → 拆股自愈流程 |
 | preclose push 失败 | `docs/runbook/v2-quant/daily-automation.md` |
 | ETF 池变更后回测异常 | `docs/runbook/v2-quant/pool-change.md` |
 | 正式页量化为空 | `docs/runbook/v1-report.md` |

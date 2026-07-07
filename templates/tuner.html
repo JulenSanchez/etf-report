@@ -158,6 +158,7 @@ th[data-sort]:hover { color: var(--text-body); }
 /* Right panel views */
 .right-view { display: none; }
 .right-view.active { display: block; }
+.right-view.dm-flex-col.active { display: flex; flex-direction: column; }
 
 /* Params guide */
 .guide-block { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 10px; overflow: hidden; }
@@ -324,6 +325,85 @@ th[data-sort]:hover { color: var(--text-body); }
 .hm-date-cell.sort-asc { color: var(--warning); font-weight: 700; background: var(--bg-hover); }
 .hm-date-cell.sort-desc { color: var(--warning); font-weight: 700; background: var(--bg-hover); }
 .hm-sec-dot { width: 8px; height: 8px; border-radius: 2px; display: inline-block; flex-shrink: 0; }
+
+/* ══════════════════════════════════════════════════════════════
+   Data Management Panel (数据管理)
+   ══════════════════════════════════════════════════════════════ */
+.dm-toolbar { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; margin-bottom: 4px; }
+.dm-filter-btn { padding: 3px 10px; background: transparent; border: 1px solid var(--border-muted);
+  color: var(--text-muted); font-size: 12px; cursor: pointer; border-radius: 4px; }
+.dm-filter-btn.active { background: var(--accent-bg); border-color: var(--accent); color: var(--accent-light); }
+.dm-filter-btn:hover:not(.active) { border-color: var(--text-dim); color: #9ca3af; }
+
+/* Matrix cell */
+.dm-cell { width: 64px; height: 30px; line-height: 28px; text-align: center; font-size: 11px;
+  font-family: Consolas, monospace; cursor: pointer; flex-shrink: 0;
+  border-right: 1px solid rgba(255,255,255,0.03); border-bottom: 1px solid rgba(255,255,255,0.03);
+  user-select: none; position: relative; }
+.dm-cell:hover { outline: 1px solid var(--accent-light); z-index: 1; }
+.dm-cell.csv { background: #0a3d2e; color: #9cb5ac; }
+.dm-cell.intraday { background: #3d2e0a; color: var(--highlight); font-weight: 600; }
+.dm-cell.missing { background: #0f1419; color: var(--text-dim); }
+.dm-cell.nodata { background: #111a22; color: var(--text-dim); }
+.dm-cell.nodata::after { content: '·'; font-size: 14px; position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%,-50%); opacity: 0.3; }
+.dm-cell.halted { background: #0f1419; color: var(--text-dim); }
+.dm-cell.halted::after { content: '\23F8'; font-size: 10px; position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%,-50%); opacity: 0.3; }
+/* Cache mode status */
+.dm-cell.fresh { background: #0a3d2e; color: #34d399; font-weight: 700; }
+.dm-cell.stale { background: #3d2e0a; color: var(--highlight); }
+.dm-cell.unknown { background: #0f1419; color: var(--text-dim); }
+/* Anomaly cells */
+.dm-cell.anomaly-surge { background: #3d0000 !important; border: 1px solid #ef4444;
+  animation: dm-anomaly-pulse 1.5s infinite; color: #fca5a5 !important; font-weight: 700; }
+.dm-cell.anomaly-plunge { background: #003d00 !important; border: 1px solid #10b981;
+  animation: dm-anomaly-pulse 1.5s infinite; color: #6ee7b7 !important; font-weight: 700; }
+@keyframes dm-anomaly-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.4); }
+  50% { box-shadow: 0 0 6px 2px rgba(239,68,68,0.3); }
+}
+/* Selection */
+.dm-cell.selected { outline: 2px solid var(--accent); outline-offset: -2px; z-index: 2; }
+.dm-cell.selected.csv { background: #0a5a3e; }
+.dm-cell.selected.intraday { background: #5a3e0a; }
+.dm-cell.selected.missing { background: #1a2332; }
+
+/* ETF label column */
+.dm-etf-label { display: flex; align-items: center; gap: 4px; padding: 0 6px;
+  height: 30px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.03); }
+.dm-etf-label:hover { background: var(--bg-hover); }
+.dm-etf-label.row-selected { background: var(--accent-bg); }
+.dm-etf-name { font-size: 12px; color: #c0c0c0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex:1; }
+.dm-etf-code { font-size: 10px; color: var(--accent-light); font-weight: 600; font-family: monospace; flex-shrink: 0; }
+.dm-sec-dot { width: 10px; height: 10px; border-radius: 2px; display: inline-block; flex-shrink: 0; }
+.dm-sector-header { height: 24px; line-height: 24px; padding-left: 8px;
+  font-size: 11px; font-weight: 600; color: var(--accent-light); background: var(--bg-hover);
+  border-bottom: 1px solid var(--border); cursor: pointer; }
+.dm-sector-header:hover { color: var(--text-body); }
+.dm-date-cell { width: 64px; height: 24px; line-height: 24px; text-align: center;
+  font-size: 10px; font-family: Consolas, monospace; color: var(--text-muted);
+  cursor: pointer; flex-shrink: 0; }
+.dm-date-cell:hover { color: var(--text-body); background: var(--bg-hover); }
+.dm-date-cell.col-selected { color: var(--accent-light); font-weight: 700; background: var(--accent-bg); }
+
+/* Legend */
+.dm-leg-swatch { display: inline-block; width: 14px; height: 10px; border-radius: 2px;
+  margin-right: 3px; vertical-align: middle; }
+
+/* Toast notifications (参考 资产评审台 asset_review.html 实现) */
+#dm-toast {
+  position: fixed; bottom: 52px; right: 24px;
+  background: #1e3a5f; color: #93c5fd;
+  padding: 10px 18px; border-radius: 8px; font-size: 12px;
+  z-index: 9999; transform: translateY(60px); opacity: 0;
+  transition: all 0.25s; pointer-events: none;
+  border: 1px solid #3b82f6; max-width: 400px;
+}
+#dm-toast.show    { transform: translateY(0); opacity: 1; }
+#dm-toast.success { background: #0a3d2e; border-color: #10b981; color: #6ee7b7; }
+#dm-toast.error   { background: #3d0a0a; border-color: #ef4444; color: #fca5a5; }
+#dm-toast.warning { background: #3d2e0a; border-color: #f59e0b; color: #fcd34d; }
 
 /* ── Shortcuts overlay ── */
 #shortcuts-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 10000;
@@ -534,8 +614,8 @@ th[data-sort]:hover { color: var(--text-body); }
       <div class="slider-label"><span class="name">C 动态灵敏度</span><span class="val" id="v-csens">1.0</span></div>
       <input type="range" id="c_sensitivity" min="0" max="200" step="2" value="200" oninput="$id('v-csens').textContent=(this.value/10).toFixed(1)" aria-label="动态C灵敏度">
     </div>
-    <div class="slider-group" id="param-rebalance" aria-label="调仓频率">
-      <div class="slider-label"><span class="name">调仓频率</span><span class="val" id="v-freq">周调仓</span></div>
+    <div class="slider-group" id="param-rebalance" aria-label="调仓数据层">
+      <div class="slider-label"><span class="name">调仓数据层</span><span class="val" id="v-freq">周调仓</span></div>
       <div class="btn-row" id="freq-group">
         <button onclick="setFreq('W-FRI')" class="active">周调仓</button>
         <button onclick="setFreq('daily')">日调仓</button>
@@ -616,6 +696,7 @@ th[data-sort]:hover { color: var(--text-body); }
     <button onclick="switchRightView('guide')">参数原理</button>
     <button class="active" onclick="switchRightView('results')">回测结果</button>
     <button onclick="switchRightView('heatmap')">涨跌热力</button>
+    <button onclick="switchRightView('datamgmt')">数据管理</button>
   </div>
 
   <!-- ========== Guide View ========== -->
@@ -787,7 +868,7 @@ th[data-sort]:hover { color: var(--text-body); }
         <ul>
           <li>MA 上方使用左侧设定的进攻仓位，让选股策略充分运作</li>
           <li>仅当 MA 趋势翻空时才降到左侧设定的防守仓位，避免频繁操作导致踏空</li>
-          <li>信号频率：约每年切换1-2次，极低频</li>
+          <li>信号数据层：约每年切换1-2次，极低频</li>
         </ul>
         <p><b>为什么不用NAV驱动（旧方案已移除）</b></p>
         <p>旧方案（regime / momentum_crash / quadratic）基于自身NAV回撤判断市场状态，问题在于：ETF组合的NAV波动与大盘并非同步，NAV回撤时可能大盘已企稳，NAV上涨时可能大盘已在崩盘。MA20是市场级信号，直接反映趋势，更可靠且不易误触发。</p>
@@ -1057,6 +1138,116 @@ th[data-sort]:hover { color: var(--text-body); }
     </div>
     </div>
     <div id="hm-loading" style="text-align:center;color:var(--text-dim);margin-top:120px;font-size:14px;">加载数据中...</div>
+  </div>
+
+  <!-- ========== Data Management View (数据管理) ========== -->
+  <div id="right-view-datamgmt" class="right-view dm-flex-col">
+    <!-- Toolbar -->
+    <div class="dm-toolbar">
+      <span style="font-size:12px;color:var(--text-muted);">范围</span>
+      <input id="dm-date-start" type="date" style="background:var(--bg-input);color:var(--text-body);border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:12px;width:120px;" />
+      <span style="color:var(--text-muted);">-</span>
+      <input id="dm-date-end" type="date" style="background:var(--bg-input);color:var(--text-body);border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:12px;width:120px;" />
+      <button onclick="dmSetRange(30)" class="dm-filter-btn active" id="dm-rng-30">30天</button>
+      <button onclick="dmSetRange(60)" class="dm-filter-btn" id="dm-rng-60">60天</button>
+      <button onclick="dmSetRange(90)" class="dm-filter-btn" id="dm-rng-90">90天</button>
+      <span style="font-size:11px;color:var(--text-muted);margin-left:8px;">数据层</span>
+      <button id="dm-freq-daily" onclick="dmSetFreq('daily')" class="dm-filter-btn active">日线</button>
+      <button id="dm-freq-weekly" onclick="dmSetFreq('weekly')" class="dm-filter-btn">周线</button>
+      <button id="dm-freq-factor" onclick="dmSetFreq('factor')" class="dm-filter-btn">因子</button>
+      <span style="font-size:11px;color:var(--text-muted);margin-left:4px;">字段</span>
+      <span id="dm-fields-data">
+        <button id="dm-field-close" onclick="dmSetField('close')" class="dm-filter-btn active">收盘价</button>
+        <button id="dm-field-volume" onclick="dmSetField('volume')" class="dm-filter-btn">成交量</button>
+        <button id="dm-field-amount" onclick="dmSetField('amount')" class="dm-filter-btn">成交额</button>
+      </span>
+      <span id="dm-fields-factor" style="display:none;">
+        <button id="dm-field-f1" onclick="dmSetField('f1')" class="dm-filter-btn active">F1</button>
+        <button id="dm-field-f3" onclick="dmSetField('f3')" class="dm-filter-btn">F3</button>
+        <button id="dm-field-f7" onclick="dmSetField('f7')" class="dm-filter-btn">F7</button>
+      </span>
+      <span style="font-size:11px;color:var(--text-muted);margin-left:12px;">筛选</span>
+      <select id="dm-sector-filter" onchange="dmFilterBySector()" style="background:var(--bg-input);color:var(--text-body);border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:11px;">
+        <option value="">全部板块</option>
+      </select>
+      <button onclick="dmLoadMatrix()" style="padding:3px 12px;font-size:12px;background:var(--blue-dark);color:#fff;border:none;border-radius:4px;cursor:pointer;width:48px;">加载</button>
+      <span style="flex:1;"></span>
+      <button onclick="dmDeleteSelected()" id="dm-btn-delete" disabled style="padding:4px 12px;border:1px solid var(--negative);color:var(--negative);background:transparent;border-radius:4px;font-size:12px;cursor:pointer;">删除选中</button>
+      <button onclick="dmRefetchSelected()" id="dm-btn-refetch" disabled style="padding:4px 12px;border:1px solid var(--warning);color:var(--warning);background:transparent;border-radius:4px;font-size:12px;cursor:pointer;">强制更新</button>
+      <button onclick="dmFillGaps()" id="dm-btn-fill" style="padding:4px 12px;border:1px solid var(--positive);color:var(--positive);background:transparent;border-radius:4px;font-size:11px;cursor:pointer;">补全空缺</button>
+      <span style="font-size:11px;color:var(--accent-light);margin-left:8px;">已选: <b id="dm-stat-selected">0</b></span>
+    </div>
+
+    <!-- Matrix -->
+    <div id="dm-matrix-wrap" style="display:flex;flex-direction:column;height:calc(100vh - 190px);min-height:300px;border:1px solid var(--border);border-radius:8px;background:var(--bg-panel);overflow:hidden;position:relative;">
+      <!-- Row 1: ETF labels + date grid -->
+      <div style="display:flex;flex:1;overflow:hidden;min-height:0;">
+        <div id="dm-etf-col" style="width:150px;flex-shrink:0;display:flex;flex-direction:column;border-right:1px solid var(--border);">
+          <div style="height:26px;line-height:26px;flex-shrink:0;border-bottom:1px solid var(--border);display:flex;align-items:center;padding-left:8px;font-size:11px;color:var(--text-muted);">ETF</div>
+          <div id="dm-etf-labels-wrap" style="flex:1;overflow:hidden;">
+            <div id="dm-etf-labels"></div>
+          </div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0;">
+          <div id="dm-date-wrap" style="overflow:hidden;height:26px;flex-shrink:0;margin-right:12px;border-bottom:1px solid var(--border);">
+            <div id="dm-date-row" style="display:flex;"></div>
+          </div>
+          <div style="flex:1;overflow:hidden;position:relative;display:flex;">
+            <div id="dm-grid-viewport" style="overflow:hidden;flex:1;height:100%;">
+              <div id="dm-grid-body"></div>
+            </div>
+            <!-- Vertical slider (matching heatmap hm-vslider) -->
+            <div id="dm-vslider-wrap" style="width:12px;flex-shrink:0;position:relative;padding:2px 0;background:var(--bg-panel);border-left:1px solid var(--border);">
+              <div id="dm-vslider-track" style="position:relative;height:100%;cursor:pointer;margin:0 2px;">
+                <div id="dm-vslider-win" style="position:absolute;left:0;right:0;height:36px;min-height:20px;background:var(--blue-dark);border-radius:3px;cursor:grab;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Row 2: Horizontal scrollbar slider (aligned to data grid, not under ETF column) -->
+      <div id="dm-hslider-track" style="position:relative;height:10px;flex-shrink:0;cursor:pointer;border-top:1px solid var(--border);margin-left:150px;">
+        <div style="position:absolute;top:50%;left:0;right:0;height:3px;background:var(--bg-hover);border-radius:2px;transform:translateY(-50%);"></div>
+        <div id="dm-hslider-win" style="position:absolute;top:0;height:10px;background:var(--blue-dark);border-radius:3px;cursor:grab;display:none;"></div>
+      </div>
+      <!-- Loading overlay -->
+      <div id="dm-loading" style="display:none;position:absolute;inset:0;background:rgba(15,20,25,0.85);z-index:10;align-items:center;justify-content:center;flex-direction:column;">
+        <span style="font-size:20px;color:var(--accent-light);font-weight:600;">加载数据中...</span>
+        <span style="font-size:12px;color:var(--text-muted);margin-top:6px;">正在请求数据，请稍候</span>
+      </div>
+    </div>
+
+    <!-- Status bar + Legend -->
+    <div style="display:flex;gap:12px;padding:4px 8px;margin-top:4px;background:var(--bg-panel);border:1px solid var(--border);border-radius:6px;font-size:12px;color:var(--text-muted);flex-wrap:wrap;align-items:center;">
+      <span>总计: <b id="dm-stat-total" style="color:var(--text-body);">-</b></span>
+      <span style="color:#34d399;">CSV: <b id="dm-stat-csv">-</b></span>
+      <span style="color:var(--warning);">盘中: <b id="dm-stat-intraday">-</b></span>
+      <span style="color:var(--negative);">缺失: <b id="dm-stat-missing">-</b></span>
+      <span style="color:#fca5a5;">异常: <b id="dm-stat-anomaly">-</b></span>
+      <span style="color:var(--text-dim);">停牌: <b id="dm-stat-halted">-</b></span>
+      <span id="dm-sec-legend" style="display:flex;gap:8px;flex-wrap:wrap;"></span>
+      <span style="margin-left:auto;display:flex;gap:14px;">
+        <span><span class="dm-leg-swatch" style="background:#0a3d2e;"></span>CSV确认</span>
+        <span><span class="dm-leg-swatch" style="background:#3d2e0a;"></span>盘中实时</span>
+        <span><span class="dm-leg-swatch" style="background:#0f1419;"></span>缺失</span>
+        <span><span class="dm-leg-swatch" style="background:#111a22;"></span>数据不足</span>
+        <span><span class="dm-leg-swatch" style="background:#3d0000;"></span>异常(涨跌&gt;20%)</span>
+      </span>
+    </div>
+
+  </div>
+  <!-- Toast -->
+  <div id="dm-toast"></div>
+
+  <!-- Confirm dialog -->
+  <div id="dm-confirm-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:10000;align-items:center;justify-content:center;">
+    <div style="background:var(--bg-panel);border:1px solid var(--border);border-radius:10px;padding:20px 24px;max-width:380px;box-shadow:0 8px 32px rgba(0,0,0,0.5);">
+      <p id="dm-confirm-msg" style="font-size:13px;color:var(--text-body);margin-bottom:16px;line-height:1.6;"></p>
+      <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <button id="dm-confirm-no" style="padding:6px 16px;border:1px solid var(--border);background:transparent;color:var(--text-muted);border-radius:5px;font-size:12px;cursor:pointer;">取消</button>
+        <button id="dm-confirm-yes" style="padding:6px 16px;border:none;background:var(--negative);color:#fff;border-radius:5px;font-size:12px;cursor:pointer;">确认删除</button>
+      </div>
+    </div>
   </div>
 
 </div>
@@ -1509,7 +1700,7 @@ function renderF7GuideChart() {
 function switchRightView(view) {
   document.querySelectorAll('.right-view').forEach(el => el.classList.remove('active'));
   $id('right-view-' + view).classList.add('active');
-  var labels = { guide: '参数原理', results: '回测结果', heatmap: '涨跌热力' };
+  var labels = { guide: '参数原理', results: '回测结果', heatmap: '涨跌热力', datamgmt: '数据管理' };
   document.querySelectorAll('#right-view-switch button').forEach(b => b.classList.toggle('active', b.textContent === (labels[view] || '')));
   if (view === 'results' && navChart) {
     setTimeout(() => { navChart.resize(); (ddChart && ddChart.resize(), distChart && distChart.resize()); }, 50);
@@ -1517,7 +1708,9 @@ function switchRightView(view) {
   if (view === 'heatmap') {
     initHeatmap();
   }
-  
+  if (view === 'datamgmt') {
+    initDataMgmt();
+  }
 }
 
 
@@ -2102,7 +2295,7 @@ var TC = {
 };
 
 var SCHOOLS = [
-  {id:'gambler', name:'赌徒', target:'max AR', constraint:'MDD<35%', presets:['gam-0','gam-1','gam-2','gam-3'], def:'gam-2'},
+  {id:'gambler', name:'赌徒', target:'max AR', constraint:'MDD<35%', presets:['gam-0','gam-1','gam-2','gam-3'], def:'gam-0'},
 {id:'zen', name:'禅修者', target:'max Sortino', constraint:'—', presets:['zen-1'], def:'zen-1'},
 {id:'actuary', name:'精算师', target:'max Calmar', constraint:'MDD<40%', presets:['act-1'], def:'act-1'},
   {id:'custom', name:'自定义', target:'自定义', constraint:'—', presets:['cst-1'], def:'cst-1'},
@@ -3617,7 +3810,7 @@ function renderContribution(code) {
     {l:'选中率', v:fmtVal(c.selectionRate,'%'), color:has&&c.selectionRate>=10?TC.positive:TC.textMuted, tip:'Top-N出现次数÷总调仓信号数。>20%为核心品种'},
     {l:'均权重', v:fmtVal(c.avgWeight,'%'), color:has&&c.avgWeight>=20?TC.highlight:has&&c.avgWeight>=10?TC.warning:TC.textMuted, tip:'入选时仓位%均值。反映策略对该ETF的配置力度'},
     {l:'均持有', v:fmtVal(c.avgHoldDays,'天'), color:has&&c.avgHoldDays>=30?TC.accentLight:'', tip:'连续在仓的自然日数均值。>15d长期持有，<8d短线轮动'},
-    {l:'笔数', v:fmtVal(c.tradeCount,'笔'), color:has&&c.tradeCount>=50?TC.positive:'', tip:'FIFO平仓记录总数=交易频率'},
+    {l:'笔数', v:fmtVal(c.tradeCount,'笔'), color:has&&c.tradeCount>=50?TC.positive:'', tip:'FIFO平仓记录总数=交易数据层'},
     {l:'胜率', v:fmtVal(c.winRate,'%'), color:has&&c.winRate>=55?TC.positive:has&&c.winRate>=40?TC.warning:TC.textMuted, tip:'盈利平仓÷总平仓。>55%为优。需结合赔率判断'},
     {l:'赔率', v:c.payoffRatio!=null?c.payoffRatio.toFixed(2):'—', color:has&&c.payoffRatio>=2?TC.positive:has&&c.payoffRatio>=1?TC.warning:'', tip:'盈利均收益÷亏损均亏损。>2=赚一次够亏两次'},
     {l:'交易盈亏', v:c.totalPnlPct!=null?(c.totalPnlPct>=0?'+':'')+c.totalPnlPct+'%':'—', color:has&&c.totalPnlPct>=0?TC.positive:has&&c.totalPnlPct<0?TC.negative:'', tip:'所有平仓盈亏%之和（未加权仓位）。反映择时质量+品种回报率'},
@@ -4144,7 +4337,7 @@ window.addEventListener('load', async function() {
   // Note: renderPresetCards() inside loadPresets() now uses FRONTIER for gambler slider.
   // Safety net for non-frontier schools:
   if (CURRENT_PRESET === null || CURRENT_PRESET === undefined) {
-    var defaultPreset = PRESETS['gam-1'] ? 'gam-1' : Object.keys(PRESETS)[0];
+    var defaultPreset = PRESETS['gam-0'] ? 'gam-0' : Object.keys(PRESETS)[0];
     if (defaultPreset) applyPreset(defaultPreset);
   }
 });
@@ -4627,6 +4820,991 @@ function updateHmSortUI() {
 setTimeout(function() { renderF1ZOHChart(); }, 300);
 // Default to results view on page load (overridden by URL autorun)
 setTimeout(function() { initHeatmap(); }, 500);
+
+// ══════════════════════════════════════════════════════════════
+// Data Management Panel (数据管理)
+// ══════════════════════════════════════════════════════════════
+var dmAllData = null;
+var dmSelected = {};
+var dmLastClick = null;
+var dmFilter = 'all';
+var dmFreq = 'daily';
+var dmField = 'close';
+var dmSectorFilter = '';
+var dmInited = false;
+var dmLoading = false;
+var dmDragState = null;
+var DM_CELL_W = 64;
+
+// ── Toast (参考 资产评审台 实现) ──
+var _dmToastTimer;
+// ── Themed confirm dialog (replaces native confirm()) ──
+function dmConfirm(msg) {
+  return new Promise(function(resolve) {
+    var overlay = $id('dm-confirm-overlay');
+    $id('dm-confirm-msg').textContent = msg;
+    overlay.style.display = 'flex';
+    function cleanup() {
+      overlay.style.display = 'none';
+      $id('dm-confirm-yes').removeEventListener('click', onYes);
+      $id('dm-confirm-no').removeEventListener('click', onNo);
+    }
+    function onYes() { cleanup(); resolve(true); }
+    function onNo() { cleanup(); resolve(false); }
+    $id('dm-confirm-yes').addEventListener('click', onYes);
+    $id('dm-confirm-no').addEventListener('click', onNo);
+  });
+}
+
+function dmToast(msg, type) {
+  var t = $id('dm-toast');
+  if (!t) return;
+  t.textContent = msg;
+  t.className = 'show ' + (type || '');
+  clearTimeout(_dmToastTimer);
+  _dmToastTimer = setTimeout(function() { t.className = ''; }, 2800);
+}
+
+// ── Init ──
+function initDataMgmt() {
+  if (dmLoading) return;
+  // Auto-reload if data is stale (>5 min) or never loaded
+  var now = Date.now();
+  if (dmInited && dmAllData && (now - (dmAllData._ts || 0)) < 300000) {
+    $id('dm-loading').style.display = 'none';
+    return;
+  }
+  // Pre-fill end date to today on initial load
+  if (!dmInited) {
+    var today = new Date().toISOString().slice(0, 10);
+    $id('dm-date-end').value = today;
+  }
+  dmLoadMatrix();
+}
+
+// ── Cache mode ──
+var dmCacheData = null;
+
+function dmLoadCacheStatus() {
+  dmLoading = true;
+  $id('dm-loading').style.display = 'flex';
+
+  fetch('/api/factor_cache_status')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      dmAllData = { etfs: data.etfs, dates: ['status'], cells: {} };
+      data.etfs.forEach(function(e) {
+        var cs = data.caches[e.code] || {};
+        dmAllData.cells[e.code] = { 'status': { status: cs.status || 'missing', file_count: cs.file_count || 0 } };
+      });
+      dmAllData._ts = Date.now();
+      dmLoading = false;
+      dmInited = true;
+      $id('dm-loading').style.display = 'none';
+      populateSectorFilter();
+      dmRenderMatrix();
+      dmUpdateStatusBar();
+    })
+    .catch(function(e) {
+      dmLoading = false;
+      $id('dm-loading').textContent = '加载失败: ' + e.message;
+      dmToast('缓存状态加载失败: ' + e.message, 'error');
+    });
+}
+
+async function dmDeleteCache() {
+  var keys = Object.keys(dmSelected);
+  var codes = [];
+  keys.forEach(function(k) { var c = k.split('|')[0]; if (codes.indexOf(c) < 0) codes.push(c); });
+  if (!codes.length) return;
+  var ok = await dmConfirm('确定删除 ' + codes.length + ' 支 ETF 的因子缓存吗？');
+  if (!ok) return;
+
+  dmToast('正在删除缓存...', '');
+  _showProgress('删除缓存');
+  try {
+    var resp = await fetch('/api/factor_cache_delete', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({codes: codes})
+    });
+    var data = await resp.json();
+    _hideProgress();
+    dmToast('已删除 ' + data.deleted + ' 个缓存文件', 'success');
+    dmLoadCacheStatus();
+  } catch(e) { _hideProgress(); dmToast('删除失败: ' + e.message, 'error'); }
+}
+
+async function dmRebuildCache() {
+  var keys = Object.keys(dmSelected);
+  var codes = [];
+  keys.forEach(function(k) { var c = k.split('|')[0]; if (codes.indexOf(c) < 0) codes.push(c); });
+  if (!codes.length) codes = null; // null = all
+
+  dmToast('正在重建因子缓存...', '');
+  _showProgress('重建缓存');
+  try {
+    var resp = await fetch('/api/factor_cache_rebuild', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({codes: codes, mode: 'all'})
+    });
+    var data = await resp.json();
+    _hideProgress();
+    dmToast('重建完成: ' + (data.rebuilt || 0) + ' 支 ETF', 'success');
+    dmLoadCacheStatus();
+  } catch(e) { _hideProgress(); dmToast('重建失败: ' + e.message, 'error'); }
+}
+
+function dmLoadMatrix() {
+  if (dmLoading) return;
+  dmLoading = true;
+  $id('dm-loading').style.display = 'flex';
+
+  var start = $id('dm-date-start').value;
+  var end = $id('dm-date-end').value;
+  var params = [];
+  if (start) params.push('start=' + encodeURIComponent(start));
+  if (end) params.push('end=' + encodeURIComponent(end));
+  var apiFreq = dmFreq === 'factor' ? dmField : dmFreq;
+  var apiField = dmFreq === 'factor' ? 'close' : dmField;
+  params.push('freq=' + apiFreq);
+  params.push('field=' + apiField);
+  var qs = params.length ? '?' + params.join('&') : '';
+
+  fetch('/api/data_matrix' + qs)
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      dmAllData = data;
+      dmAllData._ts = Date.now();
+      dmLoading = false;
+      dmInited = true;
+      $id('dm-loading').style.display = 'none';
+      populateSectorFilter();
+      dmRenderMatrix();
+      dmUpdateStatusBar();
+      if (!start) {
+        // Set default date range from API response
+        var dates = data.dates || [];
+        if (dates.length) {
+          $id('dm-date-start').value = dates[0];
+          $id('dm-date-end').value = dates[dates.length - 1];
+        }
+      }
+    })
+    .catch(function(e) {
+      dmLoading = false;
+      $id('dm-loading').textContent = '加载失败: ' + e.message;
+      dmToast('数据加载失败: ' + e.message, 'error');
+    });
+}
+
+function dmReloadData(codes) {
+  dmSelected = {};
+  dmLastClick = null;
+  dmDragState = null;
+  dmLoading = true;
+  $id('dm-loading').style.display = 'flex';
+  var params = [];
+  var start = $id('dm-date-start').value;
+  var end = $id('dm-date-end').value;
+  if (start) params.push('start=' + encodeURIComponent(start));
+  if (end) params.push('end=' + encodeURIComponent(end));
+  params.push('freq=' + (dmFreq === 'factor' ? dmField : dmFreq));
+  params.push('field=' + (dmFreq === 'factor' ? 'close' : dmField));
+  var hasFilter = codes && codes.length;
+  if (hasFilter) params.push('codes=' + encodeURIComponent(codes.join(',')));
+  fetch('/api/data_matrix?' + params.join('&'))
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      dmLoading = false;
+      $id('dm-loading').style.display = 'none';
+      if (hasFilter && dmAllData) {
+        // Merge partial response into existing data
+        dmAllData._ts = Date.now();
+        dmAllData.summary = data.summary;
+        // Update only affected ETF entries and cells
+        (data.etfs || []).forEach(function(e) {
+          var found = false;
+          for (var i = 0; i < dmAllData.etfs.length; i++) {
+            if (dmAllData.etfs[i].code === e.code) { found = true; break; }
+          }
+        });
+        // Merge cells
+        var newCells = data.cells || {};
+        Object.keys(newCells).forEach(function(code) {
+          dmAllData.cells[code] = newCells[code];
+        });
+        dmRenderMatrix();
+        dmUpdateStatusBar();
+      } else {
+        dmAllData = data; dmAllData._ts = Date.now();
+        if (!dmInited) dmInited = true;
+        populateSectorFilter();
+        dmRenderMatrix();
+        dmUpdateStatusBar();
+      }
+    })
+    .catch(function(e) {
+      dmLoading = false;
+      $id('dm-loading').textContent = '刷新失败: ' + e.message;
+    });
+}
+
+// ── Date range ──
+function dmSetRange(days) {
+  document.querySelectorAll('[id^="dm-rng-"]').forEach(function(b) { b.classList.remove('active'); });
+  var btn = $id('dm-rng-' + days); if (btn) btn.classList.add('active');
+  var today = new Date();
+  var endStr = today.toISOString().slice(0, 10);
+  var start = new Date(today);
+  if (days > 0) {
+    start.setDate(start.getDate() - Math.ceil(days * 1.4)); // trading days ~70% of calendar days
+    $id('dm-date-start').value = start.toISOString().slice(0, 10);
+  } else {
+    $id('dm-date-start').value = '2020-01-01';
+  }
+  $id('dm-date-end').value = endStr;
+  dmSelected = {};
+  dmLoadMatrix();
+}
+
+// ── Filters ──
+function dmToggleFilter(type) {
+  dmFilter = (dmFilter === type) ? 'all' : type;
+  ['missing','intraday','anomaly'].forEach(function(t) {
+    var btn = $id('dm-btn-' + t);
+    if (btn) btn.classList.toggle('active', dmFilter === t);
+  });
+  dmSelected = {};
+  dmRenderMatrix();
+  dmUpdateStatusBar();
+}
+
+function populateSectorFilter() {
+  var sel = $id('dm-sector-filter');
+  if (!sel || !dmAllData) return;
+  var sectors = [];
+  (dmAllData.etfs || []).forEach(function(e) {
+    if (e.sector && sectors.indexOf(e.sector) < 0) sectors.push(e.sector);
+  });
+  sel.innerHTML = '<option value="">全部板块</option>' +
+    sectors.map(function(s) { return '<option value="' + s + '">' + s + '</option>'; }).join('');
+}
+
+// ── Freq / Field toggles ──
+function dmSetFreq(freq) {
+  dmFreq = freq;
+  ['daily','weekly','factor'].forEach(function(f) {
+    var btn = $id('dm-freq-' + f); if (btn) btn.classList.toggle('active', freq === f);
+  });
+  var isFactor = (freq === 'factor');
+  $id('dm-fields-data').style.display = isFactor ? 'none' : '';
+  $id('dm-fields-factor').style.display = isFactor ? '' : 'none';
+  ['dm-btn-missing','dm-btn-intraday','dm-btn-anomaly'].forEach(function(id) {
+    var el = $id(id); if (el) el.style.display = isFactor ? 'none' : '';
+  });
+  dmSelected = {};
+  if (isFactor) {
+    // Default to F7 when entering factor mode
+    var activeF = document.querySelector('#dm-fields-factor .dm-filter-btn.active');
+    dmField = activeF ? activeF.textContent.toLowerCase() : 'f7';
+  } else {
+    var activeD = document.querySelector('#dm-fields-data .dm-filter-btn.active');
+    dmField = activeD ? (activeD.id === 'dm-field-close' ? 'close' : activeD.id === 'dm-field-volume' ? 'volume' : 'amount') : 'close';
+  }
+  dmLoadMatrix();
+}
+function dmSetField(field) {
+  dmField = field;
+  // Update active states in whichever group is visible
+  var isFactor = dmFreq === 'factor';
+  if (isFactor) {
+    ['f1','f3','f7'].forEach(function(f) {
+      var b = $id('dm-field-' + f); if (b) b.classList.toggle('active', field === f);
+    });
+  } else {
+    ['close','volume','amount'].forEach(function(f) {
+      var b = $id('dm-field-' + f); if (b) b.classList.toggle('active', field === f);
+    });
+  }
+  dmSelected = {};
+  dmLoadMatrix();
+}
+function dmFilterBySector() {
+  dmSectorFilter = $id('dm-sector-filter').value;
+  dmSelected = {};
+  dmRenderMatrix();
+  dmUpdateStatusBar();
+}
+
+// ── Rendering ──
+function dmRenderMatrix() {
+  if (!dmAllData) return;
+  var etfs = dmAllData.etfs;
+  var dates = dmAllData.dates;
+  var cells = dmAllData.cells;
+
+  // Sector color palette (matching heatmap)
+  var SEC_COLOR = {
+    '科技': TC.accent, '新能源': TC.greenLight, '制造': TC.cyan,
+    '资源周期': TC.warning, '医药': TC.negative, '金融': '#eab308',
+    '传统': '#78716c', '消费': TC.orange, '平台经济': '#6366f1',
+    '海外科技': TC.purple, '另类': '#c084fc', '基准': '#9ca3af'
+  };
+
+  // Build visible ETF list with applied filters
+  var visibleEtfs = [];
+  for (var ei = 0; ei < etfs.length; ei++) {
+    var code = etfs[ei].code;
+    if (dmSectorFilter && etfs[ei].sector !== dmSectorFilter) continue;
+    visibleEtfs.push({idx: ei, code: code, etf: etfs[ei]});
+  }
+
+  // ETF labels column (sector dot + name + code, uniform 24px rows — no sector headers)
+  var etfLabelsEl = $id('dm-etf-labels');
+  var etfHtml = '';
+  var visibleCodes = [];
+  for (var ri = 0; ri < visibleEtfs.length; ri++) {
+    var ve = visibleEtfs[ri];
+    var e = ve.etf;
+    visibleCodes.push(ve.code);
+    var sc = SEC_COLOR[e.sector] || TC.textMuted;
+    var rowSel = dmIsRowSelected(ve.code, dates) ? ' row-selected' : '';
+    etfHtml += '<div class="dm-etf-label' + rowSel + '" data-code="' + ve.code + '" onclick="dmSelectRow(\'' + ve.code + '\')" title="' + e.name + ' | ' + e.sector + '">' +
+      '<span class="dm-sec-dot" style="background:' + sc + ';" title="' + (e.sector||'') + '"></span>' +
+      '<span class="dm-etf-code">' + ve.code + '</span>' +
+      '<span class="dm-etf-name">' + (e.name || ve.code) + '</span></div>';
+  }
+  etfLabelsEl.innerHTML = etfHtml || '<div style="text-align:center;color:var(--text-muted);padding:20px;">无匹配ETF</div>';
+
+  // Date headers
+  var dateRowEl = $id('dm-date-row');
+  var totalW = dates.length * DM_CELL_W;
+  dateRowEl.style.width = totalW + 'px';
+  var dateHtml = '';
+  for (var di = 0; di < dates.length; di++) {
+    var d = dates[di];
+    var colSel = dmIsColSelected(d, visibleCodes) ? ' col-selected' : '';
+    dateHtml += '<span class="dm-date-cell' + colSel + '" data-date="' + d + '" onclick="dmSelectCol(\'' + d + '\')">' + d.slice(5) + '</span>';
+  }
+  dateRowEl.innerHTML = dateHtml;
+
+  // Grid body (uniform rows, no sector separators)
+  // Compute value range for gradient (volume / amount modes only)
+  var allVals = []; var vMin = 0, vMax = 1;
+  if (dmField === 'volume' || dmField === 'amount') {
+    for (var ri = 0; ri < visibleEtfs.length; ri++) {
+      var code = visibleEtfs[ri].code;
+      for (var di = 0; di < dates.length; di++) {
+        var d = dates[di];
+        var cell = (cells[code] && cells[code][d]) || {};
+        if (cell.value != null && cell.status === 'csv') allVals.push(cell.value);
+      }
+    }
+    if (allVals.length) { vMin = Math.min.apply(null, allVals); vMax = Math.max.apply(null, allVals); }
+  }
+  // Gradient: linear RGB interpolation
+  function dmGrad(t, lo, hi) {
+    t = Math.max(0, Math.min(1, t));
+    var r = Math.round(lo[0] + t * (hi[0] - lo[0]));
+    var g = Math.round(lo[1] + t * (hi[1] - lo[1]));
+    var b = Math.round(lo[2] + t * (hi[2] - lo[2]));
+    return 'rgb(' + r + ',' + g + ',' + b + ')';
+  }
+  var gradLo, gradHi;
+  if (dmField === 'volume') { gradLo = [10, 30, 60]; gradHi = [30, 90, 160]; }
+  else if (dmField === 'amount') { gradLo = [26, 10, 48]; gradHi = [90, 42, 138]; }
+
+  var gridBody = $id('dm-grid-body');
+  gridBody.style.width = totalW + 'px';
+  var gridHtml = '';
+  for (var ri = 0; ri < visibleEtfs.length; ri++) {
+    var ve = visibleEtfs[ri];
+    var code = ve.code;
+    gridHtml += '<div style="display:flex;">';
+    for (var di = 0; di < dates.length; di++) {
+      var d = dates[di];
+      var cell = (cells[code] && cells[code][d]) || {status: 'missing'};
+      // Apply filter
+      if (dmFilter === 'missing' && cell.status !== 'missing') { gridHtml += '<div style="width:'+DM_CELL_W+'px;flex-shrink:0;"></div>'; continue; }
+      if (dmFilter === 'intraday' && cell.status !== 'intraday') { gridHtml += '<div style="width:'+DM_CELL_W+'px;flex-shrink:0;"></div>'; continue; }
+      if (dmFilter === 'anomaly' && !cell.anomaly) { gridHtml += '<div style="width:'+DM_CELL_W+'px;flex-shrink:0;"></div>'; continue; }
+
+      var selClass = dmSelected[code + '|' + d] ? ' selected' : '';
+      var statusClass = cell.status;
+      if (cell.anomaly) statusClass += ' anomaly-' + cell.anomaly;
+
+      // Cell text: format based on field / cache mode
+      var val = cell.value;
+      var cellText = '';
+      if (cell.status === 'csv' || cell.status === 'intraday') {
+        if (val != null) {
+          if (dmField === 'close' || dmFreq === 'factor') {
+            cellText = val.toFixed(3);
+          } else if (dmField === 'volume') {
+            if (val >= 1e8) cellText = (val / 1e8).toFixed(1) + '亿';
+            else cellText = (val / 1e4).toFixed(0) + '万';
+          } else if (dmField === 'amount') {
+            if (val >= 1e8) cellText = (val / 1e8).toFixed(2) + '亿';
+            else cellText = (val / 1e4).toFixed(0) + '万';
+          }
+        }
+      }
+
+      // Gradient background for volume/amount CSV cells
+      var inlineStyle = '';
+      if ((dmField === 'volume' || dmField === 'amount') && cell.status === 'csv' && val != null && vMax > vMin) {
+        var t = (val - vMin) / (vMax - vMin);
+        inlineStyle = ' style="background:' + dmGrad(t, gradLo, gradHi) + ' !important;"';
+      }
+
+      var title = code + ' ' + (ve.etf.name||'') + ' | ' + d + ' | ' + cell.status;
+      if (cell.anomalyLabel) title += ' | ' + cell.anomalyLabel;
+      if (cell.time) title += ' | ' + cell.time;
+      gridHtml += '<div class="dm-cell ' + statusClass + selClass + '"' + inlineStyle +
+        ' data-code="' + code + '" data-date="' + d +
+        '" onmousedown="dmCellMouseDown(event,\'' + code + '\',\'' + d + '\')" title="' + title + '">' + cellText + '</div>';
+    }
+    gridHtml += '</div>';
+  }
+  gridBody.innerHTML = gridHtml || '<div style="text-align:center;color:var(--text-muted);padding:40px;">无匹配数据</div>';
+
+  // Sector legend
+  var legendEl = $id('dm-sec-legend');
+  if (legendEl) {
+    var seenSectors = [];
+    for (var ri = 0; ri < visibleEtfs.length; ri++) {
+      var s = visibleEtfs[ri].etf.sector || '';
+      if (s && seenSectors.indexOf(s) < 0) seenSectors.push(s);
+    }
+    legendEl.innerHTML = seenSectors.map(function(s) {
+      return '<span onclick="dmSelectSector(\'' + s + '\')" style="cursor:pointer;margin-right:10px;font-size:10px;color:var(--text-muted);">' +
+        '<span class="dm-sec-dot" style="background:' + (SEC_COLOR[s]||TC.textMuted) + ';vertical-align:middle;"></span>' + s + '</span>';
+    }).join('');
+  }
+
+  // Sync scrolling + horizontal slider
+  var vp = $id('dm-grid-viewport');
+  var etfWrap = $id('dm-etf-labels-wrap');
+  var dateWrap = $id('dm-date-wrap');
+  var hTrack = $id('dm-hslider-track');
+  var hWin = $id('dm-hslider-win');
+
+  if (vp) {
+    vp.onscroll = function() {
+      if (etfWrap) etfWrap.scrollTop = vp.scrollTop;
+      if (dateWrap) dateWrap.scrollLeft = vp.scrollLeft;
+      dmFromView();
+    };
+    // Mouse wheel → vertical scroll
+    vp.addEventListener('wheel', function(e) {
+      vp.scrollTop += e.deltaY;
+      if (etfWrap) etfWrap.scrollTop = vp.scrollTop;
+      if (window.dmVFromView) window.dmVFromView();
+      e.preventDefault();
+    }, {passive: false});
+    // Also scroll via wheel on ETF labels column
+    if (etfWrap) {
+      etfWrap.addEventListener('wheel', function(e) {
+        vp.scrollTop += e.deltaY;
+        etfWrap.scrollTop = vp.scrollTop;
+        if (window.dmVFromView) window.dmVFromView();
+        e.preventDefault();
+      }, {passive: false});
+    }
+  }
+
+  // Slider logic (matching heatmap hm-hslider)
+  if (hTrack && hWin && vp) {
+    var dmSlider = {};
+    function dmRefreshSlider() {
+      dmSlider.vpW = vp.getBoundingClientRect().width;
+      dmSlider.tw = Math.max(1, hTrack.getBoundingClientRect().width);
+      dmSlider.maxSX = Math.max(0, totalW - dmSlider.vpW);
+      var hRatio = Math.min(1, dmSlider.vpW / Math.max(1, totalW));
+      dmSlider.w = Math.max(20, hRatio * dmSlider.tw);
+      hWin.style.width = dmSlider.w + 'px';
+      hWin.style.display = dmSlider.maxSX > 0 ? '' : 'none';
+      // Keep handle within bounds
+      var curLeft = parseFloat(hWin.style.left) || 0;
+      var maxLeft = Math.max(0, dmSlider.tw - dmSlider.w);
+      if (curLeft > maxLeft || isNaN(curLeft)) hWin.style.left = maxLeft + 'px';
+    }
+    window.dmFromView = function() {
+      var pct = dmSlider.maxSX > 0 ? vp.scrollLeft / dmSlider.maxSX : 0;
+      hWin.style.left = Math.round(pct * (dmSlider.tw - dmSlider.w)) + 'px';
+    };
+    function dmHToView() {
+      var left = parseFloat(hWin.style.left) || 0;
+      var pct = dmSlider.tw > dmSlider.w ? left / (dmSlider.tw - dmSlider.w) : 0;
+      vp.scrollLeft = Math.round(pct * dmSlider.maxSX);
+      if (dateWrap) dateWrap.scrollLeft = vp.scrollLeft;
+    }
+
+    // Slider drag
+    var dmDragH = null;
+    hWin.addEventListener('mousedown', function(e) {
+      dmDragH = { startX: e.clientX, startLeft: parseFloat(hWin.style.left) || 0 };
+      e.preventDefault();
+    });
+    document.addEventListener('mousemove', function(e) {
+      if (!dmDragH) return;
+      var dx = e.clientX - dmDragH.startX;
+      var newLeft = Math.max(0, Math.min(dmSlider.tw - dmSlider.w, dmDragH.startLeft + dx));
+      hWin.style.left = newLeft + 'px';
+      dmHToView();
+    });
+    document.addEventListener('mouseup', function() { dmDragH = null; });
+
+    // Also allow clicking on track to jump
+    hTrack.addEventListener('mousedown', function(e) {
+      if (e.target === hWin) return; // let handle drag handle itself
+      var rect = hTrack.getBoundingClientRect();
+      var pct = (e.clientX - rect.left - dmSlider.w / 2) / (dmSlider.tw - dmSlider.w);
+      pct = Math.max(0, Math.min(1, pct));
+      hWin.style.left = Math.round(pct * (dmSlider.tw - dmSlider.w)) + 'px';
+      dmHToView();
+    });
+
+    dmRefreshSlider();
+    window.addEventListener('resize', function() { dmRefreshSlider(); dmHToView(); });
+    // Start at rightmost
+    setTimeout(function() {
+      dmRefreshSlider();
+      hWin.style.left = Math.max(0, dmSlider.tw - dmSlider.w) + 'px';
+      dmHToView();
+    }, 100);
+
+    // Vertical slider (matching heatmap hm-vslider)
+    var vTrack = $id('dm-vslider-track');
+    var vWin = $id('dm-vslider-win');
+    if (vTrack && vWin && vp) {
+      var vst = {};
+      function dmRefreshVSlider() {
+        vst.th = vTrack.getBoundingClientRect().height;
+        var vpHeight = vp.getBoundingClientRect().height;
+        var chartHeight = visibleEtfs.length * 30; // 30px per row
+        var vRatio = Math.min(1, vpHeight / Math.max(1, chartHeight));
+        vst.vh = Math.max(24, vRatio * vst.th);
+        vst.maxSY = Math.max(0, chartHeight - vpHeight);
+        if (vRatio >= 1) { vWin.style.display = 'none'; }
+        else { vWin.style.display = ''; vWin.style.height = vst.vh + 'px'; }
+        var curTop = parseFloat(vWin.style.top) || 0;
+        var maxTop = Math.max(0, vst.th - vst.vh);
+        if (curTop > maxTop || isNaN(curTop)) vWin.style.top = maxTop + 'px';
+      }
+      function dmVToView() {
+        var top = parseFloat(vWin.style.top) || 0;
+        var pct = vst.th > vst.vh ? top / (vst.th - vst.vh) : 0;
+        vp.scrollTop = Math.round(pct * vst.maxSY);
+        if (etfWrap) etfWrap.scrollTop = vp.scrollTop;
+      }
+      window.dmVFromView = function() {
+        if (vst.maxSY <= 0) return;
+        var pct = Math.min(1, vp.scrollTop / vst.maxSY);
+        vWin.style.top = Math.round(pct * (vst.th - vst.vh)) + 'px';
+        if (etfWrap) etfWrap.scrollTop = vp.scrollTop;
+      };
+
+      dmRefreshVSlider();
+      vWin.style.top = '0px';
+
+      // Hook into existing scroll handler
+      var _prevVpScroll = vp.onscroll;
+      vp.onscroll = function() {
+        if (_prevVpScroll) _prevVpScroll();
+        if (window.dmVFromView) window.dmVFromView();
+      };
+
+      // V slider drag
+      var vDrag = false, vDragStartY = 0, vDragStartTop = 0;
+      vWin.addEventListener('mousedown', function(e) {
+        vDrag = true; vDragStartY = e.clientY; vDragStartTop = parseFloat(vWin.style.top) || 0;
+        e.preventDefault(); e.stopPropagation();
+      });
+      vTrack.addEventListener('mousedown', function(e) {
+        if (e.target === vWin) return;
+        var nt = e.clientY - vTrack.getBoundingClientRect().top - vst.vh / 2;
+        nt = Math.max(0, Math.min(nt, vst.th - vst.vh));
+        vWin.style.top = nt + 'px'; dmVToView();
+      });
+      // Add to global mousemove/mouseup handlers
+      var _prevDocMove = document.onmousemove;
+      var _prevDocUp = document.onmouseup;
+      document.addEventListener('mousemove', function(e) {
+        if (!vDrag) return;
+        var nt = vDragStartTop + (e.clientY - vDragStartY);
+        nt = Math.max(0, Math.min(nt, vst.th - vst.vh));
+        vWin.style.top = nt + 'px'; dmVToView();
+      });
+      document.addEventListener('mouseup', function() { vDrag = false; });
+
+      // Resize
+      window.addEventListener('resize', function() {
+        dmRefreshVSlider();
+        var maxTop = Math.max(0, vst.th - vst.vh);
+        var curTop = parseFloat(vWin.style.top) || 0;
+        if (curTop > maxTop) vWin.style.top = maxTop + 'px';
+        dmVToView();
+      });
+    }
+  }
+
+  dmUpdateButtonStates();
+}
+
+// ── Selection ──
+function dmCellMouseDown(e, code, date) {
+  e.preventDefault();
+  dmDragState = {startCode: code, startDate: date};
+  dmSelected = {};
+  dmSelected[code + '|' + date] = true;
+  dmLastClick = {code: code, date: date};
+  dmUpdateSelection();
+}
+
+// Global mouse handlers for drag-select
+document.addEventListener('mousemove', function(e) {
+  if (!dmDragState) return;
+  var el = document.elementFromPoint(e.clientX, e.clientY);
+  if (!el || !el.classList.contains('dm-cell')) return;
+  var code = el.dataset.code;
+  var date = el.dataset.date;
+  if (!code || !date) return;
+  if (code === dmDragState.startCode && date === dmDragState.startDate) return;
+  dmSelectRange(dmDragState.startCode, dmDragState.startDate, code, date);
+});
+
+document.addEventListener('mouseup', function() {
+  if (dmDragState) {
+    dmDragState = null;
+    dmUpdateStatusBar();
+  }
+});
+
+function dmSelectRange(code1, date1, code2, date2) {
+  if (!dmAllData) return;
+  var dates = dmAllData.dates;
+  var etfs = dmAllData.etfs;
+
+  // Build ordered code list from visible ETFs
+  var orderedCodes = [];
+  for (var i = 0; i < etfs.length; i++) {
+    if (!dmSectorFilter || etfs[i].sector === dmSectorFilter) {
+      orderedCodes.push(etfs[i].code);
+    }
+  }
+
+  var idx1 = orderedCodes.indexOf(code1);
+  var idx2 = orderedCodes.indexOf(code2);
+  if (idx1 < 0 || idx2 < 0) return;
+  var rowMin = Math.min(idx1, idx2), rowMax = Math.max(idx1, idx2);
+
+  var didx1 = dates.indexOf(date1);
+  var didx2 = dates.indexOf(date2);
+  if (didx1 < 0 || didx2 < 0) return;
+  var colMin = Math.min(didx1, didx2), colMax = Math.max(didx1, didx2);
+
+  dmSelected = {};
+  for (var ri = rowMin; ri <= rowMax; ri++) {
+    for (var ci = colMin; ci <= colMax; ci++) {
+      dmSelected[orderedCodes[ri] + '|' + dates[ci]] = true;
+    }
+  }
+  dmUpdateSelection();
+}
+
+function dmSelectRow(code) {
+  if (!dmAllData) return;
+  var dates = dmAllData.dates;
+  var allSelected = true;
+  for (var i = 0; i < dates.length; i++) {
+    if (!dmSelected[code + '|' + dates[i]]) { allSelected = false; break; }
+  }
+  if (allSelected) {
+    for (var i = 0; i < dates.length; i++) delete dmSelected[code + '|' + dates[i]];
+  } else {
+    for (var i = 0; i < dates.length; i++) dmSelected[code + '|' + dates[i]] = true;
+  }
+  dmUpdateSelection();
+  dmUpdateStatusBar();
+}
+
+function dmSelectCol(date) {
+  if (!dmAllData) return;
+  var etfs = dmAllData.etfs;
+  // Select ALL ETFs for this date, not just visible ones
+  var allSelected = etfs.length > 0;
+  for (var i = 0; i < etfs.length; i++) {
+    if (!dmSelected[etfs[i].code + '|' + date]) { allSelected = false; break; }
+  }
+  if (allSelected) {
+    for (var i = 0; i < etfs.length; i++) delete dmSelected[etfs[i].code + '|' + date];
+  } else {
+    for (var i = 0; i < etfs.length; i++) dmSelected[etfs[i].code + '|' + date] = true;
+  }
+  dmUpdateSelection();
+  dmUpdateStatusBar();
+}
+
+function dmSelectSector(sector) {
+  if (!dmAllData) return;
+  var dates = dmAllData.dates;
+  var etfs = dmAllData.etfs;
+  var sectorCodes = [];
+  for (var i = 0; i < etfs.length; i++) {
+    if (etfs[i].sector === sector) sectorCodes.push(etfs[i].code);
+  }
+  var allSelected = sectorCodes.length > 0;
+  for (var i = 0; i < sectorCodes.length; i++) {
+    for (var j = 0; j < dates.length; j++) {
+      if (!dmSelected[sectorCodes[i] + '|' + dates[j]]) { allSelected = false; break; }
+    }
+    if (!allSelected) break;
+  }
+  if (allSelected) {
+    for (var i = 0; i < sectorCodes.length; i++)
+      for (var j = 0; j < dates.length; j++)
+        delete dmSelected[sectorCodes[i] + '|' + dates[j]];
+  } else {
+    for (var i = 0; i < sectorCodes.length; i++)
+      for (var j = 0; j < dates.length; j++)
+        dmSelected[sectorCodes[i] + '|' + dates[j]] = true;
+  }
+  dmUpdateSelection();
+  dmUpdateStatusBar();
+}
+
+function dmIsRowSelected(code, dates) {
+  if (!dmAllData) return false;
+  var dts = dates || dmAllData.dates;
+  for (var i = 0; i < dts.length; i++) {
+    if (dmSelected[code + '|' + dts[i]]) return true;
+  }
+  return false;
+}
+
+function dmIsColSelected(date, codes) {
+  if (!dmAllData) return false;
+  var cs = codes || [];
+  if (!cs.length) {
+    var etfs = dmAllData.etfs;
+    for (var i = 0; i < etfs.length; i++) cs.push(etfs[i].code);
+  }
+  for (var i = 0; i < cs.length; i++) {
+    if (dmSelected[cs[i] + '|' + date]) return true;
+  }
+  return false;
+}
+
+function dmUpdateSelection() {
+  document.querySelectorAll('.dm-cell').forEach(function(el) {
+    var key = el.dataset.code + '|' + el.dataset.date;
+    el.classList.toggle('selected', !!dmSelected[key]);
+  });
+  document.querySelectorAll('.dm-etf-label').forEach(function(el) {
+    el.classList.toggle('row-selected', dmIsRowSelected(el.dataset.code));
+  });
+  document.querySelectorAll('.dm-date-cell').forEach(function(el) {
+    el.classList.toggle('col-selected', dmIsColSelected(el.dataset.date));
+  });
+  dmUpdateButtonStates();
+}
+
+function dmUpdateButtonStates() {
+  var n = Object.keys(dmSelected).length;
+  var delBtn = $id('dm-btn-delete'); if (delBtn) delBtn.disabled = n === 0;
+  var refBtn = $id('dm-btn-refetch'); if (refBtn) refBtn.disabled = n === 0;
+  var selSpan = $id('dm-stat-selected'); if (selSpan) selSpan.textContent = n;
+}
+
+// ── Status bar ──
+function dmUpdateStatusBar() {
+  if (!dmAllData || !dmAllData.summary) return;
+  var s = dmAllData.summary;
+  $id('dm-stat-total').textContent = s.totalCells || 0;
+  $id('dm-stat-csv').textContent = s.csvCount || 0;
+  $id('dm-stat-intraday').textContent = s.intradayCount || 0;
+  $id('dm-stat-missing').textContent = s.missingCount || 0;
+  $id('dm-stat-anomaly').textContent = s.anomalyCount || 0;
+  $id('dm-stat-halted').textContent = s.haltedCount || 0;
+}
+
+// ── Operations ──
+// Check if all visible dates are selected for each code → expand to full history
+function dmExpandFullRows() {
+  var result = {};
+  var totalDates = dmAllData.dates.length;
+  var countByCode = {};
+  var keys = Object.keys(dmSelected);
+  for (var i = 0; i < keys.length; i++) {
+    var code = keys[i].split('|')[0];
+    countByCode[code] = (countByCode[code] || 0) + 1;
+  }
+  Object.keys(countByCode).forEach(function(code) {
+    if (countByCode[code] >= totalDates) result[code] = true;
+  });
+  return result;
+}
+
+async function dmDeleteSelected() {
+  var keys = Object.keys(dmSelected);
+  if (!keys.length) return;
+  var ok = await dmConfirm('确定删除 ' + keys.length + ' 条选中的数据吗？此操作不可逆。');
+  if (!ok) return;
+
+  // Group consecutive dates per code into start/end ranges
+  var byCode = {};
+  keys.forEach(function(k) {
+    var parts = k.split('|');
+    var code = parts[0], date = parts[1];
+    if (!byCode[code]) byCode[code] = [];
+    byCode[code].push(date);
+  });
+  var fullRow = dmExpandFullRows();
+  var ops = [];
+  Object.keys(byCode).forEach(function(code) {
+    var dates = byCode[code].sort();
+    if (fullRow[code]) { ops.push({code: code, start: '1900-01-01', end: '2099-12-31'}); return; }
+    var segStart = dates[0], segEnd = dates[0];
+    for (var i = 1; i < dates.length; i++) {
+      if (dates[i] <= segEnd) { segEnd = dates[i]; continue; }
+      var prevIdx = dmAllData.dates.indexOf(segEnd);
+      var curIdx = dmAllData.dates.indexOf(dates[i]);
+      if (curIdx === prevIdx + 1) { segEnd = dates[i]; }
+      else { ops.push({code: code, start: segStart, end: segEnd}); segStart = dates[i]; segEnd = dates[i]; }
+    }
+    ops.push({code: code, start: segStart, end: segEnd});
+  });
+
+  _showProgress('删除数据');
+  try {
+    var resp = await fetch('/api/data_delete', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({operations: ops})
+    });
+    var data = await resp.json();
+    _hideProgress();
+    if (data.ok && !(data.errors && data.errors.length)) {
+      dmToast('已删除 ' + data.deleted + ' 条数据', 'success');
+    } else if (data.errors && data.errors.length) {
+      dmToast('删除: ' + data.deleted + ' 条, ' + data.errors.length + ' 个问题 — ' + data.errors[0], 'warning');
+    } else {
+      dmToast('已删除 ' + data.deleted + ' 条数据', 'success');
+    }
+    dmReloadData(Object.keys(byCode));
+  } catch(e) {
+    _hideProgress();
+    dmToast('删除失败: ' + e.message, 'error');
+  }
+}
+
+async function dmRefetchSelected() {
+  if (dmFreq === 'factor') { dmDeleteCache(); return; }
+  var keys = Object.keys(dmSelected);
+  if (!keys.length) return;
+
+  // Group by code, find min/max date
+  var byCode = {};
+  keys.forEach(function(k) {
+    var parts = k.split('|');
+    var code = parts[0], date = parts[1];
+    if (!byCode[code]) byCode[code] = {min: date, max: date};
+    else {
+      if (date < byCode[code].min) byCode[code].min = date;
+      if (date > byCode[code].max) byCode[code].max = date;
+    }
+  });
+  var fullRow = dmExpandFullRows();
+  var ops = Object.keys(byCode).map(function(code) {
+    if (fullRow[code]) return {code: code, start: '1900-01-01', end: '2099-12-31'};
+    return {code: code, start: byCode[code].min, end: byCode[code].max};
+  });
+
+  var isWeekly = dmFreq === 'weekly';
+  dmToast('正在' + (isWeekly ? '重建周线' : '强制更新') + ' ' + ops.length + ' 支 ETF...', '');
+  _showProgress(isWeekly ? '重建周线' : '强制更新');
+  try {
+    var resp = await fetch('/api/data_refetch', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({operations: ops, freq: dmFreq})
+    });
+    var data = await resp.json();
+    _hideProgress();
+    var totalRows = 0, hasErr = false;
+    if (data.results) {
+      Object.keys(data.results).forEach(function(c) {
+        if (data.results[c].error) hasErr = true;
+        else totalRows += (data.results[c].rows || 0);
+      });
+    }
+    if (isWeekly) {
+      dmToast('周线重建完成: ' + totalRows + ' 周' + (hasErr ? ' (部分失败)' : ''), hasErr ? 'warning' : 'success');
+    } else if (totalRows === 0 && !hasErr) {
+      dmToast('日线数据已是最新，无需更新', 'info');
+    } else {
+      dmToast('更新完成: ' + totalRows + ' 行' + (hasErr ? ' (部分失败)' : ''), hasErr ? 'warning' : 'success');
+    }
+    dmReloadData(Object.keys(byCode));
+  } catch(e) {
+    _hideProgress();
+    dmToast('拉取失败: ' + e.message, 'error');
+  }
+}
+
+async function dmFillGaps() {
+  if (dmFreq === 'factor') { dmRebuildCache(); return; }
+  var codes = null;
+  var startDate = null, endDate = null;
+
+  // If cells are selected, use their code+date range; otherwise use current filter / full range
+  var selKeys = Object.keys(dmSelected);
+  if (selKeys.length) {
+    var codeSet = {};
+    selKeys.forEach(function(k) {
+      var parts = k.split('|');
+      codeSet[parts[0]] = true;
+      if (!startDate || parts[1] < startDate) startDate = parts[1];
+      if (!endDate || parts[1] > endDate) endDate = parts[1];
+    });
+    codes = Object.keys(codeSet);
+  } else if (dmSectorFilter) {
+    codes = dmAllData.etfs.filter(function(e) { return e.sector === dmSectorFilter; }).map(function(e) { return e.code; });
+  }
+  if (!startDate) startDate = dmAllData.dates[0];
+  if (!endDate) endDate = dmAllData.dates[dmAllData.dates.length - 1];
+
+  dmToast('正在检测缺失数据 (' + (codes ? codes.length + '支' : '全部') + ' ETF)...', '');
+  _showProgress('补全空缺');
+  try {
+    var resp = await fetch('/api/data_fill_gaps', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({codes: codes, start: startDate, end: endDate, freq: dmFreq})
+    });
+    var data = await resp.json();
+    _hideProgress();
+    if (dmFreq === 'weekly') {
+      dmToast('周线补全完成: 填充 ' + (data.filled || 0) + ' 周', 'success');
+    } else {
+      dmToast('补全完成: 填充 ' + (data.filled || 0) + ' 个缺失格', 'success');
+    }
+    dmReloadData(codes || null);
+  } catch(e) {
+    _hideProgress();
+    dmToast('补充失败: ' + e.message, 'error');
+  }
+}
+
+// ── Hook into global refresh flow: auto-reload DM after refreshData ──
+var _origRefreshData = refreshData;
+refreshData = async function() {
+  var result = await _origRefreshData();
+  // If DM view is active, reload data after global refresh
+  if ($id('right-view-datamgmt') && $id('right-view-datamgmt').classList.contains('active')) {
+    dmInited = false;
+    setTimeout(function() { initDataMgmt(); }, 500); // small delay for cache to update
+  }
+  return result;
+};
 </script>
 <script src="/assets/js/debug-toolbar.js"></script>
 </body>

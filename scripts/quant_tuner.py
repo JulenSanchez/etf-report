@@ -422,6 +422,25 @@ def _reload_csv_to_cache(cfg):
         if daily is not None:
             CACHE["all_daily"][code] = daily
             CACHE["all_weekly"][code] = weekly
+    # Also reload benchmark indices (daily + weekly)
+    for bm_code in ("000300", "000016", "000905", "399006"):
+        bm_path = DATA_DIR / "quant" / f"{bm_code}_daily.csv"
+        if bm_path.exists():
+            try:
+                bm_df = pd.read_csv(bm_path, parse_dates=["date"])
+                if len(bm_df) > 0:
+                    CACHE["all_daily"][bm_code] = bm_df
+            except Exception:
+                pass
+        # Also load weekly for benchmarks
+        bm_wpath = DATA_DIR / "quant" / f"{bm_code}_weekly.csv"
+        if bm_wpath.exists():
+            try:
+                bm_wdf = pd.read_csv(bm_wpath, parse_dates=["date"])
+                if len(bm_wdf) > 0:
+                    CACHE["all_weekly"][bm_code] = bm_wdf
+            except Exception:
+                pass
 
 
 def _sina_batch_append(cfg, date_str, rt_prices):
@@ -471,6 +490,185 @@ def _sina_batch_append(cfg, date_str, rt_prices):
             print(f"  [Sina] FAIL {code}: {e}")
             fail += 1
     return ok, fail
+
+
+_SPLIT_EVENTS = {}       # code → [events], populated once per session
+_SPLIT_CHECKED = False
+
+
+def _ensure_splits_detected(cfg):
+    """First call: detect split events via AKShare + merge with registered JSON events.
+    Subsequent calls: no-op (cached)."""
+    global _SPLIT_EVENTS, _SPLIT_CHECKED
+    if _SPLIT_CHECKED:
+        return
+    _SPLIT_CHECKED = True
+    _SPLIT_EVENTS = _load_corporate_action_events()
+    try:
+        from etf_report.core.corporate_action_source import detect_corporate_action_events
+        from datetime import date as _date
+        today = _date.today()
+        fresh = detect_corporate_action_events(
+            [e["code"] for e in cfg["universe"]],
+            _date(today.year, 1, 1), today
+        )
+        for code, evts in fresh.get("events_by_code", {}).items():
+            existing = _SPLIT_EVENTS.setdefault(code, [])
+            known = {(e.get("action"), e.get("ex_date")) for e in existing}
+            for evt in evts:
+                key = (evt.get("action"), evt.get("ex_date"))
+                if key not in known:
+                    existing.append(evt)
+                    print(f"  [Split] DETECTED: {code} ratio={evt['ratio']} ex={evt['ex_date']} ({evt.get('note','')})")
+    except Exception as exc:
+        print(f"  [Split] detection skipped: {exc}")
+
+
+def _apply_split_memory_bridge(cfg):
+    """In-memory cleaning for ETFs with unprocessed split events.
+    Self-healing: compares CSV last close vs intraday close.
+    If ratio ≈ split_ratio → need cleaning. If ratio ≈ 1.0 → already adjusted, skip."""
+    today_str = datetime.now().strftime("%Y-%m-%d")
+    from etf_report.core.data_cleaning import run_data_cleaning_pipeline
+    intraday = bool(CACHE.get("intraday_cache"))
+    for etf in cfg["universe"]:
+        code = etf["code"]
+        splits = sorted(
+            [e for e in _SPLIT_EVENTS.get(code, [])
+             if e.get("action") == "share_split" and e.get("ex_date", "") <= today_str],
+            key=lambda e: e.get("ex_date", ""), reverse=True
+        )
+        if not splits:
+            continue
+        split_ratio = splits[0]["ratio"]  # most recent split
+        daily = CACHE["all_daily"].get(code)
+        if daily is None:
+            continue
+        csv_close = float(daily["close"].iloc[-1])
+        rt_close = 0.0
+        # Compare with intraday close to decide if cleaning is needed
+        need_clean = False
+        if intraday:
+            cached = CACHE["intraday_cache"].get(code)
+            if cached and cached.get("close", 0) > 0:
+                rt_close = float(cached["close"])
+                r = csv_close / rt_close if rt_close > 0 else 1.0
+                if 0.85 * split_ratio <= r <= 1.15 * split_ratio:
+                    need_clean = True  # CSV still pre-split, need bridge
+        if not need_clean:
+            continue  # already adjusted or can't determine → skip (self-healing)
+        print(f"  [Bridge] {code} split bridge (ratio={split_ratio}, csv={csv_close:.3f} rt={rt_close:.3f})")
+        ci = _df_to_cleaning_input(daily)
+        # Append intraday bar so boundary detection sees weekend gaps
+        if cached and cached.get("date") == today_str:
+            ci["dates"].append(cached["date"])
+            ci["kline"].append([cached["open"], cached["close"], cached["low"], cached["high"]])
+            if "volume" in daily.columns:
+                ci["volumes"].append(int(cached.get("volume", 0) or 0))
+        cleaned = run_data_cleaning_pipeline(ci, splits[:1])  # only the most recent split
+        CACHE["all_daily"][code] = _apply_cleaning_to_df(daily, cleaned)
+        CACHE["all_weekly"][code] = rebuild_weekly_from_daily(CACHE["all_daily"][code])
+
+
+def _full_refetch_split_etfs(cfg):
+    """Post-market: full refetch for ETFs with split events (qfq may have adjusted history by now).
+    Only refetches if CSV last date < split ex_date + 1 (avoids redundant refetches)."""
+    from quant_data_fetcher import update_single, get_last_date, DATA_DIR as QDATA_DIR
+    import time as _time
+    today_str = datetime.now().strftime("%Y-%m-%d")
+    for etf in cfg["universe"]:
+        code = etf["code"]
+        splits = sorted(
+            [e for e in _SPLIT_EVENTS.get(code, [])
+             if e.get("action") == "share_split" and e.get("ex_date", "") <= today_str],
+            key=lambda e: e.get("ex_date", ""), reverse=True
+        )
+        if not splits:
+            continue
+        split_date = splits[0]["ex_date"]
+        if last and last >= split_date:
+            continue  # already have data on/after split date
+        print(f"  [Split] full refetch {code} (ex={split_date} ratio={splits[0]['ratio']})...")
+        try:
+            update_single(etf, full=True)
+            _time.sleep(1.0)
+            print(f"  [Split] {code} refetch OK")
+        except Exception as exc:
+            print(f"  [Split] {code} refetch FAILED: {exc}")
+def _populate_intraday_cache(cfg, now, today_str, time_label, codes=None):
+    """Populate intraday cache from Sina real-time API.
+    codes: optional list of ETF codes to update; None = all universe ETFs.
+    Returns (updated_count, halted_count).
+    """
+    rt_prices = _fetch_sina_realtime(cfg)
+    if not rt_prices:
+        return 0, 0
+
+    # Retry missing ETFs
+    missing = [e for e in cfg["universe"] if e["code"] not in rt_prices or rt_prices[e["code"]]["price"] <= 0]
+    if missing:
+        time.sleep(2)
+        retry_cfg = dict(cfg)
+        retry_cfg["universe"] = missing
+        retry_rt = _fetch_sina_realtime(retry_cfg)
+        for code, data in retry_rt.items():
+            if data.get("price", 0) > 0:
+                rt_prices[code] = data
+
+    qdii_codes = {e["code"] for e in cfg["universe"] if e.get("qdii")}
+    prev_ic = CACHE.get("intraday_cache", {})
+    code_set = set(codes) if codes else None
+
+    if not CACHE.get("intraday_cache"):
+        CACHE["intraday_cache"] = {}
+    CACHE["intraday_date"] = today_str
+
+    updated = 0
+    halted_count = 0
+    for etf in cfg["universe"]:
+        code = etf["code"]
+        if code_set and code not in code_set:
+            continue
+        rt = rt_prices.get(code)
+        if not rt or rt["price"] <= 0:
+            continue
+
+        is_qdii = code in qdii_codes
+        vol = rt["volume"]
+        amt = rt["amount"]
+
+        halted = False
+        if is_qdii:
+            if rt.get("possibly_halted"):
+                halted = True
+            elif code in prev_ic:
+                prev = prev_ic[code]
+                if (prev.get("halted") and
+                    abs(rt["price"] - prev["close"]) < 0.001 and
+                    vol == prev.get("raw_volume", 0)):
+                    halted = True
+
+        raw_vol = vol
+        raw_amt = amt
+        if not halted and vol > 0:
+            vol = _estimate_eod_volume(vol, now)
+            if amt > 0:
+                amt = _estimate_eod_volume(int(amt), now)
+
+        if halted:
+            halted_count += 1
+
+        CACHE["intraday_cache"][code] = {
+            "date": today_str, "time": time_label,
+            "open": rt["open"], "close": rt["price"],
+            "high": rt["high"], "low": rt["low"],
+            "volume": vol, "amount": amt,
+            "raw_volume": raw_vol, "raw_amount": raw_amt,
+            "halted": halted,
+        }
+        updated += 1
+
+    return updated, halted_count
 
 
 def refresh_data():
@@ -569,6 +767,14 @@ def refresh_data():
     else:
         gap_msg = ""
 
+
+    _ensure_splits_detected(cfg)
+    _apply_split_memory_bridge(cfg)
+
+    if post_market:
+        _full_refetch_split_etfs(cfg)
+        _reload_csv_to_cache(cfg)
+
     _precompute_benchmarks()
     _precompute_valuation_scores()
     _load_market_regimes()
@@ -605,83 +811,7 @@ def refresh_data():
         }
 
     # ── Intraday (09:30–15:10): historical gaps filled + intraday cache ──
-    rt_prices = _fetch_sina_realtime(cfg)
-    if not rt_prices:
-        return {"status": "error", "message": f"{time_label} | Sina API failed", "date": today_str, "time": time_label}
-
-    # Retry missing ETFs (transient API glitches — single ETF may fail parsing in batch call)
-    missing = [e for e in cfg["universe"] if e["code"] not in rt_prices or rt_prices[e["code"]]["price"] <= 0]
-    if missing:
-        print(f"  [Refresh] {len(missing)} ETFs missing from first fetch, retrying...")
-        time.sleep(2)
-        # Build a minimal cfg with only the missing ETFs
-        retry_cfg = dict(cfg)
-        retry_cfg["universe"] = missing
-        retry_rt = _fetch_sina_realtime(retry_cfg)
-        for code, data in retry_rt.items():
-            if data.get("price", 0) > 0:
-                rt_prices[code] = data
-        still_missing = [e["code"] for e in missing if e["code"] not in rt_prices or rt_prices[e["code"]]["price"] <= 0]
-        if still_missing:
-            print(f"  [Refresh] Still missing after retry: {still_missing}")
-
-    # Build quick lookup: QDII ETF codes + their previous intraday cache
-    qdii_codes = {e["code"] for e in cfg["universe"] if e.get("qdii")}
-    prev_ic = CACHE.get("intraday_cache", {})
-
-    updated = 0
-    halted_count = 0
-    for etf in cfg["universe"]:
-        code = etf["code"]
-        rt = rt_prices.get(code)
-        if not rt or rt["price"] <= 0:
-            continue
-
-        is_qdii = code in qdii_codes
-        vol = rt["volume"]
-        amt = rt["amount"]
-
-        # ── Halt detection for QDII ETFs ──
-        halted = False
-        if is_qdii:
-            # L1: morning halt — open==prev_close and no volume (from Sina)
-            if rt.get("possibly_halted"):
-                halted = True
-            # L2: afternoon halt — same price & volume as previous refresh (stale data)
-            elif code in prev_ic:
-                prev = prev_ic[code]
-                if (prev.get("halted") and
-                    abs(rt["price"] - prev["close"]) < 0.001 and
-                    vol == prev.get("raw_volume", 0)):
-                    halted = True  # persisted halt
-
-        # ── Estimate EOD volume (skip if halted) ──
-        raw_vol = vol
-        raw_amt = amt
-        if not halted and vol > 0:
-            vol = _estimate_eod_volume(vol, now)
-            if amt > 0:
-                amt = _estimate_eod_volume(int(amt), now)
-
-        if halted:
-            halted_count += 1
-
-        CACHE["intraday_cache"][code] = {
-            "date": today_str,
-            "time": time_label,
-            "open": rt["open"],
-            "close": rt["price"],
-            "high": rt["high"],
-            "low": rt["low"],
-            "volume": vol,
-            "amount": amt,
-            "raw_volume": raw_vol,     # pre-estimation volume (for L2 halt detection)
-            "raw_amount": raw_amt,     # pre-estimation amount
-            "halted": halted,
-        }
-        updated += 1
-
-    CACHE["intraday_date"] = today_str
+    updated, halted_count = _populate_intraday_cache(cfg, now, today_str, time_label)
     vol_note = " (vol est. EOD)" if _trading_elapsed_minutes(now) < TOTAL_TRADING_MINUTES else ""
     halt_note = f" | {halted_count} halted" if halted_count > 0 else ""
     msg = f"{time_label} | Intraday | {updated} ETFs{vol_note}{halt_note} | {gap_msg}"
@@ -1559,7 +1689,12 @@ def api_run():
                 def _cb(current, total, msg):
                     pct = int(current / max(total, 1) * 100)
                     _task_update(task_id, pct, msg)
-                result = run_tuner_backtest(params, progress_callback=_cb)
+                try:
+                    result = run_tuner_backtest(params, progress_callback=_cb)
+                except Exception as _e:
+                    import traceback as _tb
+                    result = {"error": f"{type(_e).__name__}: {_e}", "traceback": _tb.format_exc()}
+                    _task_update(task_id, 100, f"错误: {_e}")
                 _save_backtest_cache(params, result)
                 _task_done(task_id, result=result)
                 print(f"  [ASYNC] Task {task_id} done, elapsed={TASK_STORE.get(task_id,{}).get('elapsed',0)}s")
@@ -2238,6 +2373,658 @@ def api_heatmap_data():
         })
 
     return jsonify({"lookback": int(lookback), "dates": dates, "etfs": etfs_out})
+
+
+# ── Data Management Panel APIs ──
+
+@app.route("/api/data_matrix")
+def api_data_matrix():
+    """Return ETF x date coverage matrix with anomaly detection."""
+    guard = _require_ready()
+    if guard:
+        return guard
+
+    start_str = request.args.get("start", "").strip()
+    end_str = request.args.get("end", "").strip()
+    freq = request.args.get("freq", "daily").strip()        # daily | weekly
+    field = request.args.get("field", "close").strip()      # close | volume | amount
+    codes_filter = request.args.get("codes", "").strip()    # comma-separated, optional
+
+    # Determine date range: default last 60 trading days
+    cal = load_trading_calendar()
+    today = datetime.now().strftime("%Y-%m-%d")
+    trading_days = sorted(d for d in cal if today >= d >= "2020-01-01")
+
+    if end_str:
+        end_idx = min(
+            next((i for i, d in enumerate(trading_days) if d > end_str), len(trading_days)),
+            len(trading_days)
+        )
+    else:
+        end_idx = len(trading_days)
+
+    n_days = 30
+    start_idx = max(0, end_idx - n_days)
+    dates = trading_days[start_idx:end_idx]
+
+    # Weekly mode: use actual dates from weekly CSVs (holiday-shortened weeks
+    # may end on Thursday, not Friday)
+    if freq == "weekly":
+        all_weekly_dates = set()
+        for code in CACHE.get("all_weekly", {}):
+            wdf = CACHE["all_weekly"][code]
+            if wdf is not None and len(wdf) > 0:
+                for _, row in wdf.iterrows():
+                    d = row["date"]
+                    if hasattr(d, "strftime"): d = d.strftime("%Y-%m-%d")
+                    else: d = str(d)[:10]
+                    if start_idx <= 0 or d >= dates[0]:
+                        all_weekly_dates.add(d)
+        # Also check benchmark weekly CSVs
+        for bm_code in ("000300", "000016", "000905", "399006"):
+            bm_wpath = DATA_DIR / "quant" / f"{bm_code}_weekly.csv"
+            if bm_wpath.exists():
+                try:
+                    bm_wdf = pd.read_csv(bm_wpath, parse_dates=["date"])
+                    for _, row in bm_wdf.iterrows():
+                        d = row["date"]
+                        if hasattr(d, "strftime"): d = d.strftime("%Y-%m-%d")
+                        else: d = str(d)[:10]
+                        if start_idx <= 0 or d >= dates[0]:
+                            all_weekly_dates.add(d)
+                except Exception:
+                    pass
+        dates = sorted(all_weekly_dates)
+
+    date_set = set(dates)
+
+    cfg = CACHE.get("cfg", {})
+    ic = CACHE.get("intraday_cache", {})
+    ic_date = CACHE.get("intraday_date", "")
+    today_str = datetime.now().strftime("%Y-%m-%d")
+
+    etfs_out = []
+    cells = {}
+    summary = {"totalCells": 0, "csvCount": 0, "intradayCount": 0,
+               "missingCount": 0, "haltedCount": 0, "anomalyCount": 0}
+
+    # Helper: build cell data for one code
+    def _build_code_cells(code, is_qdii=False):
+        # ── Factor cache mode (f1/f3/f7) ──
+        if freq in ("f1", "f3", "f7"):
+            import pickle as _pickle
+            cache_dir = DATA_DIR / "quant" / ".factor_cache"
+            daily_df = CACHE["all_daily"].get(code)
+            if daily_df is None or not cache_dir.exists():
+                return {d: {"status": "missing", "value": None} for d in dates}
+            n_rows = len(daily_df)
+            cache_data = None
+            for cf in cache_dir.glob("fc_*.pickle"):
+                try:
+                    with open(cf, "rb") as fp:
+                        data = _pickle.load(fp)
+                    if "daily_dates" in data and len(data.get("daily_dates", [])) == n_rows:
+                        cache_data = data
+                        break
+                except Exception:
+                    pass
+            if cache_data is None:
+                return {d: {"status": "missing", "value": None} for d in dates}
+
+            # F1/F3/F7 all use daily_dates (F1 is computed per trading day)
+            src_dates = cache_data.get("daily_dates", [])
+            src_values = cache_data.get(freq, [])
+            if len(src_dates) != len(src_values):
+                return {d: {"status": "missing", "value": None} for d in dates}
+
+            # Build date→value map
+            val_map = {}
+            for i, dt in enumerate(src_dates):
+                ds = str(dt)[:10] if hasattr(dt, "strftime") else str(dt)[:10]
+                v = float(src_values[i]) if not (isinstance(src_values[i], float) and np.isnan(src_values[i])) else None
+                val_map[ds] = v
+
+            code_cells = {}
+            for d in dates:
+                if d in val_map and val_map[d] is not None:
+                    v = round(val_map[d], 4)
+                    code_cells[d] = {"status": "csv", "value": v, "close": v}
+                    summary["csvCount"] += 1
+                elif d in val_map:
+                    # Cache exists but value is NaN (insufficient history for this date)
+                    code_cells[d] = {"status": "nodata", "value": None}
+                else:
+                    code_cells[d] = {"status": "missing", "value": None}
+                    summary["missingCount"] += 1
+            return code_cells
+
+        # Select source DataFrame based on freq
+        if freq == "weekly":
+            src_df = CACHE["all_weekly"].get(code)
+            if src_df is None:
+                # Rebuild weekly from daily on demand (benchmarks)
+                daily_df = CACHE["all_daily"].get(code)
+                if daily_df is not None:
+                    from etf_report.core.quant_data_utils import rebuild_weekly_from_daily
+                    src_df = rebuild_weekly_from_daily(daily_df)
+                    if len(src_df) > 0:
+                        CACHE["all_weekly"][code] = src_df
+        else:
+            src_df = CACHE["all_daily"].get(code)
+
+        # Build date→value maps
+        csv_dates = set()
+        csv_values = {}  # field value per date
+        csv_close_for_anomaly = {}  # close for anomaly calc (always needed)
+        if src_df is not None:
+            for _, row in src_df.iterrows():
+                d = row["date"]
+                if hasattr(d, "strftime"):
+                    d = d.strftime("%Y-%m-%d")
+                else:
+                    d = str(d)[:10]
+                csv_dates.add(d)
+                # Value for the requested field
+                if field == "volume":
+                    csv_values[d] = float(row.get("volume", 0))
+                elif field == "amount":
+                    csv_values[d] = float(row.get("amount", 0))
+                else:  # close
+                    csv_values[d] = float(row["close"])
+                csv_close_for_anomaly[d] = float(row["close"])
+
+        # Anomaly detection on close (always, regardless of field)
+        anomaly_threshold = 0.20
+        anomalies = {}
+        csv_dates_sorted = sorted(csv_dates)
+        for i in range(1, len(csv_dates_sorted)):
+            d = csv_dates_sorted[i]
+            prev_d = csv_dates_sorted[i - 1]
+            if d not in date_set:
+                continue
+            prev_close = csv_close_for_anomaly.get(prev_d)
+            cur_close = csv_close_for_anomaly.get(d)
+            if prev_close and cur_close and prev_close > 0:
+                ret = (cur_close - prev_close) / prev_close
+                if abs(ret) > anomaly_threshold:
+                    pct = round(ret * 100, 1)
+                    anomalies[d] = {
+                        "anomaly": "surge" if ret > 0 else "plunge",
+                        "anomalyPct": pct,
+                        "anomalyLabel": f"{'涨' if ret>0 else '跌'}{abs(pct):.1f}%"
+                    }
+
+        code_cells = {}
+        for d in dates:
+            cell_data = {"status": "missing", "value": None}
+            if d in csv_dates:
+                val = round(csv_values.get(d, 0), 4)
+                cell_data = {"status": "csv", "value": val, "close": round(csv_close_for_anomaly.get(d, 0), 4)}
+                if d in anomalies:
+                    cell_data.update(anomalies[d])
+                    summary["anomalyCount"] += 1
+                summary["csvCount"] += 1
+            elif d == ic_date and code in ic and freq == "daily":
+                cached = ic[code]
+                if cached.get("halted"):
+                    cell_data = {"status": "halted", "value": None}
+                    summary["haltedCount"] += 1
+                else:
+                    t = cached.get("time", "")
+                    ival = float(cached.get(field, cached.get("close", 0)))
+                    cell_data = {"status": "intraday", "time": t,
+                                "value": round(ival, 4), "close": round(cached.get("close", 0), 4)}
+                    summary["intradayCount"] += 1
+            else:
+                summary["missingCount"] += 1
+            code_cells[d] = cell_data
+        return code_cells
+
+    # Parse optional code filter
+    code_set = set(codes_filter.split(",")) if codes_filter else None
+
+    # Universe ETFs
+    for entry in cfg.get("universe", []):
+        code = entry["code"]
+        if code_set and code not in code_set: continue
+        is_qdii = entry.get("qdii", False)
+        cells[code] = _build_code_cells(code, is_qdii)
+        etfs_out.append({
+            "code": code, "name": entry.get("name", code),
+            "sector": entry.get("sector", ""), "qdii": is_qdii,
+        })
+
+    # Benchmark indices (load daily CSV directly — no weekly files exist)
+    BENCHMARKS = [
+        ("000300", "沪深300", "基准"),
+        ("000016", "上证50", "基准"),
+        ("000905", "中证500", "基准"),
+        ("399006", "创业板指", "基准"),
+    ]
+    for bm_code, bm_name, bm_sector in BENCHMARKS:
+        if code_set and bm_code not in code_set: continue
+        # Always reload benchmarks from disk to avoid stale cache after refetch
+        bm_path = DATA_DIR / "quant" / f"{bm_code}_daily.csv"
+        if bm_path.exists():
+            try:
+                bm_df = pd.read_csv(bm_path, parse_dates=["date"])
+                if len(bm_df) > 0:
+                    CACHE["all_daily"][bm_code] = bm_df
+            except Exception:
+                pass
+        if bm_code in CACHE["all_daily"]:
+            cells[bm_code] = _build_code_cells(bm_code, is_qdii=False)
+            etfs_out.append({
+                "code": bm_code, "name": bm_name,
+                "sector": bm_sector, "qdii": False,
+            })
+
+    summary["totalCells"] = len(etfs_out) * len(dates)
+    return jsonify({"dates": dates, "etfs": etfs_out, "cells": cells, "summary": summary})
+
+
+@app.route("/api/data_delete", methods=["POST"])
+def api_data_delete():
+    """Delete CSV rows for given ETF x continuous-date-range operations."""
+    guard = _require_ready()
+    if guard:
+        return guard
+    body = request.get_json(silent=True) or {}
+    ops = body.get("operations", [])
+    if not ops:
+        return jsonify({"ok": False, "error": "empty operations"}), 400
+
+    today_str = datetime.now().strftime("%Y-%m-%d")
+    deleted_total = 0
+    errors = []
+
+    for op in ops:
+        code = op.get("code", "")
+        start = op.get("start", "")
+        end = op.get("end", "")
+        if not code or not start or not end:
+            errors.append(f"invalid op: {op}")
+            continue
+        if start > end:
+            errors.append(f"{code}: start > end ({start} > {end})")
+            continue
+
+        # Safety: don't delete today if intraday
+        if start <= today_str <= end and CACHE.get("intraday_cache"):
+            errors.append(f"{code}: refuses to delete today ({today_str}) while intraday cache active")
+            continue
+
+        csv_path = DATA_DIR / "quant" / f"{code}_daily.csv"
+        if not csv_path.exists():
+            continue
+
+        try:
+            df = pd.read_csv(csv_path, parse_dates=["date"])
+            before = len(df)
+            df = df[~df["date"].between(start, end)]
+            after = len(df)
+
+            # Safety: keep at least 80 rows
+            if after < 80:
+                errors.append(f"{code}: would leave only {after} rows (<80 minimum), skipped")
+                continue
+
+            deleted = before - after
+            if deleted > 0:
+                df.to_csv(csv_path, index=False)
+                # Rebuild weekly
+                daily_df, _ = load_etf_data(code)
+                if daily_df is not None:
+                    weekly_df = rebuild_weekly_from_daily(daily_df)
+                    weekly_path = DATA_DIR / "quant" / f"{code}_weekly.csv"
+                    weekly_df.to_csv(weekly_path, index=False)
+                deleted_total += deleted
+        except Exception as e:
+            errors.append(f"{code}: {e}")
+
+    # Reload affected data
+    cfg = CACHE.get("cfg", {})
+    _reload_csv_to_cache(cfg)
+    # Invalidate heatmap cache
+    if "heatmap" in CACHE:
+        del CACHE["heatmap"]
+
+    return jsonify({"ok": len(errors) == 0, "deleted": deleted_total, "errors": errors})
+
+
+@app.route("/api/data_refetch", methods=["POST"])
+def api_data_refetch():
+    """Re-fetch ETF data for given continuous date ranges."""
+    guard = _require_ready()
+    if guard:
+        return guard
+    body = request.get_json(silent=True) or {}
+    ops = body.get("operations", [])
+    freq = body.get("freq", "daily")
+    if not ops:
+        return jsonify({"ok": False, "error": "empty operations"}), 400
+
+    from quant_data_fetcher import update_single
+    cfg = CACHE.get("cfg", {})
+
+    # Determine market phase
+    today_str = datetime.now().strftime("%Y-%m-%d")
+    now = datetime.now()
+    is_trading = is_trading_day(now)
+    is_intraday = is_trading and not _is_post_market()
+    # During intraday, never write today's data to CSV — cap to yesterday
+    yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d") if is_intraday else today_str
+
+    # Check if any operation covers today (for intraday Sina fetch)
+    codes_for_today = set()
+    for op in ops:
+        start = op.get("start", ""); end = op.get("end", "")
+        if start <= today_str <= end:
+            codes_for_today.add(op.get("code", ""))
+
+    # Intraday: use shared path with refresh_data
+    if codes_for_today and is_intraday:
+        _populate_intraday_cache(cfg, now, today_str, now.strftime("%H:%M"), list(codes_for_today))
+
+    results = {}
+    for op in ops:
+        code = op.get("code", "")
+        start = op.get("start", "")
+        end = op.get("end", "")
+        if not code or not start or not end:
+            continue
+        # Cap end to yesterday if intraday
+        effective_end = min(end, yesterday) if end > yesterday else end
+        if effective_end < start:
+            continue
+
+        etf_entry = next((e for e in cfg.get("universe", []) if e["code"] == code), None)
+        if not etf_entry:
+            BM_NAMES = {"000300": "沪深300", "000016": "上证50", "000905": "中证500", "399006": "创业板指"}
+            if code in BM_NAMES:
+                etf_entry = {"code": code, "name": BM_NAMES[code],
+                            "market": "sh" if code.startswith("000") else "sz"}
+            else:
+                continue
+
+        try:
+            if freq == "weekly":
+                # 周线模式: 从日线重建周线，不拉取
+                daily_df = CACHE["all_daily"].get(code)
+                if daily_df is None:
+                    daily_df, _ = load_etf_data(code)
+                if daily_df is not None and len(daily_df) > 0:
+                    from etf_report.core.quant_data_utils import rebuild_weekly_from_daily
+                    weekly_df = rebuild_weekly_from_daily(daily_df)
+                    weekly_path = DATA_DIR / "quant" / f"{code}_weekly.csv"
+                    weekly_df.to_csv(weekly_path, index=False)
+                    CACHE["all_weekly"][code] = weekly_df
+                    results[code] = {"rows": len(weekly_df), "mode": "weekly_rebuild"}
+                else:
+                    results[code] = {"error": "no daily data to rebuild from"}
+            else:
+                # 日线模式: 覆盖式更新 — delete range from CSV, then re-fetch
+                csv_path = DATA_DIR / "quant" / f"{code}_daily.csv"
+                if csv_path.exists():
+                    df = pd.read_csv(csv_path, parse_dates=["date"])
+                    before = len(df)
+                    df = df[~df["date"].between(start, effective_end)]
+                    after = len(df)
+                    if after >= 80:  # safety
+                        df.to_csv(csv_path, index=False)
+                rows, _, mode = update_single(etf_entry, full=False, end_date=effective_end)
+                results[code] = {"rows": rows, "mode": mode}
+        except Exception as e:
+            results[code] = {"error": str(e)}
+
+    # Reload all (including benchmarks loaded on-demand by data_matrix)
+    _reload_csv_to_cache(cfg)
+    if "heatmap" in CACHE:
+        del CACHE["heatmap"]
+
+    return jsonify({"ok": True, "results": results})
+
+
+@app.route("/api/data_fill_gaps", methods=["POST"])
+def api_data_fill_gaps():
+    """Detect and fill missing trading-day data for given ETFs in a date range."""
+    guard = _require_ready()
+    if guard:
+        return guard
+    body = request.get_json(silent=True) or {}
+    codes = body.get("codes") or []
+    start = body.get("start", "")
+    end = body.get("end", "")
+    freq = body.get("freq", "daily")
+
+    if not start or not end:
+        return jsonify({"ok": False, "error": "start/end required"}), 400
+
+    cfg = CACHE.get("cfg", {})
+    all_etfs = list(cfg.get("universe", []))
+
+    # Add benchmark indices to target list
+    BM_ENTRIES = [
+        {"code": "000300", "name": "沪深300", "market": "sh"},
+        {"code": "000016", "name": "上证50", "market": "sh"},
+        {"code": "000905", "name": "中证500", "market": "sh"},
+        {"code": "399006", "name": "创业板指", "market": "sz"},
+    ]
+    all_etfs.extend(BM_ENTRIES)
+
+    # Filter to requested codes (or all)
+    target_etfs = [e for e in all_etfs if not codes or e["code"] in codes]
+
+    # Cap end for intraday
+    today_str = datetime.now().strftime("%Y-%m-%d")
+    now = datetime.now()
+    is_trading = is_trading_day(now)
+    is_intraday = is_trading and not _is_post_market()
+    yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d") if is_intraday else today_str
+    effective_end = end if end <= yesterday else yesterday
+    if start <= today_str <= end and is_intraday:
+        codes = [etf["code"] for etf in target_etfs]
+        _populate_intraday_cache(cfg, now, today_str, now.strftime("%H:%M"), codes)
+
+    # Determine expected dates for gap detection
+    cal = load_trading_calendar()
+    if freq == "weekly":
+        # Expected Friday dates in range
+        expected_dates = [d for d in cal if start <= d <= effective_end
+                         and datetime.strptime(d, "%Y-%m-%d").isoweekday() == 5]
+    else:
+        expected_dates = [d for d in cal if start <= d <= effective_end]
+
+    from quant_data_fetcher import update_single
+    from etf_report.core.quant_data_utils import rebuild_weekly_from_daily
+    filled = {}
+    total_filled = 0
+
+    for etf in target_etfs:
+        code = etf["code"]
+
+        if freq == "weekly":
+            # Check weekly CSV for gaps, rebuild from daily
+            weekly_df = CACHE["all_weekly"].get(code)
+            csv_dates = set()
+            if weekly_df is not None:
+                for _, row in weekly_df.iterrows():
+                    d = row["date"]
+                    if hasattr(d, "strftime"): d = d.strftime("%Y-%m-%d")
+                    else: d = str(d)[:10]
+                    csv_dates.add(d)
+
+            missing = [d for d in expected_dates if d not in csv_dates]
+            if not missing:
+                continue
+
+            # Rebuild weekly from daily (fills all gaps at once)
+            daily_df = CACHE["all_daily"].get(code)
+            if daily_df is None:
+                daily_df, _ = load_etf_data(code)
+            if daily_df is not None and len(daily_df) > 0:
+                new_weekly = rebuild_weekly_from_daily(daily_df)
+                wpath = DATA_DIR / "quant" / f"{code}_weekly.csv"
+                new_weekly.to_csv(wpath, index=False)
+                CACHE["all_weekly"][code] = new_weekly
+                filled[code] = {"gaps": len(missing), "rows_added": len(new_weekly), "mode": "weekly_rebuild"}
+                total_filled += len(missing)
+            else:
+                filled[code] = {"gaps": len(missing), "error": "no daily data"}
+        else:
+            # Daily mode: detect gaps, fetch incrementally
+            daily_df = CACHE["all_daily"].get(code)
+            csv_dates = set()
+            if daily_df is not None:
+                for _, row in daily_df.iterrows():
+                    d = row["date"]
+                    if hasattr(d, "strftime"): d = d.strftime("%Y-%m-%d")
+                    else: d = str(d)[:10]
+                    csv_dates.add(d)
+
+            missing = [d for d in expected_dates if d not in csv_dates]
+            if not missing:
+                continue
+
+            gap_end = missing[-1]
+            try:
+                rows, _, mode = update_single(etf, full=False, end_date=gap_end)
+                filled[code] = {"gaps": len(missing), "rows_added": rows, "mode": mode}
+                total_filled += len(missing)
+            except Exception as e:
+                filled[code] = {"gaps": len(missing), "error": str(e)}
+
+    _reload_csv_to_cache(cfg)
+    if "heatmap" in CACHE:
+        del CACHE["heatmap"]
+
+    return jsonify({"ok": True, "filled": total_filled, "perEtf": filled})
+
+
+# ── Factor Cache Management APIs ──
+
+@app.route("/api/factor_cache_status")
+def api_factor_cache_status():
+    """Return per-ETF factor cache status (fresh/stale/missing)."""
+    guard = _require_ready()
+    if guard: return guard
+
+    cfg = CACHE.get("cfg", {})
+    cache_dir = DATA_DIR / "quant" / ".factor_cache"
+    etfs_out = []
+    caches = {}
+
+    for entry in cfg.get("universe", []):
+        code = entry["code"]
+        daily_df = CACHE["all_daily"].get(code)
+        if daily_df is None: continue
+
+        # Check cache files for this ETF (match by row count = simple and effective)
+        cache_files = []
+        n_rows = len(daily_df)
+        if cache_dir.exists():
+            for f in cache_dir.glob("fc_*.pickle"):
+                try:
+                    import pickle
+                    with open(f, "rb") as fp:
+                        data = pickle.load(fp)
+                    if "daily_dates" in data and len(data.get("daily_dates", [])) == n_rows:
+                        cache_files.append({
+                            "name": f.name,
+                            "size_kb": round(f.stat().st_size / 1024, 1),
+                            "mtime": datetime.fromtimestamp(f.stat().st_mtime).strftime("%Y-%m-%d %H:%M"),
+                        })
+                except Exception:
+                    pass
+
+        file_count = len(cache_files)
+        status = "fresh" if file_count > 0 else "missing"
+
+        caches[code] = {
+            "status": status,
+            "file_count": file_count,
+            "files": cache_files,
+        }
+        etfs_out.append({
+            "code": code,
+            "name": entry.get("name", code),
+            "sector": entry.get("sector", ""),
+        })
+
+    return jsonify({"etfs": etfs_out, "caches": caches})
+
+
+@app.route("/api/factor_cache_delete", methods=["POST"])
+def api_factor_cache_delete():
+    """Delete factor cache files for given ETF codes."""
+    guard = _require_ready()
+    if guard: return guard
+
+    body = request.get_json(silent=True) or {}
+    codes = body.get("codes") or []
+    cache_dir = DATA_DIR / "quant" / ".factor_cache"
+    if not cache_dir.exists():
+        return jsonify({"ok": True, "deleted": 0})
+
+    deleted = 0
+    for code in codes:
+        daily_df = CACHE["all_daily"].get(code)
+        if daily_df is None: continue
+        n_rows = len(daily_df)
+        for f in cache_dir.glob("fc_*.pickle"):
+            try:
+                import pickle
+                with open(f, "rb") as fp:
+                    data = pickle.load(fp)
+                if "daily_dates" in data and len(data.get("daily_dates", [])) == n_rows:
+                    f.unlink()
+                    deleted += 1
+            except Exception:
+                pass
+
+    return jsonify({"ok": True, "deleted": deleted})
+
+
+@app.route("/api/factor_cache_rebuild", methods=["POST"])
+def api_factor_cache_rebuild():
+    """Delete factor cache for given ETFs; backtest will recreate on next run."""
+    guard = _require_ready()
+    if guard: return guard
+
+    body = request.get_json(silent=True) or {}
+    codes = body.get("codes") or []
+    cache_dir = DATA_DIR / "quant" / ".factor_cache"
+    if not cache_dir.exists():
+        return jsonify({"ok": True, "rebuilt": 0})
+
+    deleted = 0
+    for code in codes:
+        daily_df = CACHE["all_daily"].get(code)
+        if daily_df is None: continue
+        n_rows = len(daily_df)
+        for f in cache_dir.glob("fc_*.pickle"):
+            try:
+                import pickle
+                with open(f, "rb") as fp:
+                    data = pickle.load(fp)
+                if "daily_dates" in data and len(data.get("daily_dates", [])) == n_rows:
+                    f.unlink()
+                    deleted += 1
+            except Exception:
+                pass
+
+    # Trigger recompute via backtest
+    if codes:
+        try:
+            from quant_backtest import run_backtest
+            nav, _, _ = run_backtest(
+                start_date="2026-06-01", end_date="2026-06-30",
+                preset="gam-0", return_details=False
+            )
+        except Exception:
+            pass  # backtest will populate caches for the codes it processes
+
+    return jsonify({"ok": True, "rebuilt": len(codes), "caches_deleted": deleted})
 
 
 TUNER_PORT = 5179

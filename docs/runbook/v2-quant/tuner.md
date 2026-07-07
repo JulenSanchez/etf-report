@@ -25,8 +25,24 @@ python scripts/quant_tuner.py --readonly
 | `GET /api/presets` | 返回 YAML preset 经 `quant_contract.py` 转换后的 Tuner 参数 |
 | `POST /api/run` | 按参数运行回测 |
 | `POST /api/save` | 将当前参数保存回 `config/quant_universe.yaml` |
-| `POST /api/refresh_data` | 刷新数据：盘中只更新 intraday cache，盘后写 CSV |
+| `POST /api/refresh_data` | 刷新数据：盘中更新 intraday cache，盘后写 CSV。自动检测拆股并补偿 |
 | `GET /api/data_status` | 查看 CSV / intraday cache 状态 |
+
+### refresh_data 流程（v3.11.0+）
+
+```
+refresh_data()
+  → 拉取数据（增量 / Sina fast path）
+  → _reload_csv_to_cache
+  → _ensure_splits_detected()    ← AKShare 检测今日拆股（首次调用，后续缓存）
+  → _apply_split_memory_bridge() ← 内存清洗（自愈：已调整则跳过）
+  → if post_market:
+       _full_refetch_split_etfs() ← 全量重拉拆股 ETF（qfq 调整后永久修 CSV）
+       _reload_csv_to_cache
+  → precompute → 回测消费
+```
+
+**拆股自愈原理**：比较 CSV 末笔收盘价与盘中实时价，若比值接近拆分比例 → 内存清洗历史价格；若比值 ≈1.0 → 数据已调整，跳过。盘后全量重拉待 qfq 生效后永久修复 CSV。
 
 ## 参数契约
 

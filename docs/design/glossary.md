@@ -24,6 +24,11 @@
 | 种子 | pool 中来自 YAML preset 或外部注入的 trial，不经过优化 |
 | 流派 | gambler / zen / actuary，三派共享参数空间，区别仅在优化目标和风险轴 |
 | MDD 槽位 | 按 MDD 百分比分栏（如每 1% 或每 5%），pool 减负、槽位展示、分栏取样都用到 |
+| 拆股 | ETF 份额拆分（如 1:2、1:3）。AKShare `fund_cf_em` 自动检测，代码中称 share_split |
+| 前复权（qfq） | 腾讯 `fqkline` API 参数，自动将历史价格按最新拆股比例调整。拆股当天有延迟 |
+| 内存清洗（bridge） | `refresh_data` 盘中路径的拆股临时补偿：检测到拆股后，在内存中将历史价格 ÷ratio |
+| 全量重拉 | `--full` 参数重新拉取 ETF 全部历史 K 线，用于拆股后永久修复 CSV |
+| corporate_action_events | AKShare 检测到的拆股事件注册表，Tuner 启动时自动更新 |
 | pool | `research/params/{school}/pool.json`，宽松种子库，TPE 读写 |
 | fill-slots | 自动补密度模式——分批跑优化直到前沿非支配点覆盖 MDD [-40,-20] 每个 1% 槽位，满 21 个或连续 2 批无进展自动停 |
 | defaults.yaml | `config/defaults.yaml`，非搜索参数的唯一默认值来源 |
