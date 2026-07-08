@@ -70,7 +70,7 @@ d in csv_dates?
 
 ### 因子模式
 
-- 数据源：`data/quant/.factor_cache/fc_{sha256}.pickle`
+- 数据源：`data/quant/.factor_cache/fc_{sha256}.pickle`（缓存 key 设计见 `backtest-engine.md` §12）
 - 每个 pickle 含 `daily_dates` + `f1`/`f3`/`f7` 数组（逐日粒度）
 - 无缓存时显示 missing，可通过"强制更新"（删缓存+回测重算）或"补全空缺"（只补缺失）重建
 - 后端 API：`/api/data_matrix?freq=f1|f3|f7` 从 pickle 读取因子值返回矩阵
@@ -97,6 +97,41 @@ GET ?param={code},{period},,{end_date},{count},qfq
 - ❌ **不支持多 ETF 批量**：一次请求一个 code
 - ❌ **不支持日期区间**：只接受 count（返回最近 N 行），start/end 由客户端过滤
 - ✅ 盘后 Sina 快径支持单日批量追加（~2s 全 ETF）
+
+## 拆股检测与修复（调用链路）
+
+### 数据源
+
+`_SPLIT_EVENTS` — 模块级 dict，code → [{action, ex_date, ratio}]
+
+填充路径：
+1. `_load_corporate_action_events()` — 读 `data/corporate_action_events.json`（已注册事件）
+2. `detect_corporate_action_events()` — 调 AKShare `fund_cf_em` API（实时检测）
+3. 合并去重，`_SPLIT_CHECKED` 标记保证只会调一次
+
+### 比率来源
+
+`ratio` 来自 AKShare API 返回的拆分比例，**不是从价格算出来的**。价格只用于判断"数据是否已修复"。
+
+### 状态判定
+
+`GET /api/split_status` 被调用时：
+1. 调 `_ensure_splits_detected(cfg)` 保障事件已加载
+2. 遍历 `_SPLIT_EVENTS`，查每支 ETF 最近一次拆股
+3. 扫描 CSV（CACHE）最近 10 行 close → 有 >30% 跳变 → `pending_repair`；无 → `repaired`
+
+### 触发时机
+
+| 触发点 | 何时 | 作用 |
+|--------|------|------|
+| `preload()` 启动 | Tuner 启动时 | 调 `_load_corporate_action_events()` 加载已注册事件 |
+| `refresh_data()` | 每次全量刷新 | 调 `_ensure_splits_detected()`（首次）+ `_apply_split_memory_bridge()`（内存清洗）|
+| `dmLoadSplitStatus()` | DM 面板打开 | `GET /api/split_status` → 显示 ⚠ 标记 |
+| `dmLoadMatrix()` 成功回调 | 数据加载完成 | 再次调 `dmLoadSplitStatus()` 确保 ⚠ 渲染 |
+
+### 修复链路
+
+⚠ 点击 → `dmShowSplitActions` → 弹窗 → 点击"修复拆股数据(1:N)" → `dmFullRefetchCode` → `POST /api/data_full_refetch(verify_split=true)` → `_SPLIT_EVENTS` 查比例 → `df.loc / ratio` 写入 CSV → 重建周线 → 重建因子缓存 → 验证连续性 → 清除标记
 
 **强制更新的实际流程**：
 1. 从 CSV 删除 `[start, end]` 区间

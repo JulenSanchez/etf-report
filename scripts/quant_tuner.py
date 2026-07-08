@@ -212,6 +212,20 @@ def preload():
     # Load ETF metadata (AUM + top10 holdings)
     _load_etf_metadata()
 
+    # Precompute factor caches for production preset (gam-0)
+    print("  Precomputing factor caches (gam-0)...")
+    try:
+        from quant_backtest import _precompute_factors
+        _precompute_factors(
+            dict(CACHE["all_daily"]), dict(CACHE["all_weekly"]),
+            ema_period=20, vol_window=20,
+            f7_window=20, f7_lookback=250, f7_min_days=60, f7_sigma_floor=0.01,
+            f1_daily_ema=False, f1_daily_ma=False, f1_active_days=127,
+        )
+        print("  Factor caches ready.")
+    except Exception as e:
+        print(f"  Factor cache precompute skipped: {e}")
+
     CACHE["ready"] = True
     print("Preload complete.\n")
 
@@ -586,6 +600,8 @@ def _full_refetch_split_etfs(cfg):
         if not splits:
             continue
         split_date = splits[0]["ex_date"]
+        from quant_data_fetcher import get_last_date, DATA_DIR as QDATA_DIR
+        last = get_last_date(QDATA_DIR / f"{code}_daily.csv")
         if last and last >= split_date:
             continue  # already have data on/after split date
         print(f"  [Split] full refetch {code} (ex={split_date} ratio={splits[0]['ratio']})...")
@@ -1274,8 +1290,9 @@ def run_tuner_backtest(params, progress_callback=None):
     all_daily = dict(CACHE["all_daily"])
     all_weekly = dict(CACHE["all_weekly"])
     all_daily_exec = None
-    if CACHE.get("intraday_cache"):
+    if CACHE.get("intraday_cache") and not _is_post_market():
         # Merge intraday bars into daily data for both factor computation and execution
+        # (only during actual intraday hours; stale cache after close is invalid)
         all_daily_exec = {}
         for code in CACHE["all_daily"]:
             merged = _get_daily_with_cache(code)
@@ -3025,6 +3042,161 @@ def api_factor_cache_rebuild():
             pass  # backtest will populate caches for the codes it processes
 
     return jsonify({"ok": True, "rebuilt": len(codes), "caches_deleted": deleted})
+
+
+# ── Split / Corporate Action APIs ──
+
+@app.route("/api/split_status")
+def api_split_status():
+    """Return split/corporate action status for all ETFs."""
+    guard = _require_ready()
+    if guard: return guard
+
+    cfg = CACHE.get("cfg", {})
+    _ensure_splits_detected(cfg)
+
+    result = {}
+    for entry in cfg.get("universe", []):
+        code = entry["code"]
+        splits = sorted(
+            [e for e in _SPLIT_EVENTS.get(code, [])
+             if e.get("action") == "share_split"],
+            key=lambda e: e.get("ex_date", ""), reverse=True
+        )
+        if not splits:
+            result[code] = {"has_split": False, "status": "none"}
+            continue
+
+        latest = max(splits, key=lambda e: e.get("ex_date", ""))
+        # Check if the split data has been repaired (no close jump in CSV)
+        daily = CACHE["all_daily"].get(code)
+        status = "repaired"
+        symptom = ""
+        if daily is not None and len(daily) >= 2:
+            close = daily["close"].astype(float).values
+            # Scan last 10 rows for any close jump >30% (split symptom)
+            for i in range(len(close)-1, max(len(close)-10, 1), -1):
+                prev = close[i-1]; cur = close[i]
+                if prev > 0 and abs(cur - prev) / prev > 0.30:
+                    status = "pending_repair"
+                    symptom = f"close jump {((cur-prev)/prev*100):+.0f}%: {prev:.3f}→{cur:.3f}"
+                    break
+
+        result[code] = {
+            "has_split": True,
+            "ex_date": latest.get("ex_date", ""),
+            "ratio": latest.get("ratio", 1.0),
+            "status": status,
+            "symptom": symptom,
+        }
+
+    return jsonify(result)
+
+
+@app.route("/api/data_full_refetch", methods=["POST"])
+def api_data_full_refetch():
+    """Full refetch for given ETFs (deletes CSV → Tencent full=True → rebuild weekly + cache)."""
+    guard = _require_ready()
+    if guard: return guard
+
+    body = request.get_json(silent=True) or {}
+    codes = body.get("codes") or []
+    verify_split = body.get("verify_split", False)
+
+    from quant_data_fetcher import update_single
+    cfg = CACHE.get("cfg", {})
+    _ensure_splits_detected(cfg)  # ensure _SPLIT_EVENTS is loaded
+
+    results = {}
+    for code in codes:
+        etf_entry = next((e for e in cfg.get("universe", []) if e["code"] == code), None)
+        if not etf_entry:
+            BM_NAMES = {"000300": "沪深300", "000016": "上证50", "000905": "中证500", "399006": "创业板指"}
+            if code in BM_NAMES:
+                etf_entry = {"code": code, "name": BM_NAMES[code],
+                            "market": "sh" if code.startswith("000") else "sz"}
+            else:
+                results[code] = {"error": "unknown code"}
+                continue
+
+        try:
+            # Split repair: apply ratio to CSV (API may not have updated qfq yet)
+            if verify_split:
+                splits = sorted(
+                    [e for e in _SPLIT_EVENTS.get(code, [])
+                     if e.get("action") == "share_split"],
+                    key=lambda e: e.get("ex_date", ""), reverse=True
+                )
+                if splits:
+                    ratio = splits[0]["ratio"]  # most recent split
+                    ex_date = splits[0]["ex_date"]
+                    csv_path = DATA_DIR / "quant" / f"{code}_daily.csv"
+                    if csv_path.exists():
+                        df = pd.read_csv(csv_path, parse_dates=["date"])
+                        mask = df["date"] <= ex_date
+                        before_close = float(df.loc[df["date"] == "2026-06-30", "close"].iloc[0]) if "2026-06-30" in df["date"].values else 0
+                        for col in ["open", "close", "high", "low"]:
+                            df.loc[mask, col] = df.loc[mask, col] / ratio
+                        after_close = float(df.loc[df["date"] == "2026-06-30", "close"].iloc[0]) if "2026-06-30" in df["date"].values else 0
+                        with open(DATA_DIR / "quant" / ".split_debug.log", "a") as _dbg:
+                            _dbg.write(f"{code}: ratio={ratio} type={type(ratio).__name__} ex={ex_date} mask={mask.sum()} before={before_close:.4f} after={after_close:.4f}\n")
+                        df.to_csv(csv_path, index=False)
+                        # Rebuild weekly
+                        from etf_report.core.quant_data_utils import rebuild_weekly_from_daily
+                        wdf = rebuild_weekly_from_daily(df)
+                        wpath = DATA_DIR / "quant" / f"{code}_weekly.csv"
+                        wdf.to_csv(wpath, index=False)
+                        rows = int(mask.sum())
+                        mode = "split_adjust"
+                        # Verify
+                        c = df["close"].astype(float).values
+                        verified = True
+                        for i in range(max(0, len(c)-10), len(c)-1):
+                            if c[i] > 0 and abs(c[i+1]-c[i])/c[i] > 0.30:
+                                verified = False; break
+                    else:
+                        rows, mode, verified = 0, "no_csv", False
+                else:
+                    rows, _, mode = update_single(etf_entry, full=True)
+                    verified = True
+            else:
+                rows, _, mode = update_single(etf_entry, full=True)
+                verified = True
+            results[code] = {"rows": rows, "mode": mode, "verified": bool(verified)}
+        except Exception as e:
+            results[code] = {"error": str(e)}
+
+    # Reload + rebuild factor caches
+    _reload_csv_to_cache(cfg)
+    # Clear factor caches for refetched codes
+    cache_dir = DATA_DIR / "quant" / ".factor_cache"
+    if cache_dir.exists():
+        for code in codes:
+            n_rows = len(CACHE["all_daily"].get(code, pd.DataFrame()))
+            if n_rows == 0: continue
+            for f in cache_dir.glob("fc_*.pickle"):
+                try:
+                    import pickle
+                    with open(f, "rb") as fp:
+                        data = pickle.load(fp)
+                    if "daily_dates" in data and len(data.get("daily_dates", [])) == n_rows:
+                        f.unlink()
+                except Exception:
+                    pass
+    # Rebuild factor caches
+    try:
+        from quant_backtest import _precompute_factors
+        target_daily = {c: CACHE["all_daily"][c] for c in codes if c in CACHE["all_daily"]}
+        target_weekly = {c: CACHE["all_weekly"].get(c) for c in codes}
+        if target_daily:
+            _precompute_factors(target_daily, target_weekly,
+                ema_period=20, vol_window=20,
+                f7_window=20, f7_lookback=250, f7_min_days=60, f7_sigma_floor=0.01,
+                f1_daily_ema=False, f1_daily_ma=False, f1_active_days=127)
+    except Exception:
+        pass
+
+    return jsonify({"ok": True, "results": results})
 
 
 TUNER_PORT = 5179

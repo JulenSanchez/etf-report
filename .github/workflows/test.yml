@@ -1,7 +1,23 @@
 name: test
 
-# Manual only. Do not run on push/pull_request; this prevents noisy failure emails.
+# Auto-run on push to main for code/test/config changes.
+# Also available for manual trigger.
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/**'
+      - 'src/**'
+      - 'tests/**'
+      - 'config/**'
+      - '.github/workflows/test.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'scripts/**'
+      - 'src/**'
+      - 'tests/**'
+      - 'config/**'
   workflow_dispatch:
 
 permissions:
@@ -24,6 +40,12 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          pip install pytest-cov
 
-      - name: Run tests
-        run: python -m pytest tests -v --cov=scripts --cov-report=term-missing
+      - name: Run tests with coverage
+        run: |
+          python -m pytest tests -v --tb=short \
+            --cov=scripts --cov=src \
+            --cov-report=term-missing \
+            --cov-report=html \
+            --timeout=120

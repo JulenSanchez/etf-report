@@ -355,10 +355,10 @@ th[data-sort]:hover { color: var(--text-body); }
 .dm-cell.stale { background: #3d2e0a; color: var(--highlight); }
 .dm-cell.unknown { background: #0f1419; color: var(--text-dim); }
 /* Anomaly cells */
-.dm-cell.anomaly-surge { background: #3d0000 !important; border: 1px solid #ef4444;
+.dm-cell.anomaly-surge { background: #2d1a00 !important; border: 1px solid var(--warning);
+  animation: dm-anomaly-pulse 1.5s infinite; color: var(--highlight) !important; font-weight: 700; }
+.dm-cell.anomaly-plunge { background: #3d0000 !important; border: 1px solid var(--negative);
   animation: dm-anomaly-pulse 1.5s infinite; color: #fca5a5 !important; font-weight: 700; }
-.dm-cell.anomaly-plunge { background: #003d00 !important; border: 1px solid #10b981;
-  animation: dm-anomaly-pulse 1.5s infinite; color: #6ee7b7 !important; font-weight: 700; }
 @keyframes dm-anomaly-pulse {
   0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.4); }
   50% { box-shadow: 0 0 6px 2px rgba(239,68,68,0.3); }
@@ -376,6 +376,12 @@ th[data-sort]:hover { color: var(--text-body); }
 .dm-etf-label.row-selected { background: var(--accent-bg); }
 .dm-etf-name { font-size: 12px; color: #c0c0c0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex:1; }
 .dm-etf-code { font-size: 10px; color: var(--accent-light); font-weight: 600; font-family: monospace; flex-shrink: 0; }
+.dm-split-warn { color: var(--negative); font-size: 14px; flex-shrink: 0; cursor: pointer; }
+.dm-split-btn { padding: 6px 14px; cursor: pointer; color: #fff; font-size: 12px;
+  white-space: nowrap; background: var(--blue-dark); border: 1px solid var(--accent);
+  border-radius: 5px; text-align: center; font-weight: 600; width: fit-content; }
+.dm-split-btn:hover { background: var(--blue-darker); }
+.dm-split-btn:hover { background: var(--blue-dark); color: #fff; }
 .dm-sec-dot { width: 10px; height: 10px; border-radius: 2px; display: inline-block; flex-shrink: 0; }
 .dm-sector-header { height: 24px; line-height: 24px; padding-left: 8px;
   font-size: 11px; font-weight: 600; color: var(--accent-light); background: var(--bg-hover);
@@ -604,7 +610,7 @@ th[data-sort]:hover { color: var(--text-body); }
     </div>
     <div class="slider-group" id="param-disc-step" aria-label="离散化步长">
       <div class="slider-label"><span class="name">离散化步长</span><span class="val" id="v-step">5%</span></div>
-      <input type="range" id="disc_step" min="1" max="20" step="1" value="5" oninput="$id('v-step').textContent=this.value+'%'" aria-label="离散化步长">
+      <input type="range" id="disc_step" min="1" max="20" step="0.1" value="5" oninput="$id('v-step').textContent=parseFloat(this.value).toFixed(1)+'%'" aria-label="离散化步长">
     </div>
     <div class="slider-group" id="param-concentration" aria-label="仓位集中度">
       <div class="slider-label"><span class="name">仓位集中度 C</span><span class="val" id="v-conc">2.0</span></div>
@@ -1231,13 +1237,17 @@ th[data-sort]:hover { color: var(--text-body); }
         <span><span class="dm-leg-swatch" style="background:#3d2e0a;"></span>盘中实时</span>
         <span><span class="dm-leg-swatch" style="background:#0f1419;"></span>缺失</span>
         <span><span class="dm-leg-swatch" style="background:#111a22;"></span>数据不足</span>
-        <span><span class="dm-leg-swatch" style="background:#3d0000;"></span>异常(涨跌&gt;20%)</span>
+        <span><span class="dm-leg-swatch" style="background:#3d0000;"></span>异常(暴跌&gt;20%)</span>
+        <span><span class="dm-leg-swatch" style="background:#2d1a00;"></span>异常(暴涨&gt;20%)</span>
       </span>
     </div>
 
   </div>
   <!-- Toast -->
   <div id="dm-toast"></div>
+
+  <!-- Split action popup -->
+  <div id="dm-split-popup" style="display:none;position:fixed;z-index:9998;box-shadow:0 4px 16px rgba(0,0,0,0.5);border-radius:5px;overflow:hidden;"></div>
 
   <!-- Confirm dialog -->
   <div id="dm-confirm-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:10000;align-items:center;justify-content:center;">
@@ -2041,7 +2051,7 @@ function getParams() {
     ma_direction_confirm: maDirConfirm,
     benchmarks: selectedBenchmarks,
     max_holdings: parseInt($id('max_holdings').value),
-    disc_step: parseInt($id('disc_step').value) / 100.0,
+    disc_step: parseFloat($id('disc_step').value) / 100.0,
     concentration: parseFloat($id('concentration').value),
     c_sensitivity: parseFloat($id('c_sensitivity').value),
     f1_ema_period: parseInt($id('f1_ema_period').value),
@@ -2115,7 +2125,7 @@ function setParams(p) {
   if (p.f7_k != null) { setSlider('f7_k', p.f7_k); $id('v-f7-k').textContent = parseFloat(p.f7_k).toFixed(2); }
   if (p.f7_window != null) { setSlider('f7_window', p.f7_window); $id('v-f7-window').textContent = p.f7_window + ' 日'; }
   if (p.rebalance_freq) setFreq(p.rebalance_freq);
-  if (p.disc_step != null) { setSlider('disc_step', Math.round(p.disc_step * 100)); $id('v-step').textContent = Math.round(p.disc_step * 1000) / 10 + '%'; }
+  if (p.disc_step != null) { var ds = p.disc_step * 100; setSlider('disc_step', ds); $id('v-step').textContent = ds.toFixed(1) + '%'; }
   if (p.concentration != null) { setSlider('concentration', p.concentration); $id('v-conc').textContent = (p.concentration / 10).toFixed(2); }
   if (p.c_sensitivity != null) { setSlider('c_sensitivity', p.c_sensitivity); $id('v-csens').textContent = (p.c_sensitivity / 10).toFixed(1); }
   if (p.max_holdings != null) { setSlider('max_holdings', p.max_holdings); $id('v-maxh').textContent = p.max_holdings + ' 支'; }
@@ -3634,7 +3644,7 @@ function renderTunerSnapshot(idx) {
       '<td style="padding:9px 6px;text-align:center;font-size:12px;color:' + (d.z > 1.5 ? TC.positive : d.z > 0 ? TC.textSecondary : TC.negative) + ';font-weight:600;">' + (d.z != null ? (d.z > 0 ? '+' : '') + d.z.toFixed(2) : '-') + '</td>' +
       '<td style="padding:9px 6px;text-align:center;font-size:12px;' +
   (pos >= 30 ? 'color:var(--highlight);font-weight:700;' : pos >= 20 ? 'color:var(--warning);font-weight:700;' : pos >= 10 ? 'color:#d97706;font-weight:600;' : pos > 0 ? 'color:#b45309;font-weight:400;' : '') +
-  '">' + (pos > 0 ? pos.toFixed(1) + '%' : '-') + '</td>' +
+  '">' + (pos > 0 ? Math.round(pos) + '%' : '-') + '</td>' +
       '<td style="padding:9px 6px;text-align:center;vertical-align:middle;">' + actionBadge + '</td>' +
       '</tr>';
   }
@@ -4878,12 +4888,113 @@ function initDataMgmt() {
   if (!dmInited) {
     var today = new Date().toISOString().slice(0, 10);
     $id('dm-date-end').value = today;
+    dmLoadSplitStatus();
   }
   dmLoadMatrix();
 }
 
 // ── Cache mode ──
 var dmCacheData = null;
+
+// ── Split status ──
+var dmSplitStatus = {};
+var dmSplitPopupCode = null;
+
+function dmShowSplitActions(code, el) {
+  var popup = $id('dm-split-popup');
+  if (!popup) return;
+  if (dmSplitPopupCode === code) { popup.style.display = 'none'; dmSplitPopupCode = null; return; }
+  dmSplitPopupCode = code;
+  var sp = dmSplitStatus[code] || {};
+  var rect = el.getBoundingClientRect();
+  var sp = dmSplitStatus[code] || {};
+  var label = '修复拆股数据' + (sp.ratio ? ' (1:' + sp.ratio + ')' : '');
+  popup.innerHTML = '<div class=\"dm-split-btn\" data-code=\"' + code + '\">' + label + '</div>';
+  popup.style.display = 'block';
+  popup.style.left = Math.min(rect.right + 4, window.innerWidth - 160) + 'px';
+  popup.style.top = Math.min(rect.top, window.innerHeight - 80) + 'px';
+}
+
+async function dmFullRefetchCode(code) {
+  $id('dm-split-popup').style.display = 'none'; dmSplitPopupCode = null;
+  var sp = dmSplitStatus[code] || {};
+  var ok = await dmConfirm('确定修复 ' + code + ' 的拆股数据吗？\n\n将按 1:' + (sp.ratio||'?') + ' 比例调整历史价格并写入CSV。');
+  if (!ok) return;
+  dmToast('正在修复拆股数据...', '');
+  _showProgress('修复拆股');
+  try {
+    var resp = await fetch('/api/data_full_refetch', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({codes: [code], verify_split: true})
+    });
+    var data = await resp.json();
+    _hideProgress();
+    var r = (data.results || {})[code] || {};
+    dmToast('全量重拉完成: ' + (r.rows || 0) + ' 行', r.error ? 'warning' : 'success');
+    dmReloadData([code]);
+    dmLoadSplitStatus();
+  } catch(e) { _hideProgress(); dmToast('失败: ' + e.message, 'error'); }
+}
+
+// Delegate: ⚠ split warning + button click (capture phase to beat row onclick)
+document.addEventListener('click', function(e) {
+  var warn = e.target.closest('.dm-split-warn');
+  if (warn) { e.stopPropagation(); e.preventDefault(); dmShowSplitActions(warn.dataset.code, warn); return; }
+  var btn = e.target.closest('.dm-split-btn');
+  if (btn) { e.stopPropagation(); e.preventDefault(); dmFullRefetchCode(btn.dataset.code); }
+}, true);
+
+// Click outside to close popup
+document.addEventListener('click', function(e) {
+  if (dmSplitPopupCode && !e.target.closest('#dm-split-popup') && !e.target.closest('.dm-etf-label')) {
+    $id('dm-split-popup').style.display = 'none'; dmSplitPopupCode = null;
+  }
+});
+
+function dmLoadSplitStatus() {
+  fetch('/api/split_status')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      dmSplitStatus = data;
+      // Re-render ETF labels to show split icons
+      if (dmAllData && dmFreq !== 'factor') dmRenderMatrix();
+    })
+    .catch(function() {});
+}
+
+async function dmFullRefetch() {
+  var keys = Object.keys(dmSelected);
+  var codes = [];
+  keys.forEach(function(k) { var c = k.split('|')[0]; if (codes.indexOf(c) < 0) codes.push(c); });
+  if (!codes.length) return;
+
+  var hasSplit = codes.some(function(c) { return dmSplitStatus[c] && dmSplitStatus[c].status === 'pending_repair'; });
+  var msg = '确定全量重拉 ' + codes.length + ' 支 ETF 的全部历史数据吗？';
+  if (hasSplit) msg += '\n\n检测到拆股标记，重拉后将自动验证数据连续性。';
+  var ok = await dmConfirm(msg);
+  if (!ok) return;
+
+  dmToast('正在全量重拉...', '');
+  _showProgress('全量重拉');
+  try {
+    var resp = await fetch('/api/data_full_refetch', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({codes: codes, verify_split: hasSplit})
+    });
+    var data = await resp.json();
+    _hideProgress();
+    var totalRows = 0, allVerified = true;
+    if (data.results) {
+      Object.keys(data.results).forEach(function(c) {
+        if (data.results[c].error) allVerified = false;
+        else totalRows += (data.results[c].rows || 0);
+      });
+    }
+    dmToast('全量重拉完成: ' + totalRows + ' 行' + (allVerified ? '' : ' (部分失败)'), allVerified ? 'success' : 'warning');
+    dmReloadData(Object.keys(data.results || {}));
+    dmLoadSplitStatus();
+  } catch(e) { _hideProgress(); dmToast('全量重拉失败: ' + e.message, 'error'); }
+}
 
 function dmLoadCacheStatus() {
   dmLoading = true;
@@ -5035,12 +5146,14 @@ function dmReloadData(codes) {
         });
         dmRenderMatrix();
         dmUpdateStatusBar();
+        dmLoadSplitStatus();
       } else {
         dmAllData = data; dmAllData._ts = Date.now();
         if (!dmInited) dmInited = true;
         populateSectorFilter();
         dmRenderMatrix();
         dmUpdateStatusBar();
+        dmLoadSplitStatus();
       }
     })
     .catch(function(e) {
@@ -5172,7 +5285,13 @@ function dmRenderMatrix() {
     etfHtml += '<div class="dm-etf-label' + rowSel + '" data-code="' + ve.code + '" onclick="dmSelectRow(\'' + ve.code + '\')" title="' + e.name + ' | ' + e.sector + '">' +
       '<span class="dm-sec-dot" style="background:' + sc + ';" title="' + (e.sector||'') + '"></span>' +
       '<span class="dm-etf-code">' + ve.code + '</span>' +
-      '<span class="dm-etf-name">' + (e.name || ve.code) + '</span></div>';
+      '<span class="dm-etf-name">' + (e.name || ve.code) + '</span>';
+      // Split indicator (clickable)
+      var sp = dmSplitStatus[ve.code];
+      if (sp && sp.status === 'pending_repair') {
+        etfHtml += '<span class="dm-split-warn" data-code="' + ve.code + '" title="拆股待修复: ' + (sp.symptom || sp.ex_date) + '">⚠</span>';
+      }
+      etfHtml += '</div>';
   }
   etfLabelsEl.innerHTML = etfHtml || '<div style="text-align:center;color:var(--text-muted);padding:20px;">无匹配ETF</div>';
 

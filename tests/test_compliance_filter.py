@@ -175,8 +175,9 @@ def test_write_audit_creates_two_files(tmp_path, monkeypatch, load_module):
     assert "保证" in summary  # 被 block 的标题出现
 
 
-def test_block_rate_warn_threshold_respected(tmp_path, monkeypatch, capsys, load_module):
+def test_block_rate_warn_threshold_respected(tmp_path, monkeypatch, load_module):
     """拦截率超过阈值应在 stderr 输出 WARN。"""
+    import io, sys
     module = load_module("compliance_filter")
 
     monkeypatch.setattr(module, "PROJECT_ROOT", str(tmp_path))
@@ -197,16 +198,23 @@ def test_block_rate_warn_threshold_respected(tmp_path, monkeypatch, capsys, load
     kept, blocked, stats = module.filter_batch(items, rules)
     assert stats.block_rate == 0.5  # 2/4
 
-    module.write_audit(
-        blocked, kept, stats,
-        run_context={"trigger": "threshold_test"},
-        log_dir=str(tmp_path),
-        rules=rules,
-    )
+    # Capture stderr manually (avoids capsys fixture which conflicts with -p no:capture on Windows)
+    stderr_buf = io.StringIO()
+    old_stderr = sys.stderr
+    sys.stderr = stderr_buf
+    try:
+        module.write_audit(
+            blocked, kept, stats,
+            run_context={"trigger": "threshold_test"},
+            log_dir=str(tmp_path),
+            rules=rules,
+        )
+    finally:
+        sys.stderr = old_stderr
 
-    captured = capsys.readouterr()
-    assert "超过阈值" in captured.err
-    assert "50" in captured.err  # "拦截率 50.0%"
+    captured_err = stderr_buf.getvalue()
+    assert "超过阈值" in captured_err
+    assert "50" in captured_err  # "拦截率 50.0%"
 
 
 def test_rules_yaml_is_valid(load_module):

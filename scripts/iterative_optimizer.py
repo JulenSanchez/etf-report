@@ -96,7 +96,7 @@ def _run_trials(preset, bounds, start_date, end_date, metric, n, label, seed=42,
                 for t in study.trials:
                     if t.value is not None and t.value > -9000:
                         md = t.user_attrs.get('mdd', -99)
-                        if -40 <= md <= -20:
+                        if -45 <= md <= -15:
                             partial.append({
                                 'mdd': md,
                                 'composite': t.user_attrs['composite'],
@@ -127,7 +127,7 @@ def _run_trials(preset, bounds, start_date, end_date, metric, n, label, seed=42,
     for t in study.trials:
         if t.value is not None and t.value > -9000:
             md = t.user_attrs.get('mdd', -99)
-            if md < -40 or md > -20:
+            if md < -45 or md > -15:
                 dropped += 1   # out of target range — discard immediately
                 continue
             results.append({
@@ -137,7 +137,7 @@ def _run_trials(preset, bounds, start_date, end_date, metric, n, label, seed=42,
                 'source': label,
             })
     if dropped > 0:
-        print(f'  [{label}] {dropped} trials out of [-40,-20] range — discarded')
+        print(f'  [{label}] {dropped} trials out of [-45,-15] range — discarded')
     return results
 
 
@@ -305,9 +305,9 @@ def _full_bounds():
 # Multi-zone parallel workers (REQ-344) — must be module-level for spawn
 # ═══════════════════════════════════════════════════════════════════════════
 
-_ZONE_RANGES = {'A': (-40, -35), 'B': (-35, -30), 'C': (-30, -25), 'D': (-25, -20)}
-_ZONE_SEED_OFFSETS = {'A': 0, 'B': 100, 'C': 200, 'D': 300}
-ZONE_ORDER = ['A', 'B', 'C', 'D']
+_ZONE_RANGES = {'L': (-45, -40), 'A': (-40, -35), 'B': (-35, -30), 'C': (-30, -25), 'D': (-25, -20), 'R': (-20, -15)}
+_ZONE_SEED_OFFSETS = {'L': 400, 'A': 0, 'B': 100, 'C': 200, 'D': 300, 'R': 500}
+ZONE_ORDER = ['L', 'A', 'B', 'C', 'D', 'R']
 
 
 def _run_zone_round(pool_snapshot, zone_label, zone_range, preset,
@@ -385,11 +385,11 @@ def _print_multi_zone_status(round_num, max_rounds, zone_active, zone_results,
 def main():
     p = argparse.ArgumentParser(description='迭代缩界 TPE — 自适应 pool')
     p.add_argument('--school', required=True, choices=['gambler', 'zen', 'actuary'])
-    p.add_argument('--zone', default=None, choices=['A','B','C','D'],
-                   help='单区模式: A=[-40,-35) B=[-35,-30) C=[-30,-25) D=[-25,-20)')
+    p.add_argument('--zone', default=None, choices=['L','A','B','C','D','R'],
+                   help='单区模式: L=[-45,-40) A=[-40,-35) B=[-35,-30) C=[-30,-25) D=[-25,-20) R=[-20,-15)')
     p.add_argument('--multi-zone', action='store_true',
                    help='四区并行模式: A/B/C/D 各独立 TPE, 并行优化 (与 --zone 互斥)')
-    p.add_argument('--max-concurrent', type=int, default=4, choices=range(1, 5),
+    p.add_argument('--max-concurrent', type=int, default=6, choices=range(1, 7),
                    help='最大并行区数 (default: 4)')
     p.add_argument('--top-n', type=int, default=15,
                    help='缩界用 top-N trial (default: 15)')
@@ -500,7 +500,7 @@ def main():
         n_valid = len(_valid(pool))
 
     # ── Zone mode: filter pool to this zone, set output path ──
-    _ZONE_RANGES = {'A': (-40, -35), 'B': (-35, -30), 'C': (-30, -25), 'D': (-25, -20)}
+    _ZONE_RANGES = {'L': (-45, -40), 'A': (-40, -35), 'B': (-35, -30), 'C': (-30, -25), 'D': (-25, -20), 'R': (-20, -15)}
     if args.zone:
         zlo, zhi = _ZONE_RANGES[args.zone]
         pool = [t for t in pool if t.get('mdd') is None or (zlo <= t['mdd'] < zhi)]

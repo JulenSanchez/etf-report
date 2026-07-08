@@ -65,6 +65,23 @@ config/quant_universe.yaml preset
 - `tests/test_quant_contract.py`
 - `config/quant_universe.yaml`（如默认值变化）
 
+## 前端控件 → API 映射速查
+
+| 控件 | 触发 API | 产出 / 关键参数 | 详细设计 |
+|------|---------|----------------|---------|
+| Run Backtest 按钮 | `POST /api/run?async=1` | 回测结果 | `tuner-ui.md` §5.3 |
+| Refresh 按钮 | `POST /api/refresh_data` | intraday cache + CSV | `tuner-ui.md` §5.3 |
+| Save YAML 按钮 | `POST /api/save` | 写入 `quant_universe.yaml` | `tuner-ui.md` §5.3 |
+| debug pill | `POST /api/run`（带 `debug=true`） | `data/quant/debug_tuner.json` | `tuner-ui.md` §5.3 + `backtest-engine.md` §8.4 |
+| 数据新鲜度 badge | `GET /api/data_status` | confirmed/intraday/stale | `tuner-ui.md` §5.3 |
+| 热力图 | `GET /api/heatmap_data?lookback=N` | heatmap JSON | `tuner-ui.md` §5.6 |
+| 前沿点选择器 | `GET /api/frontier` | frontier JSON | `tuner-ui.md` §5.8 |
+| 进度条 | （回测进度回调） | 实时 % | `tuner-ui.md` §5.5 |
+| 4 个 view tab | （前端切换） | guide/results/heatmap/datamgmt | `tuner-ui.md` §5.11 |
+| 数据管理视图 | （独立 API） | 详见 `data-management-panel.md` | `tuner-ui.md` §5.12 |
+
+**排障提示**：控件行为异常时，先查对应 API 的后端日志，再查 `tuner-ui.md` §5 的交互行为定义。debug pill 产出的 `debug_tuner.json` 是排查信号不一致的首选工具（字段结构见 `backtest-engine.md` §8.4）。
+
 ## 常见故障
 
 | 症状 | 处理 |

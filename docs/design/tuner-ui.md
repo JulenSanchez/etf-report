@@ -209,16 +209,99 @@ JS 中引用示例：`el.style.color = TC.positive;`
 - 左侧面板内，`label` + `range input` + `value display`
 - 单位标注在 label 或 value 后
 
-### 5.3 按钮
+### 5.3 按钮与 Toggle Pill
 
-- 主操作（Run Backtest / Save YAML）：`var(--accent)` 蓝底白字
-- 切换/选项（周期、频率、流派）：暗底边框，选中态高亮
+#### 主操作按钮
+
+- Run Backtest / Save YAML：`var(--accent)` 蓝底白字
+- Refresh / Meta：`var(--btn-refresh)` 边框
+
+#### 切换/选项按钮
+
+- 周期、频率、流派：暗底边框，选中态高亮
+
+#### Debug Toggle Pill
+
+- **DOM**: `<span id="toggle-debug" class="toggle-pill" title="回测调试快照">` (tuner.html:683) + 隐藏 checkbox `#chk-debug` (tuner.html:685)
+- **触发方式**: 点击 pill → 切换 `.on` 视觉态 + `chk-debug.checked`；实际生效发生在下次点 "Run Backtest"
+- **API 链路**: `POST /api/run` 携带 `params.debug=true` → `quant_tuner.py:1326` `return_debug=bool(params.get("debug"))` → `run_backtest(return_debug=True)`
+- **产出物**: `data/quant/debug_tuner.json`，格式 `{"count": N, "snapshots": [...]}`
+- **交互行为**: pill 是"开关 + 下次回测生效"，非即时；off 时不出新文件；旧文件���自动清除
+- **边界约束**: 仅诊断用，不影响 nav_df / signal_history；字段结构详见 `backtest-engine.md` §8.4
+- **配色**: 复用 `--border-muted` / `--accent`（不新增色）
+- **什么时候用**: 信号不一致排查（前端 vs 脚本结果不同）/ 因子异常诊断 / 持仓偏差排查
+- **怎么读**:
+  ```bash
+  python -c "import json; d=json.load(open('data/quant/debug_tuner.json')); print(json.dumps(d['snapshots'][-1], indent=2, ensure_ascii=False))"
+  ```
+
+#### 数据新鲜度 Badge
+
+- **DOM**: `<span id="data-status">` (tuner.html:694) + `.data-badge` 三态 class
+- **触发方式**: 页面加载时自动调 `GET /api/data_status`；点 Refresh 按钮后刷新
+- **三态语义**:
+  - `confirmed` (绿): CSV 含最近交易日收盘数据
+  - `intraday` (黄): 仅有盘中 cache，CSV 未更新
+  - `stale` (红): 数据滞后超过 1 个交易日
+- **配色**: 复用 `--positive` / `--warning` / `--negative`
 
 ### 5.4 Tooltip
 
 - 深色半透明底 `rgba(10,25,47,0.95)`
 - 蓝色边框 `rgba(59,130,246,0.2)`
 - 字体 11px `var(--text-body)`
+
+### 5.5 进度条
+
+- **DOM**: `#tuner-progress-bar` + `#tuner-progress-text` (tuner.html:687-690)
+- **触发方式**: 回测进度回调，实时更新百分比
+- **交互行为**: 两段式 — Pass 1（因子预计算，~28%）+ Pass 2（每日迭代，~69%），动态权重按实测耗时分配（REQ-343）
+- **配色**: track 用 `--bg-input`，fill 用 `--warning`
+
+### 5.6 热力图
+
+- **DOM**: `#hm-chart` (tuner.html:1126)
+- **API**: `GET /api/heatmap_data?lookback=N`
+- **交互行为**: 5/20 日切换、垂直/水平滚动滑块、重置按钮
+- **配色**: diverging 色阶 9 级渐变（`#8b1515`…`#3cdb78`，见 §4.4 不改动区）
+
+### 5.7 涨跌分布图
+
+- **DOM**: `#dist-chart` (tuner.html:983)
+- **交互行为**: 极值卡点击跳转 `jumpToDistDate`；7 级灰度 bin 展示分布
+- **配色**: 7 级灰度渐变（见 §4.4 不改动区）
+
+### 5.8 前沿点选择器
+
+- **DOM**: 动态生成 `frontier-chart-{sid}`（tuner.html:2472+）
+- **API**: `GET /api/frontier`
+- **交互行为**: 点击前沿点 → 加载该点参数到左侧 slider → 可直接 Run Backtest
+- **配色**: `--highlight` 高亮选中点；gambler 自动注入 gam-0 参考点
+
+### 5.9 ETF 详情区
+
+- **DOM**: `#tuner-kline-section` (tuner.html:1016)
+- **交互行为**: K 线回放、十大重仓 tab、日/周 K 切换、贡献 grid
+- **联动**: 点击 NAV 图日期 → 跳转到该日最近调仓的 ETF 详情
+- **边界**: 贡献 grid 的计算逻辑见 `etf-contribution.md`
+
+### 5.10 调仓快照表
+
+- **DOM**: `#tuner-snapshot-section` (tuner.html:1036)
+- **交互行为**: 8 列可排序（`onSnapSort`）、4 个 snap 指标卡、扇区过滤（全选/全不选/反选）
+- **配色**: 复用语义色（`--positive` 买入 / `--negative` 卖出）
+
+### 5.11 右侧视图切换
+
+- **DOM**: 4 个 tab（guide / results / heatmap / datamgmt）
+- **交互行为**: 点击切换视图，同时只有一个 tab 激活；各 tab 内容由对应组件定义
+- **边界**: guide = 使用说明；results = §5.1-5.4 + §5.9-5.10；heatmap = §5.6；datamgmt = §5.12
+
+### 5.12 数据管理视图
+
+- **DOM**: `dm-*` 全套控件
+- **交互行为**: 日期范围、频率、字段、扇区过滤、删除/重拉/补全、矩阵滚动
+- **边界**: 详细设计见 `data-management-panel.md`，本文不重复
 
 ## §6 已知偏差
 

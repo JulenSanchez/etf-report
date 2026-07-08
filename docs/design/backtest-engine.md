@@ -317,6 +317,38 @@ trade_log        # [{code, buy_date, sell_date, buy_price, sell_price, shares, p
                  # FIFO 配对逐笔交易记录，含期末未平仓按最后收盘价虚拟平仓
 ```
 
+### 8.4 `debug_snapshots` 字段结构
+
+**触发条件**：`run_backtest(return_debug=True)` 时，主循环每个调仓日追加一条 snapshot。关闭时 `debug_snapshots=[]`，不影响 nav/signal。
+
+**结构**（基于 `quant_backtest.py:1079-1095`）：
+
+```python
+{
+    "idx": int,                      # 调仓序号
+    "signal_date": "YYYY-MM-DD",     # 信号日
+    "execution_date": "YYYY-MM-DD",  # 执行日（T+1）
+    "regime": str,                   # 市态（bull/bear）
+    "total_target": float,           # 总目标仓位
+    "mu": float,                     # 均值（年化）
+    "sigma": float,                  # 波动（年化）
+    "hs300_above_ma": bool,          # 沪深300是否在MA上方
+    "hs300_ma_rising": bool,         # MA是否上行
+    "benchmark_votes": list | None,  # 基准投票明细（仅 ma_trend 信心）
+    "nav_before": float,             # 调仓前净值
+    "cash": float,                   # 现金
+    "holdings": {code: shares},      # 当前持仓 {ETF代码: 持仓股数}
+    "top6": [                        # top6 候选快照
+        {"code": str, "score": float, "softmax_w": float, "position": float, "px": float}
+    ],
+    "all_px": {code: price}          # 持仓+目标并集的价格
+}
+```
+
+**消费方式**：`quant_tuner.py:1541` 读取 → 写入 `data/quant/debug_tuner.json`（格式 `{"count": N, "snapshots": [...]}`）。前端不直接消费，开发者人工查 JSON。
+
+**触发链路**：详见 `docs/design/tuner-ui.md` §5.3（debug pill）。
+
 ---
 
 ## 9. 参数契约与 Tuner 交接
@@ -432,7 +464,49 @@ tests/test_update_report.py -k "quant_preset_params or quant_payload_config_sect
 
 ---
 
-## 12. 不属于本文的内容
+## 12. 因子缓存（性能优化）
+
+每次回测需要计算 F1/F3/F7 因子序列（遍历全部历史日线），54 支 ETF × 全量日线 ≈ 数万次运算。为避免重复计算，引入磁盘缓存。
+
+### 缓存 key
+
+`_factor_cache_key()`（`quant_backtest.py:248`）对以下内容做 SHA256：
+
+```
+SHA256(
+  ETF代码
+  + daily_df 行数
+  + daily_df 末笔日期
+  + daily_df 末笔收盘价        ← 数据指纹
+  + weekly_df 行数 + 末笔日期
+  + ema_period                 ← F1 参数
+  + vol_window                 ← F3 参数
+  + f7_window + f7_lookback
+    + f7_min_days + f7_sigma_floor  ← F7 参数
+  + f1_daily_ema + f1_daily_ma
+    + f1_active_days
+)
+```
+
+文件：`data/quant/.factor_cache/fc_{sha256}.pickle`
+
+内容：`{"daily_dates": [...], "weekly_dates": [...], "f1": [...], "f3": [...], "f7": [...], "rsi": [...]}`
+
+### 失效机制
+
+- **数据变化**（行数、末笔日期、末笔收盘价变化）→ 自动重算
+- **参数变化**（换预设、调 f7_window 等）→ 自动重算
+- **命中**：key 匹配 → 直接读 pickle，跳过因子计算
+
+### 已知盲区（BUG-042）
+
+份额变动后，前复权清洗在内存中完成（不修改 CSV），数据指纹不变但实际因子值已变。需通过数据管理面板的"因子缓存"功能手动清理。
+
+### 存储位置
+
+`data/quant/.factor_cache/` — 54 ETF × 多参数组合，每文件 ~5-50KB，总计 ~5MB。
+
+## 13. 不属于本文的内容
 
 | 内容 | 去哪里 |
 |---|---|
