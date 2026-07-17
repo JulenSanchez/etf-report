@@ -193,7 +193,7 @@ log("Stage 5: Build execution reference table")
 history = result["signalHistory"]
 latest = history[-1]
 detail = latest.get("detail", {})
-positions = latest.get("positions", {})
+positions = latest.get("actual_positions", latest.get("positions", {}))
 
 # Filter: only buy positions (>0.5% = >0.005)
 buy_list = []
@@ -207,7 +207,7 @@ for code, target in sorted(positions.items(), key=lambda x: -x[1]):
         buy_list.append({
             "code": code, "name": name,
             "target": target, "price": float(close_price),
-            "targetPct": f"{target*100:.0f}%"
+            "targetPct": f"{round(target * 100)}%"
         })
 
 if not buy_list:

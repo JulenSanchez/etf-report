@@ -12,8 +12,8 @@
 筛选                     决策                      执行                    收口
 ─────                    ────                      ────                    ────
 scan_etf_universe.py     → 审阅候选 → 确认清单     → 逐支执行(本文 SOP)     → 更新 research/pool/
-  --debug                → 大换池(5+)开REQ追踪      → 基线链验证             → 生成待提交清单
-                         → 小换池直接执行           → 失败不阻塞             → 发布按 release.md
+  --debug                → 大换池(5+)开REQ追踪      → 基线链验证             → 更新 research/pool/
+                         → 小换池直接执行           → 失败不阻塞            
 ```
 
 | 换池规模 | 追踪方式 | 示例 |
@@ -101,12 +101,6 @@ scan_etf_universe.py     → 审阅候选 → 确认清单     → 逐支执行(
 ```
 1. 更新 research/pool/README.md
    → Applied 日志 + 证据链接；不要维护当前 universe 副本
-2. 输出待提交清单
-   → config / research / tests / docs 的变更范围
-3. 发布或提交
-   → 由用户显式触发，按 docs/runbook/release.md 执行
-4. stable 同步
-   → 发布后如需更新计划任务仓，按 docs/runbook/stable.md 执行
 ```
 
 ## 关键约束

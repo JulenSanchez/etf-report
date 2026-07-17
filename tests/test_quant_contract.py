@@ -23,19 +23,20 @@ def sample_params(**overrides):
         "ma_trend_period": 26,
         "ma_direction_confirm": True,
         "max_holdings": 6,
-        "disc_step": 0.05,
+        "signal_steps": 17,
+        "top_boost": 0,
         "concentration": 2.0,
-        "c_sensitivity": 30,
+        "c_sensitivity": 3.0,
         "rebalance_freq": "daily",
         "execution_timing": "same_close",
-        "band": 3,
-        "band_sensitivity": 30,
+        "band": 0.03,
+        "band_sensitivity": 0.0,
         "f1_ema_period": 16,
         "f3_vol_window": 20,
         "f1_sensitivity": 8.0,
         "f3_sensitivity": 1.0,
-        "f7_t": 15.0,
-        "f7_k": 3.5,
+        "f7_up_power": 15.0,
+        "f7_up_span": 3.5,
         "f7_window": 20,
     }
     params.update(overrides)
@@ -72,7 +73,7 @@ def test_tuner_params_to_config_override_unit_conversions():
 
     assert override["position"]["band"] == pytest.approx(0.03)
     assert override["position"]["execution_timing"] == "same_close"
-    assert override["position"]["discretize_step"] == pytest.approx(0.05)
+    assert override["position"]["signal_steps"] == 17
     assert override["factors"]["log_return_deviation"]["window_days"] == 20
 
 
@@ -82,15 +83,15 @@ def test_preset_to_tuner_params_round_trip_core_fields():
         "description": "desc",
         "scoring": {
             "weights": {
-                "ema_deviation": 0.3,
+                "ema_deviation": 0.30,
                 "volume_ratio": 0.60,
                 "valuation": 0,
-                "log_return_deviation": 0.1,
+                "log_return_deviation": 0.10,
             },
-            "sensitivity": {"f1": 8, "f3": 1.0, "f7_t": 15, "f7_k": 3.5},
+            "sensitivity": {"f1": 8, "f3": 1.0, "f7_up_power": 15, "f7_up_span": 3.5},
         },
         "confidence": {"type": "ma_trend", "ma_bull_pos": 1.0, "ma_bear_pos": 0.3, "ma_trend_period": 26},
-        "position": {"max_holdings": 6, "discretize_step": 0.05, "concentration": 2.0, "rebalance_freq": "daily", "execution_timing": "same_close", "band": 0.03},
+        "position": {"max_holdings": 6, "signal_steps": 17, "concentration": 2.0, "rebalance_freq": "daily", "execution_timing": "same_close", "band": 0.03},
         "factors": {"ema": {"period_weeks": 16}, "volume_ratio": {"window_days": 20}, "log_return_deviation": {"window_days": 20}},
     }
 
@@ -100,7 +101,7 @@ def test_preset_to_tuner_params_round_trip_core_fields():
     assert params["w1"] == 30
     assert params["w3"] == 60
     assert params["w7"] == 10
-    assert params["band"] == 3
+    assert params["band"] == pytest.approx(0.03)
     assert params["execution_timing"] == "same_close"
 
 
@@ -143,43 +144,6 @@ def test_param_schema_is_a_copy():
     schema = qc.get_param_schema()
     schema["groups"].clear()
     assert qc.get_param_schema()["groups"]
-
-
-def test_account_max_gross_exposure_writes_override():
-    """REQ-338: account_mode removed; max_gross_exposure always written to account."""
-    params = sample_params(max_gross_exposure=2.0)
-    override = qc.tuner_params_to_config_override(params)
-    assert "account" in override
-    assert override["account"]["max_gross_exposure"] == 2.0
-
-
-def test_account_max_gross_exposure_default():
-    """Without explicit max_gross_exposure, default is written to account."""
-    params = sample_params()  # no max_gross_exposure
-    override = qc.tuner_params_to_config_override(params)
-    assert "account" in override
-    assert "max_gross_exposure" in override["account"]
-
-
-def test_preset_to_tuner_params_includes_max_gross_exposure():
-    """REQ-338: account_mode removed; only max_gross_exposure remains."""
-    preset = {
-        "scoring": {"weights": {}},
-        "confidence": {},
-        "position": {},
-        "factors": {},
-        "account": {"max_gross_exposure": 2.0},
-    }
-    params = qc.preset_to_tuner_params("test", preset, {})
-    assert params["max_gross_exposure"] == 2.0
-    assert "account_mode" not in params
-
-
-def test_account_section_always_present():
-    """REQ-338: account section always present (max_gross_exposure)."""
-    params = sample_params()
-    override = qc.tuner_params_to_config_override(params)
-    assert "account" in override
 
 
 def test_tuner_params_to_preset_patch_preserves_existing_sections():

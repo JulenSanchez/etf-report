@@ -1,53 +1,74 @@
-# params/ — 参数优化证据
+# 预设参数演化追踪
 
-> 最后更新: 2026-06-29 (pool.json 设计)
+> 记录 presets 的参数变更历史、实验证据和设计决策。新参数实验完成后在此登记。
 
-## 当前目录结构
+## 当前预设矩阵（2026-07-15）
 
-```
-research/params/
-├── gambler/pool.json          ← gambler 种子库 (自适应, 永不膨胀)
-├── zen/pool.json              ← zen 种子库
-├── actuary/pool.json          ← actuary 种子库
-├── frontier_gambler.json      ← 前端消费的前沿 (build_frontier_output 产出)
-├── frontier_zen.json
-├── frontier_actuary.json
-└── archive/                   ← 旧 iter_*/pareto_*/v3_* 归档
-```
+15 个预设共享权重 (w1=71, w3=13, w7=16) 和灵敏度 (f1=9.6, f3=4.79, f7_up_power=18, f7_up_span=2.72)。
+例外：gam-0 的 F7 灵敏度已独立演化（f7_up_power=23, f7_up_span=3.1, f7_down_power=14, f7_down_span=2.50，2026-07-17）。
+> 2026-07-17 改名：f7_t/f7_k/f7_t_os/f7_k_os → f7_up_power/f7_up_span/f7_down_power/f7_down_span（up=超涨侧，down=超跌侧）；power 侧取整（共享锚点 17.85→18）。历史记录中的旧名不回溯修改。
 
-## 优化流程
+| 流派 | 预设 | MH | TB | C | CS | bull | bear | band | N | 6Y AR | 6Y MDD | Sortino |
+|------|------|----|----|---|----|------|------|------|---|--------|---------|---------|
+| gambler | gam-0 | 2 | 8 | 0.62 | 16.4 | 1.80 | 0.60 | 0.03 | 40 | +137.6% | -36.1% | 2.65 |
+| gambler | gam-1 | 3 | 12 | 0.03 | 20.0 | 0.80 | 0.60 | 0.03 | 40 | — | — | — |
+| gambler | gam-2 | 4 | 16 | 0.03 | 0.0 | 0.80 | 0.35 | 0.03 | 40 | — | — | — |
+| gambler | gam-4~5 | — | — | — | — | — | — | — | — | **待创建** | | |
+| zen | zen-0 ~ 4 | 2~6 | — | — | — | — | — | — | 40 | 待评估 | | |
+| act | act-0 ~ 4 | 2~6 | — | — | — | — | — | — | 40 | 待评估 | | |
 
-```bash
-# 单流派优化 (自动冷启动 → 迭代收敛 → prune → save)
-python scripts/iterative_optimizer.py --school gambler
+**gam-0 生产指标**（`baseline.yaml`，2026-07-17）：AR=137.6%, MDD=-36.1%, Sortino=2.65
 
-# 产出前沿
-python -c "from etf_report.core.quant_contract import build_frontier_output; build_frontier_output(school='gambler')"
+## 演化时间线
 
-# 三派并行
-python scripts/iterative_optimizer.py --school gambler &
-python scripts/iterative_optimizer.py --school zen &
-python scripts/iterative_optimizer.py --school actuary &
-```
+### 2026-07-16：REQ-375 延伸 — F7 超涨侧 f7_t/f7_k 扫参（`runs/f7_t_k_sweep*.json`）
 
-## 池子行为
+- 背景：REQ-375 拆分 F7 两侧参数后，超跌侧收敛到 t_os=14/k_os=2.50，超涨侧 17.85/2.72 仍是拆分前的妥协值
+- 四轮网格收敛：**t=23, k=3.1**（AR 125.9%→137.6%, +11.7pp；MDD -37.4%→-36.1%；Sortino 2.545→2.648）
+- 扩界结论：t>25 无增益（k=3.0 列在 t∈27~38 平台化于 AR≈134）；k=3.2 起回落
+- 前置修复 BUG-055：research_utils `_build_override` 死代码导致 f7 参数扫参静默失效
 
-- `< 5 valid` → 冷启动: YAML 预设 → [不够] Sobol 50 → [不够] TPE 全界 30
-- `>= 5` → 正常迭代: narrow_bounds → TPE → merge → prune (每轮) → save
-- prune 规则: gambler 每 0.1% MDD 留最优 AR / zen 留 top-20 Sortino / actuary 每 0.01 bear 留最优 Sortino
+### 2026-07-14：N/TB 研究（`n_tb_study.md`）
 
-## 手动加种子
+- N 从寻优参数降级为工程常量 N=40
+- TB 接管集中度微调权
+- gam-0 更新：bull=1.80, N=40, TB=8
 
-在 pool.json 中加一行:
-```json
-{"params": {"w1": 40, "w3": 30, ...}, "source": "manual"}
-```
-不需要 MDD/COMP。下次优化时自动回测填入。
+### 2026-07-09：REQ-365 信号/执行步长分离
 
-## 历史目录 (可归档)
+- `signal_steps` 拆分为信号步长（精度）和执行步长（摩擦）
+- 实验确认 alpha 来自信号步长
 
-- `iter_mdd20/` ~ `iter_mdd40/` — 旧多 target 设计 (已被 pool 取代)
-- `iter_act/`, `iter_zen/` — 旧单次优化产出 (数据已迁移到 pool)
-- `pareto_gam-2/`, `pareto_test/`, `pareto_verify/` — 旧 pareto_optimizer 产出
-- `v3_pareto_full/` — 旧全量 trial
-- `gam-*-2026*/`, `act-1-2026*/`, `zen-1-2026*/` — 旧 quant_optimizer 产出
+### 2026-07-10：REQ-366 + top_boost
+
+- 离散化替代方案研究，结论：N=17 + top_boost=2 等价 N=5
+- `top_boost` 全链路交付
+
+### 2026-07-09：REQ-361 参数缩放统一
+
+- 所有层统一 engine scale
+
+### 2026-07-15：REQ-373 gam-0 C/CS 更新
+
+- Bug 修复（softmax 溢出 + 权重迁移）后的重新优化
+- gam-0: C=0.62, CS=16.4
+
+## 实验记录
+
+### F7 超涨侧 t/k 网格扫描（2026-07-16，REQ-375 延伸）
+
+- 方法：`research_utils.backtest()` 网格扫描，6Y 窗口，preset gam-0，lock C=0.62/CS=16.4（DEFAULT_LOCK 的 C/CS 是旧值，需显式覆盖）
+- 门禁：基线复现 (17.85, 2.72)→AR=125.9/MDD=-37.4/Sortino=2.545 精确命中；差分检查 t=1 vs t=25 结果不同（BUG-055 修复生效）
+- 轮次：① 粗网格 25 点（t 5~25 × k 2.0~4.0，前一会话）② 扩界中网格 42 点（t 18~38 × k 2.5~3.75）③ 细网格 35 点（t 23~27 × k 2.85~3.15）④ 边界延伸 15 点（t 20~22 × k 3.0~3.2）
+- 选点标准：MDD ≥ -39.4%（基线-2pp 软约束）内 AR 最高
+- 收敛点：**(23, 3.1)** AR=137.6/MDD=-36.1/Sortino=2.648/Calmar=3.81，重跑两次数值一致
+- 地形：k=3.1 是脊线（k=3.75 塌陷至 AR≈120，k=3.2 回落）；t 在 23~27 内峰值、>27 平台化 ≈134、<23 缓降
+- 结果文件：`runs/f7_t_k_sweep.json` ~ `sweep4.json`
+
+## 下一步
+
+- [ ] 老树：gam-0 的 w1/w3/w7 三周期扫参
+- [ ] 新树：归一化基线的 MH×TB 寻优
+- [ ] C/CS 组优化（两树各自）
+- [ ] bull/bear 调参（两树各自）
+- [ ] gam-1/2 及 zen/act 预设参数补充溯源

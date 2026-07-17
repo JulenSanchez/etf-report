@@ -24,13 +24,13 @@ def test_load_quant_preset_params_uses_shared_contract(tmp_path, load_module):
                   weights:
                     ema_deviation: 0.50
                     volume_ratio: 0.40
-                    residual_momentum: 0.0
+                    residual_momentum: 0
                     log_return_deviation: 0.10
                   sensitivity:
                     f1: 8.0
                     f3: 1.5
-                    f7_t: 15.0
-                    f7_k: 3.5
+                    f7_up_power: 15.0
+                    f7_up_span: 3.5
                 confidence:
                   type: ma_trend
                   ma_trend_period: 26
@@ -64,10 +64,10 @@ def test_load_quant_preset_params_uses_shared_contract(tmp_path, load_module):
     assert params["w1"] == 50
     assert params["w3"] == 40
     assert params["w7"] == 10
-    assert params["disc_step"] == 0.05
+    assert params["signal_steps"] > 0
     assert params["execution_timing"] == "same_close"
     assert params["concentration"] == 0.0
-    assert params["band"] == 3
+    assert params["band"] == pytest.approx(0.03)
 
 
 def test_build_quant_payload_config_section_uses_shared_contract(load_module):
@@ -80,7 +80,7 @@ def test_build_quant_payload_config_section_uses_shared_contract(load_module):
 
     assert yr1["scoring"]["weights"]["volume_ratio"] == pytest.approx(0.45)
     assert yr1["scoring"]["weights"]["log_return_deviation"] == 0.1
-    assert yr1["position"]["discretize_step"] == 0.05
+    assert yr1["position"]["signal_steps"] > 0
     assert yr1["position"]["execution_timing"] == "same_close"
     assert yr1["position"]["concentration"] == 0.0
     assert yr1["position"]["band"] == 0.03

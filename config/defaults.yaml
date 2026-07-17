@@ -1,14 +1,11 @@
-# 非搜索参数的唯一默认值来源
-# tuner_params_to_config_override 从此文件读取默认值
-# YAML preset 可覆盖这些值
-
 scoring:
   sensitivity:
     f1: 8.0
     f3: 1.0
-    f7_t: 7.0
-    f7_k: 3.0
-
+    f7_up_power: 7
+    f7_up_span: 3.0
+    f7_down_power: 18
+    f7_down_span: 2.72
 confidence:
   type: ma_trend
   dead_zone: 17
@@ -18,11 +15,11 @@ confidence:
   ma_trend_period: 26
   ma_direction_confirm: true
   benchmarks:
-    - "000300"
-
+  - '000300'
 position:
   max_holdings: 6
-  discretize_step: 0.05
+  signal_steps: 17
+  top_boost: 2
   concentration: 2.0
   c_sensitivity: 0.0
   rebalance_freq: daily
@@ -32,10 +29,9 @@ position:
   dynamic_band:
     fast_span: 4
     slow_span: 12
-    floor: 0.015
-    ceiling: 0.045
+    floor: 0.001
+    ceiling: 0.20
   commission_rate: 0.00026
-
 factors:
   f1_active_days: 1
   ema:
@@ -47,6 +43,3 @@ factors:
     lookback_days: 250
     min_days: 60
     sigma_floor: 0.01
-
-account:
-  max_gross_exposure: 2.0

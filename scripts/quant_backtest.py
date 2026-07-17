@@ -103,10 +103,10 @@ def get_price_on_date(all_daily: dict, code: str, date: pd.Timestamp, field: str
 def _execute_rebalance(portfolio, cash, prices, suspended_codes,
                        target_positions, tradable_tv, step, commission_rate, turnover,
                        trade_lots=None, exec_date_str="",
-                       max_gross_exposure=2.0):
+                       ):
     """执行一次调仓：卖出→减仓→加仓。原地修改 portfolio，返回 (commission, new_cash, trade_log)。
 
-    允许现金为负（借款），上限为 max_gross_exposure × tradable_tv。
+    允许现金为负（借款）。总仓位已在信号层由 ma_bull/ma_bear 约束，执行层不重复钳制。
 
     trade_lots: {code: [{"buy_date", "buy_price", "shares"}, ...]}  开仓 lot 登记（原地修改）
     trade_log:  [{"code", "buy_date", "sell_date", "buy_price", "sell_price", "shares", "pnl_pct"}, ...]
@@ -162,7 +162,7 @@ def _execute_rebalance(portfolio, cash, prices, suspended_codes,
         target_value = tradable_tv * target_positions[code]
         current_value = portfolio.get(code, 0) * prices.get(code, 0)
         diff = target_value - current_value
-        if diff < -step * tradable_tv:
+        if diff < -step * tradable_tv * 0.5:
             sell_shares = -diff / prices[code]
             sell_shares = min(sell_shares, portfolio.get(code, 0))
             sell_price = prices[code]
@@ -187,14 +187,10 @@ def _execute_rebalance(portfolio, cash, prices, suspended_codes,
         diff = target_value - current_value
 
         if is_last:
-            # 最后一支吸收剩余额度
-            total_hv = sum(portfolio.get(c, 0) * prices.get(c, 0) for c in portfolio)
-            remaining = max_gross_exposure * tradable_tv - total_hv
-            buy_value = min(max(diff, 0), remaining) if remaining > 0 else 0
+            # 最后一支无条件加仓到目标（信号层已约束总仓位）
+            buy_value = max(diff, 0)
         elif diff > buy_threshold:
-            total_hv = sum(portfolio.get(c, 0) * prices.get(c, 0) for c in portfolio)
-            remaining = max_gross_exposure * tradable_tv - total_hv
-            buy_value = min(diff, remaining) if remaining > 0 else 0
+            buy_value = diff
         else:
             continue
 
@@ -416,6 +412,7 @@ def _precompute_factors(all_daily, all_weekly, ema_period, vol_window,
                 f1_val[i] = checkpoint_f1
             else:
                 f1_val[i] = float((base_close - base_ema) / base_ema * 100)
+
         # F3: self-normalized volume ratio (60d baseline → 20d up/down comparison)
         f3_val = np.full(len(daily_dates), np.nan, dtype=float)
         if len(daily_df) >= f3_norm_window + vol_window + 1:
@@ -469,6 +466,7 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
                  return_details: bool = False,
                  return_debug: bool = False,
                  return_data: bool = False,
+                 verbose: bool = True,
                  progress_callback=None,
                  all_daily_exec: dict = None):
     """
@@ -513,7 +511,6 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
     account_cfg = cfg.get("account", {})
     from etf_report.core.quant_contract import load_defaults
     _df = load_defaults()
-    max_gross_exposure = account_cfg.get("max_gross_exposure", _df["account"]["max_gross_exposure"])
     financing_rate_annual = account_cfg.get("financing_rate_annual", 0.0)
     daily_financing_rate = financing_rate_annual / 360.0 if financing_rate_annual > 0 else 0.0
 
@@ -564,7 +561,11 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
         benchmarks = [benchmarks]
     use_multi_benchmark = len(benchmarks) > 1
     max_holdings = position_cfg["max_holdings"]
-    step = position_cfg["discretize_step"]
+    # signal_steps: integer number of chunks to divide total_target into.
+    # Fallback: if old discretize_step is present, compute equivalent N.
+    _ds = position_cfg.get("discretize_step")
+    n_steps = int(position_cfg.get("signal_steps", round(1.58 / _ds) if _ds else 17))
+    top_boost = int(position_cfg.get("top_boost", 0))  # steps reserved for #1 ETF after normal distribution
     concentration = position_cfg.get("concentration", 2.0)  # softmax concentration multiplier (higher=more concentrated)
     c_sensitivity = position_cfg.get("c_sensitivity", 0.0)  # dynamic C sensitivity: c_mult = 1 + sens×(disp−0.5), 0=static
     f1_daily_ema = factor_cfg.get("f1_daily_ema", False)
@@ -577,16 +578,20 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
     f7_min_days = f7_cfg.get("min_days", 60)
     f7_sigma_floor = f7_cfg.get("sigma_floor", 0.01)
 
-    f7_t = sensitivity.get("f7_t", 7.0)
-    f7_k = sensitivity.get("f7_k", 3.0)
+    f7_up_power = sensitivity.get("f7_up_power", 7.0)
+    f7_up_span = sensitivity.get("f7_up_span", 3.0)
+    f7_down_power = sensitivity.get("f7_down_power", 7.0)
+    f7_down_span = sensitivity.get("f7_down_span", 3.0)
 
     # 加载所有 ETF 数据（优先使用预加载数据）
     if preloaded and preloaded.get("all_daily"):
         all_daily = preloaded["all_daily"]
         all_weekly = preloaded.get("all_weekly", {})
-        print(f"  使用预加载数据 {len(all_daily)}/{len(universe)} 支 ETF")
+        if verbose:
+            print(f"  使用预加载数据 {len(all_daily)}/{len(universe)} 支 ETF")
     else:
-        print("加载数据...")
+        if verbose:
+            print("加载数据...")
         if progress_callback:
             progress_callback(0, 100, "加载数据")
         all_daily = {}
@@ -600,7 +605,8 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
                 all_weekly[code] = weekly
             if progress_callback and i % 10 == 9:
                 progress_callback(int(i / max(n_etfs,1) * 3), 100, "加载数据")
-        print(f"  成功加载 {len(all_daily)}/{len(universe)} 支 ETF")
+        if verbose:
+            print(f"  成功加载 {len(all_daily)}/{len(universe)} 支 ETF")
 
     # 加载市场状态（F4 regime-aware 映射需要）
     if preloaded and preloaded.get("market_regimes"):
@@ -613,7 +619,8 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
                 with regimes_path.open("r", encoding="utf-8") as f:
                     regimes_data = json.load(f)
                 market_regimes = {r["date"]: r["regime"] for r in regimes_data.get("regimes", [])}
-                print(f"  市场状态: {len(market_regimes)} 天")
+                if verbose:
+                    print(f"  市场状态: {len(market_regimes)} 天")
             except Exception as e:
                 print(f"  [WARN] 加载市场状态失败: {e}")
 
@@ -628,8 +635,9 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
                 cache = build_ma_trend_cache(daily, weekly, ma_trend_period) or {}
                 benchmark_above_maps[idx_code] = cache.get("above", {})
                 benchmark_rising_maps[idx_code] = cache.get("ma_rising", {})
-                print("  {} MA{}: {} days loaded".format(
-                    idx_code, ma_trend_period, len(benchmark_above_maps[idx_code])))
+                if verbose:
+                    print("  {} MA{}: {} days loaded".format(
+                        idx_code, ma_trend_period, len(benchmark_above_maps[idx_code])))
             except Exception as e:
                 print("  [WARN] {} MA{} failed: {}".format(idx_code, ma_trend_period, e))
                 # Fallback: empty maps (always vote bull)
@@ -652,7 +660,8 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
     # Always precompute factor series and price lookup (no fast/slow path distinction)
     if progress_callback:
         progress_callback(3, 100, "因子预计算")
-    print("预计算因子序列...")
+    if verbose:
+        print("预计算因子序列...")
     factor_series = _precompute_factors(
         all_daily, all_weekly,
         factor_cfg["ema"]["period_weeks"],
@@ -685,10 +694,11 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
     if initial_rb_date is not None and initial_rb_date < user_start:
         rebalance_dates = pd.DatetimeIndex([initial_rb_date] + list(rebalance_dates))
 
-    print(f"  回测区间: {user_start.strftime('%Y-%m-%d')} ~ {user_end.strftime('%Y-%m-%d')}")
-    print(f"  交易日数: {len(all_dates)}")
-    print(f"  调仓频率: {rebalance_freq}")
-    print(f"  调仓日: {len(rebalance_dates)}（含初始建仓 {1 if initial_rb_date is not None and initial_rb_date < user_start else 0}）")
+    if verbose:
+        print(f"  回测区间: {user_start.strftime('%Y-%m-%d')} ~ {user_end.strftime('%Y-%m-%d')}")
+        print(f"  交易日数: {len(all_dates)}")
+        print(f"  调仓频率: {rebalance_freq}")
+        print(f"  调仓日: {len(rebalance_dates)}（含初始建仓 {1 if initial_rb_date is not None and initial_rb_date < user_start else 0}）")
 
     # ============================================================
     # 回测主循环
@@ -706,7 +716,8 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
     trade_lots = {}       # {code: [{"buy_date","buy_price","shares"}, ...]}
     all_trade_log = []    # accumulated closed trades from each rebalance
 
-    print("\n开始回测...")
+    if verbose:
+        print("\n开始回测...")
     debug_snapshots = []
 
     total_rb = len(rebalance_dates)
@@ -789,11 +800,18 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
         mapped_f1 = factors_df["f1_ema_dev"].apply(lambda v: map_f1(v, f1_sens))
         mapped_f3 = factors_df["f3_volume_ratio"].apply(lambda v: map_f3(v, f3_sens))
 
-        mapped_f7 = factors_df["f7_log_return_dev"].apply(lambda v: map_f7(v, t=f7_t, k=f7_k)).fillna(0.5)
+        mapped_f7 = factors_df["f7_log_return_dev"].apply(lambda v: map_f7(v, up_power=f7_up_power, up_span=f7_up_span, down_power=f7_down_power, down_span=f7_down_span)).fillna(0.5)
         w1 = weights.get("ema_deviation", 0.35)
         w3 = weights.get("volume_ratio", 0.35)
         w4 = weights.get("valuation", 0.15)
         w7 = weights.get("log_return_deviation", 0.0)
+        # Validate weights sum to ~1.0 (engine scale 0-1, tolerance 1%)
+        _wsum = w1 + w3 + w7
+        if abs(_wsum - 1.0) > 0.01:
+            raise ValueError(
+                f"Weight sum must be 1.0, got w1={w1:.4f}+w3={w3:.4f}+w7={w7:.4f}={_wsum:.4f}. "
+                f"Use research_utils.redistribute_weights(w7, base_w1, base_w3) to fix."
+            )
 
         composite = mapped_f1 * w1 + mapped_f3 * w3
         if w7 > 0:
@@ -978,44 +996,65 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
             total_target = min(0.95, avg_conf * 1.2)  # 上限 95%
 
         # 目标仓位
-        actual_exposure = min(total_target, max_gross_exposure)
-        target_positions = softmax_weights * actual_exposure
+        actual_exposure = total_target
+        # 预扣 top_boost 加成量，softmax 只分 base_pool；
+        # 离散化→加回 boost 后总和天然 = actual_exposure，无需 excess 清算。
+        _step = total_target / n_steps if n_steps > 0 else 0.0
+        _boost_reserve = top_boost * _step if top_boost > 0 else 0.0
+        _base_pool = max(actual_exposure - _boost_reserve, 0.0)
+        target_positions = softmax_weights * _base_pool
 
-        # 离散化（最大余数法：floor 后按余数补回，残量补给最大持仓者）
-        in_steps = target_positions / step
-        floored = np.floor(in_steps)
-        remainders = in_steps - floored
-        total_floor = floored.sum()
-        target_steps = round(total_target / step)
-        deficit = int(target_steps - total_floor)
-        if deficit > 0:
-            top_indices = remainders.nlargest(min(deficit, len(remainders))).index
-            floored.loc[top_indices] += 1
-        target_positions = (floored * step).clip(lower=0)
-        leftover = total_target - target_positions.sum()
-        if leftover > 0:
-            max_idx = target_positions.idxmax()
-            if not pd.isna(max_idx):
-                target_positions[max_idx] += leftover
-        elif leftover < 0:
-            # discretization rounding pushed total above target: clip largest position
-            excess = -leftover
-            max_idx = target_positions.idxmax()
-            if not pd.isna(max_idx):
-                target_positions[max_idx] = max(0.0, target_positions[max_idx] - excess)
+        # 离散化：用 total_target / n_steps 作为步长（牛熊自适应）
+        # 若 total_target <= 0（如 bear=0），跳过离散化，全部清仓
+        if actual_exposure > 0:
+            step = total_target / n_steps
+            effective_n = max(n_steps - top_boost, 2)
+            effective_step = total_target / effective_n
+            in_steps = target_positions / effective_step
+            floored = np.floor(in_steps)
+            remainders = in_steps - floored
+            total_floor = floored.sum()
+            # 离散化目标步数对应 base_pool（已预扣 boost）
+            target_steps = round(_base_pool / effective_step) if _base_pool > 0 else 0
+            deficit = int(target_steps - total_floor)
+            if deficit > 0:
+                top_indices = remainders.nlargest(min(deficit, len(remainders))).index
+                floored.loc[top_indices] += 1
+            target_positions = (floored * effective_step).clip(lower=0)
+            leftover = _base_pool - target_positions.sum()
+            if leftover > 0:
+                max_idx = target_positions.idxmax()
+                if not pd.isna(max_idx):
+                    target_positions[max_idx] += leftover
+            elif leftover < 0:
+                _xs = -leftover
+                max_idx = target_positions.idxmax()
+                if not pd.isna(max_idx):
+                    target_positions[max_idx] = max(0.0, target_positions[max_idx] - _xs)
+
+            # Top boost: base_pool 已预扣，直接加回，总和 = actual_exposure
+            if top_boost > 0:
+                top_code = softmax_weights.idxmax()
+                if not pd.isna(top_code):
+                    target_positions[top_code] = target_positions.get(top_code, 0) + _boost_reserve
+        else:
+            step = 0.0
 
         # Fallback: fill missing prices for held ETFs with most recent available close.
-        # ETFs whose price comes from fallback (not from today's data) are treated as
-        # suspended: they are valued at last-known price but cannot be bought or sold.
+        # REQ-373: ETFs with volume==0 (suspension) or missing price are frozen —
+        # valued at last-known close, cannot be bought or sold.
         suspended_codes = set()
         for code in list(portfolio.keys()):
-            if code not in prices_today:
-                df = all_daily.get(code)
-                if df is not None:
-                    past = df[df["date"] < rb_date]
-                    if len(past) > 0:
-                        prices_today[code] = float(past["close"].iloc[-1])
-                        suspended_codes.add(code)
+            row = price_lookup.get(code, {}).get(exec_key)
+            vol = float(row.get("volume", 1)) if row else 0
+            if code not in prices_today or vol == 0:
+                if code not in prices_today:
+                    df = all_daily.get(code)
+                    if df is not None:
+                        past = df[df["date"] < rb_date]
+                        if len(past) > 0:
+                            prices_today[code] = float(past["close"].iloc[-1])
+                suspended_codes.add(code)
 
         # ------ 4. 计算当前组合市值 ------
         holdings_value = sum(
@@ -1036,10 +1075,22 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
             portfolio, cash, prices_today, suspended_codes,
             target_positions.to_dict(), tradable_tv, step, commission_rate, turnover_today,
             trade_lots=trade_lots, exec_date_str=exec_key,
-            max_gross_exposure=max_gross_exposure,
         )
         total_commission += comm
         all_trade_log.extend(trade_log)
+
+        # Compute actual positions from post-rebalance portfolio
+        post_nav = cash + sum(
+            portfolio.get(c, 0) * prices_today.get(c, 0)
+            for c in portfolio
+        )
+        actual_positions = {}
+        if post_nav > 0:
+            for code, shares in portfolio.items():
+                px = prices_today.get(code, 0)
+                if px > 0:
+                    actual_positions[code] = shares * px / post_nav
+        actual_leverage = sum(actual_positions.values())  # gross / NAV
 
         # 记录信号
         signal_entry = {
@@ -1049,11 +1100,14 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
             "execution_timing": "same_close",
             "scores": composite.to_dict(),
             "top6": list(top_n.index),
-            "positions": target_positions.to_dict(),
+            "positions": actual_positions,
+            "target_positions": target_positions.to_dict(),
             "avg_confidence": avg_conf,
             "total_target": total_target,
+            "actual_leverage": round(actual_leverage, 4),
             "actual_exposure": actual_exposure,
             "regime": regime,
+            "suspended_codes": list(suspended_codes),
         }
         if conf_type == "ma_trend" and benchmark_vote_details is not None:
             signal_entry["benchmark_votes"] = benchmark_vote_details
@@ -1099,7 +1153,7 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
             _f3_d = mapped_f3.to_dict()
             _f7_d = mapped_f7.to_dict() if "f7_log_return_dev" in factors_df.columns else {}
             _comp_d = composite.to_dict()
-            _pos_d = target_positions.to_dict()
+            _pos_d = actual_positions  # REQ-373: use actual (post-execution), not target
             _has_f7 = "f7_log_return_dev" in factors_df.columns and w7 > 0
             # Raw factor values for attribution (REQ-233)
             _f1_raw = factors_df["f1_ema_dev"].to_dict()
@@ -1122,13 +1176,27 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
                     "f3_raw": round(float(_f3_raw.get(code, 1.0)), 2),
                     "f7_raw": round(float(_f7_raw.get(code, 0)), 2) if _has_f7 else None,
                 }
+            # REQ-373: add suspended/frozen holdings to detail for frontend display
+            for _sc in suspended_codes:
+                if _sc in actual_positions and actual_positions[_sc] > 0:
+                    _s_px = float(prices_today.get(_sc, 0))
+                    detail[_sc] = {
+                        "f1": None, "f3": None, "f7": None,
+                        "score": None, "z": None,
+                        "confidence": round(float(total_target) * 100, 0),
+                        "position": round(float(actual_positions[_sc]) * 100, 1),
+                        "price": round(_s_px, 3) if _s_px > 0 else 0,
+                        "f1_raw": None, "f3_raw": None, "f7_raw": None,
+                        "suspended": True,
+                    }
             signal_history[-1]["detail"] = detail
 
         # 进度
         if (rb_idx + 1) % 20 == 0:
             nav = (cash + sum(portfolio.get(c, 0) * prices_today.get(c, 0) for c in portfolio))
-            print(f"  [{rb_idx+1}/{len(rebalance_dates)}] {rb_date.strftime('%Y-%m-%d')} "
-                  f"NAV={nav/initial_capital*100:.1f}% holdings={len(portfolio)}")
+            if verbose:
+                print(f"  [{rb_idx+1}/{len(rebalance_dates)}] {rb_date.strftime('%Y-%m-%d')} "
+                      f"NAV={nav/initial_capital*100:.1f}% holdings={len(portfolio)}")
 
     # ── Close remaining open lots at last available close price ──
     if trade_lots:
@@ -1157,7 +1225,8 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
     # ============================================================
     if progress_callback:
         progress_callback(_prog_pass1_end, 100, "计算净值")
-    print("\n计算逐日 NAV...")
+    if verbose:
+        print("\n计算逐日 NAV...")
 
     # 重新跑一遍，但这次逐日记录净值
     # 简化：用调仓后的持仓，在每个交易日按收盘价计算 NAV
@@ -1253,7 +1322,6 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
             comm2, cash2, _ = _execute_rebalance(
                 portfolio2, cash2, prices, suspended_codes2,
                 target_positions, tradable_tv2, step, commission_rate, turnover2,
-                max_gross_exposure=max_gross_exposure,
             )
             total_commission2 += comm2
 
@@ -1330,23 +1398,24 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
 
     actual_trades = count_actual_rebalances(signal_history)
 
-    print("\n" + "=" * 60)
-    print("回测结果")
-    print("=" * 60)
-    print(f"  回测区间:    {nav_df['date'].iloc[0].strftime('%Y-%m-%d')} ~ {nav_df['date'].iloc[-1].strftime('%Y-%m-%d')}")
-    print(f"  交易日数:    {len(nav_df)}")
-    print(f"  调仓次数:    {actual_trades} / {len(signal_history)}（实际换仓 / 总调仓日）")
-    print(f"  总收益率:    {total_return:+.2f}%")
-    print(f"  年化收益率:  {annual_return:+.2f}%")
-    print(f"  最大回撤:    {max_drawdown:.2f}%")
-    print(f"  夏普比率:    {sharpe:.2f}")
-    print(f"  索提诺比率:  {sortino:.2f}")
-    print(f"  最终 NAV:    {final_nav:,.0f} (初始 {initial_capital:,.0f})")
-    print(f"  最终持仓数:  {nav_df['holdings'].iloc[-1]}")
-    comm = total_commission2  # from second-pass NAV loop (matches returned NAV curve)
-    if comm > 0:
-        print(f"  交易佣金:    {comm:,.0f} ({comm/initial_capital*100:.2f}% 本金)")
-    print("=" * 60)
+    if verbose:
+        print("\n" + "=" * 60)
+        print("回测结果")
+        print("=" * 60)
+        print(f"  回测区间:    {nav_df['date'].iloc[0].strftime('%Y-%m-%d')} ~ {nav_df['date'].iloc[-1].strftime('%Y-%m-%d')}")
+        print(f"  交易日数:    {len(nav_df)}")
+        print(f"  调仓次数:    {actual_trades} / {len(signal_history)}（实际换仓 / 总调仓日）")
+        print(f"  总收益率:    {total_return:+.2f}%")
+        print(f"  年化收益率:  {annual_return:+.2f}%")
+        print(f"  最大回撤:    {max_drawdown:.2f}%")
+        print(f"  夏普比率:    {sharpe:.2f}")
+        print(f"  索提诺比率:  {sortino:.2f}")
+        print(f"  最终 NAV:    {final_nav:,.0f} (初始 {initial_capital:,.0f})")
+        print(f"  最终持仓数:  {nav_df['holdings'].iloc[-1]}")
+        comm = total_commission2  # from second-pass NAV loop (matches returned NAV curve)
+        if comm > 0:
+            print(f"  交易佣金:    {comm:,.0f} ({comm/initial_capital*100:.2f}% 本金)")
+        print("=" * 60)
 
     # 杠杆风险指标
     exposure_series = nav_df["exposure"].values
@@ -1415,6 +1484,8 @@ def main():
                         help="输出调试快照到 data/debug_cli.json")
     parser.add_argument("--universe", type=str, default=None,
                         help="ETF 筛选列表（逗号分隔，不传=仅 active ETF）")
+    parser.add_argument("--quiet", action="store_true",
+                        help="静默模式，不输出回测过程")
     args = parser.parse_args()
 
     universe_filter = None
@@ -1426,19 +1497,22 @@ def main():
         preset=args.preset,
         return_debug=args.debug,
         universe_filter=universe_filter,
+        verbose=not args.quiet,
     )
 
     if nav_df is not None and args.output:
         output_path = Path(args.output)
         output_path.parent.mkdir(parents=True, exist_ok=True)
         nav_df.to_csv(output_path, index=False)
-        print(f"\n净值曲线已保存: {output_path}")
+        if not args.quiet:
+            print(f"\n净值曲线已保存: {output_path}")
     elif nav_df is not None:
         # 默认保存
         OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
         output_path = OUTPUT_DIR / "backtest_nav.csv"
         nav_df.to_csv(output_path, index=False)
-        print(f"\n净值曲线已保存: {output_path}")
+        if not args.quiet:
+            print(f"\n净值曲线已保存: {output_path}")
 
     if args.debug and nav_df is not None:
         snaps = extra.get("debug_snapshots", [])
@@ -1446,7 +1520,8 @@ def main():
         debug_path.parent.mkdir(parents=True, exist_ok=True)
         with debug_path.open("w", encoding="utf-8") as f:
             json.dump({"count": len(snaps), "snapshots": snaps}, f, ensure_ascii=False, indent=2)
-        print(f"\nDEBUG: {len(snaps)} snapshots saved → {debug_path}")
+        if not args.quiet:
+            print(f"\nDEBUG: {len(snaps)} snapshots saved → {debug_path}")
 
 
 if __name__ == "__main__":

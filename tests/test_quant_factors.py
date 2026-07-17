@@ -10,7 +10,7 @@ import pytest
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
-from quant_factors import factor_log_return_deviation, map_f7
+from quant_factors import factor_log_return_deviation, map_f7, composite_score
 
 
 def make_rw(n=300, seed=42, start_price=10.0):
@@ -124,8 +124,36 @@ def test_map_f7_monotonic():
 
 def test_map_f7_sensitivity():
     """k 更大时，同样 Z 值的响应更平缓"""
-    assert map_f7(2.0, k=5.0) > map_f7(2.0, k=3.0)
-    assert map_f7(-2.0, k=5.0) < map_f7(-2.0, k=3.0)
+    assert map_f7(2.0, up_span=5.0) > map_f7(2.0, up_span=3.0)
+    assert map_f7(-2.0, up_span=5.0) < map_f7(-2.0, up_span=3.0)
+
+
+def test_map_f7_asymmetric_sides():
+    """REQ-375: 超跌侧独立参数生效——down 参数只影响 Z<0，不影响 Z>0"""
+    base_up = map_f7(2.0, up_power=7.0, up_span=3.0)
+    base_down = map_f7(-2.0, up_power=7.0, up_span=3.0)
+    # 改 down 参数：超涨侧分数不变，超跌侧分数变化
+    assert map_f7(2.0, up_power=7.0, up_span=3.0, down_power=14.0, down_span=2.5) == pytest.approx(base_up, abs=1e-9)
+    assert map_f7(-2.0, up_power=7.0, up_span=3.0, down_power=14.0, down_span=2.5) != pytest.approx(base_down, abs=1e-6)
+
+
+def test_composite_score_consumes_f7_down_params():
+    """composite_score 内部评分路径消费 f7_down_power/f7_down_span（超跌侧接入）"""
+    factors_df = pd.DataFrame({
+        "f1_ema_dev": [0.0, 0.0],
+        "f3_volume_ratio": [1.0, 1.0],
+        "f7_log_return_dev": [2.0, -2.0],  # 一个超涨、一个超跌
+    }, index=["UP_ETF", "DOWN_ETF"])
+    weights = {"ema_deviation": 0.0, "volume_ratio": 0.0, "log_return_deviation": 1.0}
+    base = composite_score(factors_df, weights,
+                           sensitivity={"f7_up_power": 7.0, "f7_up_span": 3.0,
+                                        "f7_down_power": 7.0, "f7_down_span": 3.0})
+    tuned = composite_score(factors_df, weights,
+                            sensitivity={"f7_up_power": 7.0, "f7_up_span": 3.0,
+                                         "f7_down_power": 14.0, "f7_down_span": 2.5})
+    # 超涨 ETF 不受 down 参数影响；超跌 ETF 分数随 down 参数变化
+    assert tuned["UP_ETF"] == pytest.approx(base["UP_ETF"], abs=1e-9)
+    assert tuned["DOWN_ETF"] != pytest.approx(base["DOWN_ETF"], abs=1e-6)
 
 
 # ── F6 (factor_exhaustion_penalty): removed in REQ-255 ──

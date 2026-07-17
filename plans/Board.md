@@ -1,12 +1,12 @@
-# ETF 报告技能 — 需求看板
+﻿# ETF 报告技能 — 需求看板
 
 ## 当前版本信息
 
 | 字段 | 值 |
 |------|------|
-| **当前版本** | **v3.11.0** (盘后定价 + 数据管理面板 + 因子缓存治理) |
+| **当前版本** | **v3.13.0**（2026-07-17 发布）预设清理 + F7 双侧优化 + Tuner 事件委托/三文件拆分 + Wishlist 消化 |
 | **生产预设** | **gam-0** — 指标见 [`research/params/baseline.yaml`](../research/params/baseline.yaml) |
-| **下一目标版本** | **v3.12.0** (Walk-Forward + TPE 收敛 + Gambler 前沿扩区) |
+| **下一目标版本** | **v3.14.0**（参数研究 + WF）→ v4.0.0（架构包化 + 仪表盘） |
 | **池子** | 54支，全部默认打开 |
 
 
@@ -15,6 +15,8 @@
 
 ## in_progress (开发中)
 
+| 日期 | ID | 标题 | 状态 |
+|------|----|------|------|
 （空）
 
 ## discussing (讨论中)
@@ -23,11 +25,23 @@
 
 | 日期 | 话题 | 状态 | 备注 |
 |------|------|------|------|
-| 2026-07-01 | AI 讨论→执行跳步问题 — 开放式输入被当成即时任务 | 探索中 | AGENTS.md 已加讨论协议，待观察效果 |
+| 2026-07-01 | AI 讨论→执行跳步问题 — 开放式输入被当成即时任务 | 已关闭 | 观察半月无复发，AGENTS.md 讨论协议生效 |
+| 2026-07-08 | **ETF 池子设定对策略的影响** — 两个方向：(A) 随机池子集→评估策略稳健性+发现关键ETF；(B) 动态池/扇区轮动→牛市去传统、熊市去科技。引擎已有 `--universe` 筛选+每支 ETF 已标 sector。方向 A 纯研究脚本不改引擎，方向 B 需引擎支持动态池。建议先 A（低成本高信息量）→ 数据驱动决策 B。 | 已产出 REQ | → REQ-363 |
+| 2026-07-10 | **离散化 alpha 的干净替代方案** — REQ-365/366 + top_boost 已完成。N=17 + top_boost=2 覆盖了离散化 alpha。 | 已关闭 | → REQ-365/366 已交付 |
+| 2026-07-13 | **F7 横向正则化 → F8** | 已关闭（证伪） | → REQ-367 abandoned，CAPM残差F7不优于自我参照 |
+| 2026-07-13 | **F7 Checkpoint 胜率优化** | 已产出 REQ | → REQ-369 |
+| 2026-07-13 | **熊市切换参数独立化** | 已产出 REQ | → REQ-370 |
+| 2026-07-14 | **5 参数风险暴露框架** — C/CS/MH/TB/bull 在"激进↔保守"光谱上同向施力，存在代偿关系。沿等风险面做方向性扰动替代 5 维网格搜索。研究设计见 `research/params/n_tb_study.md` | 已关闭 | → REQ-374 分组约束优化已交付，TPE 组内代偿路径替代网格搜索 |
+| 2026-07-16 | **因子驱动力日度诊断** — 每日全池 F1/F3/F7 截面离散度 + 主导因子识别 → 感知行情极端程度，辅助调参（太敏感→极端日过多） | 已产出 REQ | → REQ-377 |
+
+| 2026-07-09 | **信号步长 + C + CS "三兄弟"研究** | 已关闭 | → 合并入 REQ-366 |
+| 2026-07-09 | **执行步长收窄锁定** | 已关闭 | → 合并入 REQ-365（参数已合并为 N） |
 
 ## done (未归档)
 
-（空）
+| 日期 | ID | 标题 | 处理 |
+|------|----|------|------|
+（空 — v3.13.0 已归档至 Archive.md）
 
 ## 版本规划
 
@@ -36,6 +50,7 @@
 | **v3.10.0** | 三派前沿基线 | ✅ pool 引擎 → 三派首轮 → 补密度 → frontier 验收 |
 | **v3.11.0** | 盘后定价 + 数据管理 | ✅ 信号推送迁移 + 覆盖矩阵 + 因子缓存治理 |
 | **v3.12.0** | Gambler前沿扩区 + Bug修复 | 6区并行优化 → 6点前沿 + disc_step/stable修复 |
+| **v3.13.0** | 预设清理 + F7 双侧优化 + Wishlist消化 + 杠杆上限治理 | ✅ REQ-362 预设清理 + REQ-371 杠杆上限 + REQ-375 F7 双侧参数与扫参 + REQ-112/376 Tuner 前端治理（REQ-223 WF 延期至 v3.14.0） |
 | **v4.0.0** | 架构包化 + 仪表盘 | REQ-334 脚本→src + REQ-270 人设仪表盘 + WF 生产化 |
 
 
@@ -55,13 +70,11 @@
 
 ## backlog (待开发)
 
-| ID | 标题 | 优先级 | 备注 |
-|----|------|--------|------|
-| REQ-361 | **前后端参数缩放一致性审计** — ÷10 缩放链路对齐, 对称性测试 | 🔴 P0 | BUG-043 根因追溯 |
-| REQ-360 | **拆股后数据修复工作流** — ⚠标记→按比例调整CSV→验证→清标记 | ✅ | 2026-07-07 |
-| REQ-359 | **因子缓存多预设视图** — 每ETF×每预设的状态, 筛选/删除/重建 | 🟢 P2 | 依赖 REQ-357 |
-| REQ-358 | ~~份额变动后因子缓存自动重建~~ → 已并入 REQ-360 | — | — |
-| REQ-356 | **数据管理面板 — 周线/成交量切换** | 🟡 P1 | 已并入 REQ-357 |
+（空 — 已延期至 v3.14.0）
+
+### v3.13.0: Tuner onclick → 事件委托 ✅ 已交付
+
+（此版本已完整交付，无遗留事项）
 
 ### v3.10.0: 三派前沿 + 融资成本 + 动态分数带
 
@@ -86,12 +99,22 @@
 | ~~REQ-346~~ | **净值涨跌分布 UI** — ✅ 翻页展示, 直方图+5统计卡+极值 | — | 2026-07-02 |
 | ~~REQ-343~~ | **Tuner 进度条时间匹配** — ✅ 动态权重: Pass2 69pp, Pass1 28pp | — | 2026-07-02 |
 
-### v3.12.0: Walk-Forward + TPE 收敛
+### v3.12.0: Gambler前沿扩区 + disc_step/stable修复 ✅ 已发布
+
+（此版本已完整交付，无遗留事项）
+
+### v3.14.0: 延期需求 — 参数研究 + WF
 
 | ID | 标题 | 优先级 | 备注 |
 |----|------|--------|------|
-| REQ-323 | **WF Phase 1** — 单 MDD × 3 段验证 | 🟠 P1 | |
+| REQ-223 | **Walk-Forward 优化** — WF 工作流落地 | 🔴 P0 | 从 v3.13.0 延期 |
+| REQ-323 | **WF Phase 1** — 单 MDD × 3 段验证 | 🟠 P1 | 依赖 REQ-223 |
 | REQ-324 | **WF Phase 2** — 5 MDD 全量前沿 | 🔴 P0 | 依赖 REQ-323 |
+| REQ-326 | **Walk-Forward 生产化** — 纳入 daily bat | 🔴 P0 | 依赖 REQ-324 |
+| REQ-363 | **ETF 池稳健性研究** — 随机子集+leave-one-sector-out | 🟡 P1 | 从 backlog 延期 |
+| REQ-369 | **F7 Checkpoint 胜率优化** — Z-score 分段胜率统计 | 🟡 P1 | 从 backlog 延期 |
+| REQ-370 | **熊市切换参数独立化** — 牛熊解耦参数空间 | 🟡 P1 | 从 backlog 延期 |
+| REQ-377 | **因子驱动力日度诊断** — F1/F3/F7 截面离散度 + 主导因子识别 + 历史百分位 | 🟡 P1 | 新，2026-07-16 讨论 |
 
 ### v4.0.0: 架构包化 + 仪表盘
 
@@ -99,32 +122,22 @@
 |----|------|--------|------|
 | REQ-334 | **架构包化 — scripts→src 迁移** | 🔴 P0 | |
 | REQ-270 | **v4 人设仪表盘** | 🔴 P0 | |
-| REQ-326 | **Walk-Forward 生产化** — 纳入 daily bat | 🔴 P0 | 依赖 REQ-324 |
 
 ## wishlist (远期愿景)
 
 | ID | 标题 | 备注 |
 |----|------|------|
-| REQ-268 | Tuner 页 ETF 成分股展示（参考正式页） | 🟢 Low。v4.1.0。在 Tuner 内嵌各 ETF 前十大重仓股面板，数据源复用 etf_metadata.json。 |
-| REQ-159 | editorial 国内政策源增强 | 🟢 Low。无明确目标版本。 |
-| REQ-112 | HTML/JS 分离与数据解耦 | 🟢 Low。无明确目标版本。 |
-| REQ-207 | index.html 前端工程质量审计 | 🟢 Low。无明确目标版本。 |
+| REQ-207 | index.html 前端工程质量审计 | 🟢 Low。计划存在（REQ-207.md），等待下一轮大改 |
 | REQ-163 | K 线主图对数 Y 轴 | |
 | REQ-167 | 主题切换器（多套配色） | 吸收 REQ-239 |
 | REQ-169 | "活人味道"板块 | |
-| REQ-174 | ETF 替换标准流程 | |
 | REQ-206 | 债券 ETF 入池 | 搁置 |
-| REQ-349 | **调仓决策可追溯** — 替换因果链（得分差 vs band） | 🟢 P3 | v4.0.0+. 设计中 |
-| REQ-350 | **因子贡献拆解** — hover 显示 F1/F3/F7 各自贡献 | 🟢 P3 | v4.0.0+. 设计中 |
-| REQ-351 | **NAV 事件锚点** — 最大涨跌日/换仓日可点击标记 | 🟢 P3 | v4.0.0+. 设计中 |
-| REQ-352 | **反事实对比** — band=0 vs 实盘持仓差异直观展示 | 🟢 P3 | v4.0.0+. 设计中 |
-| REQ-223 | Walk-forward 优化 | 搁置 |
+| REQ-352 | **反事实对比** — band=0 vs 实盘持仓差异直观展示 | 🟢 P3 |
 | REQ-228 | 策略容量估算 | |
 | REQ-229 | 下单时点滑点测量 | |
 | REQ-224 | 信号稳定性评分 | P3 |
 | REQ-232 | 回测历史浏览器 | |
-| REQ-236 | K 线 AI 交易注释 | 归因面板已覆盖部分需求 |
-| REQ-240~248 | **商业化线** (9项): 策略向导/市场/白标PDF/因子教程/策略动画/解剖课/分享链接/微信集成/订阅制 | 2026-05-26 | CS 重审：全部从 v3.3.0 降级至 wishlist 搁置。 |
+| REQ-240~248 | **商业化线** (9项): 策略向导/市场/白标PDF/因子教程/策略动画/解剖课/分享链接/微信集成/订阅制 | 全部搁置 |
 
 ## abandoned (已废弃)
 
@@ -159,25 +172,7 @@
 
 | ID | 标题 | 严重度 | 状态 | 引入版本 | 关联 | 发现日期 | 根因 | 修复版本 |
 |----|------|--------|------|---------|------|---------|------|---------|
-| BUG-023 | 手动启动 Tuner 前台窗口且页面延迟打开 | 🟡 Medium | fixed | - | Tuner 启动入口 | 2026-05-08 | PowerShell 3s wait + preload 阻塞 Flask 启动 | v3.2.0 |
-| BUG-024 | `set()` 迭代顺序非确定 → CLI/Tuner 回测结果不一致 | 🔴 Critical | fixed | v3.2.0-dev | REQ-205 | 2026-05-18 | PYTHONHASHSEED 随机化导致买入循环顺序不同、现金分配不同。修复: `sorted()` + 成交额排序 | v3.2.0 |
-| BUG-025 | MA 趋势信号 lookahead bias — `merge_asof(direction="forward")` | 🔴 Critical | fixed | v3.2.0-dev | weekly_trend/daily_aggressive | 2026-05-18 | 周一~周四用了本周五的 MA 信号(未来数据)。修复: `direction="backward"` | v3.2.0 |
-| BUG-026 | `is_last` 残量回收无视 total_target 上限 → 熊市现金被花光 | 🔴 Critical | fixed | v3.2.0-dev | REQ-205 | 2026-05-18 | 第一 pass `buy_value=cash`→修了；第二 pass 用 `cash2` 变量名不同 → 漏修。修复: `min(cash, max(diff,0))` + 共用函数 | v3.2.0 |
-| BUG-027 | setSlider `removeAttribute('step')` → 浏览器默认 step=1 → 滑块锁死 0%/100% | 🟡 Medium | fixed | v3.2.0-dev | ma_bull/ma_bear 滑块 | 2026-05-21 | HTML 规范: range input 无 step 属性时默认值=1。修复: `el.step='any'` 代替 `removeAttribute` | v3.2.0 |
-| BUG-028 | 中概互联(513050) `--full` 分页 bug → CSV 仅 2017-2019 数据 → 不进因子计算 | 🟡 Medium | fixed | v3.2.0-dev | REQ-214 池子扩容 | 2026-05-22 | `fetch_etf_kline` full 模式后处理丢失中间页数据。手动分页重建 2264 行 CSV。后续 full fetch 仍可能有此问题，需统一修复。 | v3.2.0 |
-| BUG-035 | **tuner-metrics 翻页高度跳动** — 杠杆指标第二页(2x5)容器高度与第一页不一致 | 🟡 Medium | fixed | v3.9.0 | — | 2026-06-24 | 占位卡无内部结构导致grid行高塌陷。修复：填充 `.label+.value` 占位内容 | v3.10.0 |
-| BUG-036 | **tuner-snapshot-footer 全选/全不选/反选无响应** — 三个筛选按钮点击不触发sectorFilter变更 | 🟡 Medium | fixed | v3.9.0 | — | 2026-06-24 | `JSON.stringify(allKeys)` 含双引号嵌入 `onclick="..."` 属性导致 HTML 解析截断。修复：全局存储 + 独立函数 | v3.10.0 |
-| BUG-037 | **nav-chart / MDD副图 / K线图缩放平移无联动** — 三个图表各自独立缩放，不支持同步平移 | 🟡 Medium | fixed | v3.9.0 | BUG-035 | 2026-06-24 | 三个图表 `dataZoom` 缺少 `groupId`。修复：统一添加 `groupId:'tuner-zoom'` | v3.10.0 |
-| BUG-038 | **🔴 合成杠杆从未生效 — `_execute_rebalance` 买入金额被现金上限截断** | 🔴 Critical | fixed | v3.0.0 | 全部杠杆回测 | 2026-06-25 | 3 处修复: `_execute_rebalance` buy_value 上限改为 max_gross_exposure×tv + `tuner_params_to_config_override` 不再覆盖 account.mode + Tuner 前端账户模式选择器 | v3.10.0 |
-| BUG-039 | **echarts.init() 清空 #nav-chart 子元素 → kline-freq-tabs 按钮被抹除** | 🟡 Medium | fixed | v3.9.0 | REQ-328 | 2026-06-29 | ECharts 5.5.1 `init(dom)` 清空容器 innerHTML，导致 `#kline-freq-tabs`（日K/周K按钮）自实现以来从未可见。修复: `#kline-freq-tabs` 移出 `#nav-chart` 到父级 `#tuner-nav-section` 下作为兄弟节点 | v3.11.0 |
-| BUG-040 | **preclose_push 杀 dev Tuner — 端口 5179 冲突** | 🟡 Medium | fixing | v3.2.0 | preclose_push | 2026-06-29 | `_ensure_tuner()` 无条件 `taskkill /f` 端口 5179 上的进程，stable 收盘前信号触发时杀掉 dev 的 Tuner。修复: `quant_tuner.py` 加 `--port` 参数 + `preclose_push.py` 改用 5180 | — |
-| BUG-041 | **盘中回测不含今日数据** — 因子计算用 CSV，不含盘中 bar | 🟡 Medium | fixed | v3.10.0-dev | — | 2026-06-30 | `all_daily` 改为使用盘中合并数据 + 刷新自动补历史缺口 | v3.10.0 |
-| BUG-042 | **gam-0 种子指标计算错误** — AR 公式 `**(365/d-1)` 误把 -1 放入指数 | 🟡 Medium | fixed | v3.10.0-dev | — | 2026-06-30 | gambler pool 中 gam-0 AR=2.5% 而非 110%，未被 narrow_bounds 选中 | v3.10.0 |
-| BUG-043 | **杠杆贡献 exposure≤100% 时显示非零** — nav[0]≠initial_capital 导致分母不一致 | 🟡 Medium | fixed | v3.11.0-dev | — | 2026-07-02 | `total_return` 分母为初始本金 1M，`unlevered_total_return` 经由 nav[0] 复利，建仓佣金使 nav[0]<1M | v3.11.0 |
-| BUG-044 | **去杠杆计算反向放大熊市不满仓收益** — exp<1.0 时 daily_ret/exp 反向放大 | 🟡 Medium | fixed | v3.9.0 | — | 2026-07-02 | `exp > 0.01` 门控太宽，熊市 54% 仓位被 `/0.54` 放大到 100% | v3.11.0 |
-| BUG-045 | **前端 disc_step slider 精度丢失致信号错误** — 整数 slider 加载 gam-0 时 Math.round(16.5)→17, 将 disc_step 从 0.165 四舍五入为 0.17, 导致调仓信号 90/68% vs 正确值 82/76% | 🟡 Medium | fixed | v3.11.0 | REQ-348 preclose_push | 2026-07-08 | slider step=1 无法表示 0.005 精度, Math.round(16.5)=17 | v3.12.0 |
-| BUG-046 | **仓位百分比四舍五入不保证总和等于总敞口** — `toFixed`/四舍五入后各仓位之和可能与 max_gross_exposure 偏差 ±0.5~1%, 需 largest-remainder 或类似算法保证一致性 | 🟡 Medium | open | v3.11.0 | 展示层 | 2026-07-08 | | v3.12.0 |
-| BUG-047 | **stable 交易日历缺失 → 数据管理面板日线空白** — `data/quant/trading_days_*.txt` 被 gitignore 排除, stable clone 不含日历文件, `load_trading_calendar()` 返回空导致矩阵 0 列 | 🟡 Medium | fixed | v3.11.0 | 数据管理面板 | 2026-07-08 | 从 main 复制 7 个日历文件, 文档记录到 `docs/runbook/stable.md` | v3.12.0 |
+（空 — v3.13.0 发布时全部 fixed bug 已归档至 Archive.md）
 
 
 
@@ -194,13 +189,9 @@
 
 ## ID 计数器
 
-**下一个需求 ID**: REQ-362
+**下一个需求 ID**: REQ-378
 
-
-
-
-
-**下一个 Bug ID**: BUG-048
+**下一个 Bug ID**: BUG-056
 
 
 

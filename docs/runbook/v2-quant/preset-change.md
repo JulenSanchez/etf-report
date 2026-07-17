@@ -2,7 +2,7 @@
 
 > **触发词**: 用户说"preset-change""采纳研究结果""写入生产 preset""切换默认"。本文定义 preset 从研究到生产、从生产到默认的完整门禁。
 
-**关联文档**: 量化运维 → `docs/runbook/v2-quant/overview.md` | 参数优化 → `docs/runbook/v2-quant/optimization.md` | 发布 → `docs/runbook/release.md`
+**关联文档**: 量化运维 → `docs/runbook/v2-quant/overview.md` | 参数优化 → `docs/runbook/v2-quant/optimization.md`
 
 ## 流程总览
 
@@ -11,7 +11,7 @@
 ─────                    ────                    ────────────             ────                    ────
 optimization report      → 必备判断 → 结论分类   → extreme_analyzer.py    → 更新 config/Tuner     → 登记 ledger
                           → reject / research-only / adopt-with-guardrails  → 通过后继续             → 可选: 切换默认
-                                                                           → 发布按 release.md
+                                                                          
 ```
 
 | 变更规模 | 追踪方式 |
@@ -152,8 +152,4 @@ date         title                          source                    req       
 ```
 1. 更新 research/promoted/README.md
 2. 更新 plans/Board.md（如状态变更）
-3. 发布或提交
-   → 由用户显式触发，按 docs/runbook/release.md 执行
-4. stable 同步
-   → 发布后如需更新计划任务仓，按 docs/runbook/stable.md 执行
 ```

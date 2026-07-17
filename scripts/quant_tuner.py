@@ -1335,6 +1335,7 @@ def run_tuner_backtest(params, progress_callback=None):
         return_debug=return_debug,
         progress_callback=progress_callback,
         all_daily_exec=all_daily_exec,
+        verbose=False,
     )
     total_commission = extra.get("total_commission", 0)
 
@@ -1444,7 +1445,7 @@ def run_tuner_backtest(params, progress_callback=None):
             latest_holdings.append({
                 "code": code, "name": info.get("name", code),
                 "sector": info.get("sector", ""),
-                "position": round(last.get("positions", {}).get(code, 0) * 100, 1),
+                "position": round(last.get("actual_positions", last.get("positions", {})).get(code, 0) * 100, 1),
                 "score": round(last.get("scores", {}).get(code, 0) * 100, 1),
             })
 
@@ -1516,16 +1517,32 @@ def run_tuner_backtest(params, progress_callback=None):
             "scores": s["scores"],
             "topN": s.get("top6", []),
             "top_n": s.get("top6", []),
-            "positions": s["positions"],
+            "positions": s.get("actual_positions", s.get("positions", {})),
             "detail": detail,
             "avgConfidence": round(s.get("total_target", 0) * 100, 0),
-            "totalPosition": round(sum(s.get("positions", {}).values()) * 100, 1),
-            "cashPct": round((1.0 - sum(s.get("positions", {}).values())) * 100, 1),
+            "totalPosition": round(sum(s.get("actual_positions", s.get("positions", {})).values()) * 100, 1),
+            "cashPct": round((1.0 - sum(s.get("actual_positions", s.get("positions", {})).values())) * 100, 1),
             "regime": s.get("regime", ""),
             "cEff": c_eff,
+            "actualLeverage": s.get("actual_leverage", 0),
+            "suspendedCodes": s.get("suspended_codes", []),
+            "targetExposure": round(s.get("total_target", 0) * 100, 0),
         }
         if s.get("benchmark_votes") is not None:
             enriched_entry["benchmark_votes"] = s["benchmark_votes"]
+        # REQ-349: 替换因果链（加 ETF 名称便于前端展示）
+        raw_swaps = s.get("swap_pairs", [])
+        if raw_swaps:
+            enriched_swaps = []
+            for sp in raw_swaps:
+                enriched_swaps.append({
+                    "in": sp["in"], "in_name": etf_name_map.get(sp["in"], sp["in"]),
+                    "in_score": sp["in_score"],
+                    "out": sp["out"], "out_name": etf_name_map.get(sp["out"], sp["out"]),
+                    "out_score": sp["out_score"],
+                    "gap": sp["gap"], "band": sp["band"], "passed": sp["passed"],
+                })
+            enriched_entry["swap_pairs"] = enriched_swaps
         enriched_history.append(enriched_entry)
 
     # Detect intraday estimate: last NAV date matches intraday cache date
@@ -1544,7 +1561,14 @@ def run_tuner_backtest(params, progress_callback=None):
         debug_path = DATA_DIR / "debug_tuner.json"
         debug_path.parent.mkdir(parents=True, exist_ok=True)
         with debug_path.open("w", encoding="utf-8") as _f:
-            _json.dump({"count": len(snaps), "snapshots": snaps}, _f, ensure_ascii=False, indent=2)
+            _json.dump({
+                "count": len(snaps), "snapshots": snaps,
+                "_params": {k: v for k, v in params.items() if not k.startswith('_')},
+                "_config_override": config_override,
+                "_ar": round(annual_return, 1),
+                "_mdd": round(max_drawdown, 1),
+                "_sortino": round(sortino, 2),
+            }, _f, ensure_ascii=False, indent=2)
         print(f"DEBUG: {len(snaps)} snapshots saved → {debug_path}")
 
     return {
@@ -1616,6 +1640,23 @@ from flask import Flask, request, jsonify, send_from_directory
 app = Flask(__name__)
 # Preserve YAML insertion order in API responses (Flask 3.x)
 app.json.sort_keys = False
+
+# ── NaN-safe JSON: Python nan/inf → null (valid JSON) ──
+import math as _math
+def _sanitize_json(obj):
+    """Recursively replace float('nan')/inf with None in dicts/lists."""
+    if isinstance(obj, dict):
+        return {k: _sanitize_json(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [_sanitize_json(v) for v in obj]
+    if isinstance(obj, float) and (_math.isnan(obj) or _math.isinf(obj)):
+        return None
+    return obj
+
+_safe_json_dumps_orig = app.json.dumps
+def _safe_json_dumps(obj, **kwargs):
+    return _safe_json_dumps_orig(_sanitize_json(obj), **kwargs)
+app.json.dumps = _safe_json_dumps
 
 # Force GC after each request to prevent memory buildup on long backtests
 @app.after_request
@@ -1849,8 +1890,12 @@ def api_last_result():
             with _BACKTEST_CACHE_PATH.open("r", encoding="utf-8") as f:
                 cache = json.load(f)
             if cache.get("version") == _cache_version_hash():
-                return jsonify({"cached": True, "params": cache.get("params", {}),
-                                "result": cache.get("result", {})})
+                req_params = request.json or {}
+                # REQ-375: compare params too — f7_down_power/f7_down_span don't change code hash
+                cached_params = cache.get("params", {})
+                if cached_params == req_params:
+                    return jsonify({"cached": True, "params": cached_params,
+                                    "result": cache.get("result", {})})
     except Exception:
         pass
     return jsonify({"cached": False})
@@ -2022,51 +2067,78 @@ def api_presets():
 
 @app.route("/api/frontier")
 def api_frontier():
-    """Return Pareto frontier data for all schools.
+    """Return preset metrics grouped by school for frontier scatter charts.
 
-    Gambler: continuous MDD slider with frontier points.
-    Zen/Actuary: loaded from frontier_{school}.json if available,
-    otherwise fall back to YAML preset list.
+    Reads preset_metrics.json (cached backtest results, preset-name → metrics).
+    Groups gam-* → gambler, zen-* → zen, act-* → actuary.
     """
     import json as _json
     import pathlib as _pl
+    import hashlib as _hashlib
 
-    _params = _pl.Path(__file__).resolve().parent.parent / "research" / "params"
+    _proj = _pl.Path(__file__).resolve().parent.parent
 
-    # ── Load per-school frontier files ──
-    def _load(school):
-        fp = _params / f"frontier_{school}.json"
-        if fp.exists():
-            try:
-                return _json.loads(fp.read_text("utf-8")).get(school)
-            except Exception:
-                pass
-        return None
+    # ── Load preset metrics ──
+    mp = _proj / "config" / "preset_metrics.json"
+    data = {}
+    if mp.exists():
+        try:
+            data = _json.loads(mp.read_text("utf-8"))
+        except Exception:
+            pass
+    metrics = data.get("points", {})
 
-    gambler = _load("gambler") or {
-        "type": "slider", "risk_axis": "MDD", "risk_unit": "%",
-        "risk_range": [-40, -20], "risk_step": 0.5, "points": [],
-        "references": [], "updated": "N/A",
-    }
+    # ── Fingerprint check: detect stale metrics vs current presets ──
+    WINDOW = "2020-06-01 ~ 2026-06-01"
+    cfg = CACHE.get("cfg") or load_config()
+    presets = cfg.get("presets", {})
+    _h = _hashlib.sha256()
+    _h.update(WINDOW.encode())
+    for _name in sorted(presets):
+        if not (_name.startswith('gam-') or _name.startswith('zen-') or _name.startswith('act-')):
+            continue
+        _p = presets[_name]
+        _pos = _p.get('position', {})
+        _conf = _p.get('confidence', {})
+        _vals = f'{_pos.get("max_holdings")}|{_pos.get("top_boost")}|{_pos.get("signal_steps")}|{_pos.get("concentration")}|{_pos.get("c_sensitivity")}|{_pos.get("band")}|{_conf.get("ma_bull_pos")}|{_conf.get("ma_bear_pos")}|{_conf.get("ma_trend_period")}'
+        _h.update(f'{_name}:{_vals}'.encode())
+    _current_fp = _h.hexdigest()[:16]
+    _stored_fp = data.get("fingerprint", "")
+    _stale = (_stored_fp and _current_fp != _stored_fp)
 
-    zen = _load("zen")
-    actuary = _load("actuary")
+    # ── Group into schools ──
+    Y_FIELDS = {"gam": "ar_6y", "zen": "sortino", "act": "calmar"}
+    SCHOOL_IDS = {"gam": "mh_ar", "zen": "mh_sortino", "act": "mh_calmar"}
 
-    # Fallback: YAML preset list if no frontier file yet
-    if zen is None:
-        cfg = CACHE.get("cfg") or load_config()
-        presets = cfg.get("presets", {})
-        zen = {"type": "discrete", "presets": [k for k in presets if k.startswith("zen-")]}
-    if actuary is None:
-        cfg = CACHE.get("cfg") or load_config()
-        presets = cfg.get("presets", {})
-        actuary = {"type": "discrete", "presets": [k for k in presets if k.startswith("act-")]}
+    def _build_school(prefix):
+        pts = []
+        for name in sorted(metrics):
+            if not name.startswith(prefix + "-"):
+                continue
+            m = metrics[name]
+            pts.append({
+                "preset": name, "mh": m.get("MH"),
+                "ar_6y": m.get("AR"), "mdd": m.get("MDD"),
+                "calmar": m.get("Calmar"), "sortino": m.get("Sortino"),
+            })
+        return {
+            "type": "slider", "risk_axis": "MH", "risk_unit": "支",
+            "risk_range": [2, 6], "risk_step": 1,
+            "y_field": Y_FIELDS.get(prefix, "ar_6y"),
+            "points": sorted(pts, key=lambda p: p.get("mh", 0)),
+            "references": [],
+            "updated": data.get("updated", "N/A"),
+        }
 
-    return jsonify({
-        "gambler": gambler,
-        "zen": zen,
-        "actuary": actuary,
-    })
+    result = {}
+    for prefix, sid in SCHOOL_IDS.items():
+        school = _build_school(prefix)
+        school["stale"] = _stale
+        result[sid] = school
+    result["custom"] = {"type": "discrete", "presets": []}
+    result["_meta"] = {"fingerprint": _current_fp, "stale": _stale}
+
+    return jsonify(result)
 
 
 @app.route("/api/universe/save", methods=["POST"])
@@ -2904,8 +2976,16 @@ def api_data_fill_gaps():
                 continue
 
             gap_end = missing[-1]
+            gap_start = missing[0]
+            last_csv_date = max(csv_dates) if csv_dates else ""
             try:
-                rows, _, mode = update_single(etf, full=False, end_date=gap_end)
+                # Mid-file gap (CSV has later data past the gap): patch the specific range.
+                # End gap (gap extends beyond CSV): use incremental append.
+                if last_csv_date and gap_end < last_csv_date:
+                    from quant_data_fetcher import patch_range
+                    rows, _, mode = patch_range(etf, gap_start, gap_end)
+                else:
+                    rows, _, mode = update_single(etf, full=False, end_date=gap_end)
                 filled[code] = {"gaps": len(missing), "rows_added": rows, "mode": mode}
                 total_filled += len(missing)
             except Exception as e:
@@ -3036,7 +3116,7 @@ def api_factor_cache_rebuild():
             from quant_backtest import run_backtest
             nav, _, _ = run_backtest(
                 start_date="2026-06-01", end_date="2026-06-30",
-                preset="gam-0", return_details=False
+                preset="gam-0", return_details=False, verbose=False
             )
         except Exception:
             pass  # backtest will populate caches for the codes it processes

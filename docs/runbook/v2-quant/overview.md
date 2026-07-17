@@ -55,7 +55,7 @@ assets/js/quant_payload.js
 | 改正式页 payload | `docs/runbook/v1-report.md` | `python scripts/quant_build_payload.py` + HTML 验证 |
 | 改 Tuner UI / 配色 | `docs/runbook/v2-quant/tuner.md` + `docs/design/tuner-ui.md` | 浏览器刷新，肉眼对比改前后 |
 | 改日常推送 | `docs/runbook/v2-quant/daily-automation.md` | 检查计划任务 + dry-run/手动运行 |
-| 参数优化 | `docs/runbook/v2-quant/optimization.md` | 人类说"优化 <preset>"拉起，AI 自检→搜索→分析器→报告 |
+| 参数优化 | `scripts/research_utils.py` + `docs/runbook/v2-quant/optimization.md` | sweep / 分组 TPE / `optimize_group()`，产出更新 YAML + `preset_metrics.json` |
 
 ## 故障排查索引
 

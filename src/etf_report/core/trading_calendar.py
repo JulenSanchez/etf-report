@@ -11,7 +11,11 @@ _LOADED_YEARS = None
 
 
 def load_trading_calendar(years=None):
-    """Load trading days for adjacent years from data/quant/trading_days_YYYY.txt."""
+    """Load trading days from data/quant/trading_days_YYYY.txt.
+
+    If files are missing, auto-generates them via AKShare (one-time bootstrap).
+    Falls back to weekday approximation (Mon-Fri) only if network is unavailable.
+    """
     global _TRADING_DAYS, _TD_LIST, _LOADED_YEARS
     if years is None:
         now_year = datetime.now().year
@@ -21,14 +25,43 @@ def load_trading_calendar(years=None):
         return _TD_LIST
 
     days = set()
+    missing_files = []
     for year in years:
         path = DATA_DIR / f"trading_days_{year}.txt"
         if path.exists():
             with path.open(encoding="utf-8") as f:
                 for line in f:
                     ds = line.strip()
-                    if ds:
+                    if ds and not ds.startswith("#"):
                         days.add(ds)
+        else:
+            missing_files.append(path)
+
+    # Auto-generate missing calendar files via AKShare (self-healing bootstrap)
+    if missing_files:
+        import logging, sys as _sys
+        _scripts_dir = str(PROJECT_ROOT / "scripts")
+        if _scripts_dir not in _sys.path:
+            _sys.path.insert(0, _scripts_dir)
+        _log = logging.getLogger(__name__)
+        _log.warning("Trading calendar files missing: %s — attempting auto-generation",
+                     [p.name for p in missing_files])
+        try:
+            from generate_trading_calendar import fetch_trading_dates, generate_calendar_files
+            generate_calendar_files(years)
+            # Reload now that files exist
+            for year in years:
+                path = DATA_DIR / f"trading_days_{year}.txt"
+                if path.exists():
+                    with path.open(encoding="utf-8") as f:
+                        for line in f:
+                            ds = line.strip()
+                            if ds:
+                                days.add(ds)
+            _log.info("Auto-generated %d trading calendar files", len(missing_files))
+        except Exception as e:
+            _log.warning("Auto-generation failed (%s), falling back to weekday approximation", e)
+
     _TRADING_DAYS = days
     _TD_LIST = sorted(days)
     _LOADED_YEARS = years_key

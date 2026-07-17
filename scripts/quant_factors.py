@@ -417,9 +417,11 @@ def composite_score(factors_df: pd.DataFrame, weights: dict,
         # F7 对数收益偏离因子（如果 factors_df 中有 f7_log_return_dev 列）
         w7 = weights.get("log_return_deviation", 0.0)
         if w7 > 0 and "f7_log_return_dev" in factors_df.columns:
-            f7_t = sensitivity.get("f7_t", 7.0)
-            f7_k = sensitivity.get("f7_k", 3.0)
-            mapped_f7 = factors_df["f7_log_return_dev"].apply(lambda v: map_f7(v, t=f7_t, k=f7_k))
+            f7_up_power = sensitivity.get("f7_up_power", 7.0)
+            f7_up_span = sensitivity.get("f7_up_span", 3.0)
+            f7_down_power = sensitivity.get("f7_down_power", 7.0)
+            f7_down_span = sensitivity.get("f7_down_span", 3.0)
+            mapped_f7 = factors_df["f7_log_return_dev"].apply(lambda v: map_f7(v, up_power=f7_up_power, up_span=f7_up_span, down_power=f7_down_power, down_span=f7_down_span))
             # F7 NaN → 该 ETF 跳过 F7 贡献（得分为中性 0.5，即不加不减）
             mapped_f7 = mapped_f7.fillna(0.5)
             score = score + mapped_f7 * w7
@@ -810,81 +812,37 @@ def factor_log_return_deviation(daily_df: pd.DataFrame,
     return float(z)
 
 
-def map_f7(z_score: float, t: float = 7.0, k: float = 3.0) -> float:
+def map_f7(z_score: float, up_power: float = 7.0, up_span: float = 3.0,
+           down_power: float = None, down_span: float = None) -> float:
     """
-    F7 Z-score -> 分段映射：|Z|≤k 幂函数，|Z|>k 切线线性外延。
+    F7 Z-score -> 分段映射：|Z|≤span 幂函数，|Z|>span 切线线性外延。
+    REQ-375: 超跌侧 (Z<0) 可用独立的 down_power/down_span。
 
     z_score: 对数收益偏离 Z-score
-    t: 幂次（≥1），控制两端加速程度，默认 7
-    k: 标准差倍数阈值 / 切线切换点，默认 3.0
-
-    特性（t=11, k=3）：
-      Z =  0   → 0.50（中性）
-      Z = +3   → 0.00（幂函数边界）
-      Z = -3   → 1.00（幂函数边界）
-      Z = +9   → -11.0（切线外延，约 −1.65 对 composite 的贡献）
-      Z = -9   → +12.0（切线外延）
-
-    设计决策：
-      |Z| ≤ k：幂函数 (z/k)^t，在 ±kσ 附近加速，提供非线性区分
-      |Z| > k：切线 f(z) = f(k) + f'(k)·(z−k)，保持线性区分但截断爆炸增长
-      切线斜率 = −t/(2k)，一阶连续，在切换点平滑过渡
+    up_power, up_span: 超涨侧参数 (Z>0)。power=幂次(区间内压扁强度)，span=Z 饱和半径
+    down_power, down_span: 超跌侧参数 (Z<0)，默认等于超涨侧
     """
     if np.isnan(z_score):
         return np.nan
+    if down_power is None: down_power = up_power
+    if down_span is None: down_span = up_span
+
     abs_z = abs(z_score)
-    if abs_z <= k:
-        ratio = abs_z / k
-        powered = math.copysign(1.0, z_score) * (ratio ** t)
-        return 0.5 + 0.5 * (-powered)
-    else:
-        slope = -t / (2.0 * k)
-        if z_score > 0:
-            return slope * (z_score - k)
+    if z_score > 0:
+        # 超涨侧 (overbought)
+        if abs_z <= up_span:
+            ratio = abs_z / up_span
+            powered = (ratio ** up_power)
+            return 0.5 - 0.5 * powered
         else:
-            return 1.0 + slope * (z_score + k)
-
-def allocate_positions(scores: pd.Series, max_holdings: int = 6,
-                       dead_zone: float = 0.25, full_zone: float = 0.65,
-                       step: float = 0.05) -> pd.Series:
-    """
-    从综合分到仓位分配
-    尺度：综合分 [0, 1]，dead_zone/full_zone [0, 1]
-
-    1. Top-N 选股
-    2. 得分加权
-    3. × 信心函数
-    4. 离散化到 step 档位
-    """
-    # Top-N
-    top = scores.nlargest(max_holdings)
-
-    # 信心系数
-    confidence = top.apply(lambda s: confidence_function(s, dead_zone, full_zone))
-
-    # 得分加权（相对权重）
-    if top.sum() == 0:
-        relative_weight = pd.Series(0.0, index=top.index)
+            slope = -up_power / (2.0 * up_span)
+            return slope * (z_score - up_span)
     else:
-        relative_weight = top / top.sum()
-
-    # 缩放因子：平均信心 × 1.2，上限 95%
-    avg_confidence = confidence.mean()
-    scale = min(0.95, avg_confidence * 1.2)
-    position = relative_weight * scale
-
-    # Floor-discretize: always round down, then fill gap to highest-score ETFs
-    position = (position / step).apply(math.floor) * step
-    position = position.clip(lower=0)
-
-    # Fill gap: distribute remaining steps to ETFs with highest scores
-    disc_sum = position.sum()
-    if disc_sum < scale - step * 0.01:
-        gap_steps = round((scale - disc_sum) / step)
-        if gap_steps > 0:
-            # top.index is already sorted by score (nlargest)
-            top_up = position.index[:min(gap_steps, len(position))]
-            for code in top_up:
-                position[code] += step
-
-    return position
+        # 超跌侧 (oversold)
+        if abs_z <= down_span:
+            ratio = abs_z / down_span
+            powered = (ratio ** down_power)
+            return 0.5 + 0.5 * powered
+        else:
+            slope = -down_power / (2.0 * down_span)
+            return 1.0 + slope * (z_score + down_span)

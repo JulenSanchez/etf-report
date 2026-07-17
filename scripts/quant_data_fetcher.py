@@ -274,7 +274,6 @@ def _safe_date_filter(df, path_hint=""):
     Returns filtered DataFrame. Logs a warning when rows are stripped.
     """
     import pandas as pd
-    from datetime import datetime
     if df.empty:
         return df
     df = df.copy()

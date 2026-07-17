@@ -6,9 +6,12 @@ Coverage:
   - All three presets produce valid, distinct results
   - universe_filter limits the ETF pool correctly
   - return_details provides trade_log
+  - softmax numerical stability under extreme c_sensitivity (BUG-050)
 
 Referenced by: docs/ops/quant/overview.md (验证守卫 / 最小验证)
 """
+import math
+import numpy as np
 import pytest, sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
 from quant_backtest import run_backtest
@@ -139,3 +142,73 @@ class TestReturnDetails:
             t = extra["trade_log"][0]
             for key in ["code", "buy_date", "sell_date", "buy_price", "sell_price", "pnl_pct"]:
                 assert key in t
+
+
+class TestSoftmaxStability:
+    """Verify softmax numerical stability under extreme c_sensitivity.
+
+    Regression guard for BUG-050: high c_sensitivity × concentration caused
+    np.exp overflow → NaN → frontier re-validation dropped 13/18 candidates.
+    Fix: stable softmax (_raw - _raw.max()) replaces clip(-700, 700).
+    """
+
+    # Extreme params that triggered BUG-050 (same family as BUG-043).
+    # c_sensitivity=300 (UI display 30, ÷10 scale), concentration=26 (display 2.6, ÷10)
+    # → effective_c can reach 5-8× normal, z_scores×effective_c can exceed 700.
+    EXTREME_OVERRIDE = {
+        "position": {
+            "c_sensitivity": 300.0,
+            "concentration": 26.0,
+        }
+    }
+
+    def test_extreme_c_sensitivity_no_nan(self):
+        """Under extreme c_sensitivity, NAV must not contain NaN/Inf.
+
+        Before BUG-050 fix (clip(-700,700)): overflow → NaN.
+        After fix (stable softmax): exp(x-max(x)) ≤ 1, never overflows.
+        """
+        nav, _, _ = run_backtest(
+            start_date="2025-06-01", end_date="2025-09-01",
+            preset="zen-1",
+            config_override=self.EXTREME_OVERRIDE,
+        )
+        assert len(nav) > 0
+        # No NaN or Inf in NAV column
+        assert not nav["nav"].isna().any(), "NAV contains NaN — softmax overflow not fixed"
+        assert not np.isinf(nav["nav"]).any(), "NAV contains Inf"
+        # NAV should be positive (no bankruptcy)
+        assert (nav["nav"] > 0).all(), "NAV went non-positive under extreme params"
+
+    def test_normal_c_sensitivity_unchanged(self):
+        """Normal c_sensitivity should produce valid results (regression guard).
+
+        Stable softmax is mathematically equivalent to naive softmax
+        (numerator and denominator both divided by exp(max), which cancels).
+        So normal-range results should be unaffected by the fix.
+        """
+        normal_override = {"position": {"c_sensitivity": 10.0, "concentration": 2.0}}
+        nav, _, _ = run_backtest(
+            start_date="2025-06-01", end_date="2025-09-01",
+            preset="zen-1",
+            config_override=normal_override,
+        )
+        assert len(nav) > 0
+        assert not nav["nav"].isna().any()
+        assert nav["nav"].iloc[-1] > 0
+
+    def test_zero_c_sensitivity_no_crash(self):
+        """c_sensitivity=0 disables dynamic C (static concentration).
+
+        dispersion-based c_mult is skipped, effective_c = concentration.
+        Should not crash and should produce stable results.
+        """
+        zero_override = {"position": {"c_sensitivity": 0.0, "concentration": 2.0}}
+        nav, _, _ = run_backtest(
+            start_date="2025-06-01", end_date="2025-09-01",
+            preset="zen-1",
+            config_override=zero_override,
+        )
+        assert len(nav) > 0
+        assert not nav["nav"].isna().any()
+        assert nav["nav"].iloc[-1] > 0

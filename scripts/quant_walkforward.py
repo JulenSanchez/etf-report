@@ -89,6 +89,7 @@ def run_grid_search(preset, start, end, preloaded):
                     preset=preset, preloaded=preloaded,
                     config_override=override,
                     return_details=False, return_debug=False,
+                    verbose=False,
                 )
             except Exception as e:
                 print(f"    SKIP C={c_val} CS={cs_val}: {e}")
@@ -223,6 +224,7 @@ def main():
             preset=args.preset, preloaded=preloaded,
             config_override=override,
             return_details=False, return_debug=False,
+            verbose=False,
         )
         m_oos = compute_metrics(nav_oos, extra_oos)
 
@@ -233,6 +235,7 @@ def main():
             preset=args.preset, preloaded=preloaded,
             config_override=override_first,
             return_details=False, return_debug=False,
+            verbose=False,
         )
         m_first = compute_metrics(nav_first, extra_first)
 
@@ -289,6 +292,7 @@ def main():
         start_date="2020-05-27", end_date="2026-05-26",
         preset=args.preset, preloaded=preloaded,
         return_details=False, return_debug=False,
+        verbose=False,
     )
     static_metrics = compute_metrics(nav_full, extra_full)
 

@@ -213,6 +213,25 @@ HS300 below MA -> ma_bear_pos
 
 非 MA 趋势的信心函数（regime/dd_trigger/momentum_crash）已从 Tuner UI 移除，引擎代码保留但不推荐使用。
 
+#### 6.6.1 设计哲学：为什么信心函数是二值跳变而非连续渐变
+
+策略的 Layer 1（选股）全部是连续平滑的——F1/F3/F7 的 Z-score 映射、softmax 权重分配、分数带过滤——每个环节的输出都是连续值。Layer 2（总仓位）则恰好相反：**二值跳变，要么满仓要么防守，没有中间态**。
+
+这不是一个待优化的缺陷。渐变仓位在直觉上更"精细"，但在牛转熊时减仓速度不够快——仓位从满仓滑到防守的过程中，策略仍在承受高仓位下的回撤。等滑到最低仓位时，大部分跌幅已经吃完了。MA 的金叉/死叉瞬间切换解决了这个问题：信号触发即到位，不犹豫。
+
+Z_vol（波动率归一化回撤）在 2026-07 被研究并否决。Z_vol 在渐变和二值两种模式下均不优于 ma_trend。研究结论记录在 `plans/REQ-364.md`，核心发现：(1) A 股结构性熊市中历史峰值回撤长期钝化，需改用滚动峰值；(2) 改用滚动峰值后 Z_vol 信号质量改善但仍不及 MA；(3) 二值模式下 Z_vol 表现比渐变模式更差——连续信号硬切二值丢失信息。
+
+#### 6.6.2 为什么是 MA 趋势而非其他仓位管理方法
+
+业界总仓位管理有四个主流流派：
+
+1. **趋势跟踪（MA 穿线）**：二值切换，简单、可解释、低过拟合。CTA 和全球宏观基金的标准配置。本策略选择这一派。
+2. **目标波动率（Target Volatility）**：根据近期实际波动率缩放仓位。需要杠杆工具，A 股个人投资者难落地。且波动率缩放不改变方向判断——牛熊方向仍需要另一个信号源。
+3. **凯利准则（Kelly Criterion）**：理论最优但极度敏感——胜率估计误差 5% 仓位差一倍。实盘几乎无人直接用裸凯利。
+4. **固定比例（不择时）**：养老金、共同基金的主流做法。隐含假设是"我无法择时，不如不动"。但熊市里不管买什么都大概率亏钱——择时是个人投资者相对机构的天然优势，不应该放弃。
+
+当前 `ma_trend` + `ma_direction_confirm`（方向确认：价格在 MA 上方且 MA 本身向上才做多）已在实盘中运行 4 年，经历慢熊、急涨、V 反、高波横盘，表现稳健。中国公募基金的 80% 仓位下限是监管规定（2015 年起实施），非基金经理自由选择。实证显示这一限制在熊市中导致基金跑输大盘（2016 年 1 月股基均值 -24.31% vs 大盘 -22.65%），详见 `docs/knowledge/position-sizing.md`。
+
 ### 6.7 仓位分配
 
 当前采用全池分数标准化 + softmax：
@@ -233,23 +252,60 @@ target_position_i = relative_weight_i * total_target
 - `c_sensitivity = 1.0`: 离散度=0.5 时不变，强共识放大，弱共识缩小
 - 无 clamp —— 天然分布在安全区间
 
-再按 `position.discretize_step` 离散化。
+再按 `position.signal_steps` 和 `position.top_boost` 离散化。
+
+#### 6.7.1 离散化（signal_steps + top_boost）
+
+`signal_steps`（N）将 `total_target` 切成 N 等份作为步长，N 足够大时离散化退化为纯舍入。
+
+`top_boost`（TB）从总步数中预留若干步给第一名 ETF，分配层先对 `base_pool = total_target - boost_reserve` 做 softmax 分配，离散化后再将预留步数加回头名。总和天然等于 `total_target`，无需 excess 清算。
+
+```text
+step = total_target / N
+boost_reserve = TB * step
+base_pool = total_target - boost_reserve
+
+target_positions = softmax_weights * base_pool   # 分配
+→ 离散化（effective_n = N - TB, effective_step = total_target / effective_n）
+→ target_positions[top] += boost_reserve         # 头名加成
+→ sum = base_pool + boost_reserve = total_target ✓
+```
+
+N 已锁定为 40（工程常量），不再参与寻优。集中度微调由 TB 接管。
+
+#### 6.7.2 步长与调仓阈值
+
+离散化后的目标仓位进入 `_execute_rebalance`，实际执行时允许 ±step × 0.5 范围的偏差：
+
+| 方向 | 触发条件 | 阈值 |
+|------|---------|------|
+| 卖出（超配 → 减仓） | `diff < -step × tradable_tv × 0.5` | half band |
+| 买入（低配 → 加仓，非末位） | `diff > step × tradable_tv × 0.5` | half band |
+| 买入（低配 → 加仓，末位） | 无条件吸残量 | 零阈值 |
+
+买卖阈值对称（均为 half band），末位无条件补足。
 
 ### 6.8 交易执行
 
 统一函数：
 
 ```python
-_execute_rebalance(...)
+_execute_rebalance(portfolio, cash, prices, suspended_codes,
+                   target_positions, tradable_tv, step, commission_rate, turnover,
+                   trade_lots=None, exec_date_str="")
 ```
 
-顺序：
+`portfolio` 是 `{code: shares}` 的可变字典，原地修改。`tradable_tv` 为可交易总资产（总 NAV − 冻结持仓市值）。`cash` 可为负（借款）。总仓位在信号层由 `ma_bull_pos`/`ma_bear_pos` 约束，执行层不额外钳制。
 
-```text
-1. 全卖：不在目标范围内的持仓
-2. 减仓：仍在目标范围但目标下降
-3. 加仓：目标上升，按目标仓位和成交额排序，最后一支吸收残量但不超目标
-```
+**三步执行顺序**：
+
+1. **全卖**：不在 `target_positions` 中或目标为 0 的持仓，按市价清仓。FIFO 平仓记录每笔 P&L。
+
+2. **减仓**：在目标范围内但超配的持仓。仅当 `target_value - current_value < -step × tradable_tv × 0.5` 时触发（half band）。卖出份额 = diff / price。
+
+3. **加仓**：低配的持仓，按 `(target_position, turnover)` 升序排列。非末位仅当 `target_value - current_value > step × tradable_tv × 0.5` 时触发（half band）。**末位特殊处理**：无条件加仓到目标（`buy_value = max(diff, 0)`），确保资金不闲置。
+
+买卖阈值对称（均为 half band），末位无条件补足。信号层已精确约束总仓位，执行层忠实跟随。
 
 佣金：
 
@@ -299,10 +355,15 @@ nav
 
 ```text
 date / signal_date    — 信号日和实际执行日
-positions             — {code: target_weight}  目标仓位
+positions             — {code: target_weight}  目标仓位（离散化后的理想值）
+actual_positions      — {code: actual_weight}  实际仓位（调仓后 shares×px/NAV）
+actual_leverage       — 实际杠杆 = sum(actual_positions.values())
 detail                — {code: {f1, f3, f7, score, z, position, price, ...}}  逐ETF因子明细
+                         detail[code].position 使用 actual_positions（非目标仓位）
 regime                — "ma_above" / "ma_below"
 ```
+
+`positions` 与 `target_positions` 的差异反映 step band 容忍导致的执行偏差。前端仓位列和推送信号使用 `actual_positions`（带 `target_positions` fallback）。
 
 Tuner 和 payload 会把它序列化为前端可消费格式。
 
@@ -313,8 +374,11 @@ Tuner 和 payload 会把它序列化为前端可消费格式。
 ```text
 total_commission
 debug_snapshots
-trade_log        # [{code, buy_date, sell_date, buy_price, sell_price, shares, pnl_pct}, ...]
-                 # FIFO 配对逐笔交易记录，含期末未平仓按最后收盘价虚拟平仓
+leverage_summary     — {bull: {nominal, actual_mean, actual_max, actual_min, bias, days},
+                         bear: {nominal, actual_mean, actual_max, actual_min, bias, days}}
+                       按 regime 分组的实际杠杆统计。bias = actual_mean − nominal
+trade_log            — [{code, buy_date, sell_date, buy_price, sell_price, shares, pnl_pct}, ...]
+                       FIFO 配对逐笔交易记录，含期末未平仓按最后收盘价虚拟平仓
 ```
 
 ### 8.4 `debug_snapshots` 字段结构
@@ -341,7 +405,10 @@ trade_log        # [{code, buy_date, sell_date, buy_price, sell_price, shares, p
     "top6": [                        # top6 候选快照
         {"code": str, "score": float, "softmax_w": float, "position": float, "px": float}
     ],
-    "all_px": {code: price}          # 持仓+目标并集的价格
+    "all_px": {code: price},         # 持仓+目标并集的价格
+    "all_factors": {                 # 全池因子快照
+        code: {f1, f3, f7, composite}
+    }
 }
 ```
 

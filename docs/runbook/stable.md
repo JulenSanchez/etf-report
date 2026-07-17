@@ -74,7 +74,7 @@ foreach ($name in $names) {
 | 计划任务未触发 | 检查 Task Scheduler 中触发器和用户权限 |
 | preclose push 未推送 | 检查 Tuner 是否能启动、`config/secrets.yaml` 是否有 Server酱 sendkey |
 | 报告发布失败 | 手动运行 `batchfiles/daily_report.bat`，再看 `docs/runbook/release.md` |
-| 数据管理面板日线无数据 | `data/` 被 gitignore，stable clone 缺少 `data/quant/trading_days_*.txt`；从 main 仓库复制：`cp <DEV>/data/quant/trading_days_*.txt <STABLE>/data/quant/`，重启 Tuner。排查优先级：先验日历 `load_trading_calendar()` 是否为空，再查数据文件 |
+| 数据管理面板日线无数据 | 排查优先级：先验 `load_trading_calendar()` 是否为空 → 缺失时自动调用 AKShare 生成（v3.12.0+ 自愈）。若网络不可用，手动运行 `python scripts/generate_trading_calendar.py --years 2025-2027`，重启 Tuner |
 
 ## 数据清理
 

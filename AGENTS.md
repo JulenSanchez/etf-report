@@ -62,6 +62,7 @@
    - 不要读取所有 REQ。
 5. 根据领域选择最小阅读范围：
    - 量化 / Tuner / 回测：`docs/runbook/v2-quant/overview.md`、`config/quant_universe.yaml`、`scripts/quant_*.py`
+     - **参数优化 / sweep**：**必读** `scripts/research_utils.py` — 提供 `backtest()` / `sweep()` / `group_sweep()` / `pick_best()` / `write_preset_metrics()` 组合原语。禁止重写临时 sweep 脚本，用这些函数 5~10 行内完成
    - 正式页 / 报告 / 发布：`docs/runbook/v1-report.md`、`docs/runbook/release.md`、`scripts/update_report.py`、`scripts/deployer.py`、`assets/js/`
    - stable / 计划任务：`batchfiles/`、`docs/runbook/stable.md`
    - 架构 / 包化：`docs/design/overview.md`、`src/`、`scripts/`
