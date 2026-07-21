@@ -36,7 +36,7 @@ SRC_DIR = PROJECT_ROOT_FALLBACK / "src"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
-from etf_report.core.paths import ASSETS_DIR, CONFIG_DIR, DATA_DIR, PROJECT_ROOT, SCRIPTS_DIR, TEMPLATES_DIR
+from etf_report.core.paths import ASSETS_DIR, CONFIG_DIR, DATA_DIR, PROJECT_ROOT, SCRIPTS_DIR
 
 if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
@@ -508,6 +508,7 @@ def _sina_batch_append(cfg, date_str, rt_prices):
 
 _SPLIT_EVENTS = {}       # code → [events], populated once per session
 _SPLIT_CHECKED = False
+_SPLIT_PENDING_REPAIR = set()  # codes where bridge detected a split that needs CSV repair
 
 
 def _ensure_splits_detected(cfg):
@@ -536,6 +537,40 @@ def _ensure_splits_detected(cfg):
                     print(f"  [Split] DETECTED: {code} ratio={evt['ratio']} ex={evt['ex_date']} ({evt.get('note','')})")
     except Exception as exc:
         print(f"  [Split] detection skipped: {exc}")
+
+
+def _detect_pending_splits_from_cache(cfg, today_str=None):
+    """REQ-360: detect split ETFs that need CSV repair, without cleaning memory.
+    Compares CSV last close vs intraday close. If ratio matches known split ratio,
+    marks code in _SPLIT_PENDING_REPAIR for DM panel ⚠ icon.
+    Does NOT modify CACHE — user sees the raw jump and clicks repair manually."""
+    if today_str is None:
+        today_str = datetime.now().strftime("%Y-%m-%d")
+    intraday = bool(CACHE.get("intraday_cache"))
+    if not intraday:
+        return
+    for etf in cfg["universe"]:
+        code = etf["code"]
+        splits = sorted(
+            [e for e in _SPLIT_EVENTS.get(code, [])
+             if e.get("action") == "share_split" and e.get("ex_date", "") <= today_str],
+            key=lambda e: e.get("ex_date", ""), reverse=True
+        )
+        if not splits:
+            continue
+        split_ratio = splits[0]["ratio"]
+        daily = CACHE["all_daily"].get(code)
+        if daily is None:
+            continue
+        csv_close = float(daily["close"].iloc[-1])
+        cached = CACHE["intraday_cache"].get(code)
+        if not cached or cached.get("close", 0) <= 0:
+            continue
+        rt_close = float(cached["close"])
+        r = csv_close / rt_close if rt_close > 0 else 1.0
+        if 0.85 * split_ratio <= r <= 1.15 * split_ratio:
+            _SPLIT_PENDING_REPAIR.add(code)
+            print(f"  [Split] pending repair: {code} csv={csv_close:.3f} rt={rt_close:.3f} ratio={split_ratio}")
 
 
 def _apply_split_memory_bridge(cfg):
@@ -572,6 +607,7 @@ def _apply_split_memory_bridge(cfg):
         if not need_clean:
             continue  # already adjusted or can't determine → skip (self-healing)
         print(f"  [Bridge] {code} split bridge (ratio={split_ratio}, csv={csv_close:.3f} rt={rt_close:.3f})")
+        _SPLIT_PENDING_REPAIR.add(code)  # REQ-360: mark for DM panel ⚠ icon
         ci = _df_to_cleaning_input(daily)
         # Append intraday bar so boundary detection sees weekend gaps
         if cached and cached.get("date") == today_str:
@@ -796,6 +832,16 @@ def refresh_data():
     _load_market_regimes()
     _precompute_heatmap_returns()
 
+    # BUG-057: refresh index data too (not just ETF). Missing index CSVs → stale MA signal.
+    try:
+        hs = load_hs300_daily_cached()
+        CACHE["hs300_daily_df"] = hs
+        CACHE["hs300_weekly_df"] = build_hs300_weekly(hs)
+        CACHE["hs300_above_ma"] = {}  # force rebuild on next backtest
+        print("  [Refresh] HS300 index data refreshed")
+    except Exception as e:
+        print(f"  [Refresh] HS300 refresh failed (non-fatal): {e}")
+
     # ── Post-market (>=15:10) ──
     if post_market:
         CACHE["intraday_cache"] = {}
@@ -944,20 +990,62 @@ def _precompute_benchmarks():
 
 
 def _build_ma_trend_cache(period):
-    """Build or retrieve HS300 MA trend lookup for a given period."""
+    """Build or retrieve HS300 MA trend lookup for a given period.
+
+    During intraday sessions, patches the HS300 daily/weekly with 000300's
+    realtime price so the MA signal reflects the current week's close estimate
+    instead of being stuck on the previous completed week.
+    """
+    daily = CACHE.get("hs300_daily_df")
+    weekly = CACHE.get("hs300_weekly_df")
+    patched = False  # skip cache when using intraday-patched data
+
+    intraday = CACHE.get("intraday_cache")
+    if intraday and daily is not None:
+        intraday_date = CACHE.get("intraday_date")
+        if intraday_date:
+            try:
+                import requests
+                url = f"{SINA_URL}sh510300"
+                resp = requests.get(url, headers=SINA_HEADERS, timeout=5)
+                resp.encoding = "gbk"
+                if resp.text and '="' in resp.text:
+                    parts = resp.text.split('="')[1].rstrip('";\n').split(",")
+                    if len(parts) >= 4 and parts[3]:
+                        hs300_price = float(parts[3])
+                        import pandas as pd
+                        today_dt = pd.to_datetime(intraday_date)
+                        daily = daily.copy()
+                        mask = daily["date"] == today_dt
+                        if mask.any():
+                            daily.loc[mask, "close"] = hs300_price
+                        else:
+                            daily = pd.concat(
+                                [daily, pd.DataFrame([{"date": today_dt, "close": hs300_price}])],
+                                ignore_index=True)
+                        from benchmark_data import build_hs300_weekly
+                        weekly = build_hs300_weekly(daily)
+                        patched = True
+            except Exception:
+                pass  # fall back to CSV-only data
+
+    # When intraday data exists, never use the startup cache — it was built
+    # without intraday data and lacks today's date, causing false bull defaults.
     ma_cache = CACHE.get("hs300_above_ma", {})
-    if period in ma_cache:
+    if (not intraday) and (not patched) and (period in ma_cache):
         return ma_cache[period]
-    result = build_ma_trend_cache(CACHE.get("hs300_daily_df"), CACHE.get("hs300_weekly_df"), period)
+    result = build_ma_trend_cache(daily, weekly, period)
     if result is None:
         return None
-    ma_cache[period] = result
-    CACHE["hs300_above_ma"] = ma_cache
+    if not patched:
+        ma_cache[period] = result
+        CACHE["hs300_above_ma"] = ma_cache
     above_map = result.get("above", {})
     rising_map = result.get("ma_rising", {})
     above_count = sum(above_map.values())
     rising_count = sum(v for v in rising_map.values() if v is not None)
-    print(f"  HS300 MA{period} trend: {len(above_map)} days, above={above_count}, below={len(above_map)-above_count}, rising={rising_count}")
+    tag = " (intraday-patched)" if patched else ""
+    print(f"  HS300 MA{period} trend{tag}: {len(above_map)} days, above={above_count}, below={len(above_map)-above_count}, rising={rising_count}")
     return result
 
 
@@ -1628,6 +1716,7 @@ def run_tuner_backtest(params, progress_callback=None):
         },
         "signalHistory": enriched_history,
         "etfContributions": _compute_etf_contributions(trade_log, signal_history, etf_name_map, etf_sector_map),
+        "factorDispersion": extra.get("factor_dispersion", {}),
     }
 
 
@@ -1674,10 +1763,16 @@ def gc_after_request(response):
 
 @app.route("/")
 def index():
-    # AI AGENTS: send_from_directory reads from disk on every request.
-    # Changes to tuner.html take effect IMMEDIATELY — no server restart needed.
-    # Only restart when .py files change or __pycache__ may be stale.
-    return send_from_directory(TEMPLATES_DIR, "tuner.html")
+    # Server-side assembly: tuner.html skeleton + left/right panel fragments.
+    # Fragment files in assets/ — changes take effect immediately, no restart.
+    skeleton = (ASSETS_DIR / "tuner.html").read_text(encoding="utf-8")
+    left = (ASSETS_DIR / "tuner-left.html").read_text(encoding="utf-8")
+    right = (ASSETS_DIR / "tuner-right.html").read_text(encoding="utf-8")
+    html = skeleton.replace("<!-- LEFT_PANEL -->", left).replace("<!-- RIGHT_PANEL -->", right)
+    from flask import make_response
+    resp = make_response(html)
+    resp.headers["Content-Type"] = "text/html; charset=utf-8"
+    return resp
 
 
 @app.route("/assets/<path:filepath>")
@@ -2510,7 +2605,7 @@ def api_data_matrix():
                     if start_idx <= 0 or d >= dates[0]:
                         all_weekly_dates.add(d)
         # Also check benchmark weekly CSVs
-        for bm_code in ("000300", "000016", "000905", "399006"):
+        for bm_code in ("510300", "510050", "510500", "159915"):
             bm_wpath = DATA_DIR / "quant" / f"{bm_code}_weekly.csv"
             if bm_wpath.exists():
                 try:
@@ -2683,12 +2778,13 @@ def api_data_matrix():
             "sector": entry.get("sector", ""), "qdii": is_qdii,
         })
 
-    # Benchmark indices (load daily CSV directly — no weekly files exist)
+    # Benchmark indices (REQ-384: primary source is ETF CSV, loaded via
+    # benchmark_data.INDEX_ETF_MAP — index CSV path is a mirror copy).
     BENCHMARKS = [
-        ("000300", "沪深300", "基准"),
-        ("000016", "上证50", "基准"),
-        ("000905", "中证500", "基准"),
-        ("399006", "创业板指", "基准"),
+        ("510300", "沪深300", "基准"),
+        ("510050", "上证50", "基准"),
+        ("510500", "中证500", "基准"),
+        ("159915", "创业板指", "基准"),
     ]
     for bm_code, bm_name, bm_sector in BENCHMARKS:
         if code_set and bm_code not in code_set: continue
@@ -2829,7 +2925,7 @@ def api_data_refetch():
 
         etf_entry = next((e for e in cfg.get("universe", []) if e["code"] == code), None)
         if not etf_entry:
-            BM_NAMES = {"000300": "沪深300", "000016": "上证50", "000905": "中证500", "399006": "创业板指"}
+            BM_NAMES = {"510300": "沪深300", "510050": "上证50", "510500": "中证500", "159915": "创业板指"}
             if code in BM_NAMES:
                 etf_entry = {"code": code, "name": BM_NAMES[code],
                             "market": "sh" if code.startswith("000") else "sz"}
@@ -3134,6 +3230,7 @@ def api_split_status():
 
     cfg = CACHE.get("cfg", {})
     _ensure_splits_detected(cfg)
+    _detect_pending_splits_from_cache(cfg)  # REQ-360: check intraday vs CSV for splits
 
     result = {}
     for entry in cfg.get("universe", []):
@@ -3152,7 +3249,12 @@ def api_split_status():
         daily = CACHE["all_daily"].get(code)
         status = "repaired"
         symptom = ""
-        if daily is not None and len(daily) >= 2:
+
+        # REQ-360: bridge detected a split that needs CSV repair — always show ⚠
+        if code in _SPLIT_PENDING_REPAIR:
+            status = "pending_repair"
+            symptom = f"split bridge: ratio={latest.get('ratio',1.0)}, CSV still pre-split"
+        elif daily is not None and len(daily) >= 2:
             close = daily["close"].astype(float).values
             # Scan last 10 rows for any close jump >30% (split symptom)
             for i in range(len(close)-1, max(len(close)-10, 1), -1):
@@ -3191,7 +3293,7 @@ def api_data_full_refetch():
     for code in codes:
         etf_entry = next((e for e in cfg.get("universe", []) if e["code"] == code), None)
         if not etf_entry:
-            BM_NAMES = {"000300": "沪深300", "000016": "上证50", "000905": "中证500", "399006": "创业板指"}
+            BM_NAMES = {"510300": "沪深300", "510050": "上证50", "510500": "中证500", "159915": "创业板指"}
             if code in BM_NAMES:
                 etf_entry = {"code": code, "name": BM_NAMES[code],
                             "market": "sh" if code.startswith("000") else "sz"}
@@ -3234,14 +3336,18 @@ def api_data_full_refetch():
                         for i in range(max(0, len(c)-10), len(c)-1):
                             if c[i] > 0 and abs(c[i+1]-c[i])/c[i] > 0.30:
                                 verified = False; break
+                        if verified:
+                            _SPLIT_PENDING_REPAIR.discard(code)  # REQ-360: CSV repaired, clear ⚠
                     else:
                         rows, mode, verified = 0, "no_csv", False
                 else:
                     rows, _, mode = update_single(etf_entry, full=True)
                     verified = True
+                    _SPLIT_PENDING_REPAIR.discard(code)
             else:
                 rows, _, mode = update_single(etf_entry, full=True)
                 verified = True
+                _SPLIT_PENDING_REPAIR.discard(code)
             results[code] = {"rows": rows, "mode": mode, "verified": bool(verified)}
         except Exception as e:
             results[code] = {"error": str(e)}

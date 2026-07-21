@@ -42,11 +42,12 @@ WINDOW_1Y = ("2025-06-01", "2026-06-01")
 WINDOWS = {"6Y": WINDOW_6Y, "3Y": WINDOW_3Y, "1Y": WINDOW_1Y}
 DEFAULT_WINDOW = "6Y"
 
-# ── Default locked params ──────────────────────────────────────────────────
+# ── Default locked params (values for N / f7_lookback must match LOCKED_PARAMS in quant_contract.py) ──
 DEFAULT_LOCK = dict(
-    bull=1.80, bear=0.60, MA=19,
-    N=40, C=0.71, CS=8.68, band=0.03, band_sensitivity=0.0,
+    bull=1.80, bear=1.0, MA=18,
+    N=40, C=0.62, CS=16.4, band=0.03, band_sensitivity=0.0,
     MH=2, TB=8,
+    f7_window=17, f7_lookback=250,
 )
 
 
@@ -67,26 +68,30 @@ def redistribute_weights(w7, base_w1=0.71, base_w3=0.13):
 
 
 def _build_override(params: dict) -> dict:
-    """Convert flat param dict → config_override for run_backtest."""
+    """Convert flat param dict → config_override for run_backtest.
+    All defaults read from DEFAULT_LOCK — single source of truth.
+    """
+    D = DEFAULT_LOCK
     override = {
         "position": {
-            "max_holdings": params.get("MH", 2),
-            "signal_steps": params.get("N", 40),
-            "top_boost": params.get("TB", 0),
-            "concentration": params.get("C", 0.71),
-            "c_sensitivity": params.get("CS", 8.68),
-            "band": params.get("band", 0.03),
-            "band_sensitivity": params.get("band_sensitivity", 0.0),
+            "max_holdings": params.get("MH", D["MH"]),
+            "signal_steps": params.get("N", D["N"]),
+            "top_boost": params.get("TB", D["TB"]),
+            "concentration": params.get("C", D["C"]),
+            "c_sensitivity": params.get("CS", D["CS"]),
+            "band": params.get("band", D["band"]),
+            "band_sensitivity": params.get("band_sensitivity", D["band_sensitivity"]),
             "rebalance_freq": "daily",
         },
         "confidence": {
-            "ma_bull_pos": params.get("bull", 1.80),
-            "ma_bear_pos": params.get("bear", 0.60),
-            "ma_trend_period": params.get("MA", 19),
+            "ma_bull_pos": params.get("bull", D["bull"]),
+            "ma_bear_pos": params.get("bear", D["bear"]),
+            "ma_trend_period": params.get("MA", D["MA"]),
         },
         "factors": {
             "log_return_deviation": {
-                "window_days": params.get("F7", 17),
+                "window_days": params.get("f7_window", D["f7_window"]),
+                "lookback_days": params.get("f7_lookback", D["f7_lookback"]),
             },
         },
     }
@@ -277,8 +282,11 @@ def optimize_group(preset_name: str, vary_keys: list, bounds: dict,
     b_mdd = before["MDD"]
     print(f"Baseline: {metric}={b_metric:.3f}  MDD={b_mdd:.1f}%  ({preset_name})")
 
-    # Effective MDD bound
-    eff_bound = mdd_bound if mdd_bound is not None else (b_mdd - 2.0)
+    # Effective MDD bound: explicit > global mdd_cap > -50 fallback
+    eff_bound = mdd_bound
+    if eff_bound is None:
+        global_conf = cfg.get("confidence", {})
+        eff_bound = global_conf.get("mdd_cap", -50.0)
     print(f"MDD constraint: >= {eff_bound:.1f}%")
 
     # ── Objective ──

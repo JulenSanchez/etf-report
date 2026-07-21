@@ -1,5 +1,5 @@
 var $id = id => document.getElementById(id);
-var maxHoldings = 6, discStep = 5, confType = 'ma_trend', rebalanceFreq = 'W-FRI', f1ActiveDays = 1;
+var maxHoldings = 6, discStep = 5, confType = 'ma_trend', rebalanceFreq = 'daily', f1ActiveDays = 1;
 var navChart = null, ddChart = null, distChart = null;
 var currentMetricsPage = 1;
 var etfHoldingsMap = {}; // code → [top10]
@@ -508,35 +508,25 @@ function setExecutionTiming(t) { /* deprecated — always same_close */ }
 function setConfType(t) {
  confType = t;
  var labels = {'ma_trend':'MA趋势','regime':'市场状态','dd_trigger':'回撤触发','momentum_crash':'动量崩溃','always_full':'始终满仓'};
- $id('v-conf-type').textContent = labels[t] || t;
- document.querySelectorAll('#conf-type-group button').forEach(function(b) {
-  b.classList.toggle('active', b.textContent === (labels[t] || t));
- });
- // Toggle MA-specific sliders
- var showMA = (t === 'ma_trend');
- ['param-ma-period'].forEach(function(id) {
-  var el = $id(id); if (el) el.style.display = showMA ? '' : 'none';
- });
+ var el = $id('v-conf-type'); if (el) el.textContent = labels[t] || t;
  renderParamSchemaTable();
 }
 
 var maDirConfirm = true;
 function setMaDirConfirm(v) {
  maDirConfirm = v;
- $id('v-ma-dir').textContent = v ? '开启' : '关闭';
- $id('ma-dir-off').classList.toggle('active', !v);
- $id('ma-dir-on').classList.toggle('active', v);
+ // ma-dir panel removed — direction confirm always on
  renderParamSchemaTable();
 }
 
 // ── Voting committee ──────────────────────────────────────────────
 var BENCHMARK_CHOICES = [
- {code:'000016', name:'上证50', role:'超大盘价值'},
- {code:'000300', name:'沪深300', role:'大盘基准'},
- {code:'000905', name:'中证500', role:'中盘成长'},
- {code:'399006', name:'创业板指',role:'高Beta成长'},
+ {code:'510050', name:'上证50', role:'超大盘价值'},
+ {code:'510300', name:'沪深300', role:'大盘基准'},
+ {code:'510500', name:'中证500', role:'中盘成长'},
+ {code:'159915', name:'创业板指',role:'高Beta成长'},
 ];
-var selectedBenchmarks = ['000300']; // default: HS300 only (backward compat)
+var selectedBenchmarks = ['510300']; // default: HS300 ETF
 
 function initBenchmarkPanel() {
  var container = $id('benchmark-btns');
@@ -592,6 +582,7 @@ function updateBenchmarkPanel() {
 // Update vote status display with live backtest results
 function updateBenchmarkVoteStatus(details) {
  var el = $id('benchmark-vote-status');
+ if (!el) return; // locked — benchmark panel replaced
  if (!details || !details.per_index) {
   el.innerHTML = '等待回测';
   return;
@@ -802,14 +793,14 @@ function getParams() {
   w1: parseInt($id('w1').value),
   w3: parseInt($id('w3').value),
   w7: parseInt($id('w7').value),
-  conf_type: confType,
+  conf_type: (LOCKED_PARAMS_CACHE.conf_type || {}).value || confType,
   ma_trend_period: parseInt($id('ma_trend_period').value),
   ma_bull_pos: parseFloat($id('ma_bull_pos').value),
   ma_bear_pos: parseFloat($id('ma_bear_pos').value),
   ma_direction_confirm: maDirConfirm,
-  benchmarks: selectedBenchmarks,
+  benchmarks: (LOCKED_PARAMS_CACHE.benchmarks || {}).value || selectedBenchmarks,
   max_holdings: parseInt($id('max_holdings').value),
-  signal_steps: parseInt($id('signal_steps').value),
+  signal_steps: (LOCKED_PARAMS_CACHE.signal_steps || {}).value || 40,
   top_boost: parseInt($id('top_boost').value),
   concentration: parseFloat($id('concentration').value),
   c_sensitivity: parseFloat($id('c_sensitivity').value),
@@ -817,7 +808,7 @@ function getParams() {
   f3_vol_window: parseInt($id('f3_vol_window').value),
   f1_sensitivity: parseFloat($id('f1_sensitivity').value),
   f3_sensitivity: parseFloat($id('f3_sensitivity').value),
-  rebalance_freq: rebalanceFreq,
+  rebalance_freq: (LOCKED_PARAMS_CACHE.rebalance_freq || {}).value || rebalanceFreq,
   f1_active_days: f1ActiveDays,
   band: parseFloat($id('band').value), // 0-20，单位%
   band_sensitivity: parseInt($id('band_sensitivity').value), // 0-100
@@ -826,6 +817,7 @@ function getParams() {
   f7_down_power: parseFloat($id('f7_down_power').value),
   f7_down_span: parseFloat($id('f7_down_span').value),
   f7_window: parseInt($id('f7_window').value),
+  f7_lookback: (LOCKED_PARAMS_CACHE.f7_lookback || {}).value || 250,
   start_date: getDateFromSlider($id('start_date_slider').value),
   end_date: getDateFromSlider($id('end_date_slider').value),
   universe: getUniverseParam(),
@@ -871,9 +863,10 @@ function setParams(p) { console.log('setParams called with keys:', Object.keys(p
  if (p.ma_bull_pos != null) { setSlider('ma_bull_pos', p.ma_bull_pos); $id('v-ma-bull').textContent = Math.round(p.ma_bull_pos * 100) + '%'; }
  if (p.ma_bear_pos != null) { setSlider('ma_bear_pos', p.ma_bear_pos); $id('v-ma-bear').textContent = Math.round(p.ma_bear_pos * 100) + '%'; }
  if (p.ma_direction_confirm != null) { setMaDirConfirm(!!p.ma_direction_confirm); }
- if (p.benchmarks != null && Array.isArray(p.benchmarks) && p.benchmarks.length > 0) {
+ var lb = (LOCKED_PARAMS_CACHE.benchmarks || {}).value;
+ if (lb != null) { selectedBenchmarks = Array.isArray(lb) ? lb.slice() : [lb]; }
+ else if (p.benchmarks != null && Array.isArray(p.benchmarks) && p.benchmarks.length > 0) {
   selectedBenchmarks = p.benchmarks.slice();
-  updateBenchmarkPanel();
  }
  if (p.f1_ema_period != null) { setSlider('f1_ema_period', p.f1_ema_period); $id('v-f1-ema').textContent = p.f1_ema_period + ' 周'; }
  if (p.f3_vol_window != null) { setSlider('f3_vol_window', p.f3_vol_window); $id('v-vol').textContent = p.f3_vol_window + ' 日'; }
@@ -887,13 +880,15 @@ function setParams(p) { console.log('setParams called with keys:', Object.keys(p
   if (p.f7_down_power != null) { setSlider('f7_down_power', p.f7_down_power); $id('v-f7-down-power').textContent = p.f7_down_power; }
   if (p.f7_down_span != null) { setSlider('f7_down_span', p.f7_down_span); $id('v-f7-down-span').textContent = parseFloat(p.f7_down_span).toFixed(2); }
  if (p.f7_window != null) { setSlider('f7_window', p.f7_window); $id('v-f7-window').textContent = p.f7_window + ' 日'; }
- if (p.rebalance_freq) setFreq(p.rebalance_freq);
- if (p.signal_steps != null) { setSlider('signal_steps', p.signal_steps); $id('v-steps').textContent = p.signal_steps; }
+ // locked params always use locked value, not preset value
+ var lf7 = (LOCKED_PARAMS_CACHE.f7_lookback || {}).value; if (lf7 != null) { setSlider('f7_lookback', lf7); $id('v-f7-lookback').textContent = lf7 + ' 日'; }
+ var lfreq = (LOCKED_PARAMS_CACHE.rebalance_freq || {}).value; if (lfreq) { setFreq(lfreq); }
+ var ln = (LOCKED_PARAMS_CACHE.signal_steps || {}).value; if (ln != null) { setSlider('signal_steps', ln); $id('v-steps').textContent = ln; }
+ var lct = (LOCKED_PARAMS_CACHE.conf_type || {}).value; if (lct) setConfType(lct);
  if (p.top_boost != null) { setSlider('top_boost', p.top_boost); $id('v-boost').textContent = p.top_boost; }
  if (p.concentration != null) { setSlider('concentration', p.concentration); $id('v-conc').textContent = p.concentration.toFixed(2); }
  if (p.c_sensitivity != null) { setSlider('c_sensitivity', p.c_sensitivity); $id('v-csens').textContent = p.c_sensitivity.toFixed(1); }
  if (p.max_holdings != null) { setSlider('max_holdings', p.max_holdings); $id('v-maxh').textContent = p.max_holdings + ' 支'; }
- if (p.conf_type) setConfType(p.conf_type);
  if (p.universe != null) setUniverseFromParam(p.universe);
  validateRunInputs();
 }
@@ -1002,6 +997,65 @@ function renderParamSchemaTable() {
  el.innerHTML = html;
 }
 
+var LOCKED_PARAMS_CACHE = {};
+
+function cacheLockedParams() {
+ // Populate locked values + reasons from schema — single source of truth
+ LOCKED_PARAMS_CACHE = {};
+ if (!PARAM_SCHEMA || !PARAM_SCHEMA.groups) return;
+ PARAM_SCHEMA.groups.forEach(function(g) {
+  g.params.forEach(function(p) {
+   if (p.locked) LOCKED_PARAMS_CACHE[p.key] = {value: p.locked_value, reason: p.lock_reason || ''};
+  });
+ });
+ applyLockedStyles();
+}
+
+function applyLockedStyles() {
+ // Two lock modes based on schema unit: enum=hide btn-row, slider=disable input
+ Object.keys(LOCKED_PARAMS_CACHE).forEach(function(key) {
+  var info = LOCKED_PARAMS_CACHE[key];
+  var container = document.getElementById('param-' + key.replace(/_/g, '-'));
+  if (!container) return;
+
+  var lockIcon = document.createElement('span');
+  lockIcon.className = 'lock-icon';
+  lockIcon.setAttribute('data-tip', info.reason);
+  lockIcon.textContent = '🔒';
+
+  // Determine lock mode from schema
+  var isEnum = false;
+  if (PARAM_SCHEMA && PARAM_SCHEMA.groups) {
+   PARAM_SCHEMA.groups.forEach(function(g) {
+    g.params.forEach(function(p) { if (p.key === key && p.unit === 'enum') isEnum = true; });
+   });
+  }
+
+  container.classList.add('locked');
+
+  if (isEnum) {
+   // Enum lock: keep DOM, hide btn-row + status line
+   var btnRow = container.querySelector('.btn-row');
+   if (btnRow) btnRow.style.display = 'none';
+   var statusEl = container.querySelector('#benchmark-vote-status');
+   if (statusEl) statusEl.style.display = 'none';
+  } else {
+   // Slider lock: disable input
+   var input = container.querySelector('input[type=range]');
+   if (input) input.disabled = true;
+  }
+
+  // Attach lock icon after param name
+  var nameEl = container.querySelector('.slider-label .name');
+  if (nameEl) {
+   var wrapper = document.createElement('span');
+   nameEl.parentNode.insertBefore(wrapper, nameEl);
+   wrapper.appendChild(nameEl);
+   wrapper.appendChild(lockIcon);
+  }
+ });
+}
+
 async function loadParamSchema() {
  try {
   var resp = await fetch('/api/param_schema');
@@ -1011,6 +1065,7 @@ async function loadParamSchema() {
   PARAM_SCHEMA = null;
  }
  updateParamSchemaBadge();
+ cacheLockedParams();
  renderParamSchemaTable();
 }
 
@@ -1609,8 +1664,6 @@ function renderResults(data) {
  $id('m-sharpe').textContent = s.sharpe.toFixed(2);
  $id('m-calmar').textContent = (s.calmar||0).toFixed(2);
  $id('m-wr-po').textContent = s.winRate + '% / ' + s.payoffRatio.toFixed(1) + 'x';
- var rbPct = s.rebalanceDays > 0 ? Math.round(s.rebalanceCount / s.rebalanceDays * 100) : 0;
- $id('m-rb').textContent = rbPct + '%';
  $id('m-comm').textContent = (s.commissionPct || 0) + '%';
  // Financing & leverage metrics
  var es = s.exposureSummary || {};
@@ -1628,6 +1681,20 @@ function renderResults(data) {
   if (s.hasIntradayEstimate) {
    intradayBanner.textContent = '盘中估算：' + (s.intradayDate || '今日') + (s.intradayTime ? ' ' + s.intradayTime : '') + ' 的实时行情与预估全天成交额（' + (s.intradayCount || 0) + ' 支 ETF），适合收盘前调仓参考；正式复盘请以收盘确认数据为准。';
   }
+ }
+
+ // Factor dispersion summary card (REQ-377): σ_F7 percentiles
+ var fd = data.factorDispersion;
+ if (fd && fd.f7_std && fd.f7_std.length > 0) {
+  var sorted = fd.f7_std.slice().sort(function(a,b){return a-b;});
+  var n = sorted.length;
+  var p50 = sorted[Math.floor(n*0.5)].toFixed(1);
+  var p90 = sorted[Math.floor(n*0.9)].toFixed(1);
+  $id('m-factor-dom').innerHTML =
+   '<span style="color:#a855f7;">&#x1F313; ' + p50 + '</span>' +
+   ' <span style="color:#a855f7;">&#x1F315; ' + p90 + '</span>';
+ } else {
+  $id('m-factor-dom').textContent = '-';
  }
 
  // Store signal history and name map for snapshot
@@ -1934,6 +2001,24 @@ function renderNavChart(data) {
   }));
  }
 
+ // F7 dominance overlay (REQ-377) — step area like "持仓山脉图", forward-filled from rebalance dates
+ var f7AreaData = [];
+ if (data.factorDispersion && data.factorDispersion.dates && data.factorDispersion.dates.length > 0) {
+  var fdD = data.factorDispersion;
+  var fdIdx = 0;
+  for (var di = 0; di < dates.length; di++) {
+   while (fdIdx + 1 < fdD.dates.length && fdD.dates[fdIdx + 1] <= dates[di]) fdIdx++;
+   f7AreaData.push(fdD.f7_std[fdIdx]);
+  }
+  series.push({
+   name: '💜 F7驱动', type: 'line', data: f7AreaData,
+   yAxisIndex: 1, step: 'end', showSymbol: false,
+   lineStyle: { color: 'rgba(168,85,247,0.45)', width: 1 },
+   areaStyle: { color: 'rgba(168,85,247,0.15)' },
+   z: 0,
+  });
+ }
+
  navChart.setOption({
   backgroundColor:'transparent',
   tooltip:{trigger:'axis', triggerOn:'mousemove', axisPointer:{type:'cross', triggerOn:'mousemove'}, backgroundColor:'rgba(10,25,47,0.95)', borderColor:'rgba(59,130,246,0.2)', textStyle:{color:TC.textBody,fontSize:11},
@@ -1956,10 +2041,13 @@ function renderNavChart(data) {
     return html;
    },
   },
-  legend:{data:series.filter(s=>!s.name.startsWith('_')).map(s=>s.name), textStyle:{color:'#9ca3af', fontSize:11}, top:0, selected:{'仓位集中度':true, '超额区间':false}},
+  legend:{data:series.filter(s=>!s.name.startsWith('_')).map(s=>s.name), textStyle:{color:'#9ca3af', fontSize:11}, top:0, selected:{'仓位集中度':true, '超额区间':false, '💜 F7驱动':false}},
   grid:{left:50, right:20, top:30, bottom:30},
   xAxis:{type:'category', data:dates, boundaryGap:false, axisLabel:{fontSize:10, color:TC.textMuted}, axisLine:{lineStyle:{color:TC.border}}},
-  yAxis:{type:'value', scale:true, axisLabel:{fontSize:10, color:TC.textMuted, formatter:'{value}%'}, splitLine:{lineStyle:{color:'rgba(255,255,255,0.06)'}}},
+  yAxis:[
+   {type:'value', scale:true, axisLabel:{fontSize:10, color:TC.textMuted, formatter:'{value}%'}, splitLine:{lineStyle:{color:'rgba(255,255,255,0.06)'}}},
+   {type:'value', scale:true, show:false},
+  ],
   axisPointer: { link: [{xAxisIndex:'all'}] },
   series:series,
   dataZoom:[{type:'inside', start:0, end:100, zoomOnMouseWheel:true, groupId:'tuner-zoom'}],
@@ -2205,6 +2293,19 @@ function getSnapSortVal(d, code, col) {
  }
 }
 
+/* ====== Snapshot F7 原始 Z 值切换 ====== */
+var f7ShowRaw = false;
+function toggleF7Raw() {
+ f7ShowRaw = !f7ShowRaw;
+ var el = $id('f7-z-toggle');
+ if (el) {
+  el.style.color = f7ShowRaw ? 'var(--accent)' : '';
+  
+  el.title = f7ShowRaw ? '切换回映射分 (F7)' : '切换显示原始 Z 值';
+ }
+ renderTunerSnapshot(tunerSnapshotIdx);
+}
+
 /* ====== Snapshot Rendering (C方案风格) ====== */
 function renderTunerSnapshot(idx) {
  if (idx < 0 || idx >= tunerSignalHistory.length) return;
@@ -2369,6 +2470,18 @@ function renderTunerSnapshot(idx) {
   // Factor bar — weighted F1/F3/F7 contributions (REQ-233)
   var w1=0.5, w3=0.4, w7=0.1;
   var f1v = d.f1 || 50, f3v = d.f3 || 50, f7v = (d.f7 != null ? d.f7 : 50);
+  // F7 cell display: toggle between mapped score (offset from 50) and raw Z
+  var f7Disp, f7ColorRaw;
+  if (isSuspended) {
+   f7Disp = '—'; f7ColorRaw = TC.textDim;
+  } else if (f7ShowRaw) {
+   var rz = d.f7_raw || 0;
+   f7Disp = (rz >= 0 ? '+' : '') + rz.toFixed(2);
+   f7ColorRaw = rz >= 2.0 ? TC.positive : rz <= -2.0 ? TC.negative : TC.textSecondary;
+  } else {
+   f7Disp = (d.f7 != null ? (d.f7 - 50).toFixed(0) : 'N/A');
+   f7ColorRaw = d.f7 != null ? (d.f7 <= 20 ? TC.negative : d.f7 >= 80 ? TC.positive : TC.textSecondary) : TC.textDim;
+  }
   var c1 = f1v * w1, c3 = f3v * w3, c7 = f7v * w7, cTot = c1 + c3 + c7 || 1;
   var p1 = Math.round(c1 / cTot * 100), p3 = Math.round(c3 / cTot * 100), p7 = 100 - p1 - p3;
   if (p1 < 0) p1 = 0; if (p3 < 0) p3 = 0; if (p7 < 0) p7 = 0;
@@ -2387,7 +2500,7 @@ function renderTunerSnapshot(idx) {
    '<td style="padding:9px 4px;text-align:center;vertical-align:middle;">' + fBar + '</td>' +
    '<td style="padding:9px 6px;text-align:center;font-size:12px;color:' + (isSuspended ? TC.textDim : (d.f1 || 50) >= 65 ? TC.positive : (d.f1 || 50) <= 35 ? TC.negative : TC.textSecondary) + ';">' + (isSuspended ? '—' : ((d.f1||0)-50).toFixed(0)) + '</td>' +
    '<td style="padding:9px 6px;text-align:center;font-size:12px;color:' + (isSuspended ? TC.textDim : 'var(--text-secondary)') + ';">' + (isSuspended ? '—' : ((d.f3||0)-50).toFixed(0)) + '</td>' +
-   '<td style="padding:9px 6px;text-align:center;font-size:12px;color:' + (isSuspended ? TC.textDim : (d.f7 != null ? (d.f7 <= 20 ? TC.negative : d.f7 >= 80 ? TC.positive : TC.textSecondary) : TC.textDim)) + ';">' + (isSuspended ? '—' : (d.f7 != null ? (d.f7 - 50).toFixed(0) : 'N/A')) + '</td>' +
+   '<td style="padding:9px 6px;text-align:center;font-size:12px;color:' + f7ColorRaw + ';">' + f7Disp + '</td>' +
    '<td style="padding:9px 3px;text-align:center;font-size:12px;font-weight:700;color:var(--text-secondary);" title="' + (isSuspended ? '停牌' : 'F1=' + (d.f1||0).toFixed(0) + ' F3=' + (d.f3||0).toFixed(0) + ' F7=' + (d.f7!=null?d.f7.toFixed(0):'N/A') + ' | C_eff=' + ((sig.cEff||0.5).toFixed(1))) + (isSuspended ? '' : (d.f1_raw!=null ? '&#10;F1_raw: EMA' + (d.f1_raw>0?'+':'') + d.f1_raw.toFixed(1) + '%' : '') + (d.f3_raw!=null ? ' F3_raw: 量比' + d.f3_raw.toFixed(2) : '') + (d.f7_raw!=null ? ' F7_raw: Z=' + d.f7_raw.toFixed(2) : '')) + '">' + (isSuspended ? '—' : score.toFixed(1)) + '</td>' +
    '<td style="padding:9px 6px;text-align:center;font-size:12px;color:' + (isSuspended ? TC.textDim : (d.z > 1.5 ? TC.positive : d.z > 0 ? TC.textSecondary : TC.negative)) + ';font-weight:600;">' + (isSuspended ? '—' : (d.z != null ? (d.z > 0 ? '+' : '') + d.z.toFixed(2) : '-')) + '</td>' +
    '<td style="padding:9px 6px;text-align:center;font-size:12px;' +
@@ -3244,16 +3357,8 @@ function initHeatmap() {
    secs.forEach(function(s) { HM_SEC_COLOR[s] = secPalette[s] || TC.textMuted; });
    // Sector legend
    var leg = $id('hm-sec-legend');
-   leg.innerHTML = secs.map(function(s) { return '<span><span class="hm-sec-dot" style="background:' + HM_SEC_COLOR[s] + ';"></span>' + s + '</span>'; }).join('')
-    + '<span style="margin-left:auto;display:inline-flex;align-items:center;gap:0;font-size:9px;color:#9ca3af;">'
-    + '<span style="width:14px;height:10px;background:#8b1515;border-radius:1px;margin-right:2px;"></span>-50%'
-    + '<span style="width:14px;height:10px;background:#d32222;border-radius:1px;margin:0 2px;"></span>-10%'
-    + '<span style="width:14px;height:10px;background:#f56565;border-radius:1px;margin:0 2px;"></span>-2%'
-    + '<span style="width:14px;height:10px;background:var(--bg-hover);border-radius:1px;margin:0 2px;"></span>0'
-    + '<span style="width:14px;height:10px;background:#0f7a34;border-radius:1px;margin:0 2px;"></span>+2%'
-    + '<span style="width:14px;height:10px;background:#1cc04d;border-radius:1px;margin:0 2px;"></span>+10%'
-    + '<span style="width:14px;height:10px;background:#3cdb78;border-radius:1px;margin-left:2px;"></span>+50%'
-    + '</span>';
+   leg.innerHTML = secs.map(function(s) { return '<span class="hm-sec-item"><span class="hm-sec-dot" style="background:' + HM_SEC_COLOR[s] + ';"></span>' + s + '</span>'; }).join('')
+    + '<span class="hm-sec-bar"><span>-50%</span><span class="hm-sec-bar-grad"></span><span>+50%</span></span>';
 
    return fetch('/api/heatmap_data?lookback=' + hmPeriod);
   })
@@ -3477,8 +3582,9 @@ function initHmSliders(nCols, nRows) {
  hWin.style.left = Math.max(0, st.tw - st.w) + 'px';
  hToView(); // sync viewport scroll to slider position
 
- // Resize: refresh dims, reposition handle, sync viewport
- window.addEventListener('resize', function() {
+ // ResizeObserver on viewport (handles tab switch, layout change, window resize — more reliable than window.resize)
+ if (window._hmResizeObserver) window._hmResizeObserver.disconnect();
+ window._hmResizeObserver = new ResizeObserver(function() {
   refreshDims();
   if (st.w > 0) {
    hWin.style.width = st.w + 'px';
@@ -3487,7 +3593,11 @@ function initHmSliders(nCols, nRows) {
    if (curLeft > maxLeft) hWin.style.left = maxLeft + 'px';
    hToView();
   }
+  refreshVDims();
+  vWin.style.height = vst.vh + 'px';
+  vFromView();
  });
+ window._hmResizeObserver.observe(vp);
 
  var hDrag = false, hsx = 0, hsl = 0;
  hWin.onmousedown = function(e) { hDrag = true; hsx = e.clientX; hsl = parseFloat(hWin.style.left)||0; e.preventDefault(); };
@@ -3541,18 +3651,7 @@ function initHmSliders(nCols, nRows) {
  refreshVDims();
  if (vst.vh > 0) { vWin.style.height = vst.vh + 'px'; vWin.style.top = '0px'; }
 
- // Add vertical to resize handler
- var _prevResize = window.onresize;
- window.addEventListener('resize', function() {
-  refreshVDims();
-  if (vst.vh > 0) {
-   vWin.style.height = vst.vh + 'px';
-   var maxTop = Math.max(0, vst.th - vst.vh);
-   var curTop = parseFloat(vWin.style.top) || 0;
-   if (curTop > maxTop) vWin.style.top = maxTop + 'px';
-   vToView();
-  }
- });
+ // V slider resize handled by ResizeObserver in initHmSliders (above)
 
  var vDrag = false, vsy = 0, vstt = 0;
  vWin.onmousedown = function(e) { vDrag = true; vsy = e.clientY; vstt = parseFloat(vWin.style.top)||0; e.preventDefault(); };
@@ -4012,7 +4111,7 @@ function dmSetFreq(freq) {
   dmField = activeF ? activeF.textContent.toLowerCase() : 'f7';
  } else {
   var activeD = document.querySelector('#dm-fields-data .dm-filter-btn.active');
-  dmField = activeD ? (activeD.id === 'dm-field-close' ? 'close' : activeD.id === 'dm-field-volume' ? 'volume' : 'amount') : 'close';
+  dmField = activeD ? (activeD.id === 'dm-field-close' ? 'close' : 'amount') : 'close';
  }
  dmLoadMatrix();
 }
@@ -4100,7 +4199,7 @@ function dmRenderMatrix() {
  // Grid body (uniform rows, no sector separators)
  // Compute value range for gradient (volume / amount modes only)
  var allVals = []; var vMin = 0, vMax = 1;
- if (dmField === 'volume' || dmField === 'amount') {
+ if (dmField === 'amount') {
   for (var ri = 0; ri < visibleEtfs.length; ri++) {
    var code = visibleEtfs[ri].code;
    for (var di = 0; di < dates.length; di++) {
@@ -4120,8 +4219,7 @@ function dmRenderMatrix() {
   return 'rgb(' + r + ',' + g + ',' + b + ')';
  }
  var gradLo, gradHi;
- if (dmField === 'volume') { gradLo = [10, 30, 60]; gradHi = [30, 90, 160]; }
- else if (dmField === 'amount') { gradLo = [26, 10, 48]; gradHi = [90, 42, 138]; }
+ if (dmField === 'amount') { gradLo = [26, 10, 48]; gradHi = [90, 42, 138]; }
 
  var gridBody = $id('dm-grid-body');
  gridBody.style.width = totalW + 'px';
@@ -4149,9 +4247,6 @@ function dmRenderMatrix() {
     if (val != null) {
      if (dmField === 'close' || dmFreq === 'factor') {
       cellText = val.toFixed(3);
-     } else if (dmField === 'volume') {
-      if (val >= 1e8) cellText = (val / 1e8).toFixed(1) + '亿';
-      else cellText = (val / 1e4).toFixed(0) + '万';
      } else if (dmField === 'amount') {
       if (val >= 1e8) cellText = (val / 1e8).toFixed(2) + '亿';
       else cellText = (val / 1e4).toFixed(0) + '万';
@@ -4161,7 +4256,7 @@ function dmRenderMatrix() {
 
    // Gradient background for volume/amount CSV cells
    var inlineStyle = '';
-   if ((dmField === 'volume' || dmField === 'amount') && cell.status === 'csv' && val != null && vMax > vMin) {
+   if (dmField === 'amount' && cell.status === 'csv' && val != null && vMax > vMin) {
     var t = (val - vMin) / (vMax - vMin);
     inlineStyle = ' style="background:' + dmGrad(t, gradLo, gradHi) + ' !important;"';
    }
@@ -4753,6 +4848,7 @@ document.addEventListener('click', function(e) {
       case 'switchRightView': switchRightView(el.dataset.view); break;
       case 'switchKlineFreq': switchKlineFreq(el.dataset.freq); break;
       case 'switchKlineView': switchKlineView(el.dataset.view); break;
+      case 'toggleF7Raw': toggleF7Raw(); break;
       case 'switchHeatmapPeriod': switchHeatmapPeriod(parseInt(el.dataset.days)); break;
       case 'dmSetRange': dmSetRange(parseInt(el.dataset.days)); break;
       case 'dmSetFreq': dmSetFreq(el.dataset.freq); break;

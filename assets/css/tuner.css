@@ -273,11 +273,68 @@ th[data-sort]:hover { color: var(--text-body); }
 .preset-card.active { border-color: var(--accent); background: var(--bg-active); box-shadow: 0 0 6px rgba(59,130,246,0.2); }
 .preset-card h4 { font-size: 12px; color: var(--text-body); margin: 0; }
 
-/* Locked parameter row — same layout as slider-group but no slider */
+/* Locked slider — slider stays visible but disabled, muted appearance */
+.slider-group.locked input[type=range] {
+  pointer-events: none;
+  opacity: 0.35;
+  background: #334155;
+}
+.slider-group.locked input[type=range]::-webkit-slider-thumb {
+  background: #64748b;
+  cursor: not-allowed;
+}
+.slider-group.locked .slider-label .name { color: #64748b; }
+.slider-group.locked .slider-label .val { color: #64748b; }
+.slider-group.locked .lock-icon {
+  font-size: 11px;
+  margin-left: 3px;
+  cursor: help;
+  position: relative;
+}
+.slider-group.locked .lock-icon:hover::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: 130%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1e293b;
+  color: #e2e8f0;
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  white-space: nowrap;
+  z-index: 999;
+  border: 1px solid #475569;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
+
+/* Locked parameter row — no slider, text-only (for param-locked class if used later) */
 .param-locked { display: flex; align-items: center; gap: 6px; font-size: 12px; padding: 4px 0 2px; margin-bottom: 6px; }
 .param-locked .pk { color: var(--text-body); flex: 1; }
 .param-locked .pt { display: inline-flex; align-items: center; font-size: 11px; color: var(--text-muted); vertical-align: middle; line-height: 1; transform: translateY(-2px); }
 .param-locked .pv { color: var(--text-dim); font-family: monospace; font-weight: 600; min-width: 36px; text-align: right; }
+.param-locked .lock-icon {
+  font-size: 11px;
+  margin-left: 3px;
+  cursor: help;
+  position: relative;
+}
+.param-locked .lock-icon:hover::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: 130%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1e293b;
+  color: #e2e8f0;
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  white-space: nowrap;
+  z-index: 999;
+  border: 1px solid #475569;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
 
 /* Factor sub-params — indented, muted, visually subordinate */
 .factor-sub { margin-left: 12px; padding-left: 10px; border-left: 2px solid #1e3a52; margin-bottom: 4px; }
@@ -326,7 +383,10 @@ th[data-sort]:hover { color: var(--text-body); }
 .hm-date-cell:hover { color: var(--text-body); background: var(--bg-hover); }
 .hm-date-cell.sort-asc { color: var(--warning); font-weight: 700; background: var(--bg-hover); }
 .hm-date-cell.sort-desc { color: var(--warning); font-weight: 700; background: var(--bg-hover); }
-.hm-sec-dot { width: 8px; height: 8px; border-radius: 2px; display: inline-block; flex-shrink: 0; }
+.hm-sec-dot { width: 8px; height: 8px; border-radius: 2px; display: inline-block; flex-shrink: 0; margin-right: 4px; }
+.hm-sec-item { display: inline-flex; align-items: center; font-size: 12px; color: #c0c0c0; }
+.hm-sec-bar { display: inline-flex; align-items: center; gap: 4px; font-size: 9px; color: #c0c0c0; margin-left: auto; flex-shrink: 0; }
+.hm-sec-bar-grad { width: 120px; height: 10px; border-radius: 3px; background: linear-gradient(to right, #8b1515, #d32222, #f56565, var(--bg-hover), #0f7a34, #1cc04d, #3cdb78); }
 
 /* ══════════════════════════════════════════════════════════════
   Data Management Panel (数据管理)

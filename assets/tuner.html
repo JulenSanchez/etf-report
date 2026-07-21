@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Quant Tuner - REQ-179</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+<link rel="stylesheet" href="/assets/css/debug.css">
+<link rel="stylesheet" href="/assets/css/tuner.css">
+</head>
+<body>
+
+<div id="shortcuts-overlay" data-action="toggleShortcutsOverlay">
+ <div id="shortcuts-card">
+  <h3>Keyboard Shortcuts</h3>
+  <div class="shortcut-row"><span class="shortcut-key">3</span><span class="shortcut-desc">自定义 (cst-1)</span></div>
+  <div class="shortcut-row"><span class="shortcut-key">R</span><span class="shortcut-desc">Run Backtest</span></div>
+  <div class="shortcut-row"><span class="shortcut-key">S</span><span class="shortcut-desc">Save YAML</span></div>
+  <div class="shortcut-hint">Press ? or ESC to close</div>
+ </div>
+</div>
+
+<div id="tuner-loading">
+ <div class="spinner"></div>
+ <div class="text">正在加载量化数据...</div>
+</div>
+
+<div id="tuner-panels">
+<!-- LEFT_PANEL -->
+<!-- RIGHT_PANEL -->
+</div><!-- /#tuner-panels -->
+
+<script src="/assets/js/tuner.js"></script>
+<script src="/assets/js/debug-toolbar.js"></script>
+</body>
+</html>

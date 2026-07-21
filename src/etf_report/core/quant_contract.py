@@ -40,7 +40,8 @@ PARAM_SCHEMA = {
             "key": "confidence",
             "label": "仓位控制",
             "params": [
-                {"key": "conf_type", "label": "信心函数类型", "unit": "enum", "engine_path": "confidence.type"},
+                {"key": "conf_type", "label": "信心函数类型", "unit": "enum", "engine_path": "confidence.type", "locked": True, "lock_reason": "仅 MA 趋势可用。旧信心函数已退役。"},
+                {"key": "benchmarks", "label": "投票委员会", "unit": "enum", "engine_path": "confidence.benchmarks", "locked": True, "lock_reason": "固定沪深 300 单票。多指数投票未见稳健超额。"},
                 {"key": "ma_trend_period", "label": "MA Trend 周期", "unit": "weeks", "engine_path": "confidence.ma_trend_period"},
                 {"key": "ma_bull_pos", "label": "MA 上方仓位", "unit": "ratio", "engine_path": "confidence.ma_bull_pos"},
                 {"key": "ma_bear_pos", "label": "MA 下方仓位", "unit": "ratio", "engine_path": "confidence.ma_bear_pos"},
@@ -54,11 +55,11 @@ PARAM_SCHEMA = {
             "label": "仓位分配与调仓",
             "params": [
                 {"key": "max_holdings", "label": "最大持仓数", "unit": "count", "engine_path": "position.max_holdings"},
-                {"key": "signal_steps", "label": "仓位步数", "unit": "count", "engine_path": "position.signal_steps"},
+                {"key": "signal_steps", "label": "仓位步数", "unit": "count", "engine_path": "position.signal_steps", "locked": True, "lock_reason": "纯摩擦参数。减小会隐式提升集中度，与 TB 越俎代庖。"},
                 {"key": "top_boost", "label": "头名加成", "unit": "steps", "engine_path": "position.top_boost"},
                 {"key": "concentration", "label": "仓位集中度 C", "unit": "raw", "engine_path": "position.concentration"},
                 {"key": "c_sensitivity", "label": "C 动态灵敏度", "unit": "raw", "engine_path": "position.c_sensitivity"},
-                {"key": "rebalance_freq", "label": "调仓频率", "unit": "enum", "engine_path": "position.rebalance_freq"},
+                {"key": "rebalance_freq", "label": "调仓频率", "unit": "enum", "engine_path": "position.rebalance_freq", "locked": True, "lock_reason": "固定日调仓。周调仓因信号延迟已被淘汰。"},
                 {"key": "band", "label": "B 分数带", "unit": "raw", "engine_path": "position.band"},
                 {"key": "band_sensitivity", "label": "BS 分数带灵敏度", "unit": "raw", "engine_path": "position.band_sensitivity"},
             ],
@@ -68,8 +69,10 @@ PARAM_SCHEMA = {
             "label": "因子周期与阈值",
             "params": [
                 {"key": "f1_ema_period", "label": "F1 EMA 周期", "unit": "weeks", "engine_path": "factors.ema.period_weeks"},
+                {"key": "f1_active_days", "label": "F1 抢跑日", "unit": "enum", "engine_path": "factors.f1_active_days", "locked": True, "lock_reason": "固定周五抢跑。多日抢跑未见稳健超额。"},
                 {"key": "f3_vol_window", "label": "F3 量比窗口", "unit": "days", "engine_path": "factors.volume_ratio.window_days"},
                 {"key": "f7_window", "label": "F7 累计收益窗口", "unit": "days", "engine_path": "factors.log_return_deviation.window_days"},
+                {"key": "f7_lookback", "label": "F7 归一化窗口", "unit": "days", "engine_path": "factors.log_return_deviation.lookback_days", "locked": True, "lock_reason": "REQ-382 联合扫参确认 250 日最优，缩短无益。"},
             ],
         },
         {
@@ -83,7 +86,14 @@ PARAM_SCHEMA = {
 }
 
 def get_param_schema():
-    return deepcopy(PARAM_SCHEMA)
+    """Return PARAM_SCHEMA with locked_value injected for locked params."""
+    schema = deepcopy(PARAM_SCHEMA)
+    for group in schema["groups"]:
+        for p in group["params"]:
+            if p.get("locked"):
+                lp = LOCKED_PARAMS.get(p["key"], {})
+                p["locked_value"] = lp.get("value")
+    return schema
 
 
 def iter_schema_param_keys():
@@ -154,13 +164,31 @@ def validate_tuner_params(params):
     return None
 
 
-# Params that must be present — missing = silent bug, refuse to proceed
+# Params that must be present — missing = silent bug, refuse to proceed.
+# MODIFYING THIS SET: keep in sync with —
+#   1. tests/test_quant_contract.py  sample_params()        (rigid: missing → ValueError → pytest fail)
+#   2. config/defaults.yaml           non-searchable defaults (soft: DEFAULT_LOCK is single source of truth)
+#   3. assets/tuner-left.html          slider / input control  (soft: missing → param not adjustable in UI)
 _REQUIRED_PARAMS = frozenset([
     'w1', 'w3', 'w7', 'ma_bull_pos', 'ma_bear_pos', 'max_holdings', 'ma_trend_period',
     'concentration', 'c_sensitivity', 'band', 'band_sensitivity', 'signal_steps', 'top_boost',
-    'f7_up_power', 'f7_up_span', 'f7_window', 'f3_vol_window', 'f1_sensitivity', 'f3_sensitivity',
+    'f7_up_power', 'f7_up_span', 'f7_window', 'f7_lookback', 'f3_vol_window', 'f1_sensitivity', 'f3_sensitivity',
     'f1_ema_period',
 ])
+
+
+# ── Locked params — single source of truth ──
+# These params appear in the UI but are not adjustable.  All consumers
+# (WF scripts, research utils, Tuner frontend) read this dict to know
+# which params are read-only and what value to use.
+LOCKED_PARAMS = {
+    "signal_steps":    {"value": 40,    "reason": "纯摩擦参数。减小会隐式提升集中度，与 TB 越俎代庖。REQ-323 WF 诊断确认。"},
+    "f7_lookback":     {"value": 250,   "reason": "REQ-382 联合扫参确认 250 日最优，缩短无益。"},
+    "conf_type":       {"value": "ma_trend", "reason": "仅 MA 趋势可用。旧信心函数已退役。"},
+    "rebalance_freq":  {"value": "daily",    "reason": "固定日调仓。周调仓因信号延迟已被淘汰。"},
+    "benchmarks":      {"value": ["510300"], "reason": "固定沪深 300 单票。多指数投票未见稳健超额。"},
+    "f1_active_days":  {"value": 1,     "reason": "固定周五抢跑。多日抢跑未见稳健超额。"},
+}
 
 
 def load_defaults():
@@ -211,7 +239,7 @@ def tuner_params_to_config_override(params):
             "ma_bear_pos": _as_float(params.get("ma_bear_pos"), cf_df.get("ma_bear_pos", 0.3)),
             "ma_trend_period": _as_int(params.get("ma_trend_period"), cf_df.get("ma_trend_period", 26)),
             "ma_direction_confirm": _as_bool(params.get("ma_direction_confirm"), cf_df.get("ma_direction_confirm", True)),
-            "benchmarks": params.get("benchmarks", cf_df.get("benchmarks", ["000300"])),
+            "benchmarks": params.get("benchmarks", cf_df.get("benchmarks", ["510300"])),
         },
         "position": {
             "max_holdings": _as_int(params.get("max_holdings"), pos_df.get("max_holdings", 6)),
@@ -230,7 +258,7 @@ def tuner_params_to_config_override(params):
             "volume_ratio": {"window_days": _as_int(params.get("f3_vol_window"), fac_df.get("volume_ratio", {}).get("window_days", 20))},
             "log_return_deviation": {
                 "window_days": _as_int(params.get("f7_window"), fac_df.get("log_return_deviation", {}).get("window_days", 20)),
-                "lookback_days": fac_df.get("log_return_deviation", {}).get("lookback_days", 250),
+                "lookback_days": _as_int(params.get("f7_lookback"), fac_df.get("log_return_deviation", {}).get("lookback_days", 250)),
                 "min_days": fac_df.get("log_return_deviation", {}).get("min_days", 60),
                 "sigma_floor": fac_df.get("log_return_deviation", {}).get("sigma_floor", 0.01),
             },
@@ -329,6 +357,7 @@ def preset_to_tuner_params(preset_key, preset_cfg, global_conf=None):
         "f7_down_power": sensitivity.get("f7_down_power", _sens_df.get("f7_down_power", 7.0)),
         "f7_down_span": sensitivity.get("f7_down_span", _sens_df.get("f7_down_span", 3.0)),
         "f7_window": factors.get("log_return_deviation", {}).get("window_days", _fac_df["log_return_deviation"]["window_days"]),
+        "f7_lookback": factors.get("log_return_deviation", {}).get("lookback_days", _fac_df["log_return_deviation"]["lookback_days"]),
         "f1_active_days": factors.get("f1_active_days", _fac_df["f1_active_days"]),
     }
 

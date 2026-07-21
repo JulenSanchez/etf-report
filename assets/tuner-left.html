@@ -1,0 +1,251 @@
+<div class="panel-left" id="tuner-panel-left">
+ <div class="panel-left-scroll">
+ <h2 id="tuner-title">Quant Tuner</h2>
+
+ <!-- Preset cards -->
+ <section id="tuner-sec-presets" aria-label="策略Preset">
+  <div class="section-head">策略 Preset</div>
+  <div id="preset-cards">
+   <!-- Dynamically rendered from /api/presets -->
+  </div>
+  <div class="preset-row" style="margin-top:6px; gap:6px; align-items:center;">
+  </div>
+ </section>
+
+ <!-- Universe selector -->
+ <section id="tuner-sec-universe" aria-label="标的池">
+  <div class="universe-head" id="universe-head" data-action="toggleUniverse">
+   <span class="u-title">标的池</span>
+   <span class="u-count" id="universe-count">30/30</span>
+   <span class="u-chevron">&#9660;</span>
+  </div>
+  <div class="universe-body" id="universe-body">
+   <div class="universe-actions">
+    <button data-action="universeSelectAll">全选</button>
+    <button data-action="universeSelectNone">全不选</button>
+    <button data-action="universeSelectInverse">反选</button>
+   </div>
+   <div class="universe-actions" style="margin-top:4px;">
+    <button data-action="saveUniverse" style="background:#4a90d9;color:#fff;">保存标的池</button>
+    <span id="universe-save-msg" style="margin-left:8px;font-size:13px;color:#aaa;"></span>
+   </div>
+   <div id="universe-sectors"></div>
+  </div>
+ </section>
+
+ <!-- Factor weights + sub-params (merged) -->
+ <section id="tuner-sec-factors" aria-label="因子配置">
+  <div class="section-head">因子配置</div>
+
+    <div class="slider-group" id="param-w1" aria-label="F1权重">
+   <div class="slider-label"><span class="name">F1 EMA 偏离度</span><span class="val" id="v-w1">40%</span></div>
+   <input type="range" id="w1" min="0" max="100" step="1" value="40" oninput="syncWeights()" aria-label="F1 EMA偏离度权重">
+  </div>
+  <div class="factor-sub" id="tuner-sec-f1">
+   <div class="slider-group" id="param-ema" aria-label="EMA周期">
+    <div class="slider-label"><span class="name">EMA 周期</span><span class="val" id="v-f1-ema">16 周</span></div>
+    <input type="range" id="f1_ema_period" min="3" max="30" step="1" value="16" oninput="$id('v-f1-ema').textContent=this.value+' 周'" aria-label="EMA周期">
+   </div>
+   <div class="slider-group" id="param-f1s" aria-label="F1 sigmoid">
+    <div class="slider-label"><span class="name" >sigmoid 尺度</span><span class="val" id="v-f1s">9.6</span></div>
+    <input type="range" id="f1_sensitivity" min="0.5" max="15" step="0.1" value="9.6" oninput="$id('v-f1s').textContent=parseFloat(this.value).toFixed(1)" aria-label="F1 sigmoid尺度">
+   </div>
+   <div class="slider-group" id="param-f1-active-days" aria-label="F1抢跑" style="margin-top:2px;">
+    <div class="slider-label"><span class="name">抢跑</span><span class="val" id="v-f1ad">周五</span></div>
+    <div class="btn-row" id="f1ad-group" style="gap:2px;">
+     <button data-action="toggleF1Day" data-bit="16" id="f1ad-mon">一</button>
+     <button data-action="toggleF1Day" data-bit="8" id="f1ad-tue">二</button>
+     <button data-action="toggleF1Day" data-bit="4" id="f1ad-wed">三</button>
+     <button data-action="toggleF1Day" data-bit="2" id="f1ad-thu">四</button>
+     <button data-action="toggleF1Day" data-bit="1" id="f1ad-fri" class="active">五</button>
+     <button data-action="setF1ActiveDays" data-val="31" style="font-size:10px;">全选</button>
+     <button data-action="setF1ActiveDays" data-val="0" style="font-size:10px;">全不选</button>
+    </div>
+   </div>
+  </div>
+  
+    <div class="slider-group" id="param-w3" aria-label="F3权重">
+   <div class="slider-label"><span class="name">F3 自归一化量比</span><span class="val" id="v-w3">60%</span></div>
+   <input type="range" id="w3" min="0" max="100" step="1" value="60" oninput="syncWeights()" aria-label="F3方向性量比权重">
+  </div>
+  <div class="factor-sub" id="tuner-sec-f3">
+   <div class="slider-group" id="param-vol" aria-label="量比窗口">
+    <div class="slider-label"><span class="name">量比窗口</span><span class="val" id="v-vol">20 日</span></div>
+    <input type="range" id="f3_vol_window" min="5" max="60" step="1" value="20" oninput="$id('v-vol').textContent=this.value+' 日'" aria-label="量比窗口">
+   </div>
+   <div class="slider-group" id="param-f3s" aria-label="F3指数尺度">
+    <div class="slider-label"><span class="name">指数尺度</span><span class="val" id="v-f3s">1.0</span></div>
+    <input type="range" id="f3_sensitivity" min="0.5" max="8.0" step="0.1" value="1.0" oninput="$id('v-f3s').textContent=parseFloat(this.value).toFixed(1)" aria-label="F3指数尺度">
+   </div>
+  </div>
+
+
+
+
+
+  <!-- F7 -->
+  <div class="slider-group" id="param-w7" aria-label="F7权重">
+   <div class="slider-label"><span class="name">F7 对数收益偏离</span><span class="val" id="v-w7">0%</span></div>
+   <input type="range" id="w7" min="0" max="100" step="1" value="0" oninput="syncWeights()" aria-label="F7对数收益偏离权重">
+  </div>
+  <div class="factor-sub" id="tuner-sec-f7">
+   <div class="slider-group" id="param-f7-up-power">
+    <div class="slider-label"><span class="name">幂次（超涨）</span><span class="val" id="v-f7-up-power">7</span></div>
+    <input type="range" id="f7_up_power" min="1" max="25" step="1" value="7" oninput="$id('v-f7-up-power').textContent=this.value" aria-label="F7超涨幂次">
+   </div>
+   <div class="slider-group" id="param-f7-up-span">
+    <div class="slider-label"><span class="name">饱和半径（超涨）</span><span class="val" id="v-f7-up-span">3.00</span></div>
+    <input type="range" id="f7_up_span" min="0.1" max="10" step="0.01" value="3.0" oninput="$id('v-f7-up-span').textContent=parseFloat(this.value).toFixed(2)" aria-label="F7超涨饱和半径">
+   </div>
+   <div class="slider-group" id="param-f7-down-power">
+    <div class="slider-label"><span class="name">幂次（超跌）</span><span class="val" id="v-f7-down-power">18</span></div>
+    <input type="range" id="f7_down_power" min="1" max="25" step="1" value="18" oninput="$id('v-f7-down-power').textContent=this.value" aria-label="F7超跌幂次">
+   </div>
+   <div class="slider-group" id="param-f7-down-span">
+    <div class="slider-label"><span class="name">饱和半径（超跌）</span><span class="val" id="v-f7-down-span">3.00</span></div>
+    <input type="range" id="f7_down_span" min="0.1" max="10" step="0.01" value="3.0" oninput="$id('v-f7-down-span').textContent=parseFloat(this.value).toFixed(2)" aria-label="F7超跌饱和半径">
+   </div>
+   <div class="slider-group" id="param-f7-window">
+    <div class="slider-label"><span class="name">累计收益窗口</span><span class="val" id="v-f7-window">20 日</span></div>
+    <input type="range" id="f7_window" min="5" max="60" step="1" value="20" oninput="$id('v-f7-window').textContent=this.value+' 日'" aria-label="F7累计对数收益窗口">
+   </div>
+   <div class="slider-group" id="param-f7-lookback">
+    <div class="slider-label"><span class="name">归一化窗口</span><span class="val" id="v-f7-lookback">250 日</span></div>
+    <input type="range" id="f7_lookback" min="60" max="250" step="10" value="250" aria-label="F7 Z-score归一化历史窗口">
+   </div>
+  </div>
+
+    <div class="weight-total" style="margin-top:8px;">合计: <span id="v-total" style="color:var(--positive);font-weight:600">100%</span></div>
+   </section>
+
+
+   <div class="slider-group" id="param-conf-type" aria-label="信心函数">
+    <div class="slider-label"><span class="name">信心函数</span><span class="val" id="v-conf-type">MA趋势</span></div>
+    <div class="btn-row" id="conf-type-group">
+     <button data-action="setConfType" data-val="ma_trend" class="active">MA趋势</button>
+    </div>
+   </div>
+   <div id="tuner-sec-confidence" class="factor-sub">
+    <div class="slider-group" id="param-ma-period" aria-label="MA趋势周期">
+     <div class="slider-label"><span class="name">趋势周期</span><span class="val" id="v-ma-period">18 周</span></div>
+     <input type="range" id="ma_trend_period" min="8" max="40" step="2" value="18" oninput="$id('v-ma-period').textContent=this.value+' 周'" aria-label="MA趋势周期">
+    </div>
+    <div class="slider-group" id="param-ma-bull" aria-label="MA上方仓位">
+     <div class="slider-label"><span class="name">上方仓位 (bull)</span><span class="val" id="v-ma-bull">180%</span></div>
+     <input type="range" id="ma_bull_pos" min="0.0" max="2.0" step="0.01" value="1.80" oninput="$id('v-ma-bull').textContent=Math.round(this.value*100)+'%'; validateBullBear()" aria-label="MA上方仓位">
+    </div>
+   <div class="slider-group" id="param-ma-bear" aria-label="MA下方仓位">
+    <div class="slider-label"><span class="name">下方仓位 (bear)</span><span class="val" id="v-ma-bear">100%</span></div>
+    <input type="range" id="ma_bear_pos" min="0.0" max="1.0" step="0.01" value="1.00" oninput="$id('v-ma-bear').textContent=Math.round(this.value*100)+'%'; validateBullBear()" aria-label="MA下方仓位">
+   </div>
+  </div>
+   <!-- Voting committee -->
+
+   <div class="slider-group" id="param-benchmarks" aria-label="投票委员会">
+    <div class="slider-label">
+     <span class="name">投票委员会</span>
+     <span class="val" id="v-benchmarks">1票·HS300</span>
+    </div>
+    <div class="btn-row" id="benchmark-btns" style="flex-wrap:wrap;"></div>
+    <div id="benchmark-vote-status" style="margin-top:6px;padding:4px 8px;border-radius:4px;background:#0f1724;font-size:10px;color:var(--text-muted);line-height:1.6;">
+     等待回测
+    </div>
+   </div>
+ </section>
+
+  <!-- Position allocation -->
+ <section id="tuner-sec-position" aria-label="仓位分配">
+  <div class="section-head">仓位分配</div>
+  <div class="slider-group" id="param-max-holdings" aria-label="最大持仓">
+   <div class="slider-label"><span class="name">最大持仓</span><span class="val" id="v-maxh">6 支</span></div>
+   <input type="range" id="max_holdings" min="1" max="8" step="1" value="6" oninput="$id('v-maxh').textContent=this.value+' 支'" aria-label="最大持仓">
+  </div>
+  <div class="slider-group" id="param-signal-steps" aria-label="仓位步数">
+   <div class="slider-label"><span class="name">仓位步数 N</span><span class="val" id="v-steps">40</span></div>
+   <input type="range" id="signal_steps" min="3" max="50" step="1" value="40" aria-label="仓位步数">
+  </div>
+  <div class="slider-group" id="param-top-boost" aria-label="头名加成">
+   <div class="slider-label"><span class="name">头名加成</span><span class="val" id="v-boost">0</span></div>
+   <input type="range" id="top_boost" min="0" max="10" step="1" value="0" oninput="$id('v-boost').textContent=parseInt(this.value)" aria-label="头名加成">
+  </div>
+  <div class="slider-group" id="param-concentration" aria-label="仓位集中度">
+   <div class="slider-label"><span class="name">仓位集中度 C</span><span class="val" id="v-conc">0.71</span></div>
+   <input type="range" id="concentration" min="0.00" max="3.00" step="0.01" value="0.71" oninput="$id('v-conc').textContent=parseFloat(this.value).toFixed(2)" aria-label="仓位集中度">
+  </div>
+  <div class="slider-group" id="param-csensitivity" aria-label="动态C灵敏度">
+   <div class="slider-label"><span class="name">C 动态灵敏度</span><span class="val" id="v-csens">8.68</span></div>
+   <input type="range" id="c_sensitivity" min="0.0" max="20.0" step="0.01" value="8.68" oninput="$id('v-csens').textContent=parseFloat(this.value).toFixed(1)" aria-label="动态C灵敏度">
+  </div>
+  <div class="slider-group" id="param-rebalance-freq" aria-label="调仓数据层">
+   <div class="slider-label"><span class="name">调仓频率</span><span class="val" id="v-freq">日调仓</span></div>
+   <div class="btn-row" id="freq-group">
+    <button data-action="setFreq" data-val="daily" class="active">日调仓</button>
+   </div>
+  </div>
+  <div class="factor-sub">
+   <div class="slider-group" id="param-band" aria-label="B 分数带">
+    <div class="slider-label"><span class="name">B 分数带</span><span class="val" id="v-band">0.03</span></div>
+    <input type="range" id="band" min="0.00" max="2.00" step="0.001" value="0.03" oninput="$id('v-band').textContent=(parseFloat(this.value)*100).toFixed(1)+'%'" aria-label="B 分数带">
+   </div>
+   <div class="slider-group" id="param-band-sensitivity" aria-label="BS 分数带灵敏度">
+    <div class="slider-label"><span class="name">BS 分数带灵敏度</span><span class="val" id="v-band-sensitivity">0.0</span></div>
+    <input type="range" id="band_sensitivity" min="0.0" max="10.0" step="0.1" value="0.0" oninput="$id('v-band-sensitivity').textContent=parseFloat(this.value).toFixed(1)" aria-label="BS 分数带灵敏度">
+   </div>
+  </div>
+ </section>
+ </div><!-- /panel-left-scroll -->
+ <div class="panel-left-foot">
+ <section id="tuner-sec-period" aria-label="回测周期">
+  <div class="section-head">回测周期</div>
+  <div class="btn-row" style="margin-bottom:6px;" id="period-span-btns">
+   <button class="active" data-action="setPeriodSpan" data-val="1" id="span-btn-1">1 年</button>
+   <button data-action="setPeriodSpan" data-val="3" id="span-btn-3">3 年</button>
+   <button data-action="setPeriodSpan" data-val="6" id="span-btn-6">6 年</button>
+  </div>
+  <div class="dual-range-wrap" data-action="preventTrackJump" style="position:relative;">
+   <div class="dual-range-track"></div>
+   <div class="dual-range-fill" id="period-fill"></div>
+   <input type="range" id="start_date_slider" min="0" max="365" step="1" value="330" oninput="onPeriodSliderChange(event)" aria-label="回测起始日期">
+   <input type="range" id="end_date_slider"  min="0" max="365" step="1" value="365" oninput="onPeriodSliderChange(event)" aria-label="回测结束日期">
+  </div>
+  <div class="dual-range-labels">
+   <span class="val" id="v-start-date">--</span>
+   <span style="color:var(--text-muted);font-size:10px;">跨度 <span id="v-period-span">--</span></span>
+   <span class="val" id="v-end-date">--</span>
+  </div>
+  <div style="display:flex;justify-content:space-between;margin-top:2px;">
+   <span style="display:flex;align-items:center;gap:1px;">
+    <button id="nudge-start-m30" data-action="nudgeDate" data-which="start" data-days="-30" class="btn-nudge" title="-30天">◀◀</button>
+    <button id="nudge-start-m1" data-action="nudgeDate" data-which="start" data-days="-1" class="btn-nudge" title="-1天">◀</button>
+    <button id="nudge-start-p1" data-action="nudgeDate" data-which="start" data-days="1" class="btn-nudge" title="+1天">▶</button>
+    <button id="nudge-start-p30" data-action="nudgeDate" data-which="start" data-days="30" class="btn-nudge" title="+30天">▶▶</button>
+   </span>
+   <span style="display:flex;align-items:center;gap:1px;">
+    <button id="nudge-end-m30" data-action="nudgeDate" data-which="end" data-days="-30" class="btn-nudge" title="-30天">◀◀</button>
+    <button id="nudge-end-m1" data-action="nudgeDate" data-which="end" data-days="-1" class="btn-nudge" title="-1天">◀</button>
+    <button id="nudge-end-p1" data-action="nudgeDate" data-which="end" data-days="1" class="btn-nudge" title="+1天">▶</button>
+    <button id="nudge-end-p30" data-action="nudgeDate" data-which="end" data-days="30" class="btn-nudge" title="+30天">▶▶</button>
+   </span>
+  </div>
+ </section>
+
+  <div id="tuner-sec-actions" aria-label="操作按钮" style="display:flex;flex-direction:column;gap:4px;">
+   <button class="btn-run" id="btn-run" data-action="runBacktest">运行回测</button>
+   <div style="display:flex;gap:4px;align-items:center;">
+    <button class="btn-refresh" id="btn-refresh" data-action="refreshData">刷新数据</button>
+    <button class="btn-meta" id="btn-meta" data-action="refreshMetadata" title="拉取ETF成分股及主营业务（耗时较长）">元数据</button>
+    <button class="btn-save" data-action="saveYAML">保存参数</button>
+    <span id="toggle-debug" data-action="toggleDebugPill" class="toggle-pill" title="回测调试快照">debug</span>
+   </div>
+   <input type="checkbox" id="chk-debug" style="display:none;">
+   <div id="tuner-progress-wrap" style="max-height:0;overflow:hidden;transition:max-height 0.3s;">
+    <div id="tuner-progress" style="height:2px;background:var(--bg-input);border-radius:1px;overflow:hidden;margin-top:2px;">
+     <div id="tuner-progress-bar" style="height:100%;width:0%;background:var(--warning);border-radius:1px;transition:width 0.3s ease;"></div>
+    </div>
+    <div id="tuner-progress-text" style="font-size:10px;color:#9ca3af;margin-top:1px;"></div>
+   </div>
+   <div class="status" id="status" style="margin-top:2px;min-height:0;"></div>
+  </div>
+  <div class="status" id="data-status" style="min-height:0;margin-top:2px;"></div>
+ </div><!-- /panel-left-foot -->
+</div>

@@ -1,0 +1,565 @@
+<div class="panel-right" id="tuner-panel-right">
+
+ <!-- Right view switcher -->
+ <div class="view-switch" id="right-view-switch" style="margin-bottom:14px;">
+  <button data-action="switchRightView" data-view="guide">参数原理</button>
+  <button class="active" data-action="switchRightView" data-view="results">回测结果</button>
+  <button data-action="switchRightView" data-view="heatmap">涨跌热力</button>
+  <button data-action="switchRightView" data-view="datamgmt">数据管理</button>
+ </div>
+
+ <!-- ========== Guide View ========== -->
+ <div id="right-view-guide" class="right-view">
+  <div style="margin-bottom:10px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:#111827;color:#9ca3af;font-size:12px;line-height:1.6;">
+   本页“参数原理”是用户帮助层；工程事实源见 <code>docs/runbook/v2-quant/overview.md</code>、<code>docs/design/backtest-engine.md</code> 和 <code>config/quant_universe.yaml</code>。当前默认值以左侧所选 Preset 和滑块为准。
+   <span id="param-schema-badge" style="display:inline-block;margin-left:8px;color:var(--accent-light);font-family:monospace;">schema: loading</span>
+  </div>
+
+  <div class="guide-block" id="guide-contract" aria-label="参数契约">
+   <div class="guide-block-header" data-action="toggleGuide" data-id="guide-contract">
+    <span class="g-icon">&#128279;</span>
+    <span class="g-title">参数契约</span>
+    <span class="g-tag" style="color:var(--accent-light);">schema</span>
+    <span class="g-chevron">&#9654;</span>
+   </div>
+   <div class="guide-block-body">
+    <p>以下内容来自 <code>/api/param_schema</code>，用于确认每个前端参数的单位和后端路径。点击表格行可定位左侧控件。新增参数时先改 <code>scripts/quant_contract.py</code>。</p>
+    <div id="param-schema-table"><p>正在加载参数契约...</p></div>
+   </div>
+  </div>
+
+  <div class="guide-grid">
+  <div class="guide-col">
+
+  <!-- Pipeline overview (compact) -->
+  <div class="guide-block" id="guide-pipeline" aria-label="全流程总览">
+   <div class="guide-block-header" data-action="toggleGuide" data-id="guide-pipeline">
+    <span class="g-icon">&#128736;</span>
+    <span class="g-title">全流程总览</span>
+    <span class="g-tag" style="color:var(--warning);">end-to-end</span>
+    <span class="g-chevron">&#9654;</span>
+   </div>
+   <div class="guide-block-body">
+    <p>每个调仓日，对当前勾选的 ETF 池执行以下流水线：</p>
+    <p><b>Phase 1: 因子计算</b></p>
+    <p>1. d₁ = 周线 EMA 偏离%（F1），r = 方向性量比（F3）</p>
+    <p>2. Z = N日累计对数收益的滚动 Z-score（F7）</p>
+    <p><b>Phase 2: 连续映射</b>（每支 ETF 独立，不做截面排名）</p>
+    <p>3. d₁ → F<sub>1</sub> = <span class="formula"><span class="frac-top">1</span><span class="frac-bot">1 + e<sup>−d₁/σ₁</sup></span></span>（sigmoid，σ₁ = <span class="param-hl">F1 sigmoid 尺度</span>）</p>
+    <p>4. r → F<sub>3</sub> = <span class="formula"><span class="frac-top">1</span><span class="frac-bot">1 + e<sup>−ln(r)/σ₃</sup></span></span>（log-sigmoid，σ₃ = <span class="param-hl">F3 指数尺度</span>）</p>
+    <p>6. Z → F<sub>7</sub> = 分段幂函数（|Z|≤k 幂次加速，|Z|>k 切线外延，k = <span class="param-hl">标准差倍数</span>，t = <span class="param-hl">幂次</span>）</p>
+    <p><b>Phase 3: 加权合成</b></p>
+    <p>7. 当前 Tuner 主路径：S = F<sub>1</sub>·w<sub>1</sub> + F<sub>3</sub>·w<sub>3</sub> + F<sub>7</sub>·w<sub>7</sub></p>
+    <p><b>Phase 4: 仓位分配</b></p>
+    <p>9. 取 S 的 Top-N 支 ETF → Z-score 标准化 → Softmax 分配权重 w<sub>i</sub>（C<sub>eff</sub> 由 <span class="param-hl">C 动态灵敏度</span> 根据 Top-N 分数离散度自适应调整：强共识放大 C，弱共识缩小 C）</p>
+    <p>10. 总仓位由 <span class="param-hl">仓位控制</span> 决定（沪深300 周线 MA 趋势信号，可叠加方向确认），与综合分独立</p>
+    <p><b>关键设计</b>：连续映射保留因子绝对水平。牛市因子普遍高 → S 普遍高 → MA 信号满仓；熊市因子普遍低 → S 低 + MA 信号降仓。仓位由市场趋势驱动（MA），非自身 NAV 回撤驱动，避免频繁误触发踏空。</p>
+   </div>
+  </div>
+
+  <!-- F1 -->
+  <div class="guide-block" id="guide-f1" aria-label="F1周线EMA偏离度">
+   <div class="guide-block-header" data-action="toggleGuide" data-id="guide-f1">
+    <span class="g-icon">&#128200;</span>
+    <span class="g-title">F1 周线 EMA 偏离度</span>
+    <span class="g-tag" style="color:var(--accent-light);">w1</span>
+    <span class="g-chevron">&#9654;</span>
+   </div>
+   <div class="guide-block-body">
+    <p><b>Step 1: 计算 EMA</b></p>
+    <p>取周线收盘价序列，用指数移动平均公式计算：</p>
+    <p>EMA<sub>t</sub> = close<sub>t</sub> · α + EMA<sub>t−1</sub> · (1−α)，其中 α = <span class="formula"><span class="frac-top">2</span><span class="frac-bot">N+1</span></span>，N = <span class="param-hl">EMA 周期</span></p>
+    <p><b>Step 2: 算偏离度</b></p>
+    <p>d₁ = <span class="formula"><span class="frac-top">close<sub>t</sub> − EMA<sub>t</sub></span><span class="frac-bot">EMA<sub>t</sub></span></span> × 100（偏离百分比，如 +5.2% 或 −3.8%）</p>
+    <p><b>Step 3: sigmoid 连续映射</b></p>
+    <p>F<sub>1</sub> = <span class="formula"><span class="frac-top">1</span><span class="frac-bot">1 + e<sup>−d₁/σ₁</sup></span></span>，其中 σ₁ = <span class="param-hl">F1 sigmoid 尺度</span></p>
+    <p>关键点标注见下图。σ₁ 越小越敏感（<span class="param-hl">F1 sigmoid 尺度</span>，当前值以左侧滑块为准）。</p>
+    <p>下图展示不同 σ₁ 下 d₁ → F<sub>1</sub> 的映射曲线：</p>
+    <div style="max-width:520px;margin:6px 0 10px;">
+     <div id="f1-curve" style="width:100%;aspect-ratio:16/9;background:var(--bg-body);border:1px solid var(--bg-hover);border-radius:6px;"></div>
+    </div>
+    <p>与截面标准化的核心区别：sigmoid 保留绝对偏离水平。全市场-10%时F<sub>1</sub>≈0.13（低分），全市场+10%时≈0.87（高分），仓位控制可以识别牛熊。</p>
+   </div>
+  </div>
+
+  <!-- F3 -->
+  <div class="guide-block" id="guide-f3" aria-label="F3方向性量比">
+   <div class="guide-block-header" data-action="toggleGuide" data-id="guide-f3">
+    <span class="g-icon">&#128228;</span>
+    <span class="g-title">F3 自归一化量比</span>
+    <span class="g-tag" style="color:var(--accent-light);">w3</span>
+    <span class="g-chevron">&#9654;</span>
+   </div>
+   <div class="guide-block-body">
+    <p><b>Step 1: 取窗口数据</b></p>
+    <p>取最近 <span class="param-hl">量比窗口</span> 日（当前滑块值）的日线，计算每日涨跌 change = pct_change(close)</p>
+    <p><b>Step 2: 按涨跌分组</b></p>
+    <p>上涨日 = change &gt; 0 的交易日，下跌日 = change &lt; 0 的交易日</p>
+    <p><b>Step 3: 算方向性量比</b></p>
+    <p>优先用成交额（amount 列），无则退回成交量（volume 列）：</p>
+    <p>r = <span class="formula"><span class="frac-top">mean(v<sub>up</sub>)</span><span class="frac-bot">mean(v<sub>down</sub>)</span></span>，其中 v<sub>t</sub> = <span class="formula"><span class="frac-top">amount<sub>t</sub></span><span class="frac-bot">avg(amount<sub>t−60:t−1</sub>)</span></span></p>
+    <p>边界：全涨无跌 → 封顶 3.0（强势上限），全跌无涨 → 0（极弱），无跌日且有涨 → 3.0</p>
+    <p><b>Step 4: 连续映射（log + sigmoid）</b></p>
+    <p>新版采用 log + sigmoid，让高位（r &gt; 5）不再锁死：</p>
+    <p>ℓ = <span class="tag">ln(r)</span>（对 r &lt; 1 取对称负 log：−ln(1/r)）</p>
+    <p>F<sub>3</sub> = <span class="formula"><span class="frac-top">1</span><span class="frac-bot">1 + e<sup>−ℓ/σ₃</sup></span></span>，其中 σ₃ = <span class="param-hl">F3 指数尺度</span></p>
+    <p>核心改进：旧版 r &gt; 4 后基本饱和锁死，"温和放量"和"爆量"拉不开差距；新版让真正异动的标的能涌现出来。对照样本见下图标注点。</p>
+    <p><span class="param-hl">量比窗口</span>：短窗口(5-10日)捕捉短期放量异动，长窗口(20-60日)看中期资金趋势。</p>
+    <p><span class="param-hl">F3 指数尺度</span> σ₃：越小越敏感（高位拉得更陡），越大越平滑。当前值以左侧滑块为准。</p>
+    <p>下图展示不同 σ₃ 下 r → F<sub>3</sub> 的映射曲线：</p>
+    <div style="max-width:520px;margin:6px 0 10px;">
+     <div id="f3-curve" style="width:100%;aspect-ratio:16/9;background:var(--bg-body);border:1px solid var(--bg-hover);border-radius:6px;"></div>
+    </div>
+   </div>
+  </div>
+
+  </div><!-- /guide-col-left -->
+  <div class="guide-col">
+
+  <!-- F7 -->
+  <div class="guide-block" id="guide-f7" aria-label="F7对数收益偏离">
+   <div class="guide-block-header" data-action="toggleGuide" data-id="guide-f7">
+    <span class="g-icon">📉</span>
+    <span class="g-title">F7 对数收益偏离</span>
+    <span class="g-tag" style="color:var(--accent);">w7</span>
+    <span class="g-chevron">▶</span>
+   </div>
+   <div class="guide-block-body">
+    <p><b>Step 1: 日对数收益率</b></p>
+    <p><span class="tag">r<sub>t</sub> = ln(close<sub>t</sub> / close<sub>t-1</sub>)</span></p>
+    <p>对数收益可加、中轴天然为 0、涨跌对称。N 日对数收益之和 = ln(close<sub>t</sub> / close<sub>t-N</sub>)，N 由左侧“累计收益窗口”控制。</p>
+    <p><b>Step 2: N 日累计对数收益</b></p>
+    <p><span class="tag">cum<sub>t</sub> = Σ<sub>i=0</sub><sup>N-1</sup> r<sub>t-i</sub></span></p>
+    <p>窗口 = <span class="param-hl">F7 对数收益偏离</span> 权重滑块旁的左侧“累计收益窗口”滑块指定的 N 日；默认 20 日约 4 个交易周，滑块可扩到 60 日。</p>
+    <p><b>Step 3: 滚动 Z-score</b></p>
+    <p>对 cum<sub>t</sub> 序列，回溯 <span class="tag">lookback</span> = 250 日计算：</p>
+    <p><span class="tag">&mu;<sub>t</sub> = mean(cum<sub>t-lookback</sub> … cum<sub>t-1</sub>)</span></p>
+    <p><span class="tag">&sigma;<sub>t</sub> = max(std(cum<sub>t-lookback</sub> … cum<sub>t-1</sub>), &sigma;<sub>floor</sub>)</span></p>
+    <p><span class="tag">Z<sub>t</sub> = (cum<sub>t</sub> - &mu;<sub>t</sub>) / &sigma;<sub>t</sub></span></p>
+    <p>&sigma;<sub>floor</sub> = 0.01，防止早期样本过少时 Z 值爆炸。数据不足 60 日 → Z<sub>t</sub> = NaN，该 ETF 跳过 F7（仅用 F1+F3 打分）。</p>
+    <p><b>Step 4: 分段映射（幂函数 + 切线线性外延）</b></p>
+    <p>核心变量：Z = Z-score，k = 切换阈值，t = 幂次</p>
+    <p><span class="tag">|Z| ≤ k 时：F<sub>7</sub> = 0.5 − 0.5·sign(Z)·(|Z|/k)<sup>t</sup></span>（幂函数段，±k 内加速）</p>
+    <p><span class="tag">|Z| &gt; k 时：F<sub>7</sub> = f(k) + f′(k)·(Z−k)</span>（切线线性外延，一阶连续不爆炸）</p>
+    <p>其中切线斜率 f′(k) = −t / (2k)。关键点标注见下图。</p>
+    <p><b>凸性设计</b>：Z > 0（高估）→ 凸函数加速下跌；Z < 0（低估）→ 凹函数加速上涨。t 越大曲率越陡。</p>
+    <p><b>无上限惩罚</b>：|Z| > k 后切线线性外延不截断，极端偏离可持续扣分/加分。</p>
+    <p><b>Step 5: 加权合成</b></p>
+    <p><span class="tag">综合分贡献 = F<sub>7</sub> &times; <span class="param-hl">F7 对数收益偏离</span>权重</span></p>
+    <p>F7 是加法因子：最终综合分 = F<sub>1</sub>×w<sub>1</sub> + F<sub>3</sub>×w<sub>3</sub> + F<sub>7</sub>×w<sub>7</sub>。F7 是双向连续调节。</p>
+    <p>下图展示不同 (t, k) 下 Z → F<sub>7</sub> 的映射曲线（虚线 = ±k 切线切换点）：</p>
+    <div style="max-width:520px;margin:6px 0 10px;">
+     <div id="f7-curve" style="width:100%;aspect-ratio:16/9;background:var(--bg-body);border:1px solid var(--bg-hover);border-radius:6px;"></div>
+    </div>
+   </div>
+  </div>
+
+  <!-- Composite -->
+  <!-- Confidence -->
+  <div class="guide-block" id="guide-conf" aria-label="仓位控制">
+   <div class="guide-block-header" data-action="toggleGuide" data-id="guide-conf">
+    <span class="g-icon">&#128208;</span>
+    <span class="g-title">仓位控制</span>
+    <span class="g-tag" style="color:var(--accent-light);">conf</span>
+    <span class="g-chevron">&#9654;</span>
+   </div>
+   <div class="guide-block-body">
+    <p>将市场趋势信号直接映射为总仓位比例，控制"整体配多少仓"。</p>
+    <p><b>当前策略：<span class="param-hl">MA趋势</span></b></p>
+    <p>基础信号：每期检查沪深300周线收盘价是否在自身<span class="param-hl">MA趋势周期</span>均线上方。</p>
+    <ul>
+     <li>沪深300 在周线MA <b>上方</b> → 总仓位 = <span class="param-hl">MA上方仓位</span>（以当前滑块为准）</li>
+     <li>沪深300 在周线MA <b>下方</b> → 总仓位 = <span class="param-hl">MA下方仓位</span>（以当前滑块为准）</li>
+     <li>若开启<span class="param-hl">方向确认</span>，则“是否在 MA 上方”和“MA 是否上行”必须一致才切换；不一致时维持上一状态。</li>
+    </ul>
+    <p><b>设计理念：高常态仓位 + 极少触发的保护层</b></p>
+    <p>回测发现：熊市满仓（不降仓） vs 转现金的收益率差距并不大，说明只要选股本身有抗跌能力，不需要频繁调仓躲避。因此仓位控制的核心不是"精准逃顶"，而是"极少误触发 + 关键时刻提供保护"。</p>
+    <ul>
+     <li>MA 上方使用左侧设定的进攻仓位，让选股策略充分运作</li>
+     <li>仅当 MA 趋势翻空时才降到左侧设定的防守仓位，避免频繁操作导致踏空</li>
+     <li>信号数据层：约每年切换1-2次，极低频</li>
+    </ul>
+    <p><b>为什么不用NAV驱动（旧方案已移除）</b></p>
+    <p>旧方案（regime / momentum_crash / quadratic）基于自身NAV回撤判断市场状态，问题在于：ETF组合的NAV波动与大盘并非同步，NAV回撤时可能大盘已企稳，NAV上涨时可能大盘已在崩盘。MA20是市场级信号，直接反映趋势，更可靠且不易误触发。</p>
+   </div>
+  </div>
+
+  <!-- F1 weekly mode -->
+  <div class="guide-block" id="guide-f1-zoh" aria-label="F1抢跑机制">
+   <div class="guide-block-header" data-action="toggleGuide" data-id="guide-f1-zoh">
+    <span class="g-icon">&#9783;</span>
+    <span class="g-title">F1 阶梯波</span>
+    <span class="g-tag" style="color:var(--warning);">design</span>
+    <span class="g-chevron">&#9654;</span>
+   </div>
+   <div class="guide-block-body">
+    <div style="font-size:12px;color:#9ca3af;line-height:1.8;">
+
+    <p>F1 全程统一公式：<b>F1(t) = (price(t) − EMA) / EMA</b>。三种模式的区别只在 <b>price(t) 冻结还是解冻</b>。灰线（Base）永远冻结——price(t) = 上一完整周常量，信号是阶梯波。蓝线（Friday）非检查点冻结，启用的检查点交易日用当日 close 计算部分周 F1。紫线（Tue+Fri）周二检查点后，周三~四<b>冻结</b>（复用周二值），下一个检查点再更新。绿线（Daily）每个交易日都是检查点。多 bit 时中间日冻结是核心机制：不是"信号缺失"，而是主动拒绝低完整度估计。</p>
+
+    <div style="max-width:520px;margin:6px 0 10px;">
+     <div id="f1-zoh-curve" style="width:100%;aspect-ratio:16/9;background:var(--bg-body);border:1px solid var(--bg-hover);border-radius:6px;"></div>
+    </div>
+
+    <table style="font-size:11px;color:#9ca3af;border-collapse:collapse;width:100%;margin-top:6px;">
+    <tr><td style="padding:2px 8px;"><span style=\"display:inline-block;width:16px;height:3px;background:var(--text-muted);vertical-align:middle;margin-right:4px;\"></span>冻结态</td><td style=\"color:var(--text-muted);\">price(t) 冻结为常量，F1 平线</td></tr>
+    <tr><td style=\"padding:2px 8px;\"><span style=\"display:inline-block;width:16px;height:3px;background:var(--accent-light);vertical-align:middle;margin-right:4px;\"></span>检查点解冻</td><td style=\"color:var(--text-muted);\">启用的检查点交易日用当日 close 更新，跳变后连续</td></tr>
+    <tr><td style=\"padding:2px 8px;\"><span style=\"display:inline-block;width:16px;height:3px;background:#a78bfa;vertical-align:middle;margin-right:4px;\"></span>Tue+Fri 冻结</td><td style=\"color:var(--text-muted);\">周二检查点后，周三~四冻结复用</td></tr>
+    <tr><td style=\"padding:2px 8px;\"><span style=\"display:inline-block;width:16px;height:3px;background:var(--btn-save);vertical-align:middle;margin-right:4px;\"></span>全程解冻</td><td style=\"color:var(--text-muted);\">price(t) 永远 = 市价，全程连续</td></tr>
+    <tr><td style=\"padding:2px 8px;\"><span style=\"display:inline-block;width:8px;height:8px;background:var(--warning);border-radius:50%;vertical-align:middle;margin-right:4px;\"></span>检查点</td><td style=\"color:var(--text-muted);\">启用的抢跑交易日，用当日 close 计算部分周 F1</td></tr>
+    </table>
+
+    </div>
+   </div>
+  </div>
+
+  <!-- Position -->
+  <div class="guide-block" id="guide-pos" aria-label="仓位分配">
+   <div class="guide-block-header" data-action="toggleGuide" data-id="guide-pos">
+    <span class="g-icon">&#9878;</span>
+    <span class="g-title">仓位分配</span>
+    <span class="g-tag" style="color:var(--accent-light);">pos</span>
+    <span class="g-chevron">&#9654;</span>
+   </div>
+   <div class="guide-block-body">
+    <p><b>Step 1: Top-N 选股</b></p>
+    <p>取综合分最高的 <span class="param-hl">最大持仓</span> 支 ETF（以当前滑块为准）。</p>
+    <p><b>Step 2: Z-score 截面标准化</b></p>
+    <p>对全池子所有 ETF 的综合分算均值 μ 和标准差 σ，每支 ETF 转为 Z-score：</p>
+    <p><span class="tag">z<sub>i</sub> = (score<sub>i</sub> - μ) / σ</span></p>
+    <p>快照表格中"离散度"列即 z<sub>i</sub>：>1.5 为显著领先，0~1.5 为中等，<0 为低于池子平均。效果：牛市整体分高、熊市整体分低时，自适应校准；极端离群值不霸榜。</p>
+    <p>Top-N 的 z-score 标准差 σ<sub>topN</sub> 即为动态 C 的"共识度"信号。</p>
+    <p><b>Step 3: Softmax 仓位分配</b></p>
+    <p>w<sub>i</sub> = <span class="formula"><span class="frac-top">e<sup>z<sub>i</sub>·C<sub>eff</sub></sup></span><span class="frac-bot">Σ e<sup>z<sub>j</sub>·C<sub>eff</sub></sup></span></span></p>
+    <p><span class="param-hl">仓位集中度 C</span>（base）控制分数差→仓位差的基准放大倍数。</p>
+    <p><b>Step 3.5: 动态 C（共识感知）</b></p>
+    <p>当 Top-N 的 z-score 离散度大（强共识）→ 自动放大 C；离散度小（弱共识）→ 自动缩小 C：</p>
+    <p>C<sub>eff</sub> = C<sub>base</sub> × [1 + S × (σ<sub>topN</sub> − 0.5)]</p>
+    <p>其中 S = <span class="param-hl">C 动态灵敏度</span>。S=0 时禁用动态 C，等价于旧行为。σ<sub>topN</sub> = Top-N 的 z-score 标准差，反映"信号共识度"。</p>
+    <p><b>Step 4: 总仓位</b></p>
+    <p>MA趋势模式：沪深300在MA上方 → <span class="param-hl">MA上方仓位</span>，下方 → <span class="param-hl">MA下方仓位</span>。具体数值以当前 Preset/滑块为准。</p>
+    <p><span class="tag">pos<sub>i</sub> = w<sub>i</sub> &times; total_pos</span></p>
+    <p><b>Step 5: 离散化</b></p>
+    <p>最大余数法 floor + 按余数补回，step = <span class="param-hl">信号步长</span>。若离散化后仍有残量，补给当前最大权重标的，保持总仓位不丢失。</p>
+    <p><b>Step 5b: 交易执行</b></p>
+    <p><span class="param-hl">执行步长</span> 控制调仓容忍带宽：超配超过 full band 才卖，低配超过 half band 才买（末位不受限）。纯摩擦参数，不影响目标仓位。</p>
+   </div>
+  </div>
+
+  </div><!-- /guide-col-right -->
+  </div><!-- /guide-grid -->
+
+ </div>
+
+ <!-- ========== Results View ========== -->
+ <div id="right-view-results" class="right-view active">
+  <div id="results-placeholder" class="placeholder-msg">
+   调整左侧参数后，点击"运行回测"查看结果
+  </div>
+  <div id="results" style="display:none;">
+   <!-- 左右布局: 左侧 NAV 区 / 右侧 调仓快照, stretch 对齐高度 -->
+   <div style="display:grid;grid-template-columns:60% 40%;gap:14px;align-items:stretch;">
+    <!-- 左 6: 业绩主区 + 单ETF详情区 -->
+    <div id="tuner-nav-block" style="display:flex;flex-direction:column;gap:14px;min-height:0;">
+     <!-- 业绩主区 (含单 ETF 详情) -->
+     <section id="tuner-perf-section">
+      <h2 id="tuner-perf-heading" style="font-size:15px;color:var(--text-body);margin-bottom:8px;">📊 策略业绩</h2>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+       <div id="tuner-perf-subtitle" style="font-size:12px;color:var(--text-secondary);">净值曲线 / 回撤 / 单 ETF 走势 · 三图共享缩放 · 点击切换调仓节点</div>
+       <div id="intraday-estimate-banner" style="display:none;background:rgba(245,158,11,0.10);border:1px solid rgba(245,158,11,0.35);color:var(--highlight);border-radius:6px;padding:2px 8px;font-size:11px;line-height:1.3;">盘中估算：本次回测包含实时行情与预估全天成交额，适合收盘前调仓参考；正式复盘请以收盘确认数据为准。</div>
+      </div>
+      <div id="tuner-perf-block" style="background:var(--bg-panel);border:1px solid var(--border);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:8px;">
+       <div class="metrics-pages-container" id="tuner-metrics-pages" style="margin-bottom:0;">
+        <div class="page-arrow page-arrow-left" id="metrics-arrow-left" data-action="flipMetricsPage" style="visibility:hidden;">&#9664;</div>
+        <div class="metrics metrics-page-active" id="tuner-metrics-page1">
+         <div class="metric-card" id="metric-annual" aria-label="年化收益"><div class="label">年化收益</div><div class="value green" id="m-annual">-</div></div>
+         <div class="metric-card" id="metric-total" aria-label="总收益"><div class="label">总收益</div><div class="value green" id="m-total">-</div></div>
+         <div class="metric-card" id="metric-lev-contrib" aria-label="杠杆贡献"><div class="label">杠杆贡献<i class="tip-icon">?<span class="tip-text">总收益 - 去杠杆等效收益</span></i></div><div class="value" id="m-lev-contrib">-</div></div>
+         <div class="metric-card" id="metric-interest" aria-label="融资利息"><div class="label">融资利息</div><div class="value" id="m-interest">-</div></div>
+         <div class="metric-card" id="metric-commission" aria-label="交易佣金"><div class="label">交易佣金</div><div class="value" id="m-comm">-</div></div>
+         <div class="metric-card flip-card" id="metric-sortino-sharpe" data-action="flipSortinoSharpe"><span class="flip-icon">↻</span><div class="flip-inner"><div class="flip-front"><div class="label">Sortino<i class="tip-icon">?<span class="tip-text">(年化收益 - 无风险利率) / 下行标准差</span></i></div><div class="value blue" id="m-sortino">-</div></div><div class="flip-back"><div class="label">Sharpe<i class="tip-icon">?<span class="tip-text">(年化收益 - 无风险利率) / 收益率标准差</span></i></div><div class="value blue" id="m-sharpe">-</div></div></div></div>
+         <div class="metric-card" id="metric-calmar" aria-label="Calmar"><div class="label">Calmar<i class="tip-icon">?<span class="tip-text">年化收益 ÷ |最大回撤|</span></i></div><div class="value blue" id="m-calmar">-</div></div>
+         <div class="metric-card" id="metric-dd" aria-label="最大回撤"><div class="label">最大回撤</div><div class="value red" id="m-dd">-</div></div>
+         <div class="metric-card" id="metric-winrate-payoff" aria-label="胜率赔率"><div class="label">胜率/赔率<i class="tip-icon">?<span class="tip-text">盈利交易数 ÷ 已平仓交易总数 / 盈利平均收益% ÷ 亏损平均亏损%</span></i></div><div class="value" id="m-wr-po">-</div></div>
+         <div class="metric-card" id="metric-factor-dom" aria-label="因子驱动力"><div class="label">F7 驱动力<i class="tip-icon">?<span class="tip-text">全池 F7 映射分截面标准差 σ_F7。衡量调仓日 F7 在 ETF 间拉开多大差距。</span></i></div><div class="value" id="m-factor-dom">-</div></div>
+        </div>
+        <div class="metrics metrics-page-hidden" id="tuner-metrics-page2">
+         <div class="dist-layout">
+          <div id="dist-chart" style="flex:0 0 50%; min-width:0; height:100%;"></div>
+          <div class="dist-stats" id="dist-stats">
+           <div class="dist-cards-row">
+            <div class="dist-mini-card"><div class="dist-mini-label">均值</div><div class="dist-mini-val" id="ds-mean">-</div></div>
+            <div class="dist-mini-card"><div class="dist-mini-label">中位数</div><div class="dist-mini-val" id="ds-median">-</div></div>
+            <div class="dist-mini-card"><div class="dist-mini-label">标准差</div><div class="dist-mini-val" id="ds-std">-</div></div>
+            <div class="dist-mini-card"><div class="dist-mini-label">偏度</div><div class="dist-mini-val" id="ds-skew">-</div></div>
+            <div class="dist-mini-card"><div class="dist-mini-label">峰度</div><div class="dist-mini-val" id="ds-kurt">-</div></div>
+           </div>
+           <div class="dist-cards-row">
+            <div class="dist-extreme-card green-bg" style="flex:1;" data-action="jumpToDistDate" data-which="best"><span class="dist-extreme-label">最大日涨</span><span class="dist-extreme-val green" id="ds-best">-</span><span class="dist-extreme-date" id="ds-best-date"></span></div>
+            <div class="dist-extreme-card red-bg" style="flex:1;" data-action="jumpToDistDate" data-which="worst"><span class="dist-extreme-label">最大日跌</span><span class="dist-extreme-val red" id="ds-worst">-</span><span class="dist-extreme-date" id="ds-worst-date"></span></div>
+           </div>
+          </div>
+         </div>
+        </div>
+        <div class="page-arrow page-arrow-right" id="metrics-arrow-right" data-action="flipMetricsPage">&#9654;</div>
+       </div>
+
+       <!-- 净值 + 回撤区: 左标题 + 右 freq Tab -->
+       <div id="tuner-nav-section" aria-label="净值与回撤图" style="position:relative;">
+        <div id="kline-freq-tabs" style="position:absolute; top:6px; right:8px; display:flex; gap:2px; z-index:10; background:rgba(15,20,25,0.85); border-radius:6px; padding:2px;">
+         <button id="kline-freq-daily" class="kline-tab active" data-action="switchKlineFreq" data-freq="daily">日 K</button>
+         <button id="kline-freq-weekly" class="kline-tab"    data-action="switchKlineFreq" data-freq="weekly">周 K</button>
+        </div>
+        <div id="nav-chart" style="height:320px;position:relative;">
+        </div>
+        <div id="dd-chart" style="height:100px;"></div>
+       </div>
+      </div>
+     </section>
+
+     <!-- 单 ETF K 线 + 贡献度 -->
+     <section id="tuner-kline-section" style="display:none;">
+      <h2 id="tuner-kline-heading" style="font-size:15px;color:var(--text-body);margin-bottom:8px;">📈 个股回放</h2>
+      <div id="tuner-kline-subtitle" style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;">点击右侧表格行查看 ETF 走势 + 买卖点</div>
+      <div id="etf-contrib-grid" style="display:none; grid-template-columns:repeat(9,1fr); gap:6px; margin-bottom:10px;"></div>
+      <div id="tuner-kline-block" style="background:var(--bg-panel);border:1px solid var(--border);border-radius:8px;padding:10px;">
+       <div id="tuner-snapshot-kline-block" aria-label="单ETF K线回放">
+        <div style="display:flex;gap:4px;margin-bottom:6px;">
+         <button id="kline-tab-chart" class="kline-view-tab active" data-action="switchKlineView" data-view="chart">K线回放</button>
+         <button id="kline-tab-holdings" class="kline-view-tab" data-action="switchKlineView" data-view="holdings">十大重仓</button>
+        </div>
+        <div id="kline-replay" style="width:100%;height:350px;"></div>
+        <div id="kline-holdings" style="display:none;width:100%;height:350px;overflow-y:auto;">
+         <div id="kline-holdings-body"></div>
+        </div>
+       </div>
+      </div>
+     </section>
+    </div>
+
+    <!-- 右 4: 调仓快照 (仅指标行 + 表格) -->
+    <section id="tuner-snapshot-section" style="display:none;">
+     <h2 id="tuner-snapshot-heading" style="font-size:15px;color:var(--text-body);margin-bottom:8px;flex-shrink:0;">🔍 调仓快照</h2>
+     <div id="tuner-snapshot-subtitle" style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;flex-shrink:0;">点击左侧 NAV 切换调仓 · 点击表格行查看 K 线 / 回放 · <span style="color:var(--negative);font-weight:700;">⛔</span> = 不支持融资买入</div>
+
+     <!-- 顶部指标行 -->
+     <div id="tuner-snapshot-metrics" style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px;flex-shrink:0;" aria-label="调仓快照指标">
+      <div id="snap-metric-holdings" style="background:var(--bg-panel);border:1px solid var(--border);border-radius:6px;padding:8px;text-align:center;">
+       <div style="font-size:11px;color:var(--text-muted);">持仓</div>
+       <div id="snap-m-holdings" style="font-size:17px;font-weight:700;color:var(--accent);margin-top:2px;">-</div>
+      </div>
+      <div id="snap-metric-total-pos" style="background:var(--bg-panel);border:1px solid var(--border);border-radius:6px;padding:8px;text-align:center;">
+       <div style="font-size:11px;color:var(--text-muted);">总仓位</div>
+       <div id="snap-m-total-pos" style="font-size:17px;font-weight:700;color:var(--positive);margin-top:2px;">-</div>
+      </div>
+      <div id="snap-metric-avg-conf" style="background:var(--bg-panel);border:1px solid var(--border);border-radius:6px;padding:8px;text-align:center;">
+       <div style="font-size:11px;color:var(--text-muted);">目标敞口</div>
+       <div id="snap-m-avg-conf" style="font-size:17px;font-weight:700;color:var(--warning);margin-top:2px;">-</div>
+      </div>
+      <div id="snap-metric-cash" style="background:var(--bg-panel);border:1px solid var(--border);border-radius:6px;padding:8px;text-align:center;">
+       <div style="font-size:11px;color:var(--text-muted);">现金</div>
+       <div id="snap-m-cash" style="font-size:17px;font-weight:700;color:var(--text-muted);margin-top:2px;">-</div>
+      </div>
+     </div>
+
+     <!-- 打分表格区 -->
+     <div id="tuner-snapshot-table-block" class="hide-scrollbar" style="max-height:calc(100vh - 250px);overflow-y:auto;scrollbar-width:none;background:var(--bg-panel);border:1px solid var(--border);border-radius:8px 8px 0 0;">
+      <table id="tuner-snapshot-table" style="width:100%;border-collapse:collapse;">
+       <thead id="tuner-snapshot-thead" style="position:sticky;top:0;z-index:1;background:var(--bg-panel);">
+        <tr>
+         <th data-sort="sector" data-action="onSnapSort" data-col="sector" id="snap-th-sector" style="cursor:pointer;text-align:center;padding:8px 4px;font-size:10px;border-bottom:1px solid var(--border);width:24px;white-space:nowrap;" title="按扇区排序">S<span class="snap-sort-arrow" id="sort-ar-sector"></span></th>
+         <th data-sort="code" data-action="onSnapSort" data-col="code" style="cursor:pointer;text-align:left;padding:8px 4px;font-size:10px;border-bottom:1px solid var(--border);">ETF<span class="snap-sort-arrow" id="sort-ar-code"></span></th>
+         <th style="text-align:center;padding:8px 3px;font-size:10px;color:var(--text-muted);border-bottom:1px solid var(--border);">因子驱动</th>
+         <th data-sort="f1" data-action="onSnapSort" data-col="f1" style="cursor:pointer;text-align:center;padding:8px 4px;font-size:10px;border-bottom:1px solid var(--border);">F1<span class="snap-sort-arrow" id="sort-ar-f1"></span></th>
+         <th data-sort="f3" data-action="onSnapSort" data-col="f3" style="cursor:pointer;text-align:center;padding:8px 4px;font-size:10px;border-bottom:1px solid var(--border);">F3<span class="snap-sort-arrow" id="sort-ar-f3"></span></th>
+         <th data-sort="f7" data-action="onSnapSort" data-col="f7" style="cursor:pointer;text-align:center;padding:8px 4px;font-size:10px;border-bottom:1px solid var(--border);white-space:nowrap;">F7<span class="snap-sort-arrow" id="sort-ar-f7"></span><i id="f7-z-toggle" data-action="toggleF7Raw" style="display:inline-block;cursor:pointer;margin-left:2px;width:13px;height:13px;line-height:13px;font-size:10px;border-radius:50%;background:var(--border);color:var(--text-muted);text-align:center;font-style:normal;vertical-align:middle;" title="切换显示原始 Z 值">σ</i></th>
+         <th data-sort="score" data-action="onSnapSort" data-col="score" style="cursor:pointer;text-align:center;padding:8px 3px;font-size:10px;border-bottom:1px solid var(--border);">综合<span class="snap-sort-arrow" id="sort-ar-score"></span></th>
+         <th data-sort="z" data-action="onSnapSort" data-col="z" style="cursor:pointer;text-align:center;padding:8px 3px;font-size:10px;border-bottom:1px solid var(--border);">离散度<span class="snap-sort-arrow" id="sort-ar-z"></span><i class="tip-icon">?<span class="tip-text">Z-score = (综合分 − 全池均值) ÷ 全池标准差。>1.5显著领先，0~1.5中等，<0低于平均。Top-N的Z-score标准差为动态C的共识信号。</span></i></th>
+         <th data-sort="pos" data-action="onSnapSort" data-col="pos" style="cursor:pointer;text-align:center;padding:8px 3px;font-size:10px;border-bottom:1px solid var(--border);">仓位<span class="snap-sort-arrow" id="sort-ar-pos"></span></th>
+         <th style="text-align:center;padding:8px 4px;font-size:10px;color:var(--text-muted);border-bottom:1px solid var(--border);">动作</th>
+        </tr>
+       </thead>
+       <tbody id="tuner-snapshot-body"></tbody>
+      </table>
+     </div>
+     <div id="tuner-snapshot-footer" style="padding:4px 8px;font-size:12px;color:var(--text-muted);border:1px solid var(--border);border-top:none;border-radius:0 0 8px 8px;background:var(--bg-panel);display:flex;flex-wrap:wrap;gap:12px;align-items:center;">
+      <span style="color:var(--text-muted);">扇区:</span>
+      <span id="snap-sector-legend"></span>
+     </div>
+    </section>
+   </div>
+  </div>
+ </div>
+
+ <!-- ========== Heatmap View ========== -->
+ <div id="right-view-heatmap" class="right-view">
+  <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;">
+   <span style="font-size:11px;color:var(--text-muted);">周期:</span>
+   <div class="btn-row" style="gap:0;">
+    <button data-action="switchHeatmapPeriod" data-days="5" id="hm-btn-5" style="border-radius:4px 0 0 4px;">5 日</button>
+    <button data-action="switchHeatmapPeriod" data-days="20" class="active" id="hm-btn-20" style="border-radius:0 4px 4px 0;">20 日</button>
+   </div>
+   <span id="hm-sort-ind" style="font-size:11px;color:var(--warning);display:none;">
+    排序: <span id="hm-sort-d"></span> <span id="hm-sort-a"></span>
+    <button data-action="resetHeatmapSort" style="background:transparent;border:1px solid var(--border);color:var(--text-muted);border-radius:3px;font-size:10px;cursor:pointer;padding:1px 6px;">重置</button>
+   </span>
+  </div>
+  <!-- Heatmap area: fixed ETF labels + date headers + scrollable viewport + v-slider -->
+  <div id="hm-main-area" style="display:flex;max-height:68vh;border:1px solid var(--border);border-radius:8px 8px 0 0;background:var(--bg-panel);overflow:hidden;">
+   <!-- Fixed ETF code column -->
+   <div id="hm-etf-col" style="width:110px;flex-shrink:0;max-height:68vh;display:flex;flex-direction:column;border-right:1px solid var(--border);">
+    <!-- Corner spacer above ETF labels, aligns with date header height -->
+    <div style="height:23px;flex-shrink:0;border-bottom:1px solid var(--border);"></div>
+    <!-- ETF labels (scrolls vertically) -->
+    <div id="hm-etf-labels-wrap" style="flex:1;overflow:hidden;">
+     <div id="hm-etf-labels" style="padding-top:10px;"><div style="color:var(--text-muted);font-size:12px;text-align:center;line-height:40px;">加载中...</div></div>
+    </div>
+   </div>
+   <!-- Right side: date header + viewport -->
+   <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0;">
+    <!-- Date column headers (scrolls horizontally with viewport) -->
+    <div id="hm-date-wrap" style="overflow:hidden;height:23px;flex-shrink:0;margin-right:16px;border-bottom:1px solid var(--border);">
+     <div id="hm-date-row" style="display:flex;padding-left:2px;"></div>
+    </div>
+    <!-- Viewport + v-slider row -->
+    <div style="flex:1;display:flex;overflow:hidden;min-height:0;">
+     <div id="hm-viewport" style="flex:1;overflow:hidden;position:relative;">
+      <div id="hm-chart"></div>
+     </div>
+     <div id="hm-vslider-wrap" style="width:16px;flex-shrink:0;position:relative;padding:2px 0;background:var(--bg-panel);border-left:1px solid var(--border);">
+      <div id="hm-vslider-track" style="position:relative;height:100%;cursor:pointer;margin:0 4px;">
+       <div style="position:absolute;top:0;left:50%;width:3px;height:100%;background:var(--bg-hover);border-radius:2px;transform:translateX(-50%);"></div>
+       <div id="hm-vslider-win" style="position:absolute;left:0;right:0;height:36px;min-height:20px;background:var(--blue-dark);border-radius:3px;cursor:grab;"></div>
+      </div>
+     </div>
+    </div>
+   </div>
+  </div>
+  <!-- H-slider only (no date labels) -->
+  <div style="background:var(--bg-panel);border:1px solid var(--border);border-top:none;border-radius:0 0 8px 8px;">
+  <div style="padding:2px 4px;margin:0 16px 0 110px;">
+   <div id="hm-hslider-track" style="position:relative;height:10px;margin:2px 0;cursor:pointer;">
+    <div style="position:absolute;top:50%;left:0;right:0;height:3px;background:var(--bg-hover);border-radius:2px;transform:translateY(-50%);"></div>
+    <div id="hm-hslider-win" style="position:absolute;top:0;height:10px;background:var(--blue-dark);border-radius:3px;cursor:grab;"></div>
+   </div>
+  </div>
+  </div>
+  <!-- Sector legend -->
+  <div id="hm-sec-legend" style="padding:4px 8px;margin-top:6px;font-size:12px;color:var(--text-muted);background:var(--bg-panel);border:1px solid var(--border);border-radius:6px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;"></div>
+  <div id="hm-loading" style="text-align:center;color:var(--text-dim);margin-top:120px;font-size:14px;">加载数据中...</div>
+ </div>
+
+ <!-- ========== Data Management View (数据管理) ========== -->
+ <div id="right-view-datamgmt" class="right-view dm-flex-col">
+  <!-- Toolbar -->
+  <div class="dm-toolbar">
+   <span style="font-size:12px;color:var(--text-muted);">范围</span>
+   <input id="dm-date-start" type="date" style="background:var(--bg-input);color:var(--text-body);border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:12px;width:120px;" />
+   <span style="color:var(--text-muted);">-</span>
+   <input id="dm-date-end" type="date" style="background:var(--bg-input);color:var(--text-body);border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:12px;width:120px;" />
+   <button data-action="dmSetRange" data-days="30" class="dm-filter-btn active" id="dm-rng-30">30天</button>
+   <button data-action="dmSetRange" data-days="60" class="dm-filter-btn" id="dm-rng-60">60天</button>
+   <button data-action="dmSetRange" data-days="90" class="dm-filter-btn" id="dm-rng-90">90天</button>
+   <span style="font-size:11px;color:var(--text-muted);margin-left:8px;">数据层</span>
+   <button id="dm-freq-daily" data-action="dmSetFreq" data-freq="daily" class="dm-filter-btn active">日线</button>
+   <button id="dm-freq-weekly" data-action="dmSetFreq" data-freq="weekly" class="dm-filter-btn">周线</button>
+   <button id="dm-freq-factor" data-action="dmSetFreq" data-freq="factor" class="dm-filter-btn">因子</button>
+   <span style="font-size:11px;color:var(--text-muted);margin-left:4px;">字段</span>
+   <span id="dm-fields-data">
+    <button id="dm-field-close" data-action="dmSetField" data-field="close" class="dm-filter-btn active">收盘价</button>
+    <button id="dm-field-amount" data-action="dmSetField" data-field="amount" class="dm-filter-btn">成交额</button>
+   </span>
+   <span id="dm-fields-factor" style="display:none;">
+    <button id="dm-field-f1" data-action="dmSetField" data-field="f1" class="dm-filter-btn active">F1</button>
+    <button id="dm-field-f3" data-action="dmSetField" data-field="f3" class="dm-filter-btn">F3</button>
+    <button id="dm-field-f7" data-action="dmSetField" data-field="f7" class="dm-filter-btn">F7</button>
+   </span>
+   <span style="font-size:11px;color:var(--text-muted);margin-left:12px;">筛选</span>
+   <select id="dm-sector-filter" data-action="dmFilterBySector" style="background:var(--bg-input);color:var(--text-body);border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:11px;">
+    <option value="">全部板块</option>
+   </select>
+   <button data-action="dmLoadMatrix" style="padding:3px 12px;font-size:12px;background:var(--blue-dark);color:#fff;border:none;border-radius:4px;cursor:pointer;width:48px;">加载</button>
+   <span style="flex:1;"></span>
+   <button data-action="dmDeleteSelected" id="dm-btn-delete" disabled style="padding:4px 12px;border:1px solid var(--negative);color:var(--negative);background:transparent;border-radius:4px;font-size:12px;cursor:pointer;">删除选中</button>
+   <button data-action="dmRefetchSelected" id="dm-btn-refetch" disabled style="padding:4px 12px;border:1px solid var(--warning);color:var(--warning);background:transparent;border-radius:4px;font-size:12px;cursor:pointer;">强制更新</button>
+   <button data-action="dmFillGaps" id="dm-btn-fill" style="padding:4px 12px;border:1px solid var(--positive);color:var(--positive);background:transparent;border-radius:4px;font-size:11px;cursor:pointer;">补全空缺</button>
+   <span style="font-size:11px;color:var(--accent-light);margin-left:8px;">已选: <b id="dm-stat-selected">0</b></span>
+  </div>
+
+  <!-- Matrix -->
+  <div id="dm-matrix-wrap" style="display:flex;flex-direction:column;height:calc(100vh - 190px);min-height:300px;border:1px solid var(--border);border-radius:8px;background:var(--bg-panel);overflow:hidden;position:relative;">
+   <!-- Row 1: ETF labels + date grid -->
+   <div style="display:flex;flex:1;overflow:hidden;min-height:0;">
+    <div id="dm-etf-col" style="width:150px;flex-shrink:0;display:flex;flex-direction:column;border-right:1px solid var(--border);">
+     <div style="height:26px;line-height:26px;flex-shrink:0;border-bottom:1px solid var(--border);display:flex;align-items:center;padding-left:8px;font-size:11px;color:var(--text-muted);">ETF</div>
+     <div id="dm-etf-labels-wrap" style="flex:1;overflow:hidden;">
+      <div id="dm-etf-labels"></div>
+     </div>
+    </div>
+    <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0;">
+     <div id="dm-date-wrap" style="overflow:hidden;height:26px;flex-shrink:0;margin-right:12px;border-bottom:1px solid var(--border);">
+      <div id="dm-date-row" style="display:flex;"></div>
+     </div>
+     <div style="flex:1;overflow:hidden;position:relative;display:flex;">
+      <div id="dm-grid-viewport" style="overflow:hidden;flex:1;height:100%;">
+       <div id="dm-grid-body"></div>
+      </div>
+      <!-- Vertical slider (matching heatmap hm-vslider) -->
+      <div id="dm-vslider-wrap" style="width:12px;flex-shrink:0;position:relative;padding:2px 0;background:var(--bg-panel);border-left:1px solid var(--border);">
+       <div id="dm-vslider-track" style="position:relative;height:100%;cursor:pointer;margin:0 2px;">
+        <div id="dm-vslider-win" style="position:absolute;left:0;right:0;height:36px;min-height:20px;background:var(--blue-dark);border-radius:3px;cursor:grab;"></div>
+       </div>
+      </div>
+     </div>
+    </div>
+   </div>
+   <!-- Row 2: Horizontal scrollbar slider (aligned to data grid, not under ETF column) -->
+   <div id="dm-hslider-track" style="position:relative;height:10px;flex-shrink:0;cursor:pointer;border-top:1px solid var(--border);margin-left:150px;">
+    <div style="position:absolute;top:50%;left:0;right:0;height:3px;background:var(--bg-hover);border-radius:2px;transform:translateY(-50%);"></div>
+    <div id="dm-hslider-win" style="position:absolute;top:0;height:10px;background:var(--blue-dark);border-radius:3px;cursor:grab;display:none;"></div>
+   </div>
+   <!-- Loading overlay -->
+   <div id="dm-loading" style="display:none;position:absolute;inset:0;background:rgba(15,20,25,0.85);z-index:10;align-items:center;justify-content:center;flex-direction:column;">
+    <span style="font-size:20px;color:var(--accent-light);font-weight:600;">加载数据中...</span>
+    <span style="font-size:12px;color:var(--text-muted);margin-top:6px;">正在请求数据，请稍候</span>
+   </div>
+  </div>
+
+  <!-- Status bar + Legend -->
+  <div id="dm-status-bar" style="display:flex;gap:12px;padding:4px 8px;margin-top:4px;background:var(--bg-panel);border:1px solid var(--border);border-radius:6px;font-size:12px;color:var(--text-muted);flex-wrap:wrap;align-items:center;">
+   <span id="dm-stat-total-wrap">总计: <b id="dm-stat-total" style="color:var(--text-body);">-</b></span>
+   <span id="dm-stat-csv-wrap" style="color:#34d399;">CSV: <b id="dm-stat-csv">-</b></span>
+   <span id="dm-stat-intraday-wrap" style="color:var(--warning);">盘中: <b id="dm-stat-intraday">-</b></span>
+   <span id="dm-stat-missing-wrap" style="color:var(--negative);">缺失: <b id="dm-stat-missing">-</b></span>
+   <span id="dm-stat-anomaly-wrap" style="color:#fca5a5;">异常: <b id="dm-stat-anomaly">-</b></span>
+   <span id="dm-stat-halted-wrap" style="color:var(--text-dim);">停牌: <b id="dm-stat-halted">-</b></span>
+   <span id="dm-sec-legend" style="display:flex;gap:8px;flex-wrap:wrap;"></span>
+   <span id="dm-leg-block" style="margin-left:auto;display:flex;gap:14px;">
+    <span id="dm-leg-csv"><span class="dm-leg-swatch" style="background:#0a3d2e;"></span>CSV确认</span>
+    <span id="dm-leg-intraday"><span class="dm-leg-swatch" style="background:#3d2e0a;"></span>盘中实时</span>
+    <span id="dm-leg-missing"><span class="dm-leg-swatch" style="background:#0f1419;"></span>缺失</span>
+    <span id="dm-leg-short"><span class="dm-leg-swatch" style="background:#111a22;"></span>数据不足</span>
+    <span id="dm-leg-plunge"><span class="dm-leg-swatch" style="background:#3d0000;"></span>异常(暴跌&gt;20%)</span>
+    <span id="dm-leg-surge"><span class="dm-leg-swatch" style="background:#2d1a00;"></span>异常(暴涨&gt;20%)</span>
+   </span>
+  </div>
+
+ </div>
+ <!-- Toast -->
+ <div id="dm-toast"></div>
+
+ <!-- Split action popup -->
+ <div id="dm-split-popup" style="display:none;position:fixed;z-index:9998;box-shadow:0 4px 16px rgba(0,0,0,0.5);border-radius:5px;overflow:hidden;"></div>
+
+ <!-- Confirm dialog -->
+ <div id="dm-confirm-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:10000;align-items:center;justify-content:center;">
+  <div style="background:var(--bg-panel);border:1px solid var(--border);border-radius:8px;padding:20px 24px;max-width:380px;box-shadow:0 8px 32px rgba(0,0,0,0.5);">
+   <p id="dm-confirm-msg" style="font-size:13px;color:var(--text-body);margin-bottom:16px;line-height:1.6;"></p>
+   <div style="display:flex;gap:8px;justify-content:flex-end;">
+    <button id="dm-confirm-no" style="padding:6px 16px;border:1px solid var(--border);background:transparent;color:var(--text-muted);border-radius:5px;font-size:12px;cursor:pointer;">取消</button>
+    <button id="dm-confirm-yes" style="padding:6px 16px;border:none;background:var(--negative);color:#fff;border-radius:5px;font-size:12px;cursor:pointer;">确认删除</button>
+   </div>
+  </div>
+ </div>
+
+</div>

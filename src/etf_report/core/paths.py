@@ -20,4 +20,4 @@ RESEARCH_DIR = PROJECT_ROOT / "research"
 ASSETS_DIR = PROJECT_ROOT / "assets"
 INDEX_HTML = PROJECT_ROOT / "index.html"
 SCRIPTS_DIR = PROJECT_ROOT / "scripts"
-TEMPLATES_DIR = PROJECT_ROOT / "templates"
+
