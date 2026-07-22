@@ -236,6 +236,89 @@ def count_actual_rebalances(signal_history: list) -> int:
     return count
 
 
+def compute_factor_dispersion(signal_history: list) -> dict:
+    """从 signal_history 提取每调仓日的全池 ETF 因子截面统计。
+
+    要求 signal_history 条目含 detail 字段（即 run_backtest(return_details=True)）。
+    使用映射后的 f1/f3/f7 分值（0-100 量程），保证跨因子可比。
+
+    Returns:
+        dict with keys:
+        - dates: [str]              调仓日列表
+        - f1_mean, f1_std: [float]  F1 全池均值/标准差
+        - f3_mean, f3_std: [float]  F3 全池均值/标准差
+        - f7_mean, f7_std: [float]  F7 全池均值/标准差
+        - f7_max: [float]           全池最大绝对 F7
+        - f7_pct_gt_40: [float]     F7 > 40 的 ETF 占比(%)
+        - f7_pct_gt_100: [float]    F7 > 100 的 ETF 占比(%)
+        - f1_dominance: [float]     F1 截面支配度 (0-1)
+        - f3_dominance: [float]     F3 截面支配度 (0-1)
+        - f7_dominance: [float]     F7 截面支配度 (0-1)
+    """
+    if not signal_history:
+        return {}
+
+    dates, f1_mean, f1_std = [], [], []
+    f3_mean, f3_std = [], []
+    f7_mean, f7_std, f7_max = [], [], []
+    f7_gt_40, f7_gt_100 = [], []
+
+    for sig in signal_history:
+        detail = sig.get("detail")
+        if not detail:
+            continue
+
+        f1v, f3v, f7v = [], [], []
+        for code, vals in detail.items():
+            if vals.get("suspended"):
+                continue
+            f1 = vals.get("f1")
+            f3 = vals.get("f3")
+            f7 = vals.get("f7")
+            if f1 is not None: f1v.append(float(f1))
+            if f3 is not None: f3v.append(float(f3))
+            if f7 is not None: f7v.append(float(f7))
+
+        if not f1v:
+            continue
+
+        n = len(f1v)
+        # Mean & std
+        m1, s1 = sum(f1v) / n, (sum((x - sum(f1v)/n)**2 for x in f1v) / n) ** 0.5
+        m3, s3 = sum(f3v) / n, (sum((x - sum(f3v)/n)**2 for x in f3v) / n) ** 0.5
+        m7, s7 = sum(f7v) / n, (sum((x - sum(f7v)/n)**2 for x in f7v) / n) ** 0.5
+
+        dates.append(str(sig["date"])[:10])
+        f1_mean.append(round(m1, 3)); f1_std.append(round(s1, 3))
+        f3_mean.append(round(m3, 3)); f3_std.append(round(s3, 3))
+        f7_mean.append(round(m7, 3)); f7_std.append(round(s7, 3))
+        f7_max.append(round(max(abs(x) for x in f7v), 1))
+        f7_gt_40.append(round(sum(1 for x in f7v if abs(x) > 40) / n * 100, 1))
+        f7_gt_100.append(round(sum(1 for x in f7v if abs(x) > 100) / n * 100, 1))
+
+    # Dominance ratios (total std share per factor)
+    n = len(dates)
+    f1_dom, f3_dom, f7_dom = [], [], []
+    for i in range(n):
+        total = f1_std[i] + f3_std[i] + f7_std[i]
+        if total > 0:
+            f1_dom.append(round(f1_std[i] / total, 4))
+            f3_dom.append(round(f3_std[i] / total, 4))
+            f7_dom.append(round(f7_std[i] / total, 4))
+        else:
+            f1_dom.append(0.0); f3_dom.append(0.0); f7_dom.append(0.0)
+
+    return {
+        "dates": dates,
+        "f1_mean": f1_mean, "f1_std": f1_std,
+        "f3_mean": f3_mean, "f3_std": f3_std,
+        "f7_mean": f7_mean, "f7_std": f7_std,
+        "f7_max": f7_max,
+        "f7_pct_gt_40": f7_gt_40, "f7_pct_gt_100": f7_gt_100,
+        "f1_dominance": f1_dom, "f3_dominance": f3_dom, "f7_dominance": f7_dom,
+    }
+
+
 from quant_factors import calc_rsi as _precalc_rsi
 
 # ── Factor cache ──────────────────────────────────────────────────────
@@ -456,7 +539,7 @@ def _precompute_factors(all_daily, all_weekly, ema_period, vol_window,
         _factor_cache_save(_ck, out[code])
     return out
 
-def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
+def run_backtest(start_date: str = "2026-05-01", end_date: str = None,
                  initial_capital: float = 1000000.0,
                  rebalance_freq: str = None,
                  preset: str = None,
@@ -827,7 +910,7 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
             _rising = benchmark_rising_maps.get(idx_code, {}).get(rb_date_str, True)
             _benchmark_votes.append({"code": idx_code, "above": _above, "rising": _rising})
 
-        _single_bm = benchmarks[0] if benchmarks else "000300"
+        _single_bm = benchmarks[0] if benchmarks else "510300"
         hs300_above_ma = benchmark_above_maps.get(_single_bm, {}).get(rb_date_str, True)
         hs300_ma_rising = benchmark_rising_maps.get(_single_bm, {}).get(rb_date_str, True)
         market_regime = market_regimes.get(rb_date_str, "choppy_range")
@@ -1468,6 +1551,8 @@ def run_backtest(start_date: str = "2023-01-01", end_date: str = None,
     }
     if return_data:
         result_extra["all_daily"] = all_daily
+    if return_details:
+        result_extra["factor_dispersion"] = compute_factor_dispersion(signal_history)
     return nav_df, signal_history, result_extra
 
 

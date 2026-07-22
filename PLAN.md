@@ -11,6 +11,8 @@
 
 版本信息和 ID 计数器统一维护在 `plans/Board.md`。
 
+另外，`plans/version-history.html` 是版本历史的可视化时间线（v1 ~ 当前），素材来自 `Board.md` + `Archive.md` + REQ 文档。说"更新版本历史"即可让 AI 增量追加新版本节点。
+
 ## 需求状态流转
 
 ```
@@ -70,39 +72,23 @@ open → fixing → fixed → closed
 
 ### AI 冷启动与协作入口
 
-`etf-report` 已是普通项目仓库，不再维护 active `.codebuddy/rules` / `.claude/rules` 项目规则。AI 冷启动与协作说明按两层维护：
+`etf-report` 是普通项目仓库。AI 冷启动与协作说明：
 
 | 事实源 | 职责 |
 |------|------|
-| `AGENTS.md` | 新对话冷启动入口：开放式评估、关键词定位需求、指定 REQ 启动 |
-| `docs/design/glossary.md` | 详细 AI 协作说明：术语、任务路由、高风险规则 |
+| `AGENTS.md` | 新对话冷启动入口：开放式评估、关键词定位需求、指定 REQ 启动、工作流路由、验证门禁 |
+| `.claude/rules/` | 项目级行为规则（Git 分支、Python 脚本、转义、热加载等），AI 每会话自动注入 |
+| `docs/design/glossary.md` | 术语定义 |
 | `docs/runbook/audit.md` | 项目审计方法 |
 
-维护原则：
-
-- `AGENTS.md` 保持短、稳定、低 token，只写冷启动流程。
-- `docs/design/glossary.md` 只保留仍会影响当前开发的协作约定。
-- 不再新增 active `.codebuddy/rules`、`.claude/rules` 或 `statusbar.config.md`。
-- 旧规则如需保留，放在 `` 并明确标注历史归档。
-
-### 版本发布
-
-用户说"发布"时，**发布前到底要做什么只看 `docs/runbook/release.md`**。
-
-- `docs/runbook/release.md` 是发布前唯一门禁与步骤事实源。
-- `PLAN.md` 不重复维护发布前检查、版本号递增、归档、Git 推送、PR/直推策略等副本。
-- 如果发布动作里需要核对 `Board.md` / `Archive.md` / 版本号 / 敏感信息 / 禁止跟踪文件，这些要求应先写进 `docs/runbook/release.md`，再按它执行。
-
-
-对话结束前批量更新文件，不在中间频繁写文件。
+发布流程见 `docs/runbook/release.md`，此处不重复。
 
 ## 开发固定原则
 
-1. **编号守卫**：只要事项会进入持续推进、状态流转、归档复盘，就先申请 `REQ` / `BUG` 编号（详见"编号前置守卫"）
-2. **边界原则**：不要把开发治理文件的引用写回 `SKILL.md` / `README.md`；不要把本地敏感配置写回公开模板
-3. **用户覆盖记录**：如果用户推翻 AI 建议，把原因写进最近的 `REQ-XXX.md` 或 `Board.md`（详见"用户覆盖 AI 建议记录"）
+1. **编号守卫**：只要事项会进入持续推进、状态流转、归档复盘，就先申请 `REQ` / `BUG` 编号
+2. **敏感配置**：不要把本地敏感配置写回公开模板
+3. **用户覆盖记录**：用户推翻 AI 建议时，把原因写进最近的 `REQ-XXX.md` 或 `Board.md`
 4. **临时产物**：根目录不新增一次性文件；临时排查输出放 `_working/`；长期复用样本放 `tests/fixtures/`
-5. **项目闭环**：当前事实源优先使用仓库内 `README.md`、`AGENTS.md`、`docs/`、`plans/`、`research/` 和代码；外部依赖只走 `requirements.txt` 或明确记录的调研文档
 
 ## 需求文档规范
 

@@ -6,8 +6,8 @@
 |------|------|
 | **当前版本** | **v3.14.0**（2026-07-21 发布）WF 方法论验证 + 因子驱动力诊断 + 参数锁定单源治理 + Tuner HTML 拆分 |
 | **生产预设** | **gam-0** — 指标见 [`research/params/baseline.yaml`](../research/params/baseline.yaml) |
-| **下一目标版本** | **v3.14.0**（参数研究 + WF）→ v4.0.0（架构包化 + 仪表盘） |
-| **池子** | 54支，全部默认打开 |
+| **下一目标版本** | **v3.15.0**（缓冲研究版）→ v4.0.0（架构包化 + 仪表盘） |
+| **池子** | 54支，全部默认打开 · [稳健性研究结论](../research/pool_robustness/report.md)：全池最优，海外科技是策略引擎 |
 
 
 
@@ -17,7 +17,7 @@
 
 | 日期 | ID | 标题 | 状态 |
 |------|----|------|------|
-（空）
+| 2026-07-22 | REQ-390 | GitHub Actions 远端部署 — 收盘前信号兜底 | Phase 1 开发中 |
 
 ## discussing (讨论中)
 
@@ -26,7 +26,7 @@
 | 日期 | 话题 | 状态 | 备注 |
 |------|------|------|------|
 | 2026-07-01 | AI 讨论→执行跳步问题 — 开放式输入被当成即时任务 | 已关闭 | 观察半月无复发，AGENTS.md 讨论协议生效 |
-| 2026-07-08 | **ETF 池子设定对策略的影响** — 两个方向：(A) 随机池子集→评估策略稳健性+发现关键ETF；(B) 动态池/扇区轮动→牛市去传统、熊市去科技。引擎已有 `--universe` 筛选+每支 ETF 已标 sector。方向 A 纯研究脚本不改引擎，方向 B 需引擎支持动态池。建议先 A（低成本高信息量）→ 数据驱动决策 B。 | 已产出 REQ | → REQ-363 |
+| 2026-07-08 | **ETF 池子设定对策略的影响** — 两个方向：(A) 随机池子集→评估策略稳健性+发现关键ETF；(B) 动态池/扇区轮动→牛市去传统、熊市去科技。引擎已有 `--universe` 筛选+每支 ETF 已标 sector。方向 A 纯研究脚本不改引擎，方向 B 需引擎支持动态池。建议先 A（低成本高信息量）→ 数据驱动决策 B。 | 已关闭 | → REQ-363 ✅ 完成。结论：全池最优，海外科技是策略引擎，平台经济唯一轻微拖后腿。方向 B 无数据支撑，搁置。 |
 | 2026-07-10 | **离散化 alpha 的干净替代方案** — REQ-365/366 + top_boost 已完成。N=17 + top_boost=2 覆盖了离散化 alpha。 | 已关闭 | → REQ-365/366 已交付 |
 | 2026-07-13 | **F7 横向正则化 → F8** | 已关闭（证伪） | CAPM残差F7不优于自我参照，→ REQ-387 收编 |
 | 2026-07-13 | **F7 Checkpoint 胜率优化** | 已关闭 | 搁置，→ REQ-387 收编 |
@@ -117,7 +117,7 @@
 | REQ-323 | **Walk-Forward Phase 1** — 3Y WF 方法论验证通过：OOS 未崩塌，参数逐年变化。结论：WF 可行但不适用于 gam-0 当前 6Y 窗口口径。gam-0 滚动 WF 生产化 → wishlist | 🔴 P0 | ✅ 已完成（方法论验证） |
 | ~~REQ-324~~ | **WF Phase 2** — 5 MDD 全量前沿 | — | ❌ 废弃 |
 | ~~REQ-326~~ | **Walk-Forward 生产化** — 纳入 daily batch | — | ❌ 废弃 |
-| REQ-363 | **ETF 池稳健性研究** — 随机子集+leave-one-sector-out | 🟡 P1 | 延期至 v3.15.0 |
+| REQ-363 | **ETF 池稳健性研究** — 随机子集+leave-one-sector-out | 🟡 P1 | ✅ 已完成（2026-07-22）：结论见 `research/pool_robustness/report.md` |
 | REQ-387 | **F7 量程治理** — 6Y 回测 + 2026-07-20 实盘诊断确认量程不对称。已收编全部旧 F7 废案（REQ-367/368/369） | 🟡 P1 | 延期至 v3.15.0 |
 | REQ-388 | **Tuner HTML L1 面板级拆分** — 900 行→3 文件，Flask 服务端拼装，div 平衡验证 | 🟡 P1 | ✅ 已交付 |
 | REQ-389 | **参数锁定单源治理** — `LOCKED_PARAMS` 在 quant_contract.py 唯一真相源，schema 注入 locked_value，JS cacheLockedParams 消费 | 🔴 P0 | ✅ 已交付 |
@@ -195,6 +195,7 @@
 | BUG-056 | **盘中 MA 信号延迟/错误 — 周五牛转熊漏报 + 周一假熊转牛** — 三重根因：(1) `_build_ma_trend_cache` 注入 000300 实时价用的 Sina 指数代码 `s_sh000300` 多余前缀致拉取失败；(2) 盘中降级时未跳过 Tuner 启动时建的旧 MA 缓存（不含当日），回测缺当日日期默认 bull；(3) 未注入 000300 实时价到日线/周线致 MA 延迟一个周线窗口。修复：代码 → `sh000300` + 降级跳过旧缓存 + 注入逐日线 | 🟡 Medium | fixed | v3.13.0 | — | 2026-07-20 | (1) Sinan 指数代码多余 `s_` 前缀；(2) 缓存逻辑在盘中降级时未区分启动缓存 | v3.13.0 |
 | BUG-057 | **"刷新数据"不更新基准指数** — `refresh_data()` 只拉 ETF 日线，HS300 指数 CSV 只在 Tuner 启动时加载一次，盘中缺数据或过期只能重启。修复：`refresh_data()` 末尾重新 `load_hs300_daily_cached()` + 重建周线 + 清 MA 缓存 | 🔴 Critical | fixed | v3.13.0 | — | 2026-07-20 | `_run_incremental_fetch` 只遍历 ETF universe，不含指数 | v3.13.0 |
 | BUG-058 | **`_build_override` 默认值与 gam-0 不一致** — 硬编码默认值多处偏离；修复：全部默认值改为从 `DEFAULT_LOCK` 读取，`DEFAULT_LOCK` 补全 f7_window/f7_lookback | 🔴 Critical | fixed | v3.13.0 | REQ-382 | 2026-07-20 | 双重默认源（DEFAULT_LOCK + _build_override 硬编码）未对齐 | v3.13.0 |
+| BUG-059 | **setup_quant_tasks.ps1 中文编码乱码** — UTF-8 无 BOM 脚本在 PS 5.1 下以 GBK 读取导致任务名乱码。修复：另存为 UTF-8 with BOM | 🟡 Medium | fixed | v3.14.0 | — | 2026-07-21 | PS1 无 BOM，PowerShell 5.1 默认 ANSI(GBK) 读取 | v3.14.0 |
 | BUG-059 | **盘中拆股检测失效 — DM 面板不显示 ⚠** — REQ-354 bridge 先清洗内存 → REQ-360 `api_split_status` 查不到跳变 → `pending_repair` 永远不触发。修复：(1) 新增 `_detect_pending_splits_from_cache()` 只检测不洗数据；(2) 检测入口从 `refresh_data` 移到 `/api/split_status`（DM 加载时触发）；(3) bridge 命中后记 `_SPLIT_PENDING_REPAIR` 确保 ⚠ 可见 | 🔴 Critical | fixed | v3.13.0 | REQ-354, REQ-360 | 2026-07-21 | bridge 清洗证据 → api 查不到跳变；检测入口散布在三个不同端点 | v3.13.0 |
 
 
@@ -210,9 +211,15 @@
 ---
 
 
+## 版本历史可视化
+
+→ [`version-history.html`](version-history.html) — 时间线式版本总览（v1 ~ v3.14，v4 待续）。触发词："更新版本历史"。
+
+---
+
 ## ID 计数器
 
-**下一个需求 ID**: REQ-390
+**下一个需求 ID**: REQ-391
 
 **下一个 Bug ID**: BUG-060
 

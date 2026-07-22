@@ -1,0 +1,40 @@
+name: 收盘前信号推送（远端兜底）
+
+on:
+  schedule:
+    # 14:50 CST = 06:50 UTC, Mon-Fri
+    - cron: '50 6 * * 1-5'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (skip actual push, print to log)'
+        type: boolean
+        default: false
+
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run signal push
+        env:
+          SERVERCHAN_SENDKEY: ${{ secrets.SERVERCHAN_SENDKEY }}
+        run: |
+          FLAGS=""
+          if [[ "${{ github.event.inputs.dry_run }}" == "true" ]]; then
+            FLAGS="--dry-run"
+          fi
+          python scripts/signal_push_cli.py $FLAGS
