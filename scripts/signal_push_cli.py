@@ -147,8 +147,7 @@ def main():
     lines = [
         f"## 实盘调仓执行参照表",
         "",
-        f"**策略**: 赌徒 (远端兜底) | **日期**: {now:%Y-%m-%d} | **窗口**: {start}~{end}",
-        f"**回测**: AR={extra['annual_return']:.0f}% Sharpe={extra['sharpe']:.2f} MDD={extra['max_drawdown']:.0f}% 敞口={latest.get('total_target',0)*100:.0f}% regime={latest.get('regime','?')}",
+        f"**策略**: 赌徒 (远端) | **日期**: {now:%Y-%m-%d}",
         "",
     ]
 
