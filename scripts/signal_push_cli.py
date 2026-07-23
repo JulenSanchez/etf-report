@@ -18,7 +18,7 @@ sys.path.insert(0, str(PROJECT_ROOT / "src"))
 import requests
 import yaml
 from trading_calendar import is_trading_day
-from quant_backtest import run_backtest, load_config
+from quant_backtest import run_backtest
 
 DRY_RUN = "--dry-run" in sys.argv
 QUIET = "--quiet" in sys.argv
@@ -95,10 +95,6 @@ def main():
     # ── Stage 2: Backtest ──
     log("=" * 50)
     log("Stage 2: Run backtest (gam-0)")
-    # Verify config loading
-    cfg = load_config(preset="gam-0")
-    cc = cfg.get("confidence", {})
-    log(f"  conf_type={cc.get('type')} bull={cc.get('ma_bull_pos')} bear={cc.get('ma_bear_pos')} period={cc.get('ma_trend_period')}")
     t0 = time.time()
     start = f"{now.year}-05-01"
     end = now.strftime("%Y-%m-%d")
@@ -145,19 +141,6 @@ def main():
         return 1
     log(f"  Buy positions: {len(buy_list)}")
 
-    # ── Quick MA diagnostic ──
-    import pandas as pd
-    bm_path = PROJECT_ROOT / "data" / "quant" / "510300_daily.csv"
-    if bm_path.exists():
-        bm = pd.read_csv(bm_path, parse_dates=["date"]).sort_values("date")
-        bm["ma18"] = bm["close"].rolling(18).mean()
-        last3 = bm.tail(3)
-        ma_lines = [f"**510300 最近3日**:"] if not QUIET else []
-        for _, r in last3.iterrows():
-            above = "▲" if r["close"] > r["ma18"] else "▼"
-            ma_lines.append(f"  {r['date'].strftime('%m/%d')} close={r['close']:.3f} ma18={r['ma18']:.3f} {above}")
-        log("\n".join(ma_lines))
-
     # ── Stage 4: Build markdown table (same format as preclose_push.py) ──
     AMOUNTS = list(range(500000, 605000, 10000))
 
@@ -165,7 +148,7 @@ def main():
         f"## 实盘调仓执行参照表",
         "",
         f"**策略**: 赌徒 (远端兜底) | **日期**: {now:%Y-%m-%d} | **窗口**: {start}~{end}",
-        f"**回测**: AR={extra['annual_return']:.0f}% Sharpe={extra['sharpe']:.2f} MDD={extra['max_drawdown']:.0f}% 总敞口={latest.get('total_target',0)*100:.0f}% regime={latest.get('regime','?')} hs300_above_ma={latest.get('hs300_above_ma','?')}",
+        f"**回测**: AR={extra['annual_return']:.0f}% Sharpe={extra['sharpe']:.2f} MDD={extra['max_drawdown']:.0f}% 敞口={latest.get('total_target',0)*100:.0f}% regime={latest.get('regime','?')}",
         "",
     ]
 
