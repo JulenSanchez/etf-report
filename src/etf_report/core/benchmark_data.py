@@ -175,14 +175,23 @@ def build_index_weekly(daily_df):
     df = daily_df.copy()
     df["week"] = df["date"].dt.isocalendar().year.astype(str) + "-" + df["date"].dt.isocalendar().week.astype(str).str.zfill(2)
     weekly = df.groupby("week").last().reset_index()[["date", "close"]]
-    # Pin each bar's date to the last trading day of its ISO week
     for i in range(len(weekly)):
         d = weekly.loc[i, "date"]
-        # Sunday of this ISO week  (weekday 0=Mon … 6=Sun)
-        iso_sunday = d + pd.Timedelta(days=6 - d.weekday())
-        ltd = last_trading_day(iso_sunday)
+        # ISO Friday of this week (weekday 0=Mon, 4=Fri)
+        iso_friday = d + pd.Timedelta(days=4 - d.weekday())
+        # Last trading day ≤ Friday (handles Friday-holiday → Thursday)
+        ltd = last_trading_day(iso_friday)
         if ltd:
-            weekly.loc[i, "date"] = pd.to_datetime(ltd)
+            # Ensure the result is still in this ISO week (calendar may lack
+            # future dates and return a past date for current incomplete week)
+            week_monday = d - pd.Timedelta(days=d.weekday())
+            ltd_dt = pd.to_datetime(ltd)
+            if ltd_dt >= week_monday:
+                weekly.loc[i, "date"] = ltd_dt
+            else:
+                weekly.loc[i, "date"] = iso_friday
+        else:
+            weekly.loc[i, "date"] = iso_friday
     return weekly
 
 
