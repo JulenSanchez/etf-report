@@ -9,7 +9,7 @@ on:
       dry_run:
         description: 'Dry run (skip actual push, print to log)'
         type: boolean
-        default: false
+        default: true
 
 jobs:
   push:
