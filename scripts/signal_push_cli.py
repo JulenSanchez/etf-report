@@ -152,7 +152,7 @@ def main():
     ]
 
     col_labels = [f"{b['name']} {b['code']}" for b in buy_list]
-    lines.append(f"|  | {' | '.join(col_labels)} |")
+    lines.append(f"| 金额/股数 | {' | '.join(col_labels)} |")
     lines.append(f"|--------|{''.join('------|' for _ in buy_list)}")
 
     target_cols = [f"{b['targetPct']}" for b in buy_list]
