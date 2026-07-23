@@ -11,8 +11,8 @@
 用途：preset promotion 的标准门禁。评估策略在押注单一方向时的正确性。
 
 用法：
-    python scripts/extreme_analyzer.py --preset gam-2 [--max-holdings 1] \
-        [--start 2020-01-01] [--output research/params/extreme_gam-2.json]
+    python scripts/extreme_analyzer.py --preset gam-0 [--max-holdings 1] \
+        [--start 2020-01-01] [--output research/params/extreme_gam-0.json]
 
 输出：
     - JSON 文件：逐事件明细 + 按ETF汇总 + 裁决
@@ -214,8 +214,8 @@ def _verdict(classified, overall):
 def main():
     parser = argparse.ArgumentParser(
         description="极端持仓分析 — 按单一持仓数（非权重）定义极端集中")
-    parser.add_argument("--preset", type=str, default="gam-2",
-                        help="预设配置名 (default: gam-2)")
+    parser.add_argument("--preset", type=str, default="gam-0",
+                        help="预设配置名 (default: gam-0)")
     parser.add_argument("--start", type=str, default="2020-01-01",
                         help="回测起始日期 (default: 2020-01-01)")
     parser.add_argument("--end", type=str, default=None,

@@ -45,7 +45,7 @@ data/
 |------|------|------|------|------|
 | 日线(前复权) | 腾讯 `fqkline` period=day | 每日增量/全量 | `{code}_daily.csv` | 3s 间隔 + 800条/次上限 |
 | 周线 | 日线聚合 `rebuild_weekly_from_daily()` | 跟随日线 | `{code}_weekly.csv` | — |
-| 份额变动（拆股） | AKShare `fund_cf_em` | 启动时检测（一次） | `corporate_action_events.json` | 按年查询，已有事件去重 |
+| 份额变动（拆股） | AKShare `fund_cf_em` | 首次调用时检测（session 内缓存） | `corporate_action_events.json` | 按年查询，已有事件去重 |
 | 规模+持仓 | AKShare `fetch_etf_metadata.py` (逐支) | ≤30天 TTL | `etf_metadata.json` | 逐支请求，耗时随当前 universe 规模变化 |
 
 ## 新增 ETF 的数据流

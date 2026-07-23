@@ -39,7 +39,7 @@ etfs:
       source: "天天基金 fundf10.eastmoney.com 2026-04-23"
     performance_benchmark: "中证申万有色金属指数"
     benchmark:
-      code: "sh000300"
+      code: "sh510300"
       name: "沪深300"
 
   - code: "513120"
@@ -64,7 +64,7 @@ etfs:
       source: "天天基金 fundf10.eastmoney.com 2026-04-23"
     performance_benchmark: "沪深300非银行金融指数"
     benchmark:
-      code: "sh000300"
+      code: "sh510300"
       name: "沪深300"
 
   - code: "515880"
@@ -79,7 +79,7 @@ etfs:
       # 新易盛 300502 / 中际旭创 300308 / 天孚通信 300394，取名各一字）
       # 都在创业板（均 300 开头），且都是创业板指 Top 20 权重股，
       # 用创业板指做相对 α 对比更贴切（与 159755 电池ETF同理）。
-      code: "sz399006"
+      code: "sz159915"
       name: "创业板指"
 
   - code: "159755"
@@ -91,7 +91,7 @@ etfs:
     performance_benchmark: "国证新能源车电池指数收益率"
     benchmark:
       # 电池/新能源赛道主要在创业板（宁德时代/比亚迪等），用创业板指做相对 α 对比更有意义
-      code: "sz399006"
+      code: "sz159915"
       name: "创业板指"
 
   - code: "159865"
@@ -102,7 +102,7 @@ etfs:
       source: "天天基金 fundf10.eastmoney.com 2026-04-23"
     performance_benchmark: "中证畜牧养殖指数收益率"
     benchmark:
-      code: "sh000300"
+      code: "sh510300"
       name: "沪深300"
 
 

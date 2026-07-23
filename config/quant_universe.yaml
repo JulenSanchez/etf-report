@@ -344,6 +344,7 @@ confidence:
   ma_direction_confirm: true
   dead_zone: 25
   full_zone: 65
+  mdd_cap: -40
   regime_base:
     bull_trend: 0.95
     choppy_range: 0.75
@@ -602,29 +603,38 @@ presets:
     label: '0'
     description: AR最大 MH=2 N=40 TB=8
     scoring:
-      weights: *id001
+      weights:
+        ema_deviation: 0.71
+        volume_ratio: 0.13
+        log_return_deviation: 0.16
       bias_bonus: 0.0
       sensitivity:
         f1: 9.6
         f3: 4.79
-        f7_up_power: 23
+        f7_up_power: 23.0
         f7_up_span: 3.1
-        f7_down_power: 14
-        f7_down_span: 2.50
+        f7_down_power: 14.0
+        f7_down_span: 2.5
     confidence:
       type: ma_trend
-      ma_trend_period: 19
+      ma_trend_period: 18
       ma_bull_pos: 1.8
-      ma_bear_pos: 0.6
+      ma_bear_pos: 1.0
       ma_direction_confirm: true
       dead_zone: 17
       full_zone: 65
-      regime_base: *id003
+      regime_base:
+        bull_trend: 0.95
+        choppy_range: 0.75
+        bear_trend: 0.35
       regime_window: 8
       regime_threshold: 0.03
       breadth_weight: 0.2
       clarity_threshold: 0.03
       dd_sensitivity: 0.2
+      mdd_cap: -40
+      benchmarks:
+      - '510300'
     position:
       signal_steps: 40
       concentration: 0.62
@@ -640,9 +650,15 @@ presets:
       top_boost: 8
     factors:
       f1_active_days: 1
-      ema: *id004
-      volume_ratio: *id005
-      log_return_deviation: *id006
+      ema:
+        period_weeks: 6
+      volume_ratio:
+        window_days: 40
+      log_return_deviation:
+        window_days: 17
+        lookback_days: 250
+        min_days: 60
+        sigma_floor: 0.01
   zen-0:
     label: '0'
     description: Sortino最大 MH=2 N=40 TB=0

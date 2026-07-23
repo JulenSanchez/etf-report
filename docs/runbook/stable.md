@@ -39,20 +39,20 @@ git pull --ff-only origin main
 |---|---:|---|
 | `etf早盘报告` | 11:20 | `batchfiles/preclose_push.bat` |
 | `etf午盘报告` | 15:10 | `batchfiles/preclose_push.bat` |
-| `etf盘后数据更新` | 15:15 | `batchfiles/postmarket_update.bat` |
-| `etf报告发布` | 16:00 | `batchfiles/daily_report.bat` |
+| `etf盘后报告` | 16:00 | `batchfiles/daily_report.bat` |
+
+> `daily_report.bat` 内含全量数据刷新 + 报告发布，不再需要单独的盘后数据更新任务。
 
 重新注册：
 
 ```powershell
 <STABLE_REPO>/batchfiles/setup_quant_tasks.ps1
-<STABLE_REPO>/batchfiles/setup_report_task.ps1
 ```
 
 检查：
 
 ```powershell
-$names = @('etf早盘报告','etf午盘报告','etf盘后数据更新','etf报告发布')
+$names = @('etf早盘报告','etf午盘报告','etf盘后报告')
 foreach ($name in $names) {
   Get-ScheduledTask -TaskName $name
   Get-ScheduledTaskInfo -TaskName $name

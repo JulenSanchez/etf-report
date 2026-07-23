@@ -28,7 +28,7 @@ etfs:
       source: "天天基金 fundf10.eastmoney.com"
     performance_benchmark: "中证申万有色金属指数"
     benchmark:
-      code: "sh000300"        # 基准指数代码
+      code: "sh510300"        # 基准指数代码
       name: "沪深300"
   
   # ETF-2: 港股创新药ETF
@@ -36,7 +36,7 @@ etfs:
     name: "港股创新药ETF"
     market: "sh"
     benchmark:
-      code: "sh000300"
+      code: "sh510300"
       name: "沪深300"
   
   # ETF-3: 证券保险ETF
@@ -44,7 +44,7 @@ etfs:
     name: "证券保险ETF"
     market: "sh"
     benchmark:
-      code: "sh000300"
+      code: "sh510300"
       name: "沪深300"
   
   # ETF-4: 通信设备ETF
@@ -52,7 +52,7 @@ etfs:
     name: "通信设备ETF"
     market: "sh"
     benchmark:
-      code: "sh000300"
+      code: "sh510300"
       name: "沪深300"
   
   # ETF-5: 电池ETF广发
@@ -60,7 +60,7 @@ etfs:
     name: "电池ETF广发"
     market: "sz"
     benchmark:
-      code: "sh000300"
+      code: "sh510300"
       name: "沪深300"
   
   # ETF-6: 养殖ETF
@@ -68,7 +68,7 @@ etfs:
     name: "养殖ETF"
     market: "sz"
     benchmark:
-      code: "sh000300"
+      code: "sh510300"
       name: "沪深300"
 
 

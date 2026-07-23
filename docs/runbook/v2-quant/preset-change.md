@@ -91,7 +91,7 @@ python scripts/extreme_analyzer.py --preset <preset> --start 2020-01-01
 若策略频繁单一押注 DANGER 分类的 ETF：
 1. 不意味着该 ETF 本身有毒——只是策略在它身上"孤注一掷"时历史赔率差
 2. 若 pool 中 DANGER ETF 不可避免，考虑降低 f7t（提高反转阈值，减少"接飞刀"）或提高 MH（强制分散）
-3. 该分析结果应写入 promotion report 的 §七 字段
+3. 该分析结果应写入 `research/params/README.md` 时间线
 
 ## 落地流程
 
@@ -133,23 +133,13 @@ python scripts/extreme_analyzer.py --preset <preset> --start 2020-01-01
 | REQ 追踪 | 必须有 | 必须有 | — |
 | config 落定 | 已写入 YAML | 已写入 YAML | 已在 config |
 
-## Ledger
+## 登记
 
-所有变更必须登记到 `research/promoted/README.md`：
-
-```text
-date         title                          source                    req        landed_in  status   superseded_by
-2026-06-24   gam-2 杠杆优化 (bull=1.58)       gam-2-20260622/report.md  REQ-299    gam-2      active   —
-2026-05-28   gam-1 基线 (mdd=-20%)            gam-1-20260616-v4        REQ-250    gam-1      superseded  gam-2
-```
-
-字段：`date` `title` `source` `req` `landed_in` `status`（active/rolled_back/superseded/draft） `superseded_by`
-
-详细记录可放在 `research/promoted/records/`，由 ledger 索引。
+预设变更后，在 `research/params/README.md` 时间线中登记：日期、标题、来源 REQ、落地文件、关键指标变化。
 
 ## 收口
 
 ```
-1. 更新 research/promoted/README.md
-2. 更新 plans/Board.md（如状态变更）
+1. 更新 `research/params/README.md` 时间线
+2. 更新 `plans/Board.md`（如状态变更）
 ```

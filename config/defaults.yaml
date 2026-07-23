@@ -15,7 +15,7 @@ confidence:
   ma_trend_period: 26
   ma_direction_confirm: true
   benchmarks:
-  - '000300'
+  - '510300'
 position:
   max_holdings: 6
   signal_steps: 17

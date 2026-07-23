@@ -1,5 +1,8 @@
 # 工作流索引
 
+> 运维视角：用户的真实交互和开发流程。出问题了怎么排查、操作步骤是什么、实际的 API 怎么调。
+> 强调务实——从问题出发，快速定位。与之对照：`docs/design/` 是设计视角——"这个系统为什么这样设计"。
+
 <!-- AI: READ THIS FILE FIRST. This file maps every user trigger word to the correct owner document. When a trigger word matches, read the owner document in full before taking any action. Do not execute steps from this index alone. For any trigger not listed here, ask the user to clarify before proceeding. -->
 
 本文是操作入口索引。每个工作流只维护一个 owner 文档；其他文档只链接，不复制步骤。
@@ -12,7 +15,7 @@
 | 筛选 ETF | ETF 候选筛选 | `docs/runbook/v2-quant/screening.md` | `scripts/scan_etf_universe.py` | 生成候选表 + 人工审阅 | 候选清单 |
 | 换池 | ETF 池变更 | `docs/runbook/v2-quant/pool-change.md` | `config/quant_universe.yaml` | 逐支拉数 + `gam-1` 基线对比 | config diff + research/pool 记录 |
 | 优化 `<preset>` | 参数优化 | `docs/runbook/v2-quant/optimization.md` | `config/quant_universe.yaml` | `analysis.json` + report 门禁 | `research/params/<run>/` |
-| preset-change | 预设投产 | `docs/runbook/v2-quant/preset-change.md` | `research/promoted/README.md` | 1Y/3Y/6Y + 必要 bootstrap/一致性验证 | config / promoted ledger / REQ |
+| preset-change | 预设投产 | `docs/runbook/v2-quant/preset-change.md` | `research/params/README.md` | 1Y/3Y/6Y + 必要 bootstrap/一致性验证 | config / research timeline / REQ |
 | 启动 Tuner | 本地调参 | `docs/runbook/v2-quant/tuner.md` | `scripts/quant_tuner.py` | `python -m pytest tests/test_quant_contract.py -q` | Tuner UI/API |
 | 刷新量化数据 | CSV 数据刷新 | `docs/runbook/v2-quant/data-fetch.md` | `scripts/quant_data_fetcher.py` | 指定日期刷新 + `tests/test_quant_data_cache.py` | `data/quant/*.csv` |
 | stable | stable 仓与计划任务 | `docs/runbook/stable.md` | Windows Task Scheduler + stable repo | LastTaskResult + 手动 bat 复现 | stable 快进更新 |

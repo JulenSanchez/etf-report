@@ -25,24 +25,68 @@ python scripts/quant_tuner.py --readonly
 | `GET /api/presets` | 返回 YAML preset 经 `quant_contract.py` 转换后的 Tuner 参数 |
 | `POST /api/run` | 按参数运行回测 |
 | `POST /api/save` | 将当前参数保存回 `config/quant_universe.yaml` |
-| `POST /api/refresh_data` | 刷新数据：盘中更新 intraday cache，盘后写 CSV。自动检测拆股并补偿 |
+| `POST /api/refresh_data` | 刷新数据：盘中更新 intraday cache，盘后写 CSV |
 | `GET /api/data_status` | 查看 CSV / intraday cache 状态 |
+| `GET /api/split_status` | 返回各 ETF 拆股状态（含 ⚠ 标记），DM 面板加载时调用 |
+| `POST /api/data_full_refetch` | 全量重拉 + 拆股修复（`verify_split=true` 时除以 ratio 写 CSV） |
 
-### refresh_data 流程（v3.11.0+）
+### 盘中回测（标准口径）
+
+用户说"盘中回测"/"今天的数据"/"跑一下今天"时，AI 固定使用以下参数：
+
+```
+preset: gam-0
+start_date: 当年 5 月 1 日（如 2026-05-01）
+end_date: 当天
+```
+
+**操作顺序**：
+1. `POST /api/refresh_data` — 先拉盘中数据
+2. `POST /api/run`（勾选 debug）— 再跑回测
+3. 跑完后读 `data/quant/debug_tuner.json` — 后续排查直接读这个文件
+
+**为什么是 5 月 1 日**：覆盖最近 2~3 个月行情，够看趋势又不冗余。不要跑 1Y 或 6Y——用户要的是"最近发生了什么"。
+
+### refresh_data 流程（v3.13.0, BUG-059 修复后）
 
 ```
 refresh_data()
-  → 拉取数据（增量 / Sina fast path）
+  → 拉取数据（增量 / Sina fast path / 补全空缺）
   → _reload_csv_to_cache
-  → _ensure_splits_detected()    ← AKShare 检测今日拆股（首次调用，后续缓存）
-  → _apply_split_memory_bridge() ← 内存清洗（自愈：已调整则跳过）
+  → _ensure_splits_detected()    ← AKShare 检测拆股事件（首次调用，后续缓存）
+  → _apply_split_memory_bridge() ← 内存清洗（盘中有 intraday cache 时亦生效，自愈：已调整则跳过）
   → if post_market:
        _full_refetch_split_etfs() ← 全量重拉拆股 ETF（qfq 调整后永久修 CSV）
        _reload_csv_to_cache
   → precompute → 回测消费
 ```
 
-**拆股自愈原理**：比较 CSV 末笔收盘价与盘中实时价，若比值接近拆分比例 → 内存清洗历史价格；若比值 ≈1.0 → 数据已调整，跳过。盘后全量重拉待 qfq 生效后永久修复 CSV。
+> **注意**：盘中 `refresh_data` 仍会做 AKShare 事件加载 + 内存桥接（保证回测数据连续），
+> 但不再做 DM 面板的 pending 检测——该检测收敛到 `/api/split_status`（DM 面板加载时触发）。
+> 盘中拉取的数据（intraday cache）不落 CSV。
+
+### 拆股修复用户流程（REQ-360 + BUG-059）
+
+```
+用户盘中拉数据
+  → 打开"数据管理"面板
+  → GET /api/split_status 自动检测：
+      1. AKShare 确认该 ETF 有拆股事件
+      2. CSV 末笔收盘价 ÷ 盘中实时价 ≈ 拆分比例 → 标记 pending_repair
+  → ETF 行左侧出现 ⚠ 三角感叹号
+  → 用户点 ⚠ → 弹出"修复拆股数据 (1:N)"按钮
+  → 确认 → POST /api/data_full_refetch {verify_split: true}
+        → CSV 中 ex_date 之前的 open/close/high/low 全部 ÷ N
+        → 验证无残留跳变
+        → 清除因子缓存 + 重建
+        → 重载 CSV 到 CACHE
+        → ⚠ 消失
+```
+
+**设计原则**：
+- 盘中**只检测不修复**——让用户在 DM 面板看到原始跳变（红色异常格），才有动机点修复
+- 修复入口收敛到 DM 面板 `/api/split_status`，不管数据从哪个入口拉的，打开 DM 就能看到
+- 修复后自动清除因子缓存并重建，确保回测结果正确
 
 ## 参数契约
 

@@ -63,10 +63,25 @@ assets/js/quant_payload.js
 |---|---|
 | Tuner 白屏 / API 报错 | `docs/runbook/v2-quant/tuner.md` |
 | CSV 缺失 / 数据不新 | `docs/runbook/v2-quant/data-fetch.md` |
-| 某 ETF 净值异常跳变（拆股） | `docs/runbook/v2-quant/tuner.md` → 拆股自愈流程 |
+| 某 ETF 净值异常跳变（拆股） | `docs/runbook/v2-quant/tuner.md` → 拆股修复用户流程（DM 面板 ⚠ → 手动修复） |
 | preclose push 失败 | `docs/runbook/v2-quant/daily-automation.md` |
 | ETF 池变更后回测异常 | `docs/runbook/v2-quant/pool-change.md` |
 | 正式页量化为空 | `docs/runbook/v1-report.md` |
+| 盘中 Tuner 信号与盘后不一致 / 牛熊误判 | 见下方"Tuner 与 CLI 数据路径差异" |
+
+### Tuner 与 CLI 数据路径差异
+
+**Tuner 盘中回测和 CLI 回测可以得出不同的信号——两者都可能正确，因为消费的数据不同。**
+
+| | Tuner 盘中 | CLI / research_utils |
+|---|---|---|
+| ETF 日线 | `_get_daily_with_cache` = CSV + intraday 合并 | CSV only |
+| 沪深300 MA 缓存 | `_build_ma_trend_cache`（含盘中实时价补丁） | 同函数，但无 intraday 触发补丁，纯 CSV |
+| debug 输出文件 | `data/debug_tuner.json` | `data/debug_cli.json` |
+
+**排障规则**：用户说"我 Tuner 看到了 X" → **X 是真的**。下一步是读 `debug_tuner.json` 找 Tuner 路径的根因，不是拿 CLI 结论反驳用户。CLI 结论只用于对照（"同数据不同结果"才是 bug），不是事实源。
+
+盘中信号依赖 `intraday_cache` 内的数据新鲜度——如果 Tuner 启动后再没刷新过盘中数据，MA 信号会滞后一个周线窗口。刷新数据后再跑回测可消除滞后。
 
 ## 相关文档
 

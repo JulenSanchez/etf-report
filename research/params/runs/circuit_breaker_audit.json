@@ -1,0 +1,6968 @@
+[
+ {
+  "name": "k=3 T=-8 N=5 gp=0.2",
+  "rows": [
+   {
+    "seg": "2020-05-29~2020-06-18",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2021-04-16~2021-12-09",
+    "kind": "pos",
+    "days": 159,
+    "triggers": 2,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-01-07~2022-01-28",
+    "kind": "deep_neg",
+    "days": 16,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-02-11~2022-06-08",
+    "kind": "pos",
+    "days": 78,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-06-10~2022-09-30",
+    "kind": "pos",
+    "days": 80,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-10-14~2023-01-19",
+    "kind": "pos",
+    "days": 69,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-05-26~2023-06-27",
+    "kind": "pos",
+    "days": 21,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-06-30~2023-07-27",
+    "kind": "pos",
+    "days": 20,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-08-11~2023-09-28",
+    "kind": "pos",
+    "days": 35,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-10-13~2024-02-08",
+    "kind": "deep_neg",
+    "days": 84,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2024-07-05~2024-09-26",
+    "kind": "deep_neg",
+    "days": 58,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-02-28~2025-03-13",
+    "kind": "pos",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-03~2025-04-09",
+    "kind": "neg",
+    "days": 4,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-04-11~2025-05-06",
+    "kind": "pos",
+    "days": 15,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-05-09~2025-05-15",
+    "kind": "neg",
+    "days": 5,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-06-20~2025-07-03",
+    "kind": "neg",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2026-03-20~2026-04-09",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   }
+  ],
+  "deep_has": 1,
+  "pos_fp": 3,
+  "total_triggers": 38,
+  "gate_days": 190,
+  "PASS": false
+ },
+ {
+  "name": "k=3 T=-8 N=5 gp=0.5",
+  "rows": [
+   {
+    "seg": "2020-05-29~2020-06-18",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2021-04-16~2021-12-09",
+    "kind": "pos",
+    "days": 159,
+    "triggers": 2,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-01-07~2022-01-28",
+    "kind": "deep_neg",
+    "days": 16,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-02-11~2022-06-08",
+    "kind": "pos",
+    "days": 78,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-06-10~2022-09-30",
+    "kind": "pos",
+    "days": 80,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-10-14~2023-01-19",
+    "kind": "pos",
+    "days": 69,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-05-26~2023-06-27",
+    "kind": "pos",
+    "days": 21,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-06-30~2023-07-27",
+    "kind": "pos",
+    "days": 20,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-08-11~2023-09-28",
+    "kind": "pos",
+    "days": 35,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-10-13~2024-02-08",
+    "kind": "deep_neg",
+    "days": 84,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2024-07-05~2024-09-26",
+    "kind": "deep_neg",
+    "days": 58,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-02-28~2025-03-13",
+    "kind": "pos",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-03~2025-04-09",
+    "kind": "neg",
+    "days": 4,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-04-11~2025-05-06",
+    "kind": "pos",
+    "days": 15,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-05-09~2025-05-15",
+    "kind": "neg",
+    "days": 5,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-06-20~2025-07-03",
+    "kind": "neg",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2026-03-20~2026-04-09",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   }
+  ],
+  "deep_has": 1,
+  "pos_fp": 3,
+  "total_triggers": 38,
+  "gate_days": 190,
+  "PASS": false
+ },
+ {
+  "name": "k=3 T=-8 N=10 gp=0.2",
+  "rows": [
+   {
+    "seg": "2020-05-29~2020-06-18",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2021-04-16~2021-12-09",
+    "kind": "pos",
+    "days": 159,
+    "triggers": 2,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-01-07~2022-01-28",
+    "kind": "deep_neg",
+    "days": 16,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-02-11~2022-06-08",
+    "kind": "pos",
+    "days": 78,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-06-10~2022-09-30",
+    "kind": "pos",
+    "days": 80,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-10-14~2023-01-19",
+    "kind": "pos",
+    "days": 69,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-05-26~2023-06-27",
+    "kind": "pos",
+    "days": 21,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-06-30~2023-07-27",
+    "kind": "pos",
+    "days": 20,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-08-11~2023-09-28",
+    "kind": "pos",
+    "days": 35,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-10-13~2024-02-08",
+    "kind": "deep_neg",
+    "days": 84,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2024-07-05~2024-09-26",
+    "kind": "deep_neg",
+    "days": 58,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-02-28~2025-03-13",
+    "kind": "pos",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-03~2025-04-09",
+    "kind": "neg",
+    "days": 4,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-04-11~2025-05-06",
+    "kind": "pos",
+    "days": 15,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-05-09~2025-05-15",
+    "kind": "neg",
+    "days": 5,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-06-20~2025-07-03",
+    "kind": "neg",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2026-03-20~2026-04-09",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   }
+  ],
+  "deep_has": 1,
+  "pos_fp": 3,
+  "total_triggers": 32,
+  "gate_days": 320,
+  "PASS": false
+ },
+ {
+  "name": "k=3 T=-8 N=10 gp=0.5",
+  "rows": [
+   {
+    "seg": "2020-05-29~2020-06-18",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2021-04-16~2021-12-09",
+    "kind": "pos",
+    "days": 159,
+    "triggers": 2,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-01-07~2022-01-28",
+    "kind": "deep_neg",
+    "days": 16,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-02-11~2022-06-08",
+    "kind": "pos",
+    "days": 78,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-06-10~2022-09-30",
+    "kind": "pos",
+    "days": 80,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-10-14~2023-01-19",
+    "kind": "pos",
+    "days": 69,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-05-26~2023-06-27",
+    "kind": "pos",
+    "days": 21,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-06-30~2023-07-27",
+    "kind": "pos",
+    "days": 20,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-08-11~2023-09-28",
+    "kind": "pos",
+    "days": 35,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-10-13~2024-02-08",
+    "kind": "deep_neg",
+    "days": 84,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2024-07-05~2024-09-26",
+    "kind": "deep_neg",
+    "days": 58,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-02-28~2025-03-13",
+    "kind": "pos",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-03~2025-04-09",
+    "kind": "neg",
+    "days": 4,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-04-11~2025-05-06",
+    "kind": "pos",
+    "days": 15,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-05-09~2025-05-15",
+    "kind": "neg",
+    "days": 5,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-06-20~2025-07-03",
+    "kind": "neg",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2026-03-20~2026-04-09",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   }
+  ],
+  "deep_has": 1,
+  "pos_fp": 3,
+  "total_triggers": 32,
+  "gate_days": 320,
+  "PASS": false
+ },
+ {
+  "name": "k=3 T=-8 N=20 gp=0.2",
+  "rows": [
+   {
+    "seg": "2020-05-29~2020-06-18",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2021-04-16~2021-12-09",
+    "kind": "pos",
+    "days": 159,
+    "triggers": 2,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-01-07~2022-01-28",
+    "kind": "deep_neg",
+    "days": 16,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-02-11~2022-06-08",
+    "kind": "pos",
+    "days": 78,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-06-10~2022-09-30",
+    "kind": "pos",
+    "days": 80,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-10-14~2023-01-19",
+    "kind": "pos",
+    "days": 69,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-05-26~2023-06-27",
+    "kind": "pos",
+    "days": 21,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-06-30~2023-07-27",
+    "kind": "pos",
+    "days": 20,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-08-11~2023-09-28",
+    "kind": "pos",
+    "days": 35,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-10-13~2024-02-08",
+    "kind": "deep_neg",
+    "days": 84,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2024-07-05~2024-09-26",
+    "kind": "deep_neg",
+    "days": 58,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-02-28~2025-03-13",
+    "kind": "pos",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-03~2025-04-09",
+    "kind": "neg",
+    "days": 4,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-11~2025-05-06",
+    "kind": "pos",
+    "days": 15,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-05-09~2025-05-15",
+    "kind": "neg",
+    "days": 5,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-06-20~2025-07-03",
+    "kind": "neg",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2026-03-20~2026-04-09",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   }
+  ],
+  "deep_has": 1,
+  "pos_fp": 3,
+  "total_triggers": 25,
+  "gate_days": 500,
+  "PASS": false
+ },
+ {
+  "name": "k=3 T=-8 N=20 gp=0.5",
+  "rows": [
+   {
+    "seg": "2020-05-29~2020-06-18",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2021-04-16~2021-12-09",
+    "kind": "pos",
+    "days": 159,
+    "triggers": 2,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-01-07~2022-01-28",
+    "kind": "deep_neg",
+    "days": 16,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-02-11~2022-06-08",
+    "kind": "pos",
+    "days": 78,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-06-10~2022-09-30",
+    "kind": "pos",
+    "days": 80,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-10-14~2023-01-19",
+    "kind": "pos",
+    "days": 69,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-05-26~2023-06-27",
+    "kind": "pos",
+    "days": 21,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-06-30~2023-07-27",
+    "kind": "pos",
+    "days": 20,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-08-11~2023-09-28",
+    "kind": "pos",
+    "days": 35,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-10-13~2024-02-08",
+    "kind": "deep_neg",
+    "days": 84,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2024-07-05~2024-09-26",
+    "kind": "deep_neg",
+    "days": 58,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-02-28~2025-03-13",
+    "kind": "pos",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-03~2025-04-09",
+    "kind": "neg",
+    "days": 4,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-11~2025-05-06",
+    "kind": "pos",
+    "days": 15,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-05-09~2025-05-15",
+    "kind": "neg",
+    "days": 5,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-06-20~2025-07-03",
+    "kind": "neg",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2026-03-20~2026-04-09",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   }
+  ],
+  "deep_has": 1,
+  "pos_fp": 3,
+  "total_triggers": 25,
+  "gate_days": 500,
+  "PASS": false
+ },
+ {
+  "name": "k=3 T=-10 N=5 gp=0.2",
+  "rows": [
+   {
+    "seg": "2020-05-29~2020-06-18",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2021-04-16~2021-12-09",
+    "kind": "pos",
+    "days": 159,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-01-07~2022-01-28",
+    "kind": "deep_neg",
+    "days": 16,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-02-11~2022-06-08",
+    "kind": "pos",
+    "days": 78,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-06-10~2022-09-30",
+    "kind": "pos",
+    "days": 80,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-10-14~2023-01-19",
+    "kind": "pos",
+    "days": 69,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-05-26~2023-06-27",
+    "kind": "pos",
+    "days": 21,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-06-30~2023-07-27",
+    "kind": "pos",
+    "days": 20,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-08-11~2023-09-28",
+    "kind": "pos",
+    "days": 35,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-10-13~2024-02-08",
+    "kind": "deep_neg",
+    "days": 84,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2024-07-05~2024-09-26",
+    "kind": "deep_neg",
+    "days": 58,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-02-28~2025-03-13",
+    "kind": "pos",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-03~2025-04-09",
+    "kind": "neg",
+    "days": 4,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-04-11~2025-05-06",
+    "kind": "pos",
+    "days": 15,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-05-09~2025-05-15",
+    "kind": "neg",
+    "days": 5,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-06-20~2025-07-03",
+    "kind": "neg",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2026-03-20~2026-04-09",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   }
+  ],
+  "deep_has": 1,
+  "pos_fp": 1,
+  "total_triggers": 25,
+  "gate_days": 125,
+  "PASS": false
+ },
+ {
+  "name": "k=3 T=-10 N=5 gp=0.5",
+  "rows": [
+   {
+    "seg": "2020-05-29~2020-06-18",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2021-04-16~2021-12-09",
+    "kind": "pos",
+    "days": 159,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-01-07~2022-01-28",
+    "kind": "deep_neg",
+    "days": 16,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-02-11~2022-06-08",
+    "kind": "pos",
+    "days": 78,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-06-10~2022-09-30",
+    "kind": "pos",
+    "days": 80,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-10-14~2023-01-19",
+    "kind": "pos",
+    "days": 69,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-05-26~2023-06-27",
+    "kind": "pos",
+    "days": 21,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-06-30~2023-07-27",
+    "kind": "pos",
+    "days": 20,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-08-11~2023-09-28",
+    "kind": "pos",
+    "days": 35,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-10-13~2024-02-08",
+    "kind": "deep_neg",
+    "days": 84,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2024-07-05~2024-09-26",
+    "kind": "deep_neg",
+    "days": 58,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-02-28~2025-03-13",
+    "kind": "pos",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-03~2025-04-09",
+    "kind": "neg",
+    "days": 4,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-04-11~2025-05-06",
+    "kind": "pos",
+    "days": 15,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-05-09~2025-05-15",
+    "kind": "neg",
+    "days": 5,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-06-20~2025-07-03",
+    "kind": "neg",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2026-03-20~2026-04-09",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   }
+  ],
+  "deep_has": 1,
+  "pos_fp": 1,
+  "total_triggers": 25,
+  "gate_days": 125,
+  "PASS": false
+ },
+ {
+  "name": "k=3 T=-10 N=10 gp=0.2",
+  "rows": [
+   {
+    "seg": "2020-05-29~2020-06-18",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2021-04-16~2021-12-09",
+    "kind": "pos",
+    "days": 159,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-01-07~2022-01-28",
+    "kind": "deep_neg",
+    "days": 16,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-02-11~2022-06-08",
+    "kind": "pos",
+    "days": 78,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-06-10~2022-09-30",
+    "kind": "pos",
+    "days": 80,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-10-14~2023-01-19",
+    "kind": "pos",
+    "days": 69,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-05-26~2023-06-27",
+    "kind": "pos",
+    "days": 21,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-06-30~2023-07-27",
+    "kind": "pos",
+    "days": 20,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-08-11~2023-09-28",
+    "kind": "pos",
+    "days": 35,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-10-13~2024-02-08",
+    "kind": "deep_neg",
+    "days": 84,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2024-07-05~2024-09-26",
+    "kind": "deep_neg",
+    "days": 58,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-02-28~2025-03-13",
+    "kind": "pos",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-03~2025-04-09",
+    "kind": "neg",
+    "days": 4,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-04-11~2025-05-06",
+    "kind": "pos",
+    "days": 15,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-05-09~2025-05-15",
+    "kind": "neg",
+    "days": 5,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-06-20~2025-07-03",
+    "kind": "neg",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2026-03-20~2026-04-09",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   }
+  ],
+  "deep_has": 1,
+  "pos_fp": 1,
+  "total_triggers": 21,
+  "gate_days": 210,
+  "PASS": false
+ },
+ {
+  "name": "k=3 T=-10 N=10 gp=0.5",
+  "rows": [
+   {
+    "seg": "2020-05-29~2020-06-18",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2021-04-16~2021-12-09",
+    "kind": "pos",
+    "days": 159,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-01-07~2022-01-28",
+    "kind": "deep_neg",
+    "days": 16,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-02-11~2022-06-08",
+    "kind": "pos",
+    "days": 78,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-06-10~2022-09-30",
+    "kind": "pos",
+    "days": 80,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-10-14~2023-01-19",
+    "kind": "pos",
+    "days": 69,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-05-26~2023-06-27",
+    "kind": "pos",
+    "days": 21,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-06-30~2023-07-27",
+    "kind": "pos",
+    "days": 20,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-08-11~2023-09-28",
+    "kind": "pos",
+    "days": 35,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-10-13~2024-02-08",
+    "kind": "deep_neg",
+    "days": 84,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2024-07-05~2024-09-26",
+    "kind": "deep_neg",
+    "days": 58,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-02-28~2025-03-13",
+    "kind": "pos",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-03~2025-04-09",
+    "kind": "neg",
+    "days": 4,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-04-11~2025-05-06",
+    "kind": "pos",
+    "days": 15,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-05-09~2025-05-15",
+    "kind": "neg",
+    "days": 5,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-06-20~2025-07-03",
+    "kind": "neg",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2026-03-20~2026-04-09",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   }
+  ],
+  "deep_has": 1,
+  "pos_fp": 1,
+  "total_triggers": 21,
+  "gate_days": 210,
+  "PASS": false
+ },
+ {
+  "name": "k=3 T=-10 N=20 gp=0.2",
+  "rows": [
+   {
+    "seg": "2020-05-29~2020-06-18",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2021-04-16~2021-12-09",
+    "kind": "pos",
+    "days": 159,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-01-07~2022-01-28",
+    "kind": "deep_neg",
+    "days": 16,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-02-11~2022-06-08",
+    "kind": "pos",
+    "days": 78,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-06-10~2022-09-30",
+    "kind": "pos",
+    "days": 80,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-10-14~2023-01-19",
+    "kind": "pos",
+    "days": 69,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-05-26~2023-06-27",
+    "kind": "pos",
+    "days": 21,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-06-30~2023-07-27",
+    "kind": "pos",
+    "days": 20,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-08-11~2023-09-28",
+    "kind": "pos",
+    "days": 35,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-10-13~2024-02-08",
+    "kind": "deep_neg",
+    "days": 84,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2024-07-05~2024-09-26",
+    "kind": "deep_neg",
+    "days": 58,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-02-28~2025-03-13",
+    "kind": "pos",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-03~2025-04-09",
+    "kind": "neg",
+    "days": 4,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-04-11~2025-05-06",
+    "kind": "pos",
+    "days": 15,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-05-09~2025-05-15",
+    "kind": "neg",
+    "days": 5,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-06-20~2025-07-03",
+    "kind": "neg",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2026-03-20~2026-04-09",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   }
+  ],
+  "deep_has": 1,
+  "pos_fp": 1,
+  "total_triggers": 19,
+  "gate_days": 380,
+  "PASS": false
+ },
+ {
+  "name": "k=3 T=-10 N=20 gp=0.5",
+  "rows": [
+   {
+    "seg": "2020-05-29~2020-06-18",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2021-04-16~2021-12-09",
+    "kind": "pos",
+    "days": 159,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-01-07~2022-01-28",
+    "kind": "deep_neg",
+    "days": 16,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-02-11~2022-06-08",
+    "kind": "pos",
+    "days": 78,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-06-10~2022-09-30",
+    "kind": "pos",
+    "days": 80,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-10-14~2023-01-19",
+    "kind": "pos",
+    "days": 69,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-05-26~2023-06-27",
+    "kind": "pos",
+    "days": 21,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-06-30~2023-07-27",
+    "kind": "pos",
+    "days": 20,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-08-11~2023-09-28",
+    "kind": "pos",
+    "days": 35,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-10-13~2024-02-08",
+    "kind": "deep_neg",
+    "days": 84,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2024-07-05~2024-09-26",
+    "kind": "deep_neg",
+    "days": 58,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-02-28~2025-03-13",
+    "kind": "pos",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-03~2025-04-09",
+    "kind": "neg",
+    "days": 4,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-04-11~2025-05-06",
+    "kind": "pos",
+    "days": 15,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-05-09~2025-05-15",
+    "kind": "neg",
+    "days": 5,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-06-20~2025-07-03",
+    "kind": "neg",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2026-03-20~2026-04-09",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   }
+  ],
+  "deep_has": 1,
+  "pos_fp": 1,
+  "total_triggers": 19,
+  "gate_days": 380,
+  "PASS": false
+ },
+ {
+  "name": "k=3 T=-12 N=5 gp=0.2",
+  "rows": [
+   {
+    "seg": "2020-05-29~2020-06-18",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2021-04-16~2021-12-09",
+    "kind": "pos",
+    "days": 159,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-01-07~2022-01-28",
+    "kind": "deep_neg",
+    "days": 16,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-02-11~2022-06-08",
+    "kind": "pos",
+    "days": 78,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-06-10~2022-09-30",
+    "kind": "pos",
+    "days": 80,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-10-14~2023-01-19",
+    "kind": "pos",
+    "days": 69,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-05-26~2023-06-27",
+    "kind": "pos",
+    "days": 21,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-06-30~2023-07-27",
+    "kind": "pos",
+    "days": 20,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-08-11~2023-09-28",
+    "kind": "pos",
+    "days": 35,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-10-13~2024-02-08",
+    "kind": "deep_neg",
+    "days": 84,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2024-07-05~2024-09-26",
+    "kind": "deep_neg",
+    "days": 58,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-02-28~2025-03-13",
+    "kind": "pos",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-03~2025-04-09",
+    "kind": "neg",
+    "days": 4,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-04-11~2025-05-06",
+    "kind": "pos",
+    "days": 15,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-05-09~2025-05-15",
+    "kind": "neg",
+    "days": 5,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-06-20~2025-07-03",
+    "kind": "neg",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2026-03-20~2026-04-09",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   }
+  ],
+  "deep_has": 1,
+  "pos_fp": 1,
+  "total_triggers": 24,
+  "gate_days": 120,
+  "PASS": false
+ },
+ {
+  "name": "k=3 T=-12 N=5 gp=0.5",
+  "rows": [
+   {
+    "seg": "2020-05-29~2020-06-18",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2021-04-16~2021-12-09",
+    "kind": "pos",
+    "days": 159,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-01-07~2022-01-28",
+    "kind": "deep_neg",
+    "days": 16,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-02-11~2022-06-08",
+    "kind": "pos",
+    "days": 78,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-06-10~2022-09-30",
+    "kind": "pos",
+    "days": 80,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-10-14~2023-01-19",
+    "kind": "pos",
+    "days": 69,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-05-26~2023-06-27",
+    "kind": "pos",
+    "days": 21,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-06-30~2023-07-27",
+    "kind": "pos",
+    "days": 20,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-08-11~2023-09-28",
+    "kind": "pos",
+    "days": 35,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-10-13~2024-02-08",
+    "kind": "deep_neg",
+    "days": 84,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2024-07-05~2024-09-26",
+    "kind": "deep_neg",
+    "days": 58,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-02-28~2025-03-13",
+    "kind": "pos",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-03~2025-04-09",
+    "kind": "neg",
+    "days": 4,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-04-11~2025-05-06",
+    "kind": "pos",
+    "days": 15,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-05-09~2025-05-15",
+    "kind": "neg",
+    "days": 5,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-06-20~2025-07-03",
+    "kind": "neg",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2026-03-20~2026-04-09",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   }
+  ],
+  "deep_has": 1,
+  "pos_fp": 1,
+  "total_triggers": 24,
+  "gate_days": 120,
+  "PASS": false
+ },
+ {
+  "name": "k=3 T=-12 N=10 gp=0.2",
+  "rows": [
+   {
+    "seg": "2020-05-29~2020-06-18",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2021-04-16~2021-12-09",
+    "kind": "pos",
+    "days": 159,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-01-07~2022-01-28",
+    "kind": "deep_neg",
+    "days": 16,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-02-11~2022-06-08",
+    "kind": "pos",
+    "days": 78,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-06-10~2022-09-30",
+    "kind": "pos",
+    "days": 80,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-10-14~2023-01-19",
+    "kind": "pos",
+    "days": 69,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-05-26~2023-06-27",
+    "kind": "pos",
+    "days": 21,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-06-30~2023-07-27",
+    "kind": "pos",
+    "days": 20,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-08-11~2023-09-28",
+    "kind": "pos",
+    "days": 35,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-10-13~2024-02-08",
+    "kind": "deep_neg",
+    "days": 84,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2024-07-05~2024-09-26",
+    "kind": "deep_neg",
+    "days": 58,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-02-28~2025-03-13",
+    "kind": "pos",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-03~2025-04-09",
+    "kind": "neg",
+    "days": 4,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-04-11~2025-05-06",
+    "kind": "pos",
+    "days": 15,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-05-09~2025-05-15",
+    "kind": "neg",
+    "days": 5,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-06-20~2025-07-03",
+    "kind": "neg",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2026-03-20~2026-04-09",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   }
+  ],
+  "deep_has": 1,
+  "pos_fp": 1,
+  "total_triggers": 21,
+  "gate_days": 210,
+  "PASS": false
+ },
+ {
+  "name": "k=3 T=-12 N=10 gp=0.5",
+  "rows": [
+   {
+    "seg": "2020-05-29~2020-06-18",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2021-04-16~2021-12-09",
+    "kind": "pos",
+    "days": 159,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-01-07~2022-01-28",
+    "kind": "deep_neg",
+    "days": 16,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-02-11~2022-06-08",
+    "kind": "pos",
+    "days": 78,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-06-10~2022-09-30",
+    "kind": "pos",
+    "days": 80,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-10-14~2023-01-19",
+    "kind": "pos",
+    "days": 69,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-05-26~2023-06-27",
+    "kind": "pos",
+    "days": 21,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-06-30~2023-07-27",
+    "kind": "pos",
+    "days": 20,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-08-11~2023-09-28",
+    "kind": "pos",
+    "days": 35,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-10-13~2024-02-08",
+    "kind": "deep_neg",
+    "days": 84,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2024-07-05~2024-09-26",
+    "kind": "deep_neg",
+    "days": 58,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-02-28~2025-03-13",
+    "kind": "pos",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-03~2025-04-09",
+    "kind": "neg",
+    "days": 4,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-04-11~2025-05-06",
+    "kind": "pos",
+    "days": 15,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-05-09~2025-05-15",
+    "kind": "neg",
+    "days": 5,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-06-20~2025-07-03",
+    "kind": "neg",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2026-03-20~2026-04-09",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   }
+  ],
+  "deep_has": 1,
+  "pos_fp": 1,
+  "total_triggers": 21,
+  "gate_days": 210,
+  "PASS": false
+ },
+ {
+  "name": "k=3 T=-12 N=20 gp=0.2",
+  "rows": [
+   {
+    "seg": "2020-05-29~2020-06-18",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2021-04-16~2021-12-09",
+    "kind": "pos",
+    "days": 159,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-01-07~2022-01-28",
+    "kind": "deep_neg",
+    "days": 16,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-02-11~2022-06-08",
+    "kind": "pos",
+    "days": 78,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-06-10~2022-09-30",
+    "kind": "pos",
+    "days": 80,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-10-14~2023-01-19",
+    "kind": "pos",
+    "days": 69,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-05-26~2023-06-27",
+    "kind": "pos",
+    "days": 21,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-06-30~2023-07-27",
+    "kind": "pos",
+    "days": 20,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-08-11~2023-09-28",
+    "kind": "pos",
+    "days": 35,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-10-13~2024-02-08",
+    "kind": "deep_neg",
+    "days": 84,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2024-07-05~2024-09-26",
+    "kind": "deep_neg",
+    "days": 58,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-02-28~2025-03-13",
+    "kind": "pos",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-03~2025-04-09",
+    "kind": "neg",
+    "days": 4,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-04-11~2025-05-06",
+    "kind": "pos",
+    "days": 15,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-05-09~2025-05-15",
+    "kind": "neg",
+    "days": 5,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-06-20~2025-07-03",
+    "kind": "neg",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2026-03-20~2026-04-09",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   }
+  ],
+  "deep_has": 1,
+  "pos_fp": 1,
+  "total_triggers": 19,
+  "gate_days": 380,
+  "PASS": false
+ },
+ {
+  "name": "k=3 T=-12 N=20 gp=0.5",
+  "rows": [
+   {
+    "seg": "2020-05-29~2020-06-18",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2021-04-16~2021-12-09",
+    "kind": "pos",
+    "days": 159,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-01-07~2022-01-28",
+    "kind": "deep_neg",
+    "days": 16,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-02-11~2022-06-08",
+    "kind": "pos",
+    "days": 78,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-06-10~2022-09-30",
+    "kind": "pos",
+    "days": 80,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-10-14~2023-01-19",
+    "kind": "pos",
+    "days": 69,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-05-26~2023-06-27",
+    "kind": "pos",
+    "days": 21,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-06-30~2023-07-27",
+    "kind": "pos",
+    "days": 20,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-08-11~2023-09-28",
+    "kind": "pos",
+    "days": 35,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-10-13~2024-02-08",
+    "kind": "deep_neg",
+    "days": 84,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2024-07-05~2024-09-26",
+    "kind": "deep_neg",
+    "days": 58,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-02-28~2025-03-13",
+    "kind": "pos",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-03~2025-04-09",
+    "kind": "neg",
+    "days": 4,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-04-11~2025-05-06",
+    "kind": "pos",
+    "days": 15,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-05-09~2025-05-15",
+    "kind": "neg",
+    "days": 5,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-06-20~2025-07-03",
+    "kind": "neg",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2026-03-20~2026-04-09",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   }
+  ],
+  "deep_has": 1,
+  "pos_fp": 1,
+  "total_triggers": 19,
+  "gate_days": 380,
+  "PASS": false
+ },
+ {
+  "name": "k=5 T=-8 N=5 gp=0.2",
+  "rows": [
+   {
+    "seg": "2020-05-29~2020-06-18",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2021-04-16~2021-12-09",
+    "kind": "pos",
+    "days": 159,
+    "triggers": 4,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-01-07~2022-01-28",
+    "kind": "deep_neg",
+    "days": 16,
+    "triggers": 2,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-02-11~2022-06-08",
+    "kind": "pos",
+    "days": 78,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-06-10~2022-09-30",
+    "kind": "pos",
+    "days": 80,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-10-14~2023-01-19",
+    "kind": "pos",
+    "days": 69,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-05-26~2023-06-27",
+    "kind": "pos",
+    "days": 21,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-06-30~2023-07-27",
+    "kind": "pos",
+    "days": 20,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-08-11~2023-09-28",
+    "kind": "pos",
+    "days": 35,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-10-13~2024-02-08",
+    "kind": "deep_neg",
+    "days": 84,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2024-07-05~2024-09-26",
+    "kind": "deep_neg",
+    "days": 58,
+    "triggers": 2,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-02-28~2025-03-13",
+    "kind": "pos",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-03~2025-04-09",
+    "kind": "neg",
+    "days": 4,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-11~2025-05-06",
+    "kind": "pos",
+    "days": 15,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-05-09~2025-05-15",
+    "kind": "neg",
+    "days": 5,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-06-20~2025-07-03",
+    "kind": "neg",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2026-03-20~2026-04-09",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   }
+  ],
+  "deep_has": 3,
+  "pos_fp": 2,
+  "total_triggers": 45,
+  "gate_days": 225,
+  "PASS": false
+ },
+ {
+  "name": "k=5 T=-8 N=5 gp=0.5",
+  "rows": [
+   {
+    "seg": "2020-05-29~2020-06-18",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2021-04-16~2021-12-09",
+    "kind": "pos",
+    "days": 159,
+    "triggers": 4,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-01-07~2022-01-28",
+    "kind": "deep_neg",
+    "days": 16,
+    "triggers": 2,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-02-11~2022-06-08",
+    "kind": "pos",
+    "days": 78,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-06-10~2022-09-30",
+    "kind": "pos",
+    "days": 80,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-10-14~2023-01-19",
+    "kind": "pos",
+    "days": 69,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-05-26~2023-06-27",
+    "kind": "pos",
+    "days": 21,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-06-30~2023-07-27",
+    "kind": "pos",
+    "days": 20,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-08-11~2023-09-28",
+    "kind": "pos",
+    "days": 35,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-10-13~2024-02-08",
+    "kind": "deep_neg",
+    "days": 84,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2024-07-05~2024-09-26",
+    "kind": "deep_neg",
+    "days": 58,
+    "triggers": 2,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-02-28~2025-03-13",
+    "kind": "pos",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-03~2025-04-09",
+    "kind": "neg",
+    "days": 4,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-11~2025-05-06",
+    "kind": "pos",
+    "days": 15,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-05-09~2025-05-15",
+    "kind": "neg",
+    "days": 5,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-06-20~2025-07-03",
+    "kind": "neg",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2026-03-20~2026-04-09",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   }
+  ],
+  "deep_has": 3,
+  "pos_fp": 2,
+  "total_triggers": 45,
+  "gate_days": 225,
+  "PASS": false
+ },
+ {
+  "name": "k=5 T=-8 N=10 gp=0.2",
+  "rows": [
+   {
+    "seg": "2020-05-29~2020-06-18",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2021-04-16~2021-12-09",
+    "kind": "pos",
+    "days": 159,
+    "triggers": 3,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-01-07~2022-01-28",
+    "kind": "deep_neg",
+    "days": 16,
+    "triggers": 2,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-02-11~2022-06-08",
+    "kind": "pos",
+    "days": 78,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-06-10~2022-09-30",
+    "kind": "pos",
+    "days": 80,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-10-14~2023-01-19",
+    "kind": "pos",
+    "days": 69,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-05-26~2023-06-27",
+    "kind": "pos",
+    "days": 21,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-06-30~2023-07-27",
+    "kind": "pos",
+    "days": 20,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-08-11~2023-09-28",
+    "kind": "pos",
+    "days": 35,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-10-13~2024-02-08",
+    "kind": "deep_neg",
+    "days": 84,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2024-07-05~2024-09-26",
+    "kind": "deep_neg",
+    "days": 58,
+    "triggers": 2,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-02-28~2025-03-13",
+    "kind": "pos",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-03~2025-04-09",
+    "kind": "neg",
+    "days": 4,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-11~2025-05-06",
+    "kind": "pos",
+    "days": 15,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-05-09~2025-05-15",
+    "kind": "neg",
+    "days": 5,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-06-20~2025-07-03",
+    "kind": "neg",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2026-03-20~2026-04-09",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   }
+  ],
+  "deep_has": 3,
+  "pos_fp": 2,
+  "total_triggers": 39,
+  "gate_days": 389,
+  "PASS": false
+ },
+ {
+  "name": "k=5 T=-8 N=10 gp=0.5",
+  "rows": [
+   {
+    "seg": "2020-05-29~2020-06-18",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2021-04-16~2021-12-09",
+    "kind": "pos",
+    "days": 159,
+    "triggers": 3,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-01-07~2022-01-28",
+    "kind": "deep_neg",
+    "days": 16,
+    "triggers": 2,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-02-11~2022-06-08",
+    "kind": "pos",
+    "days": 78,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-06-10~2022-09-30",
+    "kind": "pos",
+    "days": 80,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-10-14~2023-01-19",
+    "kind": "pos",
+    "days": 69,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-05-26~2023-06-27",
+    "kind": "pos",
+    "days": 21,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-06-30~2023-07-27",
+    "kind": "pos",
+    "days": 20,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-08-11~2023-09-28",
+    "kind": "pos",
+    "days": 35,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-10-13~2024-02-08",
+    "kind": "deep_neg",
+    "days": 84,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2024-07-05~2024-09-26",
+    "kind": "deep_neg",
+    "days": 58,
+    "triggers": 2,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-02-28~2025-03-13",
+    "kind": "pos",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-03~2025-04-09",
+    "kind": "neg",
+    "days": 4,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-11~2025-05-06",
+    "kind": "pos",
+    "days": 15,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-05-09~2025-05-15",
+    "kind": "neg",
+    "days": 5,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-06-20~2025-07-03",
+    "kind": "neg",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2026-03-20~2026-04-09",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   }
+  ],
+  "deep_has": 3,
+  "pos_fp": 2,
+  "total_triggers": 39,
+  "gate_days": 389,
+  "PASS": false
+ },
+ {
+  "name": "k=5 T=-8 N=20 gp=0.2",
+  "rows": [
+   {
+    "seg": "2020-05-29~2020-06-18",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2021-04-16~2021-12-09",
+    "kind": "pos",
+    "days": 159,
+    "triggers": 3,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-01-07~2022-01-28",
+    "kind": "deep_neg",
+    "days": 16,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-02-11~2022-06-08",
+    "kind": "pos",
+    "days": 78,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-06-10~2022-09-30",
+    "kind": "pos",
+    "days": 80,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-10-14~2023-01-19",
+    "kind": "pos",
+    "days": 69,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-05-26~2023-06-27",
+    "kind": "pos",
+    "days": 21,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-06-30~2023-07-27",
+    "kind": "pos",
+    "days": 20,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-08-11~2023-09-28",
+    "kind": "pos",
+    "days": 35,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-10-13~2024-02-08",
+    "kind": "deep_neg",
+    "days": 84,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2024-07-05~2024-09-26",
+    "kind": "deep_neg",
+    "days": 58,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-02-28~2025-03-13",
+    "kind": "pos",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-03~2025-04-09",
+    "kind": "neg",
+    "days": 4,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-11~2025-05-06",
+    "kind": "pos",
+    "days": 15,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-05-09~2025-05-15",
+    "kind": "neg",
+    "days": 5,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-06-20~2025-07-03",
+    "kind": "neg",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2026-03-20~2026-04-09",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   }
+  ],
+  "deep_has": 3,
+  "pos_fp": 2,
+  "total_triggers": 30,
+  "gate_days": 589,
+  "PASS": false
+ },
+ {
+  "name": "k=5 T=-8 N=20 gp=0.5",
+  "rows": [
+   {
+    "seg": "2020-05-29~2020-06-18",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2021-04-16~2021-12-09",
+    "kind": "pos",
+    "days": 159,
+    "triggers": 3,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-01-07~2022-01-28",
+    "kind": "deep_neg",
+    "days": 16,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-02-11~2022-06-08",
+    "kind": "pos",
+    "days": 78,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-06-10~2022-09-30",
+    "kind": "pos",
+    "days": 80,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-10-14~2023-01-19",
+    "kind": "pos",
+    "days": 69,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-05-26~2023-06-27",
+    "kind": "pos",
+    "days": 21,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-06-30~2023-07-27",
+    "kind": "pos",
+    "days": 20,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-08-11~2023-09-28",
+    "kind": "pos",
+    "days": 35,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-10-13~2024-02-08",
+    "kind": "deep_neg",
+    "days": 84,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2024-07-05~2024-09-26",
+    "kind": "deep_neg",
+    "days": 58,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-02-28~2025-03-13",
+    "kind": "pos",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-03~2025-04-09",
+    "kind": "neg",
+    "days": 4,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-11~2025-05-06",
+    "kind": "pos",
+    "days": 15,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-05-09~2025-05-15",
+    "kind": "neg",
+    "days": 5,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-06-20~2025-07-03",
+    "kind": "neg",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2026-03-20~2026-04-09",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   }
+  ],
+  "deep_has": 3,
+  "pos_fp": 2,
+  "total_triggers": 30,
+  "gate_days": 589,
+  "PASS": false
+ },
+ {
+  "name": "k=5 T=-10 N=5 gp=0.2",
+  "rows": [
+   {
+    "seg": "2020-05-29~2020-06-18",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2021-04-16~2021-12-09",
+    "kind": "pos",
+    "days": 159,
+    "triggers": 2,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-01-07~2022-01-28",
+    "kind": "deep_neg",
+    "days": 16,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-02-11~2022-06-08",
+    "kind": "pos",
+    "days": 78,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-06-10~2022-09-30",
+    "kind": "pos",
+    "days": 80,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-10-14~2023-01-19",
+    "kind": "pos",
+    "days": 69,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-05-26~2023-06-27",
+    "kind": "pos",
+    "days": 21,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-06-30~2023-07-27",
+    "kind": "pos",
+    "days": 20,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-08-11~2023-09-28",
+    "kind": "pos",
+    "days": 35,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-10-13~2024-02-08",
+    "kind": "deep_neg",
+    "days": 84,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2024-07-05~2024-09-26",
+    "kind": "deep_neg",
+    "days": 58,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-02-28~2025-03-13",
+    "kind": "pos",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-03~2025-04-09",
+    "kind": "neg",
+    "days": 4,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-11~2025-05-06",
+    "kind": "pos",
+    "days": 15,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-05-09~2025-05-15",
+    "kind": "neg",
+    "days": 5,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-06-20~2025-07-03",
+    "kind": "neg",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2026-03-20~2026-04-09",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   }
+  ],
+  "deep_has": 1,
+  "pos_fp": 2,
+  "total_triggers": 29,
+  "gate_days": 145,
+  "PASS": false
+ },
+ {
+  "name": "k=5 T=-10 N=5 gp=0.5",
+  "rows": [
+   {
+    "seg": "2020-05-29~2020-06-18",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2021-04-16~2021-12-09",
+    "kind": "pos",
+    "days": 159,
+    "triggers": 2,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-01-07~2022-01-28",
+    "kind": "deep_neg",
+    "days": 16,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-02-11~2022-06-08",
+    "kind": "pos",
+    "days": 78,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-06-10~2022-09-30",
+    "kind": "pos",
+    "days": 80,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-10-14~2023-01-19",
+    "kind": "pos",
+    "days": 69,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-05-26~2023-06-27",
+    "kind": "pos",
+    "days": 21,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-06-30~2023-07-27",
+    "kind": "pos",
+    "days": 20,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-08-11~2023-09-28",
+    "kind": "pos",
+    "days": 35,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-10-13~2024-02-08",
+    "kind": "deep_neg",
+    "days": 84,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2024-07-05~2024-09-26",
+    "kind": "deep_neg",
+    "days": 58,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-02-28~2025-03-13",
+    "kind": "pos",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-03~2025-04-09",
+    "kind": "neg",
+    "days": 4,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-11~2025-05-06",
+    "kind": "pos",
+    "days": 15,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-05-09~2025-05-15",
+    "kind": "neg",
+    "days": 5,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-06-20~2025-07-03",
+    "kind": "neg",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2026-03-20~2026-04-09",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   }
+  ],
+  "deep_has": 1,
+  "pos_fp": 2,
+  "total_triggers": 29,
+  "gate_days": 145,
+  "PASS": false
+ },
+ {
+  "name": "k=5 T=-10 N=10 gp=0.2",
+  "rows": [
+   {
+    "seg": "2020-05-29~2020-06-18",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2021-04-16~2021-12-09",
+    "kind": "pos",
+    "days": 159,
+    "triggers": 2,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-01-07~2022-01-28",
+    "kind": "deep_neg",
+    "days": 16,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-02-11~2022-06-08",
+    "kind": "pos",
+    "days": 78,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-06-10~2022-09-30",
+    "kind": "pos",
+    "days": 80,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-10-14~2023-01-19",
+    "kind": "pos",
+    "days": 69,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-05-26~2023-06-27",
+    "kind": "pos",
+    "days": 21,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-06-30~2023-07-27",
+    "kind": "pos",
+    "days": 20,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-08-11~2023-09-28",
+    "kind": "pos",
+    "days": 35,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-10-13~2024-02-08",
+    "kind": "deep_neg",
+    "days": 84,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2024-07-05~2024-09-26",
+    "kind": "deep_neg",
+    "days": 58,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-02-28~2025-03-13",
+    "kind": "pos",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-03~2025-04-09",
+    "kind": "neg",
+    "days": 4,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-11~2025-05-06",
+    "kind": "pos",
+    "days": 15,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-05-09~2025-05-15",
+    "kind": "neg",
+    "days": 5,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-06-20~2025-07-03",
+    "kind": "neg",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2026-03-20~2026-04-09",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   }
+  ],
+  "deep_has": 1,
+  "pos_fp": 2,
+  "total_triggers": 29,
+  "gate_days": 290,
+  "PASS": false
+ },
+ {
+  "name": "k=5 T=-10 N=10 gp=0.5",
+  "rows": [
+   {
+    "seg": "2020-05-29~2020-06-18",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2021-04-16~2021-12-09",
+    "kind": "pos",
+    "days": 159,
+    "triggers": 2,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-01-07~2022-01-28",
+    "kind": "deep_neg",
+    "days": 16,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-02-11~2022-06-08",
+    "kind": "pos",
+    "days": 78,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-06-10~2022-09-30",
+    "kind": "pos",
+    "days": 80,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-10-14~2023-01-19",
+    "kind": "pos",
+    "days": 69,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-05-26~2023-06-27",
+    "kind": "pos",
+    "days": 21,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-06-30~2023-07-27",
+    "kind": "pos",
+    "days": 20,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-08-11~2023-09-28",
+    "kind": "pos",
+    "days": 35,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-10-13~2024-02-08",
+    "kind": "deep_neg",
+    "days": 84,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2024-07-05~2024-09-26",
+    "kind": "deep_neg",
+    "days": 58,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-02-28~2025-03-13",
+    "kind": "pos",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-03~2025-04-09",
+    "kind": "neg",
+    "days": 4,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-11~2025-05-06",
+    "kind": "pos",
+    "days": 15,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-05-09~2025-05-15",
+    "kind": "neg",
+    "days": 5,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-06-20~2025-07-03",
+    "kind": "neg",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2026-03-20~2026-04-09",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   }
+  ],
+  "deep_has": 1,
+  "pos_fp": 2,
+  "total_triggers": 29,
+  "gate_days": 290,
+  "PASS": false
+ },
+ {
+  "name": "k=5 T=-10 N=20 gp=0.2",
+  "rows": [
+   {
+    "seg": "2020-05-29~2020-06-18",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2021-04-16~2021-12-09",
+    "kind": "pos",
+    "days": 159,
+    "triggers": 2,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-01-07~2022-01-28",
+    "kind": "deep_neg",
+    "days": 16,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-02-11~2022-06-08",
+    "kind": "pos",
+    "days": 78,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-06-10~2022-09-30",
+    "kind": "pos",
+    "days": 80,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-10-14~2023-01-19",
+    "kind": "pos",
+    "days": 69,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-05-26~2023-06-27",
+    "kind": "pos",
+    "days": 21,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-06-30~2023-07-27",
+    "kind": "pos",
+    "days": 20,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-08-11~2023-09-28",
+    "kind": "pos",
+    "days": 35,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-10-13~2024-02-08",
+    "kind": "deep_neg",
+    "days": 84,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2024-07-05~2024-09-26",
+    "kind": "deep_neg",
+    "days": 58,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-02-28~2025-03-13",
+    "kind": "pos",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-03~2025-04-09",
+    "kind": "neg",
+    "days": 4,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-11~2025-05-06",
+    "kind": "pos",
+    "days": 15,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-05-09~2025-05-15",
+    "kind": "neg",
+    "days": 5,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-06-20~2025-07-03",
+    "kind": "neg",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2026-03-20~2026-04-09",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   }
+  ],
+  "deep_has": 1,
+  "pos_fp": 2,
+  "total_triggers": 23,
+  "gate_days": 460,
+  "PASS": false
+ },
+ {
+  "name": "k=5 T=-10 N=20 gp=0.5",
+  "rows": [
+   {
+    "seg": "2020-05-29~2020-06-18",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2021-04-16~2021-12-09",
+    "kind": "pos",
+    "days": 159,
+    "triggers": 2,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-01-07~2022-01-28",
+    "kind": "deep_neg",
+    "days": 16,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-02-11~2022-06-08",
+    "kind": "pos",
+    "days": 78,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-06-10~2022-09-30",
+    "kind": "pos",
+    "days": 80,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-10-14~2023-01-19",
+    "kind": "pos",
+    "days": 69,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-05-26~2023-06-27",
+    "kind": "pos",
+    "days": 21,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-06-30~2023-07-27",
+    "kind": "pos",
+    "days": 20,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-08-11~2023-09-28",
+    "kind": "pos",
+    "days": 35,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-10-13~2024-02-08",
+    "kind": "deep_neg",
+    "days": 84,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2024-07-05~2024-09-26",
+    "kind": "deep_neg",
+    "days": 58,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-02-28~2025-03-13",
+    "kind": "pos",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-03~2025-04-09",
+    "kind": "neg",
+    "days": 4,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-11~2025-05-06",
+    "kind": "pos",
+    "days": 15,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-05-09~2025-05-15",
+    "kind": "neg",
+    "days": 5,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-06-20~2025-07-03",
+    "kind": "neg",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2026-03-20~2026-04-09",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   }
+  ],
+  "deep_has": 1,
+  "pos_fp": 2,
+  "total_triggers": 23,
+  "gate_days": 460,
+  "PASS": false
+ },
+ {
+  "name": "k=5 T=-12 N=5 gp=0.2",
+  "rows": [
+   {
+    "seg": "2020-05-29~2020-06-18",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2021-04-16~2021-12-09",
+    "kind": "pos",
+    "days": 159,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-01-07~2022-01-28",
+    "kind": "deep_neg",
+    "days": 16,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-02-11~2022-06-08",
+    "kind": "pos",
+    "days": 78,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-06-10~2022-09-30",
+    "kind": "pos",
+    "days": 80,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-10-14~2023-01-19",
+    "kind": "pos",
+    "days": 69,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-05-26~2023-06-27",
+    "kind": "pos",
+    "days": 21,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-06-30~2023-07-27",
+    "kind": "pos",
+    "days": 20,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-08-11~2023-09-28",
+    "kind": "pos",
+    "days": 35,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-10-13~2024-02-08",
+    "kind": "deep_neg",
+    "days": 84,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2024-07-05~2024-09-26",
+    "kind": "deep_neg",
+    "days": 58,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-02-28~2025-03-13",
+    "kind": "pos",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-03~2025-04-09",
+    "kind": "neg",
+    "days": 4,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-11~2025-05-06",
+    "kind": "pos",
+    "days": 15,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-05-09~2025-05-15",
+    "kind": "neg",
+    "days": 5,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-06-20~2025-07-03",
+    "kind": "neg",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2026-03-20~2026-04-09",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   }
+  ],
+  "deep_has": 1,
+  "pos_fp": 2,
+  "total_triggers": 21,
+  "gate_days": 105,
+  "PASS": false
+ },
+ {
+  "name": "k=5 T=-12 N=5 gp=0.5",
+  "rows": [
+   {
+    "seg": "2020-05-29~2020-06-18",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2021-04-16~2021-12-09",
+    "kind": "pos",
+    "days": 159,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-01-07~2022-01-28",
+    "kind": "deep_neg",
+    "days": 16,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-02-11~2022-06-08",
+    "kind": "pos",
+    "days": 78,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-06-10~2022-09-30",
+    "kind": "pos",
+    "days": 80,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-10-14~2023-01-19",
+    "kind": "pos",
+    "days": 69,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-05-26~2023-06-27",
+    "kind": "pos",
+    "days": 21,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-06-30~2023-07-27",
+    "kind": "pos",
+    "days": 20,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-08-11~2023-09-28",
+    "kind": "pos",
+    "days": 35,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-10-13~2024-02-08",
+    "kind": "deep_neg",
+    "days": 84,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2024-07-05~2024-09-26",
+    "kind": "deep_neg",
+    "days": 58,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-02-28~2025-03-13",
+    "kind": "pos",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-03~2025-04-09",
+    "kind": "neg",
+    "days": 4,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-11~2025-05-06",
+    "kind": "pos",
+    "days": 15,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-05-09~2025-05-15",
+    "kind": "neg",
+    "days": 5,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-06-20~2025-07-03",
+    "kind": "neg",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2026-03-20~2026-04-09",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   }
+  ],
+  "deep_has": 1,
+  "pos_fp": 2,
+  "total_triggers": 21,
+  "gate_days": 105,
+  "PASS": false
+ },
+ {
+  "name": "k=5 T=-12 N=10 gp=0.2",
+  "rows": [
+   {
+    "seg": "2020-05-29~2020-06-18",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2021-04-16~2021-12-09",
+    "kind": "pos",
+    "days": 159,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-01-07~2022-01-28",
+    "kind": "deep_neg",
+    "days": 16,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-02-11~2022-06-08",
+    "kind": "pos",
+    "days": 78,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-06-10~2022-09-30",
+    "kind": "pos",
+    "days": 80,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-10-14~2023-01-19",
+    "kind": "pos",
+    "days": 69,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-05-26~2023-06-27",
+    "kind": "pos",
+    "days": 21,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-06-30~2023-07-27",
+    "kind": "pos",
+    "days": 20,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-08-11~2023-09-28",
+    "kind": "pos",
+    "days": 35,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-10-13~2024-02-08",
+    "kind": "deep_neg",
+    "days": 84,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2024-07-05~2024-09-26",
+    "kind": "deep_neg",
+    "days": 58,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-02-28~2025-03-13",
+    "kind": "pos",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-03~2025-04-09",
+    "kind": "neg",
+    "days": 4,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-11~2025-05-06",
+    "kind": "pos",
+    "days": 15,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-05-09~2025-05-15",
+    "kind": "neg",
+    "days": 5,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-06-20~2025-07-03",
+    "kind": "neg",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2026-03-20~2026-04-09",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   }
+  ],
+  "deep_has": 1,
+  "pos_fp": 2,
+  "total_triggers": 21,
+  "gate_days": 210,
+  "PASS": false
+ },
+ {
+  "name": "k=5 T=-12 N=10 gp=0.5",
+  "rows": [
+   {
+    "seg": "2020-05-29~2020-06-18",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2021-04-16~2021-12-09",
+    "kind": "pos",
+    "days": 159,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-01-07~2022-01-28",
+    "kind": "deep_neg",
+    "days": 16,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-02-11~2022-06-08",
+    "kind": "pos",
+    "days": 78,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-06-10~2022-09-30",
+    "kind": "pos",
+    "days": 80,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-10-14~2023-01-19",
+    "kind": "pos",
+    "days": 69,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-05-26~2023-06-27",
+    "kind": "pos",
+    "days": 21,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-06-30~2023-07-27",
+    "kind": "pos",
+    "days": 20,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-08-11~2023-09-28",
+    "kind": "pos",
+    "days": 35,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-10-13~2024-02-08",
+    "kind": "deep_neg",
+    "days": 84,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2024-07-05~2024-09-26",
+    "kind": "deep_neg",
+    "days": 58,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-02-28~2025-03-13",
+    "kind": "pos",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-03~2025-04-09",
+    "kind": "neg",
+    "days": 4,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-11~2025-05-06",
+    "kind": "pos",
+    "days": 15,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-05-09~2025-05-15",
+    "kind": "neg",
+    "days": 5,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-06-20~2025-07-03",
+    "kind": "neg",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2026-03-20~2026-04-09",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   }
+  ],
+  "deep_has": 1,
+  "pos_fp": 2,
+  "total_triggers": 21,
+  "gate_days": 210,
+  "PASS": false
+ },
+ {
+  "name": "k=5 T=-12 N=20 gp=0.2",
+  "rows": [
+   {
+    "seg": "2020-05-29~2020-06-18",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2021-04-16~2021-12-09",
+    "kind": "pos",
+    "days": 159,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-01-07~2022-01-28",
+    "kind": "deep_neg",
+    "days": 16,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-02-11~2022-06-08",
+    "kind": "pos",
+    "days": 78,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-06-10~2022-09-30",
+    "kind": "pos",
+    "days": 80,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-10-14~2023-01-19",
+    "kind": "pos",
+    "days": 69,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-05-26~2023-06-27",
+    "kind": "pos",
+    "days": 21,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-06-30~2023-07-27",
+    "kind": "pos",
+    "days": 20,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-08-11~2023-09-28",
+    "kind": "pos",
+    "days": 35,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-10-13~2024-02-08",
+    "kind": "deep_neg",
+    "days": 84,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2024-07-05~2024-09-26",
+    "kind": "deep_neg",
+    "days": 58,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-02-28~2025-03-13",
+    "kind": "pos",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-03~2025-04-09",
+    "kind": "neg",
+    "days": 4,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-11~2025-05-06",
+    "kind": "pos",
+    "days": 15,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-05-09~2025-05-15",
+    "kind": "neg",
+    "days": 5,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-06-20~2025-07-03",
+    "kind": "neg",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2026-03-20~2026-04-09",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   }
+  ],
+  "deep_has": 1,
+  "pos_fp": 2,
+  "total_triggers": 18,
+  "gate_days": 360,
+  "PASS": false
+ },
+ {
+  "name": "k=5 T=-12 N=20 gp=0.5",
+  "rows": [
+   {
+    "seg": "2020-05-29~2020-06-18",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2021-04-16~2021-12-09",
+    "kind": "pos",
+    "days": 159,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-01-07~2022-01-28",
+    "kind": "deep_neg",
+    "days": 16,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-02-11~2022-06-08",
+    "kind": "pos",
+    "days": 78,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-06-10~2022-09-30",
+    "kind": "pos",
+    "days": 80,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-10-14~2023-01-19",
+    "kind": "pos",
+    "days": 69,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-05-26~2023-06-27",
+    "kind": "pos",
+    "days": 21,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-06-30~2023-07-27",
+    "kind": "pos",
+    "days": 20,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-08-11~2023-09-28",
+    "kind": "pos",
+    "days": 35,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-10-13~2024-02-08",
+    "kind": "deep_neg",
+    "days": 84,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2024-07-05~2024-09-26",
+    "kind": "deep_neg",
+    "days": 58,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-02-28~2025-03-13",
+    "kind": "pos",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-03~2025-04-09",
+    "kind": "neg",
+    "days": 4,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-11~2025-05-06",
+    "kind": "pos",
+    "days": 15,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-05-09~2025-05-15",
+    "kind": "neg",
+    "days": 5,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-06-20~2025-07-03",
+    "kind": "neg",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2026-03-20~2026-04-09",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   }
+  ],
+  "deep_has": 1,
+  "pos_fp": 2,
+  "total_triggers": 18,
+  "gate_days": 360,
+  "PASS": false
+ },
+ {
+  "name": "k=7 T=-8 N=5 gp=0.2",
+  "rows": [
+   {
+    "seg": "2020-05-29~2020-06-18",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2021-04-16~2021-12-09",
+    "kind": "pos",
+    "days": 159,
+    "triggers": 5,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-01-07~2022-01-28",
+    "kind": "deep_neg",
+    "days": 16,
+    "triggers": 3,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-02-11~2022-06-08",
+    "kind": "pos",
+    "days": 78,
+    "triggers": 2,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-06-10~2022-09-30",
+    "kind": "pos",
+    "days": 80,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-10-14~2023-01-19",
+    "kind": "pos",
+    "days": 69,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2023-05-26~2023-06-27",
+    "kind": "pos",
+    "days": 21,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-06-30~2023-07-27",
+    "kind": "pos",
+    "days": 20,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-08-11~2023-09-28",
+    "kind": "pos",
+    "days": 35,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-10-13~2024-02-08",
+    "kind": "deep_neg",
+    "days": 84,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2024-07-05~2024-09-26",
+    "kind": "deep_neg",
+    "days": 58,
+    "triggers": 2,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-02-28~2025-03-13",
+    "kind": "pos",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-03~2025-04-09",
+    "kind": "neg",
+    "days": 4,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-11~2025-05-06",
+    "kind": "pos",
+    "days": 15,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-05-09~2025-05-15",
+    "kind": "neg",
+    "days": 5,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-06-20~2025-07-03",
+    "kind": "neg",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2026-03-20~2026-04-09",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   }
+  ],
+  "deep_has": 3,
+  "pos_fp": 3,
+  "total_triggers": 56,
+  "gate_days": 280,
+  "PASS": false
+ },
+ {
+  "name": "k=7 T=-8 N=5 gp=0.5",
+  "rows": [
+   {
+    "seg": "2020-05-29~2020-06-18",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2021-04-16~2021-12-09",
+    "kind": "pos",
+    "days": 159,
+    "triggers": 5,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-01-07~2022-01-28",
+    "kind": "deep_neg",
+    "days": 16,
+    "triggers": 3,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-02-11~2022-06-08",
+    "kind": "pos",
+    "days": 78,
+    "triggers": 2,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-06-10~2022-09-30",
+    "kind": "pos",
+    "days": 80,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-10-14~2023-01-19",
+    "kind": "pos",
+    "days": 69,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2023-05-26~2023-06-27",
+    "kind": "pos",
+    "days": 21,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-06-30~2023-07-27",
+    "kind": "pos",
+    "days": 20,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-08-11~2023-09-28",
+    "kind": "pos",
+    "days": 35,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-10-13~2024-02-08",
+    "kind": "deep_neg",
+    "days": 84,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2024-07-05~2024-09-26",
+    "kind": "deep_neg",
+    "days": 58,
+    "triggers": 2,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-02-28~2025-03-13",
+    "kind": "pos",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-03~2025-04-09",
+    "kind": "neg",
+    "days": 4,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-11~2025-05-06",
+    "kind": "pos",
+    "days": 15,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-05-09~2025-05-15",
+    "kind": "neg",
+    "days": 5,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-06-20~2025-07-03",
+    "kind": "neg",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2026-03-20~2026-04-09",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   }
+  ],
+  "deep_has": 3,
+  "pos_fp": 3,
+  "total_triggers": 56,
+  "gate_days": 280,
+  "PASS": false
+ },
+ {
+  "name": "k=7 T=-8 N=10 gp=0.2",
+  "rows": [
+   {
+    "seg": "2020-05-29~2020-06-18",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2021-04-16~2021-12-09",
+    "kind": "pos",
+    "days": 159,
+    "triggers": 3,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-01-07~2022-01-28",
+    "kind": "deep_neg",
+    "days": 16,
+    "triggers": 2,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-02-11~2022-06-08",
+    "kind": "pos",
+    "days": 78,
+    "triggers": 2,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-06-10~2022-09-30",
+    "kind": "pos",
+    "days": 80,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-10-14~2023-01-19",
+    "kind": "pos",
+    "days": 69,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2023-05-26~2023-06-27",
+    "kind": "pos",
+    "days": 21,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-06-30~2023-07-27",
+    "kind": "pos",
+    "days": 20,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-08-11~2023-09-28",
+    "kind": "pos",
+    "days": 35,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-10-13~2024-02-08",
+    "kind": "deep_neg",
+    "days": 84,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2024-07-05~2024-09-26",
+    "kind": "deep_neg",
+    "days": 58,
+    "triggers": 2,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-02-28~2025-03-13",
+    "kind": "pos",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-03~2025-04-09",
+    "kind": "neg",
+    "days": 4,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-11~2025-05-06",
+    "kind": "pos",
+    "days": 15,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-05-09~2025-05-15",
+    "kind": "neg",
+    "days": 5,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-06-20~2025-07-03",
+    "kind": "neg",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2026-03-20~2026-04-09",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   }
+  ],
+  "deep_has": 3,
+  "pos_fp": 3,
+  "total_triggers": 41,
+  "gate_days": 410,
+  "PASS": false
+ },
+ {
+  "name": "k=7 T=-8 N=10 gp=0.5",
+  "rows": [
+   {
+    "seg": "2020-05-29~2020-06-18",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2021-04-16~2021-12-09",
+    "kind": "pos",
+    "days": 159,
+    "triggers": 3,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-01-07~2022-01-28",
+    "kind": "deep_neg",
+    "days": 16,
+    "triggers": 2,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-02-11~2022-06-08",
+    "kind": "pos",
+    "days": 78,
+    "triggers": 2,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-06-10~2022-09-30",
+    "kind": "pos",
+    "days": 80,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-10-14~2023-01-19",
+    "kind": "pos",
+    "days": 69,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2023-05-26~2023-06-27",
+    "kind": "pos",
+    "days": 21,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-06-30~2023-07-27",
+    "kind": "pos",
+    "days": 20,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-08-11~2023-09-28",
+    "kind": "pos",
+    "days": 35,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-10-13~2024-02-08",
+    "kind": "deep_neg",
+    "days": 84,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2024-07-05~2024-09-26",
+    "kind": "deep_neg",
+    "days": 58,
+    "triggers": 2,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-02-28~2025-03-13",
+    "kind": "pos",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-03~2025-04-09",
+    "kind": "neg",
+    "days": 4,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-11~2025-05-06",
+    "kind": "pos",
+    "days": 15,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-05-09~2025-05-15",
+    "kind": "neg",
+    "days": 5,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-06-20~2025-07-03",
+    "kind": "neg",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2026-03-20~2026-04-09",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   }
+  ],
+  "deep_has": 3,
+  "pos_fp": 3,
+  "total_triggers": 41,
+  "gate_days": 410,
+  "PASS": false
+ },
+ {
+  "name": "k=7 T=-8 N=20 gp=0.2",
+  "rows": [
+   {
+    "seg": "2020-05-29~2020-06-18",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2021-04-16~2021-12-09",
+    "kind": "pos",
+    "days": 159,
+    "triggers": 3,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-01-07~2022-01-28",
+    "kind": "deep_neg",
+    "days": 16,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-02-11~2022-06-08",
+    "kind": "pos",
+    "days": 78,
+    "triggers": 2,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-06-10~2022-09-30",
+    "kind": "pos",
+    "days": 80,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-10-14~2023-01-19",
+    "kind": "pos",
+    "days": 69,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2023-05-26~2023-06-27",
+    "kind": "pos",
+    "days": 21,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-06-30~2023-07-27",
+    "kind": "pos",
+    "days": 20,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-08-11~2023-09-28",
+    "kind": "pos",
+    "days": 35,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-10-13~2024-02-08",
+    "kind": "deep_neg",
+    "days": 84,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2024-07-05~2024-09-26",
+    "kind": "deep_neg",
+    "days": 58,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-02-28~2025-03-13",
+    "kind": "pos",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-03~2025-04-09",
+    "kind": "neg",
+    "days": 4,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-11~2025-05-06",
+    "kind": "pos",
+    "days": 15,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-05-09~2025-05-15",
+    "kind": "neg",
+    "days": 5,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-06-20~2025-07-03",
+    "kind": "neg",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2026-03-20~2026-04-09",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   }
+  ],
+  "deep_has": 3,
+  "pos_fp": 3,
+  "total_triggers": 32,
+  "gate_days": 640,
+  "PASS": false
+ },
+ {
+  "name": "k=7 T=-8 N=20 gp=0.5",
+  "rows": [
+   {
+    "seg": "2020-05-29~2020-06-18",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2021-04-16~2021-12-09",
+    "kind": "pos",
+    "days": 159,
+    "triggers": 3,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-01-07~2022-01-28",
+    "kind": "deep_neg",
+    "days": 16,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-02-11~2022-06-08",
+    "kind": "pos",
+    "days": 78,
+    "triggers": 2,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-06-10~2022-09-30",
+    "kind": "pos",
+    "days": 80,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-10-14~2023-01-19",
+    "kind": "pos",
+    "days": 69,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2023-05-26~2023-06-27",
+    "kind": "pos",
+    "days": 21,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-06-30~2023-07-27",
+    "kind": "pos",
+    "days": 20,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-08-11~2023-09-28",
+    "kind": "pos",
+    "days": 35,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-10-13~2024-02-08",
+    "kind": "deep_neg",
+    "days": 84,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2024-07-05~2024-09-26",
+    "kind": "deep_neg",
+    "days": 58,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-02-28~2025-03-13",
+    "kind": "pos",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-03~2025-04-09",
+    "kind": "neg",
+    "days": 4,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-11~2025-05-06",
+    "kind": "pos",
+    "days": 15,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-05-09~2025-05-15",
+    "kind": "neg",
+    "days": 5,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-06-20~2025-07-03",
+    "kind": "neg",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2026-03-20~2026-04-09",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   }
+  ],
+  "deep_has": 3,
+  "pos_fp": 3,
+  "total_triggers": 32,
+  "gate_days": 640,
+  "PASS": false
+ },
+ {
+  "name": "k=7 T=-10 N=5 gp=0.2",
+  "rows": [
+   {
+    "seg": "2020-05-29~2020-06-18",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2021-04-16~2021-12-09",
+    "kind": "pos",
+    "days": 159,
+    "triggers": 4,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-01-07~2022-01-28",
+    "kind": "deep_neg",
+    "days": 16,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-02-11~2022-06-08",
+    "kind": "pos",
+    "days": 78,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-06-10~2022-09-30",
+    "kind": "pos",
+    "days": 80,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-10-14~2023-01-19",
+    "kind": "pos",
+    "days": 69,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-05-26~2023-06-27",
+    "kind": "pos",
+    "days": 21,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-06-30~2023-07-27",
+    "kind": "pos",
+    "days": 20,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-08-11~2023-09-28",
+    "kind": "pos",
+    "days": 35,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-10-13~2024-02-08",
+    "kind": "deep_neg",
+    "days": 84,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2024-07-05~2024-09-26",
+    "kind": "deep_neg",
+    "days": 58,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-02-28~2025-03-13",
+    "kind": "pos",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-03~2025-04-09",
+    "kind": "neg",
+    "days": 4,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-11~2025-05-06",
+    "kind": "pos",
+    "days": 15,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-05-09~2025-05-15",
+    "kind": "neg",
+    "days": 5,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-06-20~2025-07-03",
+    "kind": "neg",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2026-03-20~2026-04-09",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   }
+  ],
+  "deep_has": 2,
+  "pos_fp": 2,
+  "total_triggers": 36,
+  "gate_days": 180,
+  "PASS": false
+ },
+ {
+  "name": "k=7 T=-10 N=5 gp=0.5",
+  "rows": [
+   {
+    "seg": "2020-05-29~2020-06-18",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2021-04-16~2021-12-09",
+    "kind": "pos",
+    "days": 159,
+    "triggers": 4,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-01-07~2022-01-28",
+    "kind": "deep_neg",
+    "days": 16,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-02-11~2022-06-08",
+    "kind": "pos",
+    "days": 78,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-06-10~2022-09-30",
+    "kind": "pos",
+    "days": 80,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-10-14~2023-01-19",
+    "kind": "pos",
+    "days": 69,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-05-26~2023-06-27",
+    "kind": "pos",
+    "days": 21,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-06-30~2023-07-27",
+    "kind": "pos",
+    "days": 20,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-08-11~2023-09-28",
+    "kind": "pos",
+    "days": 35,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-10-13~2024-02-08",
+    "kind": "deep_neg",
+    "days": 84,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2024-07-05~2024-09-26",
+    "kind": "deep_neg",
+    "days": 58,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-02-28~2025-03-13",
+    "kind": "pos",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-03~2025-04-09",
+    "kind": "neg",
+    "days": 4,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-11~2025-05-06",
+    "kind": "pos",
+    "days": 15,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-05-09~2025-05-15",
+    "kind": "neg",
+    "days": 5,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-06-20~2025-07-03",
+    "kind": "neg",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2026-03-20~2026-04-09",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   }
+  ],
+  "deep_has": 2,
+  "pos_fp": 2,
+  "total_triggers": 36,
+  "gate_days": 180,
+  "PASS": false
+ },
+ {
+  "name": "k=7 T=-10 N=10 gp=0.2",
+  "rows": [
+   {
+    "seg": "2020-05-29~2020-06-18",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2021-04-16~2021-12-09",
+    "kind": "pos",
+    "days": 159,
+    "triggers": 3,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-01-07~2022-01-28",
+    "kind": "deep_neg",
+    "days": 16,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-02-11~2022-06-08",
+    "kind": "pos",
+    "days": 78,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-06-10~2022-09-30",
+    "kind": "pos",
+    "days": 80,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-10-14~2023-01-19",
+    "kind": "pos",
+    "days": 69,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-05-26~2023-06-27",
+    "kind": "pos",
+    "days": 21,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-06-30~2023-07-27",
+    "kind": "pos",
+    "days": 20,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-08-11~2023-09-28",
+    "kind": "pos",
+    "days": 35,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-10-13~2024-02-08",
+    "kind": "deep_neg",
+    "days": 84,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2024-07-05~2024-09-26",
+    "kind": "deep_neg",
+    "days": 58,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-02-28~2025-03-13",
+    "kind": "pos",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-03~2025-04-09",
+    "kind": "neg",
+    "days": 4,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-11~2025-05-06",
+    "kind": "pos",
+    "days": 15,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-05-09~2025-05-15",
+    "kind": "neg",
+    "days": 5,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-06-20~2025-07-03",
+    "kind": "neg",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2026-03-20~2026-04-09",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   }
+  ],
+  "deep_has": 2,
+  "pos_fp": 2,
+  "total_triggers": 30,
+  "gate_days": 300,
+  "PASS": false
+ },
+ {
+  "name": "k=7 T=-10 N=10 gp=0.5",
+  "rows": [
+   {
+    "seg": "2020-05-29~2020-06-18",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2021-04-16~2021-12-09",
+    "kind": "pos",
+    "days": 159,
+    "triggers": 3,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-01-07~2022-01-28",
+    "kind": "deep_neg",
+    "days": 16,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-02-11~2022-06-08",
+    "kind": "pos",
+    "days": 78,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-06-10~2022-09-30",
+    "kind": "pos",
+    "days": 80,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-10-14~2023-01-19",
+    "kind": "pos",
+    "days": 69,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-05-26~2023-06-27",
+    "kind": "pos",
+    "days": 21,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-06-30~2023-07-27",
+    "kind": "pos",
+    "days": 20,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-08-11~2023-09-28",
+    "kind": "pos",
+    "days": 35,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-10-13~2024-02-08",
+    "kind": "deep_neg",
+    "days": 84,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2024-07-05~2024-09-26",
+    "kind": "deep_neg",
+    "days": 58,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-02-28~2025-03-13",
+    "kind": "pos",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-03~2025-04-09",
+    "kind": "neg",
+    "days": 4,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-11~2025-05-06",
+    "kind": "pos",
+    "days": 15,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-05-09~2025-05-15",
+    "kind": "neg",
+    "days": 5,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-06-20~2025-07-03",
+    "kind": "neg",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2026-03-20~2026-04-09",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   }
+  ],
+  "deep_has": 2,
+  "pos_fp": 2,
+  "total_triggers": 30,
+  "gate_days": 300,
+  "PASS": false
+ },
+ {
+  "name": "k=7 T=-10 N=20 gp=0.2",
+  "rows": [
+   {
+    "seg": "2020-05-29~2020-06-18",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2021-04-16~2021-12-09",
+    "kind": "pos",
+    "days": 159,
+    "triggers": 3,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-01-07~2022-01-28",
+    "kind": "deep_neg",
+    "days": 16,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-02-11~2022-06-08",
+    "kind": "pos",
+    "days": 78,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-06-10~2022-09-30",
+    "kind": "pos",
+    "days": 80,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-10-14~2023-01-19",
+    "kind": "pos",
+    "days": 69,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-05-26~2023-06-27",
+    "kind": "pos",
+    "days": 21,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-06-30~2023-07-27",
+    "kind": "pos",
+    "days": 20,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-08-11~2023-09-28",
+    "kind": "pos",
+    "days": 35,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-10-13~2024-02-08",
+    "kind": "deep_neg",
+    "days": 84,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2024-07-05~2024-09-26",
+    "kind": "deep_neg",
+    "days": 58,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-02-28~2025-03-13",
+    "kind": "pos",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-03~2025-04-09",
+    "kind": "neg",
+    "days": 4,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-11~2025-05-06",
+    "kind": "pos",
+    "days": 15,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-05-09~2025-05-15",
+    "kind": "neg",
+    "days": 5,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-06-20~2025-07-03",
+    "kind": "neg",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2026-03-20~2026-04-09",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   }
+  ],
+  "deep_has": 2,
+  "pos_fp": 2,
+  "total_triggers": 24,
+  "gate_days": 480,
+  "PASS": false
+ },
+ {
+  "name": "k=7 T=-10 N=20 gp=0.5",
+  "rows": [
+   {
+    "seg": "2020-05-29~2020-06-18",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2021-04-16~2021-12-09",
+    "kind": "pos",
+    "days": 159,
+    "triggers": 3,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-01-07~2022-01-28",
+    "kind": "deep_neg",
+    "days": 16,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-02-11~2022-06-08",
+    "kind": "pos",
+    "days": 78,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-06-10~2022-09-30",
+    "kind": "pos",
+    "days": 80,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-10-14~2023-01-19",
+    "kind": "pos",
+    "days": 69,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-05-26~2023-06-27",
+    "kind": "pos",
+    "days": 21,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-06-30~2023-07-27",
+    "kind": "pos",
+    "days": 20,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-08-11~2023-09-28",
+    "kind": "pos",
+    "days": 35,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-10-13~2024-02-08",
+    "kind": "deep_neg",
+    "days": 84,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2024-07-05~2024-09-26",
+    "kind": "deep_neg",
+    "days": 58,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-02-28~2025-03-13",
+    "kind": "pos",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-03~2025-04-09",
+    "kind": "neg",
+    "days": 4,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-11~2025-05-06",
+    "kind": "pos",
+    "days": 15,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-05-09~2025-05-15",
+    "kind": "neg",
+    "days": 5,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-06-20~2025-07-03",
+    "kind": "neg",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2026-03-20~2026-04-09",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   }
+  ],
+  "deep_has": 2,
+  "pos_fp": 2,
+  "total_triggers": 24,
+  "gate_days": 480,
+  "PASS": false
+ },
+ {
+  "name": "k=7 T=-12 N=5 gp=0.2",
+  "rows": [
+   {
+    "seg": "2020-05-29~2020-06-18",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2021-04-16~2021-12-09",
+    "kind": "pos",
+    "days": 159,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-01-07~2022-01-28",
+    "kind": "deep_neg",
+    "days": 16,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-02-11~2022-06-08",
+    "kind": "pos",
+    "days": 78,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-06-10~2022-09-30",
+    "kind": "pos",
+    "days": 80,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-10-14~2023-01-19",
+    "kind": "pos",
+    "days": 69,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-05-26~2023-06-27",
+    "kind": "pos",
+    "days": 21,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-06-30~2023-07-27",
+    "kind": "pos",
+    "days": 20,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-08-11~2023-09-28",
+    "kind": "pos",
+    "days": 35,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-10-13~2024-02-08",
+    "kind": "deep_neg",
+    "days": 84,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2024-07-05~2024-09-26",
+    "kind": "deep_neg",
+    "days": 58,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-02-28~2025-03-13",
+    "kind": "pos",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-03~2025-04-09",
+    "kind": "neg",
+    "days": 4,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-11~2025-05-06",
+    "kind": "pos",
+    "days": 15,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-05-09~2025-05-15",
+    "kind": "neg",
+    "days": 5,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-06-20~2025-07-03",
+    "kind": "neg",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2026-03-20~2026-04-09",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   }
+  ],
+  "deep_has": 1,
+  "pos_fp": 2,
+  "total_triggers": 28,
+  "gate_days": 140,
+  "PASS": false
+ },
+ {
+  "name": "k=7 T=-12 N=5 gp=0.5",
+  "rows": [
+   {
+    "seg": "2020-05-29~2020-06-18",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2021-04-16~2021-12-09",
+    "kind": "pos",
+    "days": 159,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-01-07~2022-01-28",
+    "kind": "deep_neg",
+    "days": 16,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-02-11~2022-06-08",
+    "kind": "pos",
+    "days": 78,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-06-10~2022-09-30",
+    "kind": "pos",
+    "days": 80,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-10-14~2023-01-19",
+    "kind": "pos",
+    "days": 69,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-05-26~2023-06-27",
+    "kind": "pos",
+    "days": 21,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-06-30~2023-07-27",
+    "kind": "pos",
+    "days": 20,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-08-11~2023-09-28",
+    "kind": "pos",
+    "days": 35,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-10-13~2024-02-08",
+    "kind": "deep_neg",
+    "days": 84,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2024-07-05~2024-09-26",
+    "kind": "deep_neg",
+    "days": 58,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-02-28~2025-03-13",
+    "kind": "pos",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-03~2025-04-09",
+    "kind": "neg",
+    "days": 4,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-11~2025-05-06",
+    "kind": "pos",
+    "days": 15,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-05-09~2025-05-15",
+    "kind": "neg",
+    "days": 5,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-06-20~2025-07-03",
+    "kind": "neg",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2026-03-20~2026-04-09",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   }
+  ],
+  "deep_has": 1,
+  "pos_fp": 2,
+  "total_triggers": 28,
+  "gate_days": 140,
+  "PASS": false
+ },
+ {
+  "name": "k=7 T=-12 N=10 gp=0.2",
+  "rows": [
+   {
+    "seg": "2020-05-29~2020-06-18",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2021-04-16~2021-12-09",
+    "kind": "pos",
+    "days": 159,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-01-07~2022-01-28",
+    "kind": "deep_neg",
+    "days": 16,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-02-11~2022-06-08",
+    "kind": "pos",
+    "days": 78,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-06-10~2022-09-30",
+    "kind": "pos",
+    "days": 80,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-10-14~2023-01-19",
+    "kind": "pos",
+    "days": 69,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-05-26~2023-06-27",
+    "kind": "pos",
+    "days": 21,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-06-30~2023-07-27",
+    "kind": "pos",
+    "days": 20,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-08-11~2023-09-28",
+    "kind": "pos",
+    "days": 35,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-10-13~2024-02-08",
+    "kind": "deep_neg",
+    "days": 84,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2024-07-05~2024-09-26",
+    "kind": "deep_neg",
+    "days": 58,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-02-28~2025-03-13",
+    "kind": "pos",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-03~2025-04-09",
+    "kind": "neg",
+    "days": 4,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-11~2025-05-06",
+    "kind": "pos",
+    "days": 15,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-05-09~2025-05-15",
+    "kind": "neg",
+    "days": 5,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-06-20~2025-07-03",
+    "kind": "neg",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2026-03-20~2026-04-09",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   }
+  ],
+  "deep_has": 1,
+  "pos_fp": 2,
+  "total_triggers": 23,
+  "gate_days": 230,
+  "PASS": false
+ },
+ {
+  "name": "k=7 T=-12 N=10 gp=0.5",
+  "rows": [
+   {
+    "seg": "2020-05-29~2020-06-18",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2021-04-16~2021-12-09",
+    "kind": "pos",
+    "days": 159,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-01-07~2022-01-28",
+    "kind": "deep_neg",
+    "days": 16,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-02-11~2022-06-08",
+    "kind": "pos",
+    "days": 78,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-06-10~2022-09-30",
+    "kind": "pos",
+    "days": 80,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-10-14~2023-01-19",
+    "kind": "pos",
+    "days": 69,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-05-26~2023-06-27",
+    "kind": "pos",
+    "days": 21,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-06-30~2023-07-27",
+    "kind": "pos",
+    "days": 20,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-08-11~2023-09-28",
+    "kind": "pos",
+    "days": 35,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-10-13~2024-02-08",
+    "kind": "deep_neg",
+    "days": 84,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2024-07-05~2024-09-26",
+    "kind": "deep_neg",
+    "days": 58,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-02-28~2025-03-13",
+    "kind": "pos",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-03~2025-04-09",
+    "kind": "neg",
+    "days": 4,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-11~2025-05-06",
+    "kind": "pos",
+    "days": 15,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-05-09~2025-05-15",
+    "kind": "neg",
+    "days": 5,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-06-20~2025-07-03",
+    "kind": "neg",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2026-03-20~2026-04-09",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   }
+  ],
+  "deep_has": 1,
+  "pos_fp": 2,
+  "total_triggers": 23,
+  "gate_days": 230,
+  "PASS": false
+ },
+ {
+  "name": "k=7 T=-12 N=20 gp=0.2",
+  "rows": [
+   {
+    "seg": "2020-05-29~2020-06-18",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2021-04-16~2021-12-09",
+    "kind": "pos",
+    "days": 159,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-01-07~2022-01-28",
+    "kind": "deep_neg",
+    "days": 16,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-02-11~2022-06-08",
+    "kind": "pos",
+    "days": 78,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-06-10~2022-09-30",
+    "kind": "pos",
+    "days": 80,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-10-14~2023-01-19",
+    "kind": "pos",
+    "days": 69,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-05-26~2023-06-27",
+    "kind": "pos",
+    "days": 21,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-06-30~2023-07-27",
+    "kind": "pos",
+    "days": 20,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-08-11~2023-09-28",
+    "kind": "pos",
+    "days": 35,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-10-13~2024-02-08",
+    "kind": "deep_neg",
+    "days": 84,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2024-07-05~2024-09-26",
+    "kind": "deep_neg",
+    "days": 58,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-02-28~2025-03-13",
+    "kind": "pos",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-03~2025-04-09",
+    "kind": "neg",
+    "days": 4,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-11~2025-05-06",
+    "kind": "pos",
+    "days": 15,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-05-09~2025-05-15",
+    "kind": "neg",
+    "days": 5,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-06-20~2025-07-03",
+    "kind": "neg",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2026-03-20~2026-04-09",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   }
+  ],
+  "deep_has": 1,
+  "pos_fp": 2,
+  "total_triggers": 18,
+  "gate_days": 360,
+  "PASS": false
+ },
+ {
+  "name": "k=7 T=-12 N=20 gp=0.5",
+  "rows": [
+   {
+    "seg": "2020-05-29~2020-06-18",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2021-04-16~2021-12-09",
+    "kind": "pos",
+    "days": 159,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-01-07~2022-01-28",
+    "kind": "deep_neg",
+    "days": 16,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-02-11~2022-06-08",
+    "kind": "pos",
+    "days": 78,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2022-06-10~2022-09-30",
+    "kind": "pos",
+    "days": 80,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2022-10-14~2023-01-19",
+    "kind": "pos",
+    "days": 69,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-05-26~2023-06-27",
+    "kind": "pos",
+    "days": 21,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-06-30~2023-07-27",
+    "kind": "pos",
+    "days": 20,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-08-11~2023-09-28",
+    "kind": "pos",
+    "days": 35,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2023-10-13~2024-02-08",
+    "kind": "deep_neg",
+    "days": 84,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2024-07-05~2024-09-26",
+    "kind": "deep_neg",
+    "days": 58,
+    "triggers": 1,
+    "has_trigger": true
+   },
+   {
+    "seg": "2025-02-28~2025-03-13",
+    "kind": "pos",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-03~2025-04-09",
+    "kind": "neg",
+    "days": 4,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-04-11~2025-05-06",
+    "kind": "pos",
+    "days": 15,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-05-09~2025-05-15",
+    "kind": "neg",
+    "days": 5,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2025-06-20~2025-07-03",
+    "kind": "neg",
+    "days": 10,
+    "triggers": 0,
+    "has_trigger": false
+   },
+   {
+    "seg": "2026-03-20~2026-04-09",
+    "kind": "pos",
+    "days": 14,
+    "triggers": 0,
+    "has_trigger": false
+   }
+  ],
+  "deep_has": 1,
+  "pos_fp": 2,
+  "total_triggers": 18,
+  "gate_days": 360,
+  "PASS": false
+ }
+]

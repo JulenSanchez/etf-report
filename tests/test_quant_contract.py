@@ -38,6 +38,7 @@ def sample_params(**overrides):
         "f7_up_power": 15.0,
         "f7_up_span": 3.5,
         "f7_window": 20,
+        "f7_lookback": 250,
     }
     params.update(overrides)
     return params

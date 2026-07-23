@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>策略参数设计空间 — 统一框架</title>
+<style>
+  :root {
+    --bg: #1a1d23; --card: #21242b; --border: #2d3038;
+    --text: #cdd6e0; --muted: #6b7280;
+    --accent: #60a5fa; --warn: #f59e0b; --good: #34d399;
+    --bad: #f87171; --purple: #a78bfa;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: -apple-system, "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.6;
+    padding: 20px 0 60px;
+  }
+  .header, .section { max-width: 1000px; margin: 0 auto 32px; padding: 0 24px; }
+  .header h1 { font-size: 26px; font-weight: 700; color: #f1f5f9; margin-bottom: 6px; }
+  .header .sub { color: var(--muted); font-size: 14px; }
+
+  .section h2 {
+    font-size: 18px; font-weight: 600; color: #e2e8f0;
+    margin-bottom: 14px; padding-left: 10px; border-left: 3px solid var(--accent);
+  }
+
+  /* ── 概念卡片 ── */
+  .glossary { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  @media (max-width: 700px) { .glossary { grid-template-columns: 1fr; } }
+  .gloss-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 18px;
+  }
+  .gloss-card .abbr {
+    font-size: 22px; font-weight: 800; color: var(--accent);
+    font-family: "SF Mono", "Consolas", monospace;
+  }
+  .gloss-card .cn   { font-size: 13px; color: var(--text); margin-top: 2px; }
+  .gloss-card .plain { font-size: 12px; color: var(--muted); margin-top: 8px; line-height: 1.55; }
+
+  /* ── 特别标注：τ = T_OOS ── */
+  .identity-box {
+    background: linear-gradient(135deg, rgba(52,211,153,0.08), rgba(52,211,153,0.02));
+    border: 1px solid rgba(52,211,153,0.25); border-radius: 10px;
+    padding: 14px 20px; margin-bottom: 20px; text-align: center;
+  }
+  .identity-box .big { font-size: 18px; color: var(--good); font-weight: 700; }
+  .identity-box .why { font-size: 13px; color: var(--muted); margin-top: 6px; line-height: 1.6; }
+
+  /* ── Canvas ── */
+  .viz-container {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 14px; padding: 20px;
+  }
+  .viz-container h3 { font-size: 13px; color: var(--muted); font-weight: 400; margin-bottom: 12px; }
+  canvas { display: block; width: 100%; }
+
+  /* ── 坐标卡 ── */
+  .coord-cards {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 18px;
+  }
+  @media (max-width: 700px) { .coord-cards { grid-template-columns: 1fr; } }
+  .coord-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 18px; text-align: center;
+  }
+  .coord-card .title { font-size: 15px; font-weight: 600; margin-bottom: 10px; }
+  .coord-card .vals { display: flex; justify-content: center; gap: 24px; margin-top: 8px; }
+  .coord-card .val-num { font-size: 26px; font-weight: 800; font-family: "SF Mono","Consolas",monospace; }
+  .coord-card .val-label { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .coord-card .desc { color: var(--muted); font-size: 12px; margin-top: 8px; }
+
+  /* ── 光谱 ── */
+  .spectrum-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 700px) { .spectrum-row { grid-template-columns: 1fr; } }
+  .spec-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 18px;
+  }
+  .spec-card h3 { font-size: 15px; font-weight: 600; margin-bottom: 10px; }
+  .spec-card .bar-wrap {
+    height: 8px; background: var(--border); border-radius: 4px;
+    margin: 8px 0 12px; position: relative;
+  }
+  .spec-card .bar-fill {
+    height: 8px; border-radius: 4px; position: absolute;
+  }
+  .spec-card .ends {
+    display: flex; justify-content: space-between;
+    font-size: 11px; color: var(--muted); margin-bottom: 8px;
+  }
+
+  /* ── 对比表 ── */
+  .tradeoff-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
+  .tradeoff-table th {
+    text-align: left; padding: 8px 12px; color: var(--muted);
+    font-weight: 500; font-size: 11px; text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+  }
+  .tradeoff-table td {
+    padding: 10px 12px; border-bottom: 1px solid rgba(45,48,56,0.6); vertical-align: top;
+  }
+  .tradeoff-table tr:last-child td { border-bottom: none; }
+
+  .insight-box {
+    background: linear-gradient(135deg, rgba(96,165,250,0.08), rgba(167,139,250,0.08));
+    border: 1px solid rgba(96,165,250,0.2); border-radius: 10px;
+    padding: 18px 22px; margin-top: 16px;
+  }
+  .insight-box .label {
+    font-size: 11px; color: var(--accent); text-transform: uppercase;
+    font-weight: 600; margin-bottom: 8px;
+  }
+  .insight-box .content { font-size: 14px; line-height: 1.75; }
+
+  .color-g0 { color: var(--warn); }
+  .color-wf { color: var(--accent); }
+  .color-pm { color: var(--purple); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>策略参数设计空间 — 两个变量就够了</h1>
+  <div class="sub">T_IS（回头看多少）· T_OOS（往前走多少）· gam-0 和 WF 只是同一个平面上两个不同的点</div>
+</div>
+
+<!-- ── 为什么只有两个变量 ── -->
+<div class="section">
+  <div class="identity-box">
+    <div class="big">τ = T_OOS（重训间隔 = 验证窗口）</div>
+    <div class="why">
+      你想验证 1 年 → 每 1 年重训一次。验证跑完，刚好得到结论：参数还行不行、要不要换。<br>
+      两者不等毫无意义：验证还没跑完就换 → 白调了；验证跑完了还不换 → 明知失效还用。<br>
+      所以 τ 不是独立变量，它是 T_OOS 的镜像。gam-0 选了 T_OOS = 0，相应地永不重训。
+    </div>
+  </div>
+</div>
+
+<!-- ── 概念卡片 ── -->
+<div class="section">
+  <h2>三个概念（其实只有两个自由度）</h2>
+  <div class="glossary">
+    <div class="gloss-card">
+      <div class="abbr">T_IS</div>
+      <div class="cn">训练窗口 — "回头看多少数据"</div>
+      <div class="plain">
+        每次调参时回头用多少年历史。窗口越大，见过的市场环境越多，偏差越小。<br>
+        极限：T_IS → T_total（6Y）= gam-0，尽用信息。
+      </div>
+    </div>
+    <div class="gloss-card">
+      <div class="abbr">T_OOS</div>
+      <div class="cn">验证窗口 — "往前走多远检验"</div>
+      <div class="plain">
+        调完参数后，用多长的未来数据检验。这段数据在调参时完全没见过——是"诚实的"。<br>
+        T_OOS = 0（gam-0）：不检验，不知道过拟合了多少。
+      </div>
+    </div>
+    <div class="gloss-card">
+      <div class="abbr">T_total</div>
+      <div class="cn">全部数据 — "你手里有多少"</div>
+      <div class="plain">
+        6 年（2020-2026）。这是硬约束：<br>
+        T_IS + T_OOS ≤ 6Y<br>
+        IS 想大，OOS 就得小，反之亦然。零和。
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Canvas 可视化 ── -->
+<div class="section">
+  <h2>设计空间：一张平面图</h2>
+  <div class="viz-container">
+    <h3>横轴 = 回头看多少（T_IS）&nbsp;&nbsp;|&nbsp;&nbsp;纵轴 = 往前检验多少（T_OOS）&nbsp;&nbsp;|&nbsp;&nbsp;对角线 = 总数据上限（T_IS + T_OOS ≤ 6Y）</h3>
+    <canvas id="spectrum" height="460"></canvas>
+  </div>
+
+  <div class="coord-cards">
+    <div class="coord-card">
+      <div class="title color-g0">◆ gam-0（当前基准）</div>
+      <div class="vals">
+        <div><div class="val-num color-g0">6Y</div><div class="val-label">T_IS</div></div>
+        <div><div class="val-num color-g0">0</div><div class="val-label">T_OOS</div></div>
+      </div>
+      <div class="desc">尽用信息 · 不验证 · 永不重训<br>偏差最小，过拟合风险未知</div>
+    </div>
+    <div class="coord-card">
+      <div class="title color-wf">● WF 3Y/1Y</div>
+      <div class="vals">
+        <div><div class="val-num color-wf">3Y</div><div class="val-label">T_IS</div></div>
+        <div><div class="val-num color-wf">1Y</div><div class="val-label">T_OOS</div></div>
+      </div>
+      <div class="desc">每 1 年用最近 3 年重训<br>有诚实检验，但 IS 更少</div>
+    </div>
+    <div class="coord-card">
+      <div class="title color-pm">◇ P_mean（假设演绎）</div>
+      <div class="vals">
+        <div><div class="val-num color-pm">~6Y</div><div class="val-label">等效 T_IS</div></div>
+        <div><div class="val-num color-pm">3Y</div><div class="val-label">T_OOS</div></div>
+      </div>
+      <div class="desc">三个 WF 窗口参数取均值<br>一次跑完 3 年 OOS</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── 光谱 ── -->
+<div class="section">
+  <h2>两个极端之间的权衡</h2>
+  <div class="spectrum-row">
+    <div class="spec-card">
+      <h3 class="color-wf">T_IS：偏差 vs 方差</h3>
+      <div class="ends"><span>短（1Y）— 方差大</span><span>长（6Y）— 偏差小 →</span></div>
+      <div class="bar-wrap"><div class="bar-fill" style="width:100%;background:linear-gradient(90deg,var(--bad),var(--warn),var(--good));"></div></div>
+      <table style="width:100%;font-size:12px;">
+        <tr>
+          <td style="color:var(--bad);width:33%;vertical-align:top;padding:6px;">
+            <b>T_IS = 1Y</b><br>对短期噪音过拟合<br>参数年际剧烈跳变
+          </td>
+          <td style="color:var(--warn);width:34%;vertical-align:top;padding:6px;text-align:center;">
+            <b>T_IS = 3Y（WF）</b><br>折中：覆盖一个牛熊周期<br>偏差和方差之间
+          </td>
+          <td style="color:var(--good);width:33%;vertical-align:top;padding:6px;text-align:right;">
+            <b>T_IS = 6Y（gam-0）</b><br>所有经验都用上<br>偏差最小 · 无 OOS
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="spec-card">
+      <h3 class="color-g0">T_OOS：诚实 vs 浪费</h3>
+      <div class="ends"><span>短（0）— 不诚实</span><span>长（3Y）— 浪费 IS →</span></div>
+      <div class="bar-wrap"><div class="bar-fill" style="width:100%;background:linear-gradient(90deg,var(--bad),var(--warn),var(--good));"></div></div>
+      <table style="width:100%;font-size:12px;">
+        <tr>
+          <td style="color:var(--bad);width:33%;vertical-align:top;padding:6px;">
+            <b>T_OOS = 0（gam-0）</b><br>AR=137% 是"考过的卷子"<br>不知道过拟合占多少
+          </td>
+          <td style="color:var(--warn);width:34%;vertical-align:top;padding:6px;text-align:center;">
+            <b>T_OOS = 1Y（WF）</b><br>一年诚实数据<br>够判断策略是否在退化
+          </td>
+          <td style="color:var(--good);width:33%;vertical-align:top;padding:6px;text-align:right;">
+            <b>T_OOS → 3Y</b><br>验证充分<br>但吃掉太多 IS 数据
+          </td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="formula-box" style="margin-top:14px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 18px;text-align:center;font-size:13px;color:var(--muted);font-family:'SF Mono','Consolas',monospace;">
+    零和约束：T_IS ↑ &rArr; T_OOS ↓ &nbsp;|&nbsp; gam-0 选了 (6, 0) — 全部押在"拟合"上 &nbsp;|&nbsp; WF 选了 (3, 1) — 留一点给 "检验"
+  </div>
+</div>
+
+<!-- ── 核心对比 ── -->
+<div class="section">
+  <h2>gam-0 vs WF：同一个框架下的两个决策</h2>
+  <table class="tradeoff-table">
+    <thead>
+      <tr><th style="width:24%;">维度</th><th style="width:38%;">◆ gam-0 (6Y, 0)</th><th style="width:38%;">● WF (3Y, 1Y)</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><b>用多少数据训练</b></td>
+        <td>全部 6Y — 尽用信息，偏差最小</td>
+        <td>每轮 3Y — 少一半，可能漏掉稀有事件</td>
+      </tr>
+      <tr>
+        <td><b>有没有诚实检验</b></td>
+        <td>没有。AR=137% 含后见之明红利</td>
+        <td>有。每段 OOS 调参时完全不可见</td>
+      </tr>
+      <tr>
+        <td><b>参数会不会过时</b></td>
+        <td>会。永不重训，市场结构可能漂移</td>
+        <td>不会。每年重训，自动适应最新三年</td>
+      </tr>
+      <tr>
+        <td><b>最大风险</b></td>
+        <td>过拟合——高 AR 在未来无法复现</td>
+        <td>IS 太短——3Y TPE 17 维自己也会过拟合</td>
+      </tr>
+      <tr>
+        <td><b>结论依赖</b></td>
+        <td>一组数字，没法交叉验证</td>
+        <td>三段 OOS，可以看稳定性</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="insight-box">
+    <div class="label">核心指标：诚实折价</div>
+    <div class="content">
+      <b>诚实折价 = gam-0 6Y AR &minus; WF 拼接 OOS AR</b><br><br>
+      这个差值不是"WF 比 gam-0 差多少"，而是<b>"你把 gam-0 的 137% AR 拿去诚实检验，还剩多少"</b>。<br><br>
+      &nbsp;&nbsp;• <b>折价小</b>（137% → ~130%）→ gam-0 几乎没过拟合，可持续<br>
+      &nbsp;&nbsp;• <b>折价大</b>（137% → ~80%）→ gam-0 的高 AR 严重依赖后见之明，有崩盘风险<br><br>
+      gam-0 是你用得很顺手的基准。WF 不是来替代它的——是来<b>给它一个诚实标价</b>的。
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const c = document.getElementById('spectrum');
+  const dpr = window.devicePixelRatio || 1;
+  const W = c.parentElement.clientWidth - 40;
+  const H = 460;
+  c.width  = W * dpr;
+  c.height = H * dpr;
+  c.style.width  = W + 'px';
+  c.style.height = H + 'px';
+  const ctx = c.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  const pad = { top: 35, right: 40, bottom: 55, left: 60 };
+  const pw = W - pad.left - pad.right;
+  const ph = H - pad.top - pad.bottom;
+
+  // Domain: T_IS ∈ [0, 6], T_OOS ∈ [0, 3]
+  const isMax = 6, oosMax = 3;
+  function x(isY) { return pad.left + (isY / isMax) * pw; }
+  function y(oosY) { return pad.top + ph - (oosY / oosMax) * ph; }
+
+  // ── Background ──
+  ctx.fillStyle = '#1a1d23'; ctx.fillRect(0,0,W,H);
+
+  // ── Partition the plane into three zones ──
+  // Zone "不可行": T_IS + T_OOS > 6 (above the line)
+  ctx.beginPath();
+  ctx.moveTo(x(0), y(0));
+  for (let iv = 0; iv <= isMax; iv += 0.1) {
+    const bound = Math.min(oosMax, isMax - iv);
+    ctx.lineTo(x(iv), y(bound));
+  }
+  ctx.lineTo(x(0), y(oosMax));
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(248,113,113,0.04)';
+  ctx.fill();
+  ctx.fillStyle = 'rgba(248,113,113,0.18)';
+  ctx.font = '11px "Microsoft YaHei",sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('不可行：IS + OOS > 6Y', x(4), y(2.7));
+
+  // "低 IS + 高 OOS" zone (training too little, validating too much)
+  // Bottom-left above some threshold
+  ctx.beginPath();
+  ctx.moveTo(x(0), y(2));
+  ctx.lineTo(x(2.5), y(2));
+  ctx.lineTo(x(2.5), y(oosMax));
+  ctx.lineTo(x(0), y(oosMax));
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(167,139,250,0.05)';
+  ctx.fill();
+  ctx.fillStyle = 'rgba(167,139,250,0.25)';
+  ctx.font = '11px "Microsoft YaHei",sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('IS太少 · OOS太多', x(1.2), y(2.5));
+  ctx.fillText('信息利用率低', x(1.2), y(2.5)+15);
+
+  // Feasible region boundary = T_IS + T_OOS = 6
+  ctx.strokeStyle = 'rgba(107,114,128,0.4)';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([8, 5]);
+  ctx.beginPath();
+  for (let iv = 0; iv <= isMax; iv += 0.1) {
+    const bound = Math.min(oosMax, isMax - iv);
+    if (iv === 0) ctx.moveTo(x(iv), y(bound));
+    else ctx.lineTo(x(iv), y(bound));
+  }
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Bound label
+  ctx.fillStyle = 'rgba(107,114,128,0.6)';
+  ctx.font = 'bold 11px "Microsoft YaHei",sans-serif';
+  ctx.textAlign = 'center';
+  const bx = x(2.6), by = y(3.4);
+  // rotate the label along the line
+  ctx.save();
+  ctx.translate(bx, by);
+  ctx.rotate(Math.atan2(y(0)-y(6), x(6)-x(0)));
+  ctx.fillText('T_IS + T_OOS = 6Y（数据上限）', 0, 0);
+  ctx.restore();
+
+  // ── Feasible region fill (gradient) ──
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(x(0), y(0));
+  ctx.lineTo(x(isMax), y(0));
+  for (let iv = isMax; iv >= 0; iv -= 0.1) {
+    const bound = Math.min(oosMax, isMax - iv);
+    ctx.lineTo(x(iv), y(bound));
+  }
+  ctx.closePath();
+  const grad = ctx.createLinearGradient(0, pad.top, 0, pad.top + ph);
+  grad.addColorStop(0, 'rgba(52,211,153,0.03)');
+  grad.addColorStop(1, 'rgba(245,158,11,0.04)');
+  ctx.fillStyle = grad;
+  ctx.fill();
+  ctx.restore();
+
+  // ── Axes ──
+  ctx.strokeStyle = 'rgba(107,114,128,0.5)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(pad.left, y(0)); ctx.lineTo(x(isMax), y(0)); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(pad.left, pad.top); ctx.lineTo(pad.left, y(0)); ctx.stroke();
+
+  // axis labels
+  ctx.fillStyle = '#6b7280'; ctx.font = '12px "Microsoft YaHei",sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('T_IS 训练窗口 ← 回头看多少年 →', x(3), y(0) + 32);
+  ctx.save();
+  ctx.translate(pad.left - 46, y(1.5));
+  ctx.rotate(-Math.PI/2);
+  ctx.fillText('T_OOS 验证窗口 ← 往前检验多少年 →', 0, 0);
+  ctx.restore();
+
+  // ticks & grid
+  ctx.fillStyle = '#6b7280'; ctx.font = '11px "SF Mono","Consolas",monospace';
+  ctx.textAlign = 'center';
+  for (let i = 0; i <= isMax; i++) {
+    ctx.fillText(i+'Y', x(i), y(0)+17);
+    ctx.strokeStyle = 'rgba(107,114,128,0.08)';
+    ctx.beginPath(); ctx.moveTo(x(i), y(0)); ctx.lineTo(x(i), pad.top); ctx.stroke();
+  }
+  ctx.textAlign = 'right';
+  for (let i = 0; i <= oosMax; i++) {
+    ctx.fillText(i+'Y', pad.left-8, y(i)+4);
+    ctx.strokeStyle = 'rgba(107,114,128,0.08)';
+    ctx.beginPath(); ctx.moveTo(pad.left, y(i)); ctx.lineTo(x(isMax), y(i)); ctx.stroke();
+  }
+
+  // ── Zone labels ──
+  // "高拟合低验证" — bottom-right
+  ctx.fillStyle = 'rgba(248,113,113,0.05)';
+  ctx.fillRect(x(4.5), y(0), x(6)-x(4.5), y(0.8)-y(0));
+  ctx.fillStyle = 'rgba(248,113,113,0.35)';
+  ctx.font = '11px "Microsoft YaHei",sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('高拟合', x(5.3), y(0.3));
+  ctx.fillText('低验证', x(5.3), y(0.3)+13);
+
+  // ── gam-0 ──
+  const g0x = x(isMax), g0y = y(0);
+  const g0glow = ctx.createRadialGradient(g0x,g0y,0,g0x,g0y,28);
+  g0glow.addColorStop(0,'rgba(245,158,11,0.45)'); g0glow.addColorStop(1,'rgba(245,158,11,0)');
+  ctx.fillStyle = g0glow;
+  ctx.beginPath(); ctx.arc(g0x,g0y,28,0,Math.PI*2); ctx.fill();
+
+  ctx.fillStyle = '#f59e0b'; ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 2.5;
+  ctx.beginPath(); ctx.arc(g0x,g0y,11,0,Math.PI*2); ctx.fill(); ctx.stroke();
+
+  ctx.fillStyle = '#fbbf24'; ctx.font = 'bold 14px "Microsoft YaHei",sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('gam-0', g0x + 18, g0y - 10);
+  ctx.fillStyle = '#6b7280'; ctx.font = '11px "Microsoft YaHei",sans-serif';
+  ctx.fillText('(6Y, 0) 尽用信息 · 不验证', g0x + 18, g0y + 8);
+
+  // ── WF ──
+  const wfx = x(3), wfy = y(1);
+  const wfglow = ctx.createRadialGradient(wfx,wfy,0,wfx,wfy,28);
+  wfglow.addColorStop(0,'rgba(96,165,250,0.45)'); wfglow.addColorStop(1,'rgba(96,165,250,0)');
+  ctx.fillStyle = wfglow;
+  ctx.beginPath(); ctx.arc(wfx,wfy,28,0,Math.PI*2); ctx.fill();
+
+  ctx.fillStyle = '#60a5fa'; ctx.strokeStyle = '#93c5fd'; ctx.lineWidth = 2.5;
+  ctx.beginPath(); ctx.arc(wfx,wfy,11,0,Math.PI*2); ctx.fill(); ctx.stroke();
+
+  ctx.fillStyle = '#93c5fd'; ctx.font = 'bold 14px "Microsoft YaHei",sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('WF 3Y/1Y', wfx + 18, wfy - 10);
+  ctx.fillStyle = '#6b7280'; ctx.font = '11px "Microsoft YaHei",sans-serif';
+  ctx.fillText('(3Y, 1Y) 有诚实检验', wfx + 18, wfy + 8);
+
+  // ── P_mean ──
+  const pmx = x(5), pmy = y(0);
+  ctx.strokeStyle = 'rgba(167,139,250,0.5)'; ctx.lineWidth = 2; ctx.setLineDash([4,3]);
+  ctx.beginPath(); ctx.arc(pmx,pmy,9,0,Math.PI*2); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#a78bfa'; ctx.font = 'bold 12px "Microsoft YaHei",sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText('P_mean', pmx-14, pmy-14);
+  ctx.fillStyle = '#6b7280'; ctx.font = '10px "Microsoft YaHei",sans-serif';
+  ctx.fillText('(~6Y等效, 3Y)', pmx-14, pmy+2);
+
+  // ── Arrow gam-0 → WF ──
+  const dx = wfx - g0x, dy = wfy - g0y;
+  const dist = Math.sqrt(dx*dx+dy*dy);
+  const sx = g0x - 12*(dx/dist), sy = g0y - 12*(dy/dist);
+  const ex = wfx - 12*(dx/dist), ey = wfy - 10*(dy/dist);
+
+  ctx.strokeStyle = 'rgba(167,139,250,0.45)'; ctx.lineWidth = 2.5; ctx.setLineDash([5,4]);
+  ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ex, ey); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // arrowhead
+  const ang = Math.atan2(ey-sy, ex-sx);
+  ctx.fillStyle = 'rgba(167,139,250,0.6)';
+  ctx.beginPath();
+  ctx.moveTo(ex, ey);
+  ctx.lineTo(ex-12*Math.cos(ang-0.55), ey-12*Math.sin(ang-0.55));
+  ctx.lineTo(ex-12*Math.cos(ang+0.55), ey-12*Math.sin(ang+0.55));
+  ctx.closePath(); ctx.fill();
+
+  // label on arrow
+  const mx = (sx+ex)/2, my = (sy+ey)/2;
+  ctx.fillStyle = '#a78bfa'; ctx.font = 'bold 12px "Microsoft YaHei",sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('"诚实折价"', mx + 8, my - 12);
+  ctx.fillStyle = '#6b7280'; ctx.font = '10px "Microsoft YaHei",sans-serif';
+  ctx.fillText('距离 = AR 差距', mx + 8, my + 4);
+
+  // ── Other WF variants as small dots ──
+  const variants = [
+    [2, 1, 'rgba(96,165,250,0.35)'],
+    [2, 2, 'rgba(96,165,250,0.25)'],
+    [4, 1, 'rgba(96,165,250,0.35)'],
+    [4, 2, 'rgba(96,165,250,0.15)'],
+  ];
+  variants.forEach(([iv, ov, clr]) => {
+    ctx.fillStyle = clr;
+    ctx.beginPath(); ctx.arc(x(iv), y(ov), 4, 0, Math.PI*2); ctx.fill();
+  });
+
+  // ── Legend ──
+  const lx = pad.left + 6, ly = pad.top + 10;
+  [
+    ['#f59e0b', 'gam-0 当前基准'],
+    ['#60a5fa', 'WF 3Y/1Y'],
+    ['rgba(167,139,250,0.6)', 'P_mean 假设'],
+    ['rgba(96,165,250,0.3)', '其他 WF 变体 (2Y/1Y 等)']
+  ].forEach(([clr, lbl], i) => {
+    const rx = lx + (i < 2 ? 0 : i === 2 ? 280 : 430);
+    const ry = i < 2 ? ly + i*22 : ly + (i-2)*22;
+    if (i === 2) {
+      ctx.strokeStyle = clr; ctx.setLineDash([3,2]);
+      ctx.beginPath(); ctx.arc(rx+5, ry+5, 5, 0, Math.PI*2); ctx.stroke();
+      ctx.setLineDash([]);
+    } else {
+      ctx.fillStyle = clr;
+      ctx.beginPath(); ctx.arc(rx+5, ry+5, 5, 0, Math.PI*2); ctx.fill();
+    }
+    ctx.fillStyle = '#6b7280'; ctx.font = '10px "Microsoft YaHei",sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(lbl, rx+15, ry+9);
+  });
+
+})();
+</script>
+
+</body>
+</html>

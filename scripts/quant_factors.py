@@ -68,10 +68,7 @@ def factor_volume_ratio(daily_df: pd.DataFrame, window: int = 20) -> float:
     df["change"] = df["close"].astype(float).pct_change()
     df = df.iloc[1:]  # 去掉第一行 NaN
 
-    vol_col = "volume"
-    # 如果有 amount 列优先用（成交额比成交量更有意义）
-    if "amount" in df.columns:
-        vol_col = "amount"
+    vol_col = "amount"  # always use amount (成交额), not raw volume
 
     up_days = df[df["change"] > 0]
     down_days = df[df["change"] < 0]
@@ -105,9 +102,7 @@ def factor_volume_ratio_normalized(daily_df: pd.DataFrame, window: int = 20,
     if daily_df is None or len(daily_df) < min_days:
         return np.nan
 
-    vol_col = "volume"
-    if "amount" in daily_df.columns:
-        vol_col = "amount"
+    vol_col = "amount"  # always use amount (成交额), not raw volume
 
     df = daily_df.tail(min_days).copy()
     vol = df[vol_col].astype(float)

@@ -9,7 +9,7 @@
 | 当前三派参数 | `../../config/quant_universe.yaml` |
 | 当前版本摘要 | `../../plans/Board.md` |
 | 参数优化流程 | `../../docs/runbook/v2-quant/optimization.md` |
-| promotion 流程 | `../../docs/runbook/v2-quant/promotion.md` |
+| 研究结论投产 | 更新 `../../research/params/README.md` 时间线 + 对应 REQ 状态 |
 
 ## Active / Review Queue
 

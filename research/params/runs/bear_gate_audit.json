@@ -1,0 +1,1102 @@
+[
+ {
+  "name": "A:breadth W=10 T=0.2",
+  "rows": [
+   {
+    "seg": "2020-05-29~2020-06-18",
+    "kind": "pos",
+    "days": 15,
+    "activation": 0.0
+   },
+   {
+    "seg": "2021-04-16~2021-12-09",
+    "kind": "pos",
+    "days": 159,
+    "activation": 0.05
+   },
+   {
+    "seg": "2022-01-07~2022-01-28",
+    "kind": "deep_neg",
+    "days": 16,
+    "activation": 0.312
+   },
+   {
+    "seg": "2022-02-11~2022-06-08",
+    "kind": "pos",
+    "days": 78,
+    "activation": 0.218
+   },
+   {
+    "seg": "2022-06-10~2022-09-30",
+    "kind": "pos",
+    "days": 80,
+    "activation": 0.237
+   },
+   {
+    "seg": "2022-10-14~2023-01-19",
+    "kind": "pos",
+    "days": 69,
+    "activation": 0.13
+   },
+   {
+    "seg": "2023-05-26~2023-06-27",
+    "kind": "pos",
+    "days": 21,
+    "activation": 0.0
+   },
+   {
+    "seg": "2023-06-30~2023-07-27",
+    "kind": "pos",
+    "days": 20,
+    "activation": 0.0
+   },
+   {
+    "seg": "2023-08-11~2023-09-28",
+    "kind": "pos",
+    "days": 35,
+    "activation": 0.343
+   },
+   {
+    "seg": "2023-10-13~2024-02-08",
+    "kind": "deep_neg",
+    "days": 84,
+    "activation": 0.25
+   },
+   {
+    "seg": "2024-07-05~2024-09-26",
+    "kind": "deep_neg",
+    "days": 58,
+    "activation": 0.155
+   },
+   {
+    "seg": "2025-02-28~2025-03-13",
+    "kind": "pos",
+    "days": 10,
+    "activation": 0.0
+   },
+   {
+    "seg": "2025-04-03~2025-04-09",
+    "kind": "neg",
+    "days": 4,
+    "activation": 0.75
+   },
+   {
+    "seg": "2025-04-11~2025-05-06",
+    "kind": "pos",
+    "days": 15,
+    "activation": 0.0
+   },
+   {
+    "seg": "2025-05-09~2025-05-15",
+    "kind": "neg",
+    "days": 5,
+    "activation": 0.0
+   },
+   {
+    "seg": "2025-06-20~2025-07-03",
+    "kind": "neg",
+    "days": 10,
+    "activation": 0.1
+   },
+   {
+    "seg": "2026-03-20~2026-04-09",
+    "kind": "pos",
+    "days": 14,
+    "activation": 0.429
+   }
+  ],
+  "deep_hits_ge50": 0,
+  "pos_fp_ge30": 2,
+  "PASS": false
+ },
+ {
+  "name": "A:breadth W=10 T=0.3",
+  "rows": [
+   {
+    "seg": "2020-05-29~2020-06-18",
+    "kind": "pos",
+    "days": 15,
+    "activation": 0.067
+   },
+   {
+    "seg": "2021-04-16~2021-12-09",
+    "kind": "pos",
+    "days": 159,
+    "activation": 0.151
+   },
+   {
+    "seg": "2022-01-07~2022-01-28",
+    "kind": "deep_neg",
+    "days": 16,
+    "activation": 0.375
+   },
+   {
+    "seg": "2022-02-11~2022-06-08",
+    "kind": "pos",
+    "days": 78,
+    "activation": 0.308
+   },
+   {
+    "seg": "2022-06-10~2022-09-30",
+    "kind": "pos",
+    "days": 80,
+    "activation": 0.362
+   },
+   {
+    "seg": "2022-10-14~2023-01-19",
+    "kind": "pos",
+    "days": 69,
+    "activation": 0.203
+   },
+   {
+    "seg": "2023-05-26~2023-06-27",
+    "kind": "pos",
+    "days": 21,
+    "activation": 0.286
+   },
+   {
+    "seg": "2023-06-30~2023-07-27",
+    "kind": "pos",
+    "days": 20,
+    "activation": 0.05
+   },
+   {
+    "seg": "2023-08-11~2023-09-28",
+    "kind": "pos",
+    "days": 35,
+    "activation": 0.543
+   },
+   {
+    "seg": "2023-10-13~2024-02-08",
+    "kind": "deep_neg",
+    "days": 84,
+    "activation": 0.548
+   },
+   {
+    "seg": "2024-07-05~2024-09-26",
+    "kind": "deep_neg",
+    "days": 58,
+    "activation": 0.379
+   },
+   {
+    "seg": "2025-02-28~2025-03-13",
+    "kind": "pos",
+    "days": 10,
+    "activation": 0.3
+   },
+   {
+    "seg": "2025-04-03~2025-04-09",
+    "kind": "neg",
+    "days": 4,
+    "activation": 1.0
+   },
+   {
+    "seg": "2025-04-11~2025-05-06",
+    "kind": "pos",
+    "days": 15,
+    "activation": 0.067
+   },
+   {
+    "seg": "2025-05-09~2025-05-15",
+    "kind": "neg",
+    "days": 5,
+    "activation": 0.0
+   },
+   {
+    "seg": "2025-06-20~2025-07-03",
+    "kind": "neg",
+    "days": 10,
+    "activation": 0.2
+   },
+   {
+    "seg": "2026-03-20~2026-04-09",
+    "kind": "pos",
+    "days": 14,
+    "activation": 0.643
+   }
+  ],
+  "deep_hits_ge50": 1,
+  "pos_fp_ge30": 5,
+  "PASS": false
+ },
+ {
+  "name": "A:breadth W=10 T=0.4",
+  "rows": [
+   {
+    "seg": "2020-05-29~2020-06-18",
+    "kind": "pos",
+    "days": 15,
+    "activation": 0.067
+   },
+   {
+    "seg": "2021-04-16~2021-12-09",
+    "kind": "pos",
+    "days": 159,
+    "activation": 0.302
+   },
+   {
+    "seg": "2022-01-07~2022-01-28",
+    "kind": "deep_neg",
+    "days": 16,
+    "activation": 0.688
+   },
+   {
+    "seg": "2022-02-11~2022-06-08",
+    "kind": "pos",
+    "days": 78,
+    "activation": 0.372
+   },
+   {
+    "seg": "2022-06-10~2022-09-30",
+    "kind": "pos",
+    "days": 80,
+    "activation": 0.5
+   },
+   {
+    "seg": "2022-10-14~2023-01-19",
+    "kind": "pos",
+    "days": 69,
+    "activation": 0.29
+   },
+   {
+    "seg": "2023-05-26~2023-06-27",
+    "kind": "pos",
+    "days": 21,
+    "activation": 0.381
+   },
+   {
+    "seg": "2023-06-30~2023-07-27",
+    "kind": "pos",
+    "days": 20,
+    "activation": 0.25
+   },
+   {
+    "seg": "2023-08-11~2023-09-28",
+    "kind": "pos",
+    "days": 35,
+    "activation": 0.657
+   },
+   {
+    "seg": "2023-10-13~2024-02-08",
+    "kind": "deep_neg",
+    "days": 84,
+    "activation": 0.595
+   },
+   {
+    "seg": "2024-07-05~2024-09-26",
+    "kind": "deep_neg",
+    "days": 58,
+    "activation": 0.552
+   },
+   {
+    "seg": "2025-02-28~2025-03-13",
+    "kind": "pos",
+    "days": 10,
+    "activation": 0.4
+   },
+   {
+    "seg": "2025-04-03~2025-04-09",
+    "kind": "neg",
+    "days": 4,
+    "activation": 1.0
+   },
+   {
+    "seg": "2025-04-11~2025-05-06",
+    "kind": "pos",
+    "days": 15,
+    "activation": 0.133
+   },
+   {
+    "seg": "2025-05-09~2025-05-15",
+    "kind": "neg",
+    "days": 5,
+    "activation": 0.0
+   },
+   {
+    "seg": "2025-06-20~2025-07-03",
+    "kind": "neg",
+    "days": 10,
+    "activation": 0.2
+   },
+   {
+    "seg": "2026-03-20~2026-04-09",
+    "kind": "pos",
+    "days": 14,
+    "activation": 0.714
+   }
+  ],
+  "deep_hits_ge50": 3,
+  "pos_fp_ge30": 7,
+  "PASS": false
+ },
+ {
+  "name": "A:breadth W=20 T=0.2",
+  "rows": [
+   {
+    "seg": "2020-05-29~2020-06-18",
+    "kind": "pos",
+    "days": 15,
+    "activation": 0.0
+   },
+   {
+    "seg": "2021-04-16~2021-12-09",
+    "kind": "pos",
+    "days": 159,
+    "activation": 0.019
+   },
+   {
+    "seg": "2022-01-07~2022-01-28",
+    "kind": "deep_neg",
+    "days": 16,
+    "activation": 0.25
+   },
+   {
+    "seg": "2022-02-11~2022-06-08",
+    "kind": "pos",
+    "days": 78,
+    "activation": 0.256
+   },
+   {
+    "seg": "2022-06-10~2022-09-30",
+    "kind": "pos",
+    "days": 80,
+    "activation": 0.2
+   },
+   {
+    "seg": "2022-10-14~2023-01-19",
+    "kind": "pos",
+    "days": 69,
+    "activation": 0.087
+   },
+   {
+    "seg": "2023-05-26~2023-06-27",
+    "kind": "pos",
+    "days": 21,
+    "activation": 0.0
+   },
+   {
+    "seg": "2023-06-30~2023-07-27",
+    "kind": "pos",
+    "days": 20,
+    "activation": 0.0
+   },
+   {
+    "seg": "2023-08-11~2023-09-28",
+    "kind": "pos",
+    "days": 35,
+    "activation": 0.371
+   },
+   {
+    "seg": "2023-10-13~2024-02-08",
+    "kind": "deep_neg",
+    "days": 84,
+    "activation": 0.274
+   },
+   {
+    "seg": "2024-07-05~2024-09-26",
+    "kind": "deep_neg",
+    "days": 58,
+    "activation": 0.207
+   },
+   {
+    "seg": "2025-02-28~2025-03-13",
+    "kind": "pos",
+    "days": 10,
+    "activation": 0.0
+   },
+   {
+    "seg": "2025-04-03~2025-04-09",
+    "kind": "neg",
+    "days": 4,
+    "activation": 1.0
+   },
+   {
+    "seg": "2025-04-11~2025-05-06",
+    "kind": "pos",
+    "days": 15,
+    "activation": 0.267
+   },
+   {
+    "seg": "2025-05-09~2025-05-15",
+    "kind": "neg",
+    "days": 5,
+    "activation": 0.0
+   },
+   {
+    "seg": "2025-06-20~2025-07-03",
+    "kind": "neg",
+    "days": 10,
+    "activation": 0.0
+   },
+   {
+    "seg": "2026-03-20~2026-04-09",
+    "kind": "pos",
+    "days": 14,
+    "activation": 0.857
+   }
+  ],
+  "deep_hits_ge50": 0,
+  "pos_fp_ge30": 2,
+  "PASS": false
+ },
+ {
+  "name": "A:breadth W=20 T=0.3",
+  "rows": [
+   {
+    "seg": "2020-05-29~2020-06-18",
+    "kind": "pos",
+    "days": 15,
+    "activation": 0.0
+   },
+   {
+    "seg": "2021-04-16~2021-12-09",
+    "kind": "pos",
+    "days": 159,
+    "activation": 0.107
+   },
+   {
+    "seg": "2022-01-07~2022-01-28",
+    "kind": "deep_neg",
+    "days": 16,
+    "activation": 0.438
+   },
+   {
+    "seg": "2022-02-11~2022-06-08",
+    "kind": "pos",
+    "days": 78,
+    "activation": 0.41
+   },
+   {
+    "seg": "2022-06-10~2022-09-30",
+    "kind": "pos",
+    "days": 80,
+    "activation": 0.388
+   },
+   {
+    "seg": "2022-10-14~2023-01-19",
+    "kind": "pos",
+    "days": 69,
+    "activation": 0.174
+   },
+   {
+    "seg": "2023-05-26~2023-06-27",
+    "kind": "pos",
+    "days": 21,
+    "activation": 0.19
+   },
+   {
+    "seg": "2023-06-30~2023-07-27",
+    "kind": "pos",
+    "days": 20,
+    "activation": 0.05
+   },
+   {
+    "seg": "2023-08-11~2023-09-28",
+    "kind": "pos",
+    "days": 35,
+    "activation": 0.571
+   },
+   {
+    "seg": "2023-10-13~2024-02-08",
+    "kind": "deep_neg",
+    "days": 84,
+    "activation": 0.512
+   },
+   {
+    "seg": "2024-07-05~2024-09-26",
+    "kind": "deep_neg",
+    "days": 58,
+    "activation": 0.552
+   },
+   {
+    "seg": "2025-02-28~2025-03-13",
+    "kind": "pos",
+    "days": 10,
+    "activation": 0.0
+   },
+   {
+    "seg": "2025-04-03~2025-04-09",
+    "kind": "neg",
+    "days": 4,
+    "activation": 1.0
+   },
+   {
+    "seg": "2025-04-11~2025-05-06",
+    "kind": "pos",
+    "days": 15,
+    "activation": 0.4
+   },
+   {
+    "seg": "2025-05-09~2025-05-15",
+    "kind": "neg",
+    "days": 5,
+    "activation": 0.0
+   },
+   {
+    "seg": "2025-06-20~2025-07-03",
+    "kind": "neg",
+    "days": 10,
+    "activation": 0.1
+   },
+   {
+    "seg": "2026-03-20~2026-04-09",
+    "kind": "pos",
+    "days": 14,
+    "activation": 0.857
+   }
+  ],
+  "deep_hits_ge50": 2,
+  "pos_fp_ge30": 5,
+  "PASS": false
+ },
+ {
+  "name": "A:breadth W=20 T=0.4",
+  "rows": [
+   {
+    "seg": "2020-05-29~2020-06-18",
+    "kind": "pos",
+    "days": 15,
+    "activation": 0.0
+   },
+   {
+    "seg": "2021-04-16~2021-12-09",
+    "kind": "pos",
+    "days": 159,
+    "activation": 0.258
+   },
+   {
+    "seg": "2022-01-07~2022-01-28",
+    "kind": "deep_neg",
+    "days": 16,
+    "activation": 0.75
+   },
+   {
+    "seg": "2022-02-11~2022-06-08",
+    "kind": "pos",
+    "days": 78,
+    "activation": 0.551
+   },
+   {
+    "seg": "2022-06-10~2022-09-30",
+    "kind": "pos",
+    "days": 80,
+    "activation": 0.525
+   },
+   {
+    "seg": "2022-10-14~2023-01-19",
+    "kind": "pos",
+    "days": 69,
+    "activation": 0.275
+   },
+   {
+    "seg": "2023-05-26~2023-06-27",
+    "kind": "pos",
+    "days": 21,
+    "activation": 0.524
+   },
+   {
+    "seg": "2023-06-30~2023-07-27",
+    "kind": "pos",
+    "days": 20,
+    "activation": 0.1
+   },
+   {
+    "seg": "2023-08-11~2023-09-28",
+    "kind": "pos",
+    "days": 35,
+    "activation": 0.714
+   },
+   {
+    "seg": "2023-10-13~2024-02-08",
+    "kind": "deep_neg",
+    "days": 84,
+    "activation": 0.69
+   },
+   {
+    "seg": "2024-07-05~2024-09-26",
+    "kind": "deep_neg",
+    "days": 58,
+    "activation": 0.672
+   },
+   {
+    "seg": "2025-02-28~2025-03-13",
+    "kind": "pos",
+    "days": 10,
+    "activation": 0.0
+   },
+   {
+    "seg": "2025-04-03~2025-04-09",
+    "kind": "neg",
+    "days": 4,
+    "activation": 1.0
+   },
+   {
+    "seg": "2025-04-11~2025-05-06",
+    "kind": "pos",
+    "days": 15,
+    "activation": 0.467
+   },
+   {
+    "seg": "2025-05-09~2025-05-15",
+    "kind": "neg",
+    "days": 5,
+    "activation": 0.0
+   },
+   {
+    "seg": "2025-06-20~2025-07-03",
+    "kind": "neg",
+    "days": 10,
+    "activation": 0.1
+   },
+   {
+    "seg": "2026-03-20~2026-04-09",
+    "kind": "pos",
+    "days": 14,
+    "activation": 0.857
+   }
+  ],
+  "deep_hits_ge50": 3,
+  "pos_fp_ge30": 6,
+  "PASS": false
+ },
+ {
+  "name": "B:dispersion pct<=10%",
+  "rows": [
+   {
+    "seg": "2020-05-29~2020-06-18",
+    "kind": "pos",
+    "days": 0,
+    "activation": NaN
+   },
+   {
+    "seg": "2021-04-16~2021-12-09",
+    "kind": "pos",
+    "days": 159,
+    "activation": 0.05
+   },
+   {
+    "seg": "2022-01-07~2022-01-28",
+    "kind": "deep_neg",
+    "days": 16,
+    "activation": 0.062
+   },
+   {
+    "seg": "2022-02-11~2022-06-08",
+    "kind": "pos",
+    "days": 78,
+    "activation": 0.077
+   },
+   {
+    "seg": "2022-06-10~2022-09-30",
+    "kind": "pos",
+    "days": 80,
+    "activation": 0.237
+   },
+   {
+    "seg": "2022-10-14~2023-01-19",
+    "kind": "pos",
+    "days": 69,
+    "activation": 0.261
+   },
+   {
+    "seg": "2023-05-26~2023-06-27",
+    "kind": "pos",
+    "days": 21,
+    "activation": 0.095
+   },
+   {
+    "seg": "2023-06-30~2023-07-27",
+    "kind": "pos",
+    "days": 20,
+    "activation": 0.3
+   },
+   {
+    "seg": "2023-08-11~2023-09-28",
+    "kind": "pos",
+    "days": 35,
+    "activation": 0.229
+   },
+   {
+    "seg": "2023-10-13~2024-02-08",
+    "kind": "deep_neg",
+    "days": 84,
+    "activation": 0.143
+   },
+   {
+    "seg": "2024-07-05~2024-09-26",
+    "kind": "deep_neg",
+    "days": 58,
+    "activation": 0.034
+   },
+   {
+    "seg": "2025-02-28~2025-03-13",
+    "kind": "pos",
+    "days": 10,
+    "activation": 0.0
+   },
+   {
+    "seg": "2025-04-03~2025-04-09",
+    "kind": "neg",
+    "days": 4,
+    "activation": 0.0
+   },
+   {
+    "seg": "2025-04-11~2025-05-06",
+    "kind": "pos",
+    "days": 15,
+    "activation": 0.267
+   },
+   {
+    "seg": "2025-05-09~2025-05-15",
+    "kind": "neg",
+    "days": 5,
+    "activation": 0.0
+   },
+   {
+    "seg": "2025-06-20~2025-07-03",
+    "kind": "neg",
+    "days": 10,
+    "activation": 0.3
+   },
+   {
+    "seg": "2026-03-20~2026-04-09",
+    "kind": "pos",
+    "days": 14,
+    "activation": 0.0
+   }
+  ],
+  "deep_hits_ge50": 0,
+  "pos_fp_ge30": 1,
+  "PASS": false
+ },
+ {
+  "name": "B:dispersion pct<=20%",
+  "rows": [
+   {
+    "seg": "2020-05-29~2020-06-18",
+    "kind": "pos",
+    "days": 0,
+    "activation": NaN
+   },
+   {
+    "seg": "2021-04-16~2021-12-09",
+    "kind": "pos",
+    "days": 159,
+    "activation": 0.132
+   },
+   {
+    "seg": "2022-01-07~2022-01-28",
+    "kind": "deep_neg",
+    "days": 16,
+    "activation": 0.188
+   },
+   {
+    "seg": "2022-02-11~2022-06-08",
+    "kind": "pos",
+    "days": 78,
+    "activation": 0.141
+   },
+   {
+    "seg": "2022-06-10~2022-09-30",
+    "kind": "pos",
+    "days": 80,
+    "activation": 0.425
+   },
+   {
+    "seg": "2022-10-14~2023-01-19",
+    "kind": "pos",
+    "days": 69,
+    "activation": 0.391
+   },
+   {
+    "seg": "2023-05-26~2023-06-27",
+    "kind": "pos",
+    "days": 21,
+    "activation": 0.143
+   },
+   {
+    "seg": "2023-06-30~2023-07-27",
+    "kind": "pos",
+    "days": 20,
+    "activation": 0.4
+   },
+   {
+    "seg": "2023-08-11~2023-09-28",
+    "kind": "pos",
+    "days": 35,
+    "activation": 0.457
+   },
+   {
+    "seg": "2023-10-13~2024-02-08",
+    "kind": "deep_neg",
+    "days": 84,
+    "activation": 0.238
+   },
+   {
+    "seg": "2024-07-05~2024-09-26",
+    "kind": "deep_neg",
+    "days": 58,
+    "activation": 0.103
+   },
+   {
+    "seg": "2025-02-28~2025-03-13",
+    "kind": "pos",
+    "days": 10,
+    "activation": 0.2
+   },
+   {
+    "seg": "2025-04-03~2025-04-09",
+    "kind": "neg",
+    "days": 4,
+    "activation": 0.0
+   },
+   {
+    "seg": "2025-04-11~2025-05-06",
+    "kind": "pos",
+    "days": 15,
+    "activation": 0.4
+   },
+   {
+    "seg": "2025-05-09~2025-05-15",
+    "kind": "neg",
+    "days": 5,
+    "activation": 0.2
+   },
+   {
+    "seg": "2025-06-20~2025-07-03",
+    "kind": "neg",
+    "days": 10,
+    "activation": 0.6
+   },
+   {
+    "seg": "2026-03-20~2026-04-09",
+    "kind": "pos",
+    "days": 14,
+    "activation": 0.0
+   }
+  ],
+  "deep_hits_ge50": 0,
+  "pos_fp_ge30": 5,
+  "PASS": false
+ },
+ {
+  "name": "B:dispersion pct<=30%",
+  "rows": [
+   {
+    "seg": "2020-05-29~2020-06-18",
+    "kind": "pos",
+    "days": 0,
+    "activation": NaN
+   },
+   {
+    "seg": "2021-04-16~2021-12-09",
+    "kind": "pos",
+    "days": 159,
+    "activation": 0.264
+   },
+   {
+    "seg": "2022-01-07~2022-01-28",
+    "kind": "deep_neg",
+    "days": 16,
+    "activation": 0.188
+   },
+   {
+    "seg": "2022-02-11~2022-06-08",
+    "kind": "pos",
+    "days": 78,
+    "activation": 0.218
+   },
+   {
+    "seg": "2022-06-10~2022-09-30",
+    "kind": "pos",
+    "days": 80,
+    "activation": 0.487
+   },
+   {
+    "seg": "2022-10-14~2023-01-19",
+    "kind": "pos",
+    "days": 69,
+    "activation": 0.449
+   },
+   {
+    "seg": "2023-05-26~2023-06-27",
+    "kind": "pos",
+    "days": 21,
+    "activation": 0.238
+   },
+   {
+    "seg": "2023-06-30~2023-07-27",
+    "kind": "pos",
+    "days": 20,
+    "activation": 0.55
+   },
+   {
+    "seg": "2023-08-11~2023-09-28",
+    "kind": "pos",
+    "days": 35,
+    "activation": 0.6
+   },
+   {
+    "seg": "2023-10-13~2024-02-08",
+    "kind": "deep_neg",
+    "days": 84,
+    "activation": 0.321
+   },
+   {
+    "seg": "2024-07-05~2024-09-26",
+    "kind": "deep_neg",
+    "days": 58,
+    "activation": 0.207
+   },
+   {
+    "seg": "2025-02-28~2025-03-13",
+    "kind": "pos",
+    "days": 10,
+    "activation": 0.3
+   },
+   {
+    "seg": "2025-04-03~2025-04-09",
+    "kind": "neg",
+    "days": 4,
+    "activation": 0.25
+   },
+   {
+    "seg": "2025-04-11~2025-05-06",
+    "kind": "pos",
+    "days": 15,
+    "activation": 0.533
+   },
+   {
+    "seg": "2025-05-09~2025-05-15",
+    "kind": "neg",
+    "days": 5,
+    "activation": 0.2
+   },
+   {
+    "seg": "2025-06-20~2025-07-03",
+    "kind": "neg",
+    "days": 10,
+    "activation": 0.6
+   },
+   {
+    "seg": "2026-03-20~2026-04-09",
+    "kind": "pos",
+    "days": 14,
+    "activation": 0.071
+   }
+  ],
+  "deep_hits_ge50": 0,
+  "pos_fp_ge30": 6,
+  "PASS": false
+ },
+ {
+  "name": "B:dispersion pct<=40%",
+  "rows": [
+   {
+    "seg": "2020-05-29~2020-06-18",
+    "kind": "pos",
+    "days": 0,
+    "activation": NaN
+   },
+   {
+    "seg": "2021-04-16~2021-12-09",
+    "kind": "pos",
+    "days": 159,
+    "activation": 0.371
+   },
+   {
+    "seg": "2022-01-07~2022-01-28",
+    "kind": "deep_neg",
+    "days": 16,
+    "activation": 0.375
+   },
+   {
+    "seg": "2022-02-11~2022-06-08",
+    "kind": "pos",
+    "days": 78,
+    "activation": 0.308
+   },
+   {
+    "seg": "2022-06-10~2022-09-30",
+    "kind": "pos",
+    "days": 80,
+    "activation": 0.625
+   },
+   {
+    "seg": "2022-10-14~2023-01-19",
+    "kind": "pos",
+    "days": 69,
+    "activation": 0.551
+   },
+   {
+    "seg": "2023-05-26~2023-06-27",
+    "kind": "pos",
+    "days": 21,
+    "activation": 0.286
+   },
+   {
+    "seg": "2023-06-30~2023-07-27",
+    "kind": "pos",
+    "days": 20,
+    "activation": 0.7
+   },
+   {
+    "seg": "2023-08-11~2023-09-28",
+    "kind": "pos",
+    "days": 35,
+    "activation": 0.714
+   },
+   {
+    "seg": "2023-10-13~2024-02-08",
+    "kind": "deep_neg",
+    "days": 84,
+    "activation": 0.429
+   },
+   {
+    "seg": "2024-07-05~2024-09-26",
+    "kind": "deep_neg",
+    "days": 58,
+    "activation": 0.259
+   },
+   {
+    "seg": "2025-02-28~2025-03-13",
+    "kind": "pos",
+    "days": 10,
+    "activation": 0.3
+   },
+   {
+    "seg": "2025-04-03~2025-04-09",
+    "kind": "neg",
+    "days": 4,
+    "activation": 0.25
+   },
+   {
+    "seg": "2025-04-11~2025-05-06",
+    "kind": "pos",
+    "days": 15,
+    "activation": 0.6
+   },
+   {
+    "seg": "2025-05-09~2025-05-15",
+    "kind": "neg",
+    "days": 5,
+    "activation": 0.2
+   },
+   {
+    "seg": "2025-06-20~2025-07-03",
+    "kind": "neg",
+    "days": 10,
+    "activation": 0.6
+   },
+   {
+    "seg": "2026-03-20~2026-04-09",
+    "kind": "pos",
+    "days": 14,
+    "activation": 0.071
+   }
+  ],
+  "deep_hits_ge50": 0,
+  "pos_fp_ge30": 8,
+  "PASS": false
+ }
+]

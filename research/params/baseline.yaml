@@ -4,17 +4,17 @@ preset: gam-0
 window: "2020-06-01 ~ 2026-06-01 (固定 6Y)"
 
 metrics:
-  annual_return_pct: 137.6
-  max_drawdown_pct: -36.1
-  sortino: 2.65
-  calmar: 3.81
-  sharpe: 1.81
+  annual_return_pct: 142.4
+  max_drawdown_pct: -38.9
+  sortino: 2.68
+  calmar: 3.67
+  sharpe: 1.75
 
 config_signature:
   ma_bull_pos: 1.80
-  ma_bear_pos: 0.60
+  ma_bear_pos: 1.00
   max_holdings: 2
-  ma_trend_period: 19
+  ma_trend_period: 18
   signal_steps: 40
   top_boost: 8
   concentration: 0.62

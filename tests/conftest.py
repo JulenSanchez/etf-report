@@ -60,7 +60,7 @@ def temp_config_dir(tmp_path: Path) -> Path:
                 name: "示例ETF"
                 market: "sh"
                 benchmark:
-                  code: "sh000300"
+                  code: "sh510300"
                   name: "沪深300"
 
             api:

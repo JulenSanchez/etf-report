@@ -107,7 +107,7 @@ def test_fetch_index_data_sina_normalizes_response(monkeypatch, load_module, fak
 
     monkeypatch.setattr(module.requests, "get", lambda *args, **kwargs: fake_response_factory(json_data=payload))
 
-    result = module.fetch_index_data_sina("sh000300", days=2)
+    result = module.fetch_index_data_sina("sh510300", days=2)
 
     assert result["dates"] == ["2026-01-01", "2026-01-02"]
     assert result["closes"] == [100.0, 110.0]
@@ -274,7 +274,7 @@ def test_main_writes_data_file_and_updates_js(tmp_path, monkeypatch, load_module
                 "code": "510000",
                 "name": "示例ETF",
                 "market": "sh",
-                "benchmark": {"name": "沪深300", "code": "sh000300"},
+                "benchmark": {"name": "沪深300", "code": "sh510300"},
             }
         ],
     )
@@ -347,7 +347,7 @@ def test_main_falls_back_to_previous_data_when_fetch_fails(tmp_path, monkeypatch
                 "code": "510000",
                 "name": "示例ETF",
                 "market": "sh",
-                "benchmark": {"name": "沪深300", "code": "sh000300"},
+                "benchmark": {"name": "沪深300", "code": "sh510300"},
             }
         ],
     )

@@ -40,7 +40,7 @@
 | 运行时配置 | `config/config.yaml` | ✅ 可以 | 已移除本地绝对路径，内容可公开 |
 | 敏感配置 | `config/secrets.yaml` | ❌ 不可 | 含 API 密钥等敏感信息，.gitignore 必须覆盖 |
 | 运行产物与缓存 | `data/`、`logs/`、`_working/`、`.backup/`、`outputs/` | ❌ 不可 | 运行缓存、日志、临时输出或备份，本地生成即可 |
-| 研究证据 | `research/**/README.md`、`research/**/report.md`、小型 `results.json` / `analysis.json`、`research/promoted/**` | ✅ 按需 | 研究结论、promotion 证据和治理记录 |
+| 研究证据 | `research/**/README.md`、`research/**/report.md`、小型 `results.json` / `analysis.json` | ✅ 按需 | 研究结论和治理记录 |
 | 研究中间产物 | `research/**/*.csv`、`research/**/*.db`、大型临时 JSON/日志/脚本 | ❌ 不可 | 可重生成或只用于本地调试 |
 
 ### `docs/` 准入标准

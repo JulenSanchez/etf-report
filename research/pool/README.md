@@ -8,7 +8,7 @@
 |---|---|
 | ETF 候选筛选 | `../../docs/runbook/v2-quant/screening.md` |
 | ETF 池变更 | `../../docs/runbook/v2-quant/pool-change.md` |
-| 研究投产 | `../../docs/runbook/v2-quant/promotion.md` |
+| 研究结论投产 | 更新 `../../research/params/README.md` 时间线 + 对应 REQ 状态 |
 
 ## 字段参考
 

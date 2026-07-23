@@ -58,8 +58,9 @@ def rebuild_weekly_from_daily(daily_df):
         "close": ("close", "last"),
         "high": ("high", "max"),
         "low": ("low", "min"),
-        "volume": ("volume", "sum"),
     }
+    if "volume" in df.columns:
+        agg["volume"] = ("volume", "sum")
     if "amount" in df.columns:
         agg["amount"] = ("amount", "sum")
     result = df.groupby("week").agg(**agg).reset_index(drop=True)

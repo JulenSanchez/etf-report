@@ -9,17 +9,23 @@ for /f %%i in ('powershell -Command "Get-Date -Format yyyy-MM-dd"') do set TODAY
 REM Skip non-trading days
 python scripts\trading_calendar.py --is-trading-day
 if %ERRORLEVEL% NEQ 0 (
-    echo [%date% %time%] Non-trading day. Skipping report publish.
+    echo [%date% %time%] Non-trading day. Skipping.
     exit /b 0
 )
 
-REM Refresh data (in case 15:15 task was skipped)
-echo Refreshing data for %TODAY%...
-python scripts\quant_data_fetcher.py --start %TODAY% --end %TODAY%
+REM Step 1: Full data refresh (gap fill + today)
+echo ========================================
+echo   Post-Market Data Refresh - %date% %time%
+echo ========================================
+python -u scripts\quant_data_fetcher.py
 if %ERRORLEVEL% NEQ 0 (
-    echo [WARN] Data refresh failed, continuing with existing data...
+    echo [ERROR] Data refresh failed. Aborting.
+    pause
+    exit /b %ERRORLEVEL%
 )
 
+REM Step 2: Generate and publish report
+echo.
 echo ========================================
 echo   Daily Report Publish - %date% %time%
 echo ========================================

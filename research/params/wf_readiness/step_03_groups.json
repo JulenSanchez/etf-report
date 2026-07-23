@@ -1,0 +1,22 @@
+{
+  "step": "0.3",
+  "description": "Group hypothesis validation: 3Y vs 6Y joint perturbation response surfaces",
+  "pairs": [
+    {
+      "pair": "风险敞口: bull×MH",
+      "extrema_3Y": 4,
+      "extrema_6Y": 4,
+      "ar_range_3Y": 139.1,
+      "ar_range_6Y": 77.4,
+      "verdict": "✅ 分组假设成立"
+    },
+    {
+      "pair": "集中度: C×N",
+      "extrema_3Y": 4,
+      "extrema_6Y": 4,
+      "ar_range_3Y": 59.9,
+      "ar_range_6Y": 21.0,
+      "verdict": "✅ 分组假设成立"
+    }
+  ]
+}

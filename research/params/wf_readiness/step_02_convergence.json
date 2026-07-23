@@ -1,0 +1,34 @@
+{
+  "step": "0.2",
+  "description": "3Y window TPE convergence (dual seed)",
+  "test_params": [
+    "bull",
+    "C",
+    "w7",
+    "f7_up_power"
+  ],
+  "n_trials_per_run": 30,
+  "mdd_bound": -40,
+  "results": {
+    "seed_42": {
+      "params": {
+        "bull": 1.9620454922917494,
+        "C": 0.5546093715351418,
+        "w7": 19,
+        "f7_up_power": 12.32331376106676
+      },
+      "AR": 243.9
+    },
+    "seed_99": {
+      "params": {
+        "bull": 1.9962778167072137,
+        "C": 0.8584881270736009,
+        "w7": 14,
+        "f7_up_power": 29.258549236474867
+      },
+      "AR": 261.6
+    }
+  },
+  "ar_difference_pp": 17.7,
+  "verdict": "❌ 不稳定"
+}

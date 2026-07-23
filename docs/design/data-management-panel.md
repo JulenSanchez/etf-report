@@ -115,18 +115,33 @@ GET ?param={code},{period},,{end_date},{count},qfq
 
 ### 状态判定
 
-`GET /api/split_status` 被调用时：
-1. 调 `_ensure_splits_detected(cfg)` 保障事件已加载
-2. 遍历 `_SPLIT_EVENTS`，查每支 ETF 最近一次拆股
-3. 扫描 CSV（CACHE）最近 10 行 close → 有 >30% 跳变 → `pending_repair`；无 → `repaired`
+`GET /api/split_status` 被调用时（**BUG-059 修复后，v3.13.0**）：
+
+```
+1. _ensure_splits_detected(cfg)   ← AKShare 事件已加载（_SPLIT_CHECKED 缓存，只调一次）
+2. _detect_pending_splits_from_cache(cfg)  ← 盘中：比对 CSV 末笔 close ÷ 实时价 ≈ ratio
+                                                 盘后/无盘中数据：跳过（无对照物）
+                                                 命中 → _SPLIT_PENDING_REPAIR.add(code)
+3. 遍历 universe:
+     code in _SPLIT_PENDING_REPAIR → status = "pending_repair"（优先）
+     无 split 事件                 → status = "none"
+     有事件但不在 pending set      → 扫描 CACHE 最近 10 行 >30% 跳变 → pending_repair / repaired
+```
+
+**设计要点**：
+- **盘中不洗内存**：`_detect_pending_splits_from_cache` 只检测不修复，用户看到 DM 矩阵里的红色跳变才有动机点修复
+- **检测入口唯一**：只在 `/api/split_status` 做，不管数据从哪个入口拉的（刷新/强制更新/补全空缺），打开 DM 面板就能看到 ⚠
+- **性能**：`_SPLIT_EVENTS` 只有几支 ETF 有拆股记录，只对这几支做比价，其余直接返回 `none`
+- **因子缓存**：修复后自动清旧缓存 + 重建，因为 CSV 行数不变但 close 值变了，旧缓存的 key 仍命中但值错误
 
 ### 触发时机
 
 | 触发点 | 何时 | 作用 |
 |--------|------|------|
 | `preload()` 启动 | Tuner 启动时 | 调 `_load_corporate_action_events()` 加载已注册事件 |
-| `refresh_data()` | 每次全量刷新 | 调 `_ensure_splits_detected()`（首次）+ `_apply_split_memory_bridge()`（内存清洗）|
-| `dmLoadSplitStatus()` | DM 面板打开 | `GET /api/split_status` → 显示 ⚠ 标记 |
+| `refresh_data()` | 盘后 | `_ensure_splits_detected()` + `_apply_split_memory_bridge()`（内存清洗 → 回测不受跳变影响）|
+| `refresh_data()` | 盘中 | AKShare 事件加载 + 内存桥接仍执行；pending 检测收敛到 `/api/split_status` |
+| `dmLoadSplitStatus()` | DM 面板打开 | `GET /api/split_status` → 检测 + 显示 ⚠ 标记 |
 | `dmLoadMatrix()` 成功回调 | 数据加载完成 | 再次调 `dmLoadSplitStatus()` 确保 ⚠ 渲染 |
 
 ### 修复链路

@@ -547,7 +547,7 @@ def default_quant_preset_params():
         "w1": 45, "w3": 45, "w7": 10,
         "conf_type": "ma_trend", "ma_trend_period": 26,
         "ma_bull_pos": 1.0, "ma_bear_pos": 0.3, "ma_direction_confirm": True,
-        "benchmarks": ["000300"],
+        "benchmarks": ["510300"],
         "max_holdings": 6, "signal_steps": 17, "top_boost": 0,
         "concentration": 0.0, "c_sensitivity": 0,
         "rebalance_freq": "daily", "execution_timing": "same_close",
@@ -582,8 +582,8 @@ def generate_quant_baseline_payload():
     QUANT_CONFIG = os.path.join(PROJECT_ROOT, "config", "quant_universe.yaml")
     preset_params = {}
     try:
-        preset_params = load_quant_preset_params(QUANT_CONFIG, "gam-2")
-        logger.info("从 YAML 读取 gam-2 参数", {"params": {k: v for k, v in preset_params.items() if k != "start_date"}})
+        preset_params = load_quant_preset_params(QUANT_CONFIG, "gam-0")
+        logger.info("从 YAML 读取 gam-0 参数", {"params": {k: v for k, v in preset_params.items() if k != "start_date"}})
     except Exception as e:
         logger.warn("读取 quant_universe.yaml 失败，使用默认参数", {"error": str(e)})
         preset_params = default_quant_preset_params()
