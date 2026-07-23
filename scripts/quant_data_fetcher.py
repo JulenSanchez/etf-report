@@ -1,7 +1,7 @@
 """
 ETF K 线数据拉取器 — 腾讯财经 fqkline API（前复权）。
 
-输出：data/quant/{code}_daily.csv  (日线: date, open, close, high, low, volume, amount)
+输出：data/quant/{code}_daily.csv  (日线: date, open, close, high, low, amount)
       data/quant/{code}_weekly.csv (周线: 同上)
 
 三种模式:
@@ -134,7 +134,8 @@ def _tx_request(tx_code: str, period: str, count: int,
 
 
 def _parse_tx_rows(rows: list) -> list[dict]:
-    """Parse Tencent kline rows: [date, open, close, high, low, volume]."""
+    """Parse Tencent kline rows: [date, open, close, high, low, volume].
+    Returns only amount (estimated from volume * close), not raw volume."""
     parsed = []
     for row in rows:
         if len(row) < 6:
@@ -147,8 +148,7 @@ def _parse_tx_rows(rows: list) -> list[dict]:
             "close": close,
             "high": float(row[3]),
             "low": float(row[4]),
-            "volume": vol,
-            "amount": round(close * vol * 100, 2),  # estimate: close * volume * 100 shares
+            "amount": round(close * vol * 100, 2),
         })
     return parsed
 
@@ -215,11 +215,11 @@ def fetch_etf_kline(code: str, market: str, period: str = "daily",
             all_rows.extend(batch)
 
     if not all_rows:
-        return pd.DataFrame(columns=["date", "open", "close", "high", "low", "volume", "amount"])
+        return pd.DataFrame(columns=["date", "open", "close", "high", "low", "amount"])
 
     parsed = _parse_tx_rows(all_rows)
     if not parsed:
-        return pd.DataFrame(columns=["date", "open", "close", "high", "low", "volume", "amount"])
+        return pd.DataFrame(columns=["date", "open", "close", "high", "low", "amount"])
 
     df = pd.DataFrame(parsed)
 
@@ -582,75 +582,68 @@ def main():
     fetch_benchmark_indices()
 
 
-# ── Benchmark index fetching ────────────────────────────────────────────
+# ── Benchmark ETF fetching (REQ-384) ─────────────────────────────────────
 
-BENCHMARK_INDICES = {
-    "000016": "sh000016",   # SSE 50
-    "000300": "sh000300",   # HS300
-    "000905": "sh000905",   # CSI500
-    "399006": "sz399006",   # ChiNext
+# ETF → akshare symbol (fallback)
+BENCHMARK_ETF_AKSHARE = {
+    "510050": "sh000016",   # 上证50
+    "510300": "sh000300",   # 沪深300
+    "510500": "sh000905",   # 中证500
+    "159915": "sz399006",   # 创业板指
 }
+BENCHMARK_ETF_NAMES = {
+    "510050": "上证50", "510300": "沪深300", "510500": "中证500", "159915": "创业板指",
+}
+BENCHMARK_ETF_CODES = list(BENCHMARK_ETF_AKSHARE.keys())
+
+
+def _load_etf_csv(code):
+    """Load ETF CSV if it exists and has data, else return None."""
+    path = DATA_DIR / "{}_daily.csv".format(code)
+    if not path.exists():
+        return None
+    try:
+        import pandas as pd
+        df = pd.read_csv(path, parse_dates=["date"])
+        if len(df) == 0:
+            return None
+        return df.sort_values("date").reset_index(drop=True)
+    except Exception:
+        return None
 
 
 def fetch_benchmark_indices():
-    """Fetch all benchmark index daily data alongside ETF data.
+    """Fetch benchmark ETF daily data (REQ-384: Sina pipeline primary).
 
-    Uses the same freshness check as ETF data (latest_allowed_date).
-    Called automatically at the end of every quant_data_fetcher run.
-    Also used by benchmark_data.py on first access as a lazy fallback.
+    Pulls ETF kline if CSV is missing.  akshare is fallback.
     """
-    print("\n=== Benchmark indices ===\n")
+    print("\n=== Benchmark ETFs ===\n")
     ok, fail = 0, 0
-    for code, symbol in BENCHMARK_INDICES.items():
-        cache_path = DATA_DIR / "{}_daily.csv".format(code)
+    for etf_code, symbol in BENCHMARK_ETF_AKSHARE.items():
+        name = BENCHMARK_ETF_NAMES.get(etf_code, etf_code)
         try:
-            fresh = _update_index_csv(code, symbol, cache_path)
-            if fresh:
-                print("  [{}] {} ... OK [fresh]".format(code, INDEX_NAMES.get(code, "")))
+            etf_df = _load_etf_csv(etf_code)
+            if etf_df is not None:
+                last_date = etf_df["date"].iloc[-1].strftime("%Y-%m-%d")
+                print("  [{}] {} {} rows [ETF Sina]".format(etf_code, name, len(etf_df)))
+                ok += 1
+                continue
+            # Pull ETF kline
+            print("  [{}] {} not cached, pulling...".format(etf_code, name))
+            market = "sh" if etf_code.startswith("5") else "sz"
+            df = fetch_etf_kline(etf_code, market)
+            if df is not None and len(df) > 0:
+                path = DATA_DIR / "{}_daily.csv".format(etf_code)
+                path.parent.mkdir(parents=True, exist_ok=True)
+                df.to_csv(path, index=False, encoding="utf-8")
+                print("  [{}] {} pulled {} rows [ETF Sina]".format(etf_code, name, len(df)))
+                ok += 1
             else:
-                print("  [{}] {} ... OK [updated]".format(code, INDEX_NAMES.get(code, "")))
-            ok += 1
+                raise RuntimeError("ETF kline returned empty")
         except Exception as e:
-            print("  [{}] {} ... FAIL: {}".format(code, INDEX_NAMES.get(code, ""), e))
+            print("  [{}] {} FAIL: {}".format(etf_code, name, e))
             fail += 1
-    print("\n=== Indices: OK={}, FAIL={} ===".format(ok, fail))
-
-
-INDEX_NAMES = {
-    "000016": "上证50",
-    "000300": "沪深300",
-    "000905": "中证500",
-    "399006": "创业板指",
-}
-
-
-def _update_index_csv(code, symbol, cache_path):
-    """Update a single index CSV. Returns True if already fresh, False if updated."""
-    import pandas as pd
-    cache_path = Path(cache_path)
-
-    cached = None
-    if cache_path.exists():
-        try:
-            cached = pd.read_csv(cache_path, parse_dates=["date"])
-            cached = cached.sort_values("date").reset_index(drop=True)
-        except Exception:
-            cached = None
-
-    expected = _latest_allowed_date()
-    if cached is not None and len(cached) > 0:
-        last_date = cached["date"].iloc[-1].strftime("%Y-%m-%d")
-        if last_date >= expected:
-            return True  # Already fresh
-
-    # Fetch full history (akshare returns all available data)
-    import akshare as ak
-    df = ak.stock_zh_index_daily(symbol=symbol)
-    df["date"] = pd.to_datetime(df["date"])
-    df = df.sort_values("date").reset_index(drop=True)
-    cache_path.parent.mkdir(parents=True, exist_ok=True)
-    df.to_csv(cache_path, index=False, encoding="utf-8")
-    return False
+    print("\n=== Benchmark ETFs: OK={}, FAIL={} ===".format(ok, fail))
 
 
 if __name__ == "__main__":
