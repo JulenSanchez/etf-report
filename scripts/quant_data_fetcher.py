@@ -579,7 +579,7 @@ def main():
     print(f"\n=== Done: OK={total_ok}, FAIL={fail} ===")
 
     # ── Fetch benchmark indices (always, alongside ETF data) ──
-    fetch_benchmark_indices()
+    fetch_benchmark_indices(full=args.full)
 
 
 # ── Benchmark ETF fetching (REQ-384) ─────────────────────────────────────
@@ -612,34 +612,34 @@ def _load_etf_csv(code):
         return None
 
 
-def fetch_benchmark_indices():
-    """Fetch benchmark ETF daily data (REQ-384: Sina pipeline primary).
+def fetch_benchmark_indices(full=False):
+    """Fetch benchmark ETF daily data (REQ-384: ETF kline primary, akshare fallback).
 
-    Pulls ETF kline if CSV is missing.  akshare is fallback.
+    Uses the same update_single pipeline as universe ETFs for data consistency.
     """
+    from datetime import datetime as _dt
     print("\n=== Benchmark ETFs ===\n")
     ok, fail = 0, 0
+    allowed = _latest_allowed_date()
     for etf_code, symbol in BENCHMARK_ETF_AKSHARE.items():
         name = BENCHMARK_ETF_NAMES.get(etf_code, etf_code)
+        market = "sh" if etf_code.startswith("5") else "sz"
         try:
-            etf_df = _load_etf_csv(etf_code)
-            if etf_df is not None:
-                last_date = etf_df["date"].iloc[-1].strftime("%Y-%m-%d")
-                print("  [{}] {} {} rows [ETF Sina]".format(etf_code, name, len(etf_df)))
-                ok += 1
-                continue
-            # Pull ETF kline
-            print("  [{}] {} not cached, pulling...".format(etf_code, name))
-            market = "sh" if etf_code.startswith("5") else "sz"
-            df = fetch_etf_kline(etf_code, market)
-            if df is not None and len(df) > 0:
-                path = DATA_DIR / "{}_daily.csv".format(etf_code)
-                path.parent.mkdir(parents=True, exist_ok=True)
-                df.to_csv(path, index=False, encoding="utf-8")
-                print("  [{}] {} pulled {} rows [ETF Sina]".format(etf_code, name, len(df)))
-                ok += 1
+            if full:
+                daily_rows, weekly_rows, mode = update_single(
+                    {"code": etf_code, "market": market, "name": name},
+                    full=True, end_date=allowed,
+                )
+                print("  [{}] {} OK [{}] daily+{} weekly+{}".format(
+                    etf_code, name, mode, daily_rows, weekly_rows))
             else:
-                raise RuntimeError("ETF kline returned empty")
+                daily_rows, weekly_rows, mode = update_single(
+                    {"code": etf_code, "market": market, "name": name},
+                    end_date=allowed,
+                )
+                print("  [{}] {} OK [{}] daily+{} weekly+{}".format(
+                    etf_code, name, mode, daily_rows, weekly_rows))
+            ok += 1
         except Exception as e:
             print("  [{}] {} FAIL: {}".format(etf_code, name, e))
             fail += 1
