@@ -16,7 +16,7 @@ sys.path.insert(0, str(PROJECT_ROOT / "src"))
 import requests
 import yaml
 from trading_calendar import is_trading_day
-from quant_backtest import run_backtest
+from quant_backtest import run_backtest, load_config
 
 DRY_RUN = "--dry-run" in sys.argv
 QUIET = "--quiet" in sys.argv
@@ -92,7 +92,11 @@ def main():
 
     # ── Stage 2: Backtest ──
     log("=" * 50)
-    log("Stage 2: Run backtest (gam-0, 30-day window)")
+    log("Stage 2: Run backtest (gam-0)")
+    # Verify config loading
+    cfg = load_config(preset="gam-0")
+    cc = cfg.get("confidence", {})
+    log(f"  conf_type={cc.get('type')} bull={cc.get('ma_bull_pos')} bear={cc.get('ma_bear_pos')} period={cc.get('ma_trend_period')}")
     t0 = time.time()
     start = f"{now.year}-05-01"
     end = now.strftime("%Y-%m-%d")
@@ -146,7 +150,7 @@ def main():
         f"## 实盘调仓执行参照表",
         "",
         f"**策略**: 赌徒 (远端兜底) | **日期**: {now:%Y-%m-%d} | **窗口**: {start}~{end}",
-        f"**回测**: AR={extra['annual_return']:.0f}% Sharpe={extra['sharpe']:.2f} MDD={extra['max_drawdown']:.0f}% 敞口={latest.get('total_target',0)*100:.0f}% regime={latest.get('regime','?')}",
+        f"**回测**: AR={extra['annual_return']:.0f}% Sharpe={extra['sharpe']:.2f} MDD={extra['max_drawdown']:.0f}% 总敞口={latest.get('total_target',0)*100:.0f}% regime={latest.get('regime','?')} avg_conf={latest.get('avg_confidence',0):.2f}",
         "",
     ]
 
