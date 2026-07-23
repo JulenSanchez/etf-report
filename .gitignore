@@ -9,7 +9,11 @@ build/
 # ========= 运行产物 =========
 logs/
 *.log
-data/
+data/*
+!data/quant/
+data/quant/*
+!data/quant/trading_days_*.txt
+!data/quant/holidays_*.txt
 outputs/
 _working/
 .backup/
