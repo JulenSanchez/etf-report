@@ -6,8 +6,10 @@ Used by GitHub Actions for remote backup push when local PC is offline.
 Flow: trading-day check → full data fetch → backtest → Server酱 push
 """
 import os, sys, subprocess, time
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
+
+CST = timezone(timedelta(hours=8))
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
@@ -24,7 +26,7 @@ QUIET = "--quiet" in sys.argv
 
 def log(msg):
     if not QUIET:
-        print(f"[{datetime.now():%H:%M:%S}] {msg}", flush=True)
+        print(f"[{datetime.now(CST):%H:%M:%S}] {msg}", flush=True)
 
 
 def get_sendkey():
@@ -54,13 +56,13 @@ def short(code, names):
 def main():
     log("=" * 50)
     log("Signal Push CLI (no-Tuner mode)")
-    now = datetime.now()
+    now = datetime.now(CST)
 
     # ── Stage 0: Pre-flight ──
-    if not is_trading_day():
+    if not is_trading_day(now):
         log("SKIP: Not a trading day")
         return 0
-    log(f"Trading day: YES ({now:%Y-%m-%d})")
+    log(f"Trading day: YES ({now:%Y-%m-%d} CST)")
 
     sendkey = get_sendkey()
     if not sendkey:
