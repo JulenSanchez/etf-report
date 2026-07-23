@@ -281,6 +281,10 @@ def _fetch_sina_realtime(cfg):
         m = etf.get("market", "sz")
         symbols.append(f"{m}{code}")
         code_list.append(code)
+    # BUG-060: also fetch benchmark ETFs for intraday data
+    for code, mkt in [("510050","sh"),("510300","sh"),("510500","sh"),("159915","sz")]:
+        symbols.append(f"{mkt}{code}")
+        code_list.append(code)
 
     url = f"{SINA_URL}{','.join(symbols)}"
     try:
@@ -819,6 +823,37 @@ def refresh_data():
     else:
         gap_msg = ""
 
+    # BUG-060: also check and fill benchmark ETF (510050/510300/510500/159915) gaps
+    bm_ok, bm_fail = 0, 0
+    bm_need = False
+    _bm_expected = _latest_allowed_date(now) if intraday else today_str
+    for bm_code in ("510050", "510300", "510500", "159915"):
+        bm_last = get_last_date(QDATA_DIR / f"{bm_code}_daily.csv")
+        if bm_last is None or bm_last < _bm_expected:
+            bm_need = True
+            break
+    if bm_need:
+        print(f"  [Refresh] Benchmark ETF gaps detected — filling...")
+        from quant_data_fetcher import fetch_etf_kline, rebuild_weekly_from_daily, save_csv
+        for bm_code in ("510050", "510300", "510500", "159915"):
+            bm_last = get_last_date(QDATA_DIR / f"{bm_code}_daily.csv")
+            if bm_last is None or bm_last < _bm_expected:
+                try:
+                    bm_mkt = "sh" if bm_code.startswith("5") else "sz"
+                    df = fetch_etf_kline(bm_code, bm_mkt)
+                    if df is not None and len(df) > 0:
+                        save_csv(df, QDATA_DIR / f"{bm_code}_daily.csv")
+                        df_w = rebuild_weekly_from_daily(df)
+                        save_csv(df_w, QDATA_DIR / f"{bm_code}_weekly.csv")
+                        bm_ok += 1
+                        print(f"    {bm_code}: OK ({len(df)} rows)")
+                    else:
+                        raise RuntimeError("empty")
+                except Exception as e:
+                    bm_fail += 1
+                    print(f"    {bm_code}: FAIL ({e})")
+        if bm_ok > 0 and gap_msg:
+            gap_msg += f" | Benchmark OK={bm_ok} FAIL={bm_fail}"
 
     _ensure_splits_detected(cfg)
     _apply_split_memory_bridge(cfg)
@@ -992,54 +1027,22 @@ def _precompute_benchmarks():
 def _build_ma_trend_cache(period):
     """Build or retrieve HS300 MA trend lookup for a given period.
 
-    During intraday sessions, patches the HS300 daily/weekly with 000300's
-    realtime price so the MA signal reflects the current week's close estimate
-    instead of being stuck on the previous completed week.
+    Weekly bars are dated to the last trading day of their ISO week
+    (see build_index_weekly), so incomplete current weeks naturally
+    map into the future and merge_asof skips them — regime is stable
+    within a week regardless of intraday price movements.
     """
     daily = CACHE.get("hs300_daily_df")
     weekly = CACHE.get("hs300_weekly_df")
-    patched = False  # skip cache when using intraday-patched data
 
-    intraday = CACHE.get("intraday_cache")
-    if intraday and daily is not None:
-        intraday_date = CACHE.get("intraday_date")
-        if intraday_date:
-            try:
-                import requests
-                url = f"{SINA_URL}sh510300"
-                resp = requests.get(url, headers=SINA_HEADERS, timeout=5)
-                resp.encoding = "gbk"
-                if resp.text and '="' in resp.text:
-                    parts = resp.text.split('="')[1].rstrip('";\n').split(",")
-                    if len(parts) >= 4 and parts[3]:
-                        hs300_price = float(parts[3])
-                        import pandas as pd
-                        today_dt = pd.to_datetime(intraday_date)
-                        daily = daily.copy()
-                        mask = daily["date"] == today_dt
-                        if mask.any():
-                            daily.loc[mask, "close"] = hs300_price
-                        else:
-                            daily = pd.concat(
-                                [daily, pd.DataFrame([{"date": today_dt, "close": hs300_price}])],
-                                ignore_index=True)
-                        from benchmark_data import build_hs300_weekly
-                        weekly = build_hs300_weekly(daily)
-                        patched = True
-            except Exception:
-                pass  # fall back to CSV-only data
-
-    # When intraday data exists, never use the startup cache — it was built
-    # without intraday data and lacks today's date, causing false bull defaults.
     ma_cache = CACHE.get("hs300_above_ma", {})
-    if (not intraday) and (not patched) and (period in ma_cache):
+    if period in ma_cache:
         return ma_cache[period]
     result = build_ma_trend_cache(daily, weekly, period)
     if result is None:
         return None
-    if not patched:
-        ma_cache[period] = result
-        CACHE["hs300_above_ma"] = ma_cache
+    ma_cache[period] = result
+    CACHE["hs300_above_ma"] = ma_cache
     above_map = result.get("above", {})
     rising_map = result.get("ma_rising", {})
     above_count = sum(above_map.values())
@@ -2432,6 +2435,24 @@ def api_data_status():
             if ds > csv_latest:
                 csv_latest = ds
 
+    # BUG-060: include benchmark ETF data status
+    bm_status = {}
+    try:
+        for bm_code in ("510050", "510300", "510500", "159915"):
+            bm_path = CACHE.get("hs300_daily_df")
+            if bm_code == "510300" and bm_path is not None:
+                bm_df = bm_path
+            else:
+                from quant_data_fetcher import DATA_DIR as QDATA_DIR
+                import pandas as pd
+                bm_csv = QDATA_DIR / f"{bm_code}_daily.csv"
+                bm_df = pd.read_csv(bm_csv, parse_dates=["date"]) if bm_csv.exists() else None
+            if bm_df is not None and len(bm_df) > 0:
+                bm_last = bm_df["date"].iloc[-1].strftime("%Y-%m-%d")
+                bm_status[bm_code] = {"date": bm_last, "rows": len(bm_df)}
+    except Exception:
+        pass
+
     today = datetime.now().strftime("%Y-%m-%d")
     halted_codes = [code for code, v in ic.items() if v.get("halted")]
     return jsonify({
@@ -2443,6 +2464,7 @@ def api_data_status():
         "intradayCacheCount": len(ic),
         "isPostMarket": _is_post_market(),
         "haltedEtfs": halted_codes,
+        "benchmarkStatus": bm_status,
     })
 
 

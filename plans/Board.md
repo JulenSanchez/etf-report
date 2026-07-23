@@ -196,6 +196,7 @@
 | BUG-057 | **"刷新数据"不更新基准指数** — `refresh_data()` 只拉 ETF 日线，HS300 指数 CSV 只在 Tuner 启动时加载一次，盘中缺数据或过期只能重启。修复：`refresh_data()` 末尾重新 `load_hs300_daily_cached()` + 重建周线 + 清 MA 缓存 | 🔴 Critical | fixed | v3.13.0 | — | 2026-07-20 | `_run_incremental_fetch` 只遍历 ETF universe，不含指数 | v3.13.0 |
 | BUG-058 | **`_build_override` 默认值与 gam-0 不一致** — 硬编码默认值多处偏离；修复：全部默认值改为从 `DEFAULT_LOCK` 读取，`DEFAULT_LOCK` 补全 f7_window/f7_lookback | 🔴 Critical | fixed | v3.13.0 | REQ-382 | 2026-07-20 | 双重默认源（DEFAULT_LOCK + _build_override 硬编码）未对齐 | v3.13.0 |
 | BUG-059 | **setup_quant_tasks.ps1 中文编码乱码** — UTF-8 无 BOM 脚本在 PS 5.1 下以 GBK 读取导致任务名乱码。修复：另存为 UTF-8 with BOM | 🟡 Medium | fixed | v3.14.0 | — | 2026-07-21 | PS1 无 BOM，PowerShell 5.1 默认 ANSI(GBK) 读取 | v3.14.0 |
+| BUG-060 | **基准指数数据管线缺陷（regime 周内翻转 + 无盘中数据）** — 两个关联问题：(1) 周线日期修复：`build_index_weekly` 周线 bar 日期改为当周最后交易日，未完成周指向未来，`merge_asof` 自动跳过 ✅。(2) 基准 ETF 纳入盘中数据：`_fetch_sina_realtime` 加四支基准、`refresh_data` 加 gap 检测和补拉、`/api/data_status` 返回基准状态 ✅ 代码完成，⏳ 待明日盘中验证 DM 面板拉基准盘中数据是否生效。 | 🔴 Critical | fixed (待验证) | v3.13.0 | — | 2026-07-23 | (1) 周线日期未指向当周最后交易日；(2) 基准 ETF 从未被纳入数据管线 | v3.15.0 |
 | BUG-059 | **盘中拆股检测失效 — DM 面板不显示 ⚠** — REQ-354 bridge 先清洗内存 → REQ-360 `api_split_status` 查不到跳变 → `pending_repair` 永远不触发。修复：(1) 新增 `_detect_pending_splits_from_cache()` 只检测不洗数据；(2) 检测入口从 `refresh_data` 移到 `/api/split_status`（DM 加载时触发）；(3) bridge 命中后记 `_SPLIT_PENDING_REPAIR` 确保 ⚠ 可见 | 🔴 Critical | fixed | v3.13.0 | REQ-354, REQ-360 | 2026-07-21 | bridge 清洗证据 → api 查不到跳变；检测入口散布在三个不同端点 | v3.13.0 |
 
 
@@ -221,7 +222,7 @@
 
 **下一个需求 ID**: REQ-391
 
-**下一个 Bug ID**: BUG-060
+**下一个 Bug ID**: BUG-061
 
 
 

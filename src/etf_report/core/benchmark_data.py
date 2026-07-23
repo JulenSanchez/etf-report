@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from etf_report.core.trading_calendar import latest_allowed_close_date
+from etf_report.core.trading_calendar import latest_allowed_close_date, last_trading_day
 
 PROJECT_ROOT = next(parent for parent in Path(__file__).resolve().parents if (parent / "config").is_dir() and (parent / "scripts").is_dir())
 DATA_DIR = PROJECT_ROOT / "data" / "quant"
@@ -167,12 +167,23 @@ def build_hs300_weekly(hs_daily):
 
 
 def build_index_weekly(daily_df):
-    """Build Friday/week-ending weekly close DataFrame for any index."""
+    """Build weekly close DataFrame.  Each bar is dated to the last *trading day*
+    of its ISO week so that incomplete current weeks (Mon–Thu) map into the future
+    and merge_asof(backward) naturally skips them to last week's completed bar."""
     if daily_df is None:
         return None
     df = daily_df.copy()
     df["week"] = df["date"].dt.isocalendar().year.astype(str) + "-" + df["date"].dt.isocalendar().week.astype(str).str.zfill(2)
-    return df.groupby("week").last().reset_index()[["date", "close"]]
+    weekly = df.groupby("week").last().reset_index()[["date", "close"]]
+    # Pin each bar's date to the last trading day of its ISO week
+    for i in range(len(weekly)):
+        d = weekly.loc[i, "date"]
+        # Sunday of this ISO week  (weekday 0=Mon … 6=Sun)
+        iso_sunday = d + pd.Timedelta(days=6 - d.weekday())
+        ltd = last_trading_day(iso_sunday)
+        if ltd:
+            weekly.loc[i, "date"] = pd.to_datetime(ltd)
+    return weekly
 
 
 def build_ma_trend_cache(daily_df, weekly_df, period):
