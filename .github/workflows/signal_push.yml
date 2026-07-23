@@ -4,6 +4,8 @@ on:
   schedule:
     # 14:50 CST = 06:50 UTC, Mon-Fri
     - cron: '50 6 * * 1-5'
+    # debug: test trigger at 15:50 CST = 07:50 UTC, Mon-Fri
+    - cron: '50 7 * * 1-5'
   workflow_dispatch:
     inputs:
       dry_run:
