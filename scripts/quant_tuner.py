@@ -1047,8 +1047,7 @@ def _build_ma_trend_cache(period):
     rising_map = result.get("ma_rising", {})
     above_count = sum(above_map.values())
     rising_count = sum(v for v in rising_map.values() if v is not None)
-    tag = " (intraday-patched)" if patched else ""
-    print(f"  HS300 MA{period} trend{tag}: {len(above_map)} days, above={above_count}, below={len(above_map)-above_count}, rising={rising_count}")
+    print(f"  HS300 MA{period} trend: {len(above_map)} days, above={above_count}, below={len(above_map)-above_count}, rising={rising_count}")
     return result
 
 

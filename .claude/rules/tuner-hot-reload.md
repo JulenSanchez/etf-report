@@ -1,3 +1,9 @@
+---
+description: Tuner 前端热加载规则——改 HTML 不需重启，改 .py 才需
+alwaysApply: true
+priority: P2
+---
+
 # Tuner 前端热加载
 
 ## 规则

@@ -1,3 +1,9 @@
+---
+description: 禁止 python -c，一律写临时脚本；输出重定向到文件防 UTF-8 截断
+alwaysApply: true
+priority: P0
+---
+
 # 禁止 python -c / python3 -c（项目级兜底）
 
 用户级 `command-line-best-practices.md` 已有此规则，但 PowerShel 环境下 AI 容易因"图快"而违反。本规则是项目级兜底。

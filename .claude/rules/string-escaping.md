@@ -1,3 +1,9 @@
+---
+description: 跨上下文字符串拼接禁令、Windows 路径、argparse help 规范
+alwaysApply: true
+priority: P1
+---
+
 # 字符串拼接与转义规则
 
 ## Why
@@ -54,10 +60,7 @@ f'<div onclick="foo(\'{code}\')">'
 
 ## 强制：Python 脚本不用 `-c`，写文件
 
-继承用户级 `command-line-best-practices.mdc` 规则。项目级重申：
-
-❌ `python -c "import os; print(os.listdir(...))"`
-✅ 写到 `C:/Users/julentan/temp_scripts/temp_YYYYMMDD_HHMMSS.py` 再执行
+→ 详见 [no-python-inline.md](no-python-inline.md)，此处不重复。
 
 ## 强制：Windows 路径用 raw string 或正斜杠
 

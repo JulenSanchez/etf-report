@@ -1,3 +1,9 @@
+---
+description: 暴露 bug 而非隐藏——反模式/正模式对照 + 自检清单
+alwaysApply: true
+priority: P1
+---
+
 # 暴露 bug 而非隐藏 bug
 
 ## 核心原则
@@ -134,43 +140,6 @@ log.info(f"Split repair: code={code} ratio={ratio} mask={mask.sum()} "
 ### 6. 最小修复，不顺手重构
 
 修 bug 时只改必须改的。如果发现旁边的代码也该改，登记一个新的 REQ/BUG，不要在当前修复里夹带。
-
-## 通用例子
-
-### 例子 1：API 调用失败
-
-```
-反：return None，调用方 if x is None: pass，问题被吞
-正：raise SpecificException("reason"), 或返回 {ok: False, error: "..."}
-```
-
-### 例子 2：测试失败
-
-```
-反：缩小测试范围让它通过
-正：保留失败测试，标记 xfail 或登记 BUG，让失败可见
-```
-
-### 例子 3：参数越界
-
-```
-反：quietly clip 到边界值，用户不知道参数被改了
-正：报错或返回 warning，告诉用户"参数 X=28 超出 [0, 20] 范围，被裁剪到 20"
-```
-
-### 例子 4：缓存不一致
-
-```
-反：读缓存失败时静默 fallback 到重算，用户不知道缓存坏了
-正：log warning "cache miss for key X, recomputing"，让缓存问题可见
-```
-
-### 例子 5：异步任务失败
-
-```
-反：try/except 吞异常，UI 显示"运行中"永远不结束
-正：捕获异常后更新 task 状态为 failed + 存 error message，UI 显示"失败: 原因"
-```
 
 ## 自检清单
 

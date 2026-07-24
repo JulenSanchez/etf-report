@@ -1,3 +1,9 @@
+---
+description: 分支策略、提交门禁（commit/push 必须用户触发）、回退方式
+alwaysApply: true
+priority: P0
+---
+
 # Git 分支规则（etf-report 项目专属）
 
 ## 分支策略
