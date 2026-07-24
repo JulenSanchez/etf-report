@@ -53,5 +53,5 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: data/quant
-          key: quant-data-${{ github.run_date }}-${{ github.run_attempt }}
+          key: quant-data-${{ github.run_date }}
           enableCrossOsArchive: true
