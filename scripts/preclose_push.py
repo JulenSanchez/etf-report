@@ -158,7 +158,9 @@ if not _ensure_tuner():
 log("=" * 50)
 log("Stage 2: Refresh market data")
 
-r = requests.post(f"{TUNER_URL}/api/refresh_data", timeout=60)
+# Long timeout: cold start (full fetch) ~6min; warm cache returns in ~30s.
+# HTTP request ends when server responds — the timeout is a safety net, not a delay.
+r = requests.post(f"{TUNER_URL}/api/refresh_data", timeout=600)
 status = r.json()
 log(f"  Status: {status.get('status', '?')} | {status.get('count', status.get('fetchOk', 0))} ETFs")
 halted = status.get("haltedCount", 0)
