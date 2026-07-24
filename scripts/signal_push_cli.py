@@ -1,9 +1,16 @@
 #!/usr/bin/env python3
 """
-Signal push (CLI, no Tuner).
-Used by GitHub Actions for remote backup push when local PC is offline.
+DEPRECATED (2026-07-24, REQ-390 Phase 2):
+  Replaced by preclose_push.py which now supports Linux + CI (cross-platform _ensure_tuner).
+  Remote workflow (.github/workflows/signal_push.yml) now calls preclose_push.py directly
+  so the remote push also gets intraday realtime prices via Tuner's intraday_cache path.
 
-Flow: trading-day check → full data fetch → backtest → Server酱 push
+Original purpose (Phase 1):
+  Signal push (CLI, no Tuner).
+  Used by GitHub Actions for remote backup push when local PC is offline.
+  Flow: trading-day check → full data fetch → backtest → Server酱 push
+
+Kept for reference. Do not use for new work.
 """
 import os, sys, subprocess, time
 from datetime import datetime, timezone, timedelta

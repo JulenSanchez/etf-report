@@ -2,7 +2,8 @@
 """Signal push: auto-start Tuner → refresh data → backtest → push execution table to WeChat via Server酱.
    Behavior (intraday vs post-market CSV write) is controlled by COOL_OFF_TIME in quant_tuner.py.
    --refresh-only: stop after data refresh (no backtest/push).
-   --output-md: write markdown to Desktop instead of push."""
+   --output-md: write markdown to Desktop instead of push.
+   --dry-run: print signal table to stdout, skip Server酱 push (for CI testing)."""
 import sys, os, time, subprocess, requests, yaml
 from datetime import datetime
 from pathlib import Path
@@ -16,6 +17,8 @@ TUNER_PORT = 5180  # stable uses 5180 to avoid conflict with dev Tuner on 5179
 TUNER_URL = f"http://localhost:{TUNER_PORT}"
 REFRESH_ONLY = "--refresh-only" in sys.argv
 OUTPUT_MD = "--output-md" in sys.argv   # REQ-353: write markdown to Desktop instead of push
+DRY_RUN = "--dry-run" in sys.argv
+IS_CI = os.environ.get("GITHUB_ACTIONS", "") == "true"
 from etf_report.core.quant_contract import DEFAULT_PRESET
 TUNER_STARTUP_TIMEOUT = 60  # max seconds to wait for Tuner
 
@@ -38,10 +41,12 @@ def _tuner_ready():
 
 def _ensure_tuner():
     """Kill any existing Tuner on TUNER_PORT, then start a fresh one from THIS repo.
-    Uses a dedicated port (5180) to avoid conflict with dev Tuner on 5179."""
+    Uses a dedicated port (5180) to avoid conflict with dev Tuner on 5179.
+    Works on Windows (netstat + taskkill) and Linux (fuser / lsof + kill)."""
     port_str = f":{TUNER_PORT}"
-    # Kill any Tuner already on TUNER_PORT (could be from another repo)
+
     if sys.platform == "win32":
+        # Windows: netstat -ano | findstr :5180 → taskkill /f /pid
         try:
             result = subprocess.run(
                 ["netstat", "-ano"], capture_output=True, text=True, timeout=5
@@ -56,15 +61,45 @@ def _ensure_tuner():
                     break
         except Exception as e:
             log(f"Tuner: failed to kill existing process: {e}")
+    else:
+        # Linux/macOS: try fuser first, fallback to lsof + kill
+        killed = False
+        try:
+            result = subprocess.run(
+                ["fuser", "-k", f"{TUNER_PORT}/tcp"],
+                capture_output=True, text=True, timeout=5
+            )
+            if result.returncode == 0:
+                killed = True
+                time.sleep(1)
+        except Exception:
+            pass
+        if not killed:
+            try:
+                result = subprocess.run(
+                    ["lsof", "-ti", f":{TUNER_PORT}"],
+                    capture_output=True, text=True, timeout=5
+                )
+                for pid in result.stdout.strip().split("\n"):
+                    if pid:
+                        subprocess.run(["kill", "-9", pid], capture_output=True, timeout=5)
+                if result.stdout.strip():
+                    time.sleep(1)
+            except Exception:
+                pass
 
     log(f"Tuner: starting fresh from this repo on port {TUNER_PORT}...")
     tuner_script = os.path.join(PROJECT_ROOT, "scripts", "quant_tuner.py")
-    subprocess.Popen(
-        ["python", tuner_script, "--readonly", "--no-browser", "--port", str(TUNER_PORT)],
+    popen_kwargs = dict(
         cwd=PROJECT_ROOT,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
-        creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0,
+    )
+    if sys.platform == "win32":
+        popen_kwargs["creationflags"] = subprocess.CREATE_NO_WINDOW
+    subprocess.Popen(
+        ["python", tuner_script, "--readonly", "--no-browser", "--port", str(TUNER_PORT)],
+        **popen_kwargs,
     )
 
     # Wait for Tuner to become ready
@@ -93,13 +128,21 @@ if not is_trading_day():
     sys.exit(0)
 log(f"Trading day: YES ({now:%Y-%m-%d})")
 
-with open(os.path.join(PROJECT_ROOT, "config", "secrets.yaml"), "r", encoding="utf-8") as f:
-    sec = yaml.safe_load(f) or {}
-sendkey = sec.get("publish", {}).get("serverchan", {}).get("sendkey", "")
+# sendkey: env var (CI) takes priority, then secrets.yaml (local)
+sendkey = os.environ.get("SERVERCHAN_SENDKEY", "")
 if not sendkey:
-    log("ERROR: Server酱 sendkey not configured in secrets.yaml")
+    secrets_path = os.path.join(PROJECT_ROOT, "config", "secrets.yaml")
+    if os.path.exists(secrets_path):
+        with open(secrets_path, "r", encoding="utf-8") as f:
+            sec = yaml.safe_load(f) or {}
+        sendkey = sec.get("publish", {}).get("serverchan", {}).get("sendkey", "")
+if not sendkey and not DRY_RUN:
+    log("ERROR: Server酱 sendkey not configured (set SERVERCHAN_SENDKEY env var or config/secrets.yaml)")
     sys.exit(1)
-log("Server酱 sendkey: configured")
+if DRY_RUN:
+    log("Server酱 sendkey: skipped (dry-run)")
+else:
+    log("Server酱 sendkey: configured")
 
 # ═══════════════════════════════════════════════════════════════
 # Stage 1: Ensure Tuner is running
@@ -275,9 +318,19 @@ if OUTPUT_MD:
     desktop = Path(_os.environ["USERPROFILE"]) / "Desktop" / f"调仓执行表_{now:%Y%m%d}.md"
     desktop.write_text(content_str, encoding="utf-8")
     log(f"Stage 6: Written to {desktop}")
+elif DRY_RUN:
+    log("Stage 6: DRY RUN — skipping push, printing to stdout")
+    title = f"{now:%m/%d} 赌徒 调仓信号"
+    if IS_CI:
+        title += " (远端)"
+    print()
+    print(title)
+    print(content_str)
 else:
     log("Stage 6: Push to WeChat")
     title = f"{now:%m/%d} 赌徒 调仓信号"
+    if IS_CI:
+        title += " (远端)"
 
     print(title)
     print(content_str)

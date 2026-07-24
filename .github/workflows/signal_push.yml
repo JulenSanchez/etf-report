@@ -2,8 +2,8 @@ name: 收盘前信号推送（远端兜底）
 
 on:
   schedule:
-    # 14:50 CST = 06:50 UTC, Mon-Fri
-    - cron: '50 6 * * 1-5'
+    # 14:45 CST = 06:45 UTC, Mon-Fri (~6min full fetch on cache miss, push before 14:55)
+    - cron: '45 6 * * 1-5'
   workflow_dispatch:
     inputs:
       dry_run:
@@ -29,6 +29,15 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      - name: Restore quant data cache
+        id: cache-restore
+        uses: actions/cache/restore@v4
+        with:
+          path: data/quant
+          key: quant-data-${{ github.run_date }}
+          restore-keys: quant-data-
+          enableCrossOsArchive: true
+
       - name: Run signal push
         env:
           SERVERCHAN_SENDKEY: ${{ secrets.SERVERCHAN_SENDKEY }}
@@ -37,4 +46,12 @@ jobs:
           if [[ "${{ github.event.inputs.dry_run }}" == "true" ]]; then
             FLAGS="--dry-run"
           fi
-          python scripts/signal_push_cli.py $FLAGS
+          python scripts/preclose_push.py $FLAGS
+
+      - name: Save quant data cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: data/quant
+          key: quant-data-${{ github.run_date }}-${{ github.run_attempt }}
+          enableCrossOsArchive: true
