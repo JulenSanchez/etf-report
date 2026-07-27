@@ -1,0 +1,21 @@
+{
+  "passed": true,
+  "results": {
+    "510300": {
+      "name": "沪深300",
+      "desc": "high liquidity, benchmark"
+    },
+    "588010": {
+      "name": "科创新材料",
+      "desc": "recent volume surge"
+    },
+    "513310": {
+      "name": "海外科技",
+      "desc": "overseas, high beta"
+    },
+    "510050": {
+      "name": "上证50",
+      "desc": "large cap value"
+    }
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "meta": {
+    "generated": "2026-07-24T19:43:33.485552",
+    "window": "6Y (2020-06-01 ~ 2026-06-01)",
+    "description": "gam-0 vs w3=0 (drop F3, redistribute to F1/F7)"
+  },
+  "gam0": {
+    "AR": 139.2,
+    "MDD": -38.9,
+    "Calmar": 3.58,
+    "Sortino": 2.646,
+    "trades": 797,
+    "MH": 2,
+    "TB": 8,
+    "bull": 1.8,
+    "C": 0.62,
+    "CS": 16.4,
+    "N": 40,
+    "bear": 1.0,
+    "MA": 18
+  },
+  "no_f3": {
+    "AR": 137.0,
+    "MDD": -39.8,
+    "Calmar": 3.44,
+    "Sortino": 2.627,
+    "trades": 789,
+    "MH": 2,
+    "TB": 8,
+    "bull": 1.8,
+    "C": 0.62,
+    "CS": 16.4,
+    "N": 40,
+    "bear": 1.0,
+    "MA": 18
+  },
+  "configs": {
+    "gam0_weights_ui": {
+      "w1": 71,
+      "w3": 13,
+      "w7": 16
+    },
+    "no_f3_weights_ui": {
+      "w1": 82,
+      "w3": 0,
+      "w7": 18
+    }
+  }
+}

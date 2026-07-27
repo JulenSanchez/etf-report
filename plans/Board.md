@@ -17,8 +17,10 @@
 
 | 日期 | ID | 标题 | 状态 |
 |------|----|------|------|
-| 2026-07-22 | REQ-390 | GitHub Actions 远端部署 — 收盘前信号兜底 | Phase 1 开发中 |
+| 2026-07-22 | REQ-390 | GitHub Actions 远端部署 — 收盘前信号兜底 | Phase 2 代码完成，⏳ 等 7/28 周一盘中验证 |
 | 2026-07-23 | REQ-391 | 逃顶机制 — 独立于三因子的轻量回落保护 | 讨论中 |
+| 2026-07-24 | REQ-392 | 术语表分层治理 — 消除 AI-用户沟通中的代码符号 | ✅ done |
+| 2026-07-24 | REQ-393 | F8 成交量因子重设计 — 方向性放量信号捕捉（F8-a/b/c 替代 F3） | Phase 1 事实确认完成，Phase 2 设计中 |
 
 ## discussing (讨论中)
 
@@ -46,6 +48,8 @@
 
 | 2026-07-23 | **逃顶机制 — 独立于三因子的回落保护** — gam-0 策略结构性地无法捕捉冲顶回落（暴涨当天 F1 强烈看多，F7 无反应）。需要一套基于 NAV 回报速度的轻量逃顶触发，独立于三因子。Phase 1：最简模型（触发后第二天空仓一天）。 | 已产出 REQ | → REQ-391 |
 
+| 2026-07-24 | **三因子简化研究** — 用户盘感驱动：F3 几乎不贡献、F1/F7 交替主导、策略本质可能是"带保险杠的单因子"。轻量研究三项：(A) F3 支配度 9.0%，0 天主导，得分全在 [50.3, 52.6] 无区分力；(B) F1/F7 支配度 r=-0.996，77% 互斥；(C) 6 窗口删 F3 回测对比，4:2 偏向 gam-0 优，效果量级 ±5pp AR / ±1.4pp MDD。**结论**：F3 有真实但不大的贡献（非噪音），但当前成交量信息利用方式效率太低。产出：`research/factor_diag.json` + `research/strategy/f3_multi_window.json` | 已产出 REQ | → REQ-393 F8 成交量因子重设计
+
 | 2026-07-09 | **信号步长 + C + CS "三兄弟"研究** | 已关闭 | → 合并入 REQ-366 |
 | 2026-07-09 | **执行步长收窄锁定** | 已关闭 | → 合并入 REQ-365（参数已合并为 N） |
 
@@ -62,7 +66,7 @@
 | **v3.12.0** | Gambler前沿扩区 + Bug修复 | 6区并行优化 → 6点前沿 + disc_step/stable修复 |
 | **v3.13.0** | 预设清理 + F7 双侧优化 + Wishlist消化 + 杠杆上限治理 | ✅ REQ-362 预设清理 + REQ-371 杠杆上限 + REQ-375 F7 双侧参数与扫参 + REQ-112/376 Tuner 前端治理（REQ-223 WF 延期至 v3.14.0） |
 | **v3.14.0** | WF 方法论 + 因子驱动力 + 参数治理 | ✅ REQ-323 WF 方法论验证 + REQ-377 因子驱动力 + REQ-379 MDD 约束 + REQ-382 F7 lookback + REQ-388 HTML 拆分 + REQ-389 参数锁定 |
-| **v3.15.0** | ETF池稳健性 + 远端兜底 + 基准修复 | ✅ REQ-363 池稳健性研究 + ✅ REQ-390 远端信号兜底 + ✅ BUG-060 regime 周内翻转修复 + ⏳ BUG-060 基准盘中数据（待验证）+ 📋 REQ-387 F7 量程治理（待开始） |
+| **v3.15.0** | ETF池稳健性 + 远端兜底 + 基准修复 + 术语表治理 + F8研究 | ✅ REQ-363 池稳健性研究 + ⏳ REQ-390 远端信号兜底（Phase 2 代码完成，等 7/28 盘中验证）+ ✅ BUG-060 regime 周内翻转修复 + ✅ BUG-061 基准盘中实时价 + ✅ BUG-062 补全空缺跳过基准ETF + ✅ REQ-392 术语表分层 + 🔬 REQ-393 F8 成交量因子研究（Phase 1 完成） + 📋 REQ-387 F7 量程治理（待开始） |
 | **v4.0.0** | 架构包化 + 仪表盘 | REQ-334 脚本→src + REQ-270 人设仪表盘 + WF 生产化 |
 
 
@@ -203,6 +207,8 @@
 | BUG-059 | **setup_quant_tasks.ps1 中文编码乱码** — UTF-8 无 BOM 脚本在 PS 5.1 下以 GBK 读取导致任务名乱码。修复：另存为 UTF-8 with BOM | 🟡 Medium | fixed | v3.14.0 | — | 2026-07-21 | PS1 无 BOM，PowerShell 5.1 默认 ANSI(GBK) 读取 | v3.14.0 |
 | BUG-060 | **基准指数数据管线缺陷（regime 周内翻转 + 无盘中数据）** — 两个关联问题：(1) 周线日期修复：`build_index_weekly` 周线 bar 日期改为当周最后交易日，未完成周指向未来，`merge_asof` 自动跳过 ✅。(2) 基准 ETF 纳入盘中数据：`_fetch_sina_realtime` 加四支基准、`refresh_data` 加 gap 检测和补拉、`/api/data_status` 返回基准状态 ✅ 代码完成，⏳ 待明日盘中验证 DM 面板拉基准盘中数据是否生效。**2026-07-24 回归**：移除盘中 patch 逻辑时删漏 `patched` 变量引用（`_build_ma_trend_cache:1050`），导致 `preclose_push.bat` 报 `NameError: name 'patched' is not defined`。修复：删除残留的 `tag = " (intraday-patched)" if patched else ""` 引用。 | 🔴 Critical | fixed | v3.13.0 | — | 2026-07-23 | (1) 周线日期未指向当周最后交易日；(2) 基准 ETF 从未被纳入数据管线；(3) 回归：`patched` 变量定义被移除但引用残留 | v3.15.0 |
 | BUG-059 | **盘中拆股检测失效 — DM 面板不显示 ⚠** — REQ-354 bridge 先清洗内存 → REQ-360 `api_split_status` 查不到跳变 → `pending_repair` 永远不触发。修复：(1) 新增 `_detect_pending_splits_from_cache()` 只检测不洗数据；(2) 检测入口从 `refresh_data` 移到 `/api/split_status`（DM 加载时触发）；(3) bridge 命中后记 `_SPLIT_PENDING_REPAIR` 确保 ⚠ 可见 | 🔴 Critical | fixed | v3.13.0 | REQ-354, REQ-360 | 2026-07-21 | bridge 清洗证据 → api 查不到跳变；检测入口散布在三个不同端点 | v3.13.0 |
+| BUG-061 | **HS300 基准指数盘中仍用收盘价，无实时数据路径** — 三重修复：(1) `_populate_intraday_cache` 盘后循环末尾写入四支基准 ETF（510050/510300/510500/159915）到 intraday_cache；(2) 新增 `_get_benchmark_daily_with_cache(code)` 从 CSV 加载基准日线 + 合并 intraday_cache；(3) `run_tuner_backtest` 盘中合并基准数据通过 preloaded 传入回测，`run_backtest` MA 趋势加载优先使用合并数据。 | 🟡 Medium | fixed | v3.15.0 | — | 2026-07-24 | BUG-060 把基准 ETF 加进 Sina 请求但没有写入 intraday_cache，且回测侧基准数据加载不经过 _get_daily_with_cache | v3.15.0 |
+| BUG-062 | **DM面板"补全空缺"只补交易ETF不补基准ETF** — `api_data_fill_gaps` 的 `BM_ENTRIES` 用了指数代码（000300/000016/000905/399006），而前端 DM 矩阵返回的是 ETF 代码（510300/510050/510500/159915）。选中基准 ETF 格子点"补全空缺"时，后端代码过滤 `510300 != 000300` → 全部跳过。修复：`BM_ENTRIES` 四行改为 ETF 代码，与 `api_data_matrix` / `api_data_refetch` / `api_data_full_refetch` 保持一致。 | 🟡 Medium | fixed | v3.11.0 | REQ-355 | 2026-07-24 | BM_ENTRIES 指数代码与 DM 矩阵 ETF 代码不匹配 | v3.15.0 |
 
 
 
@@ -225,9 +231,9 @@
 
 ## ID 计数器
 
-**下一个需求 ID**: REQ-392
+**下一个需求 ID**: REQ-394
 
-**下一个 Bug ID**: BUG-061
+**下一个 Bug ID**: BUG-063
 
 
 

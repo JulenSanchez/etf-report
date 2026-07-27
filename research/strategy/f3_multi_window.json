@@ -1,0 +1,138 @@
+{
+  "meta": {
+    "generated": "2026-07-24T20:01:20.635314",
+    "configs": {
+      "gam0_weights_ui": {
+        "w1": 71,
+        "w3": 13,
+        "w7": 16
+      },
+      "no_f3_weights_ui": {
+        "w1": 82,
+        "w3": 0,
+        "w7": 18
+      }
+    }
+  },
+  "windows": {
+    "6Y_full": {
+      "window": "6Y",
+      "gam0_AR": 139.2,
+      "gam0_MDD": -38.9,
+      "gam0_Sortino": 2.646,
+      "gam0_Calmar": 3.58,
+      "gam0_trades": 797,
+      "noF3_AR": 137.0,
+      "noF3_MDD": -39.8,
+      "noF3_Sortino": 2.627,
+      "noF3_Calmar": 3.44,
+      "noF3_trades": 789
+    },
+    "3Y_recent": {
+      "window": [
+        "2023-06-01",
+        "2026-06-01"
+      ],
+      "gam0_AR": 239.14,
+      "gam0_MDD": -34.26,
+      "gam0_Sortino": 3.5077,
+      "gam0_Calmar": 6.980151780502043,
+      "gam0_trades": 423,
+      "noF3_AR": 235.66,
+      "noF3_MDD": -33.92,
+      "noF3_Sortino": 3.5064,
+      "noF3_Calmar": 6.94752358490566,
+      "noF3_trades": 419
+    },
+    "1Y_recent": {
+      "window": [
+        "2025-06-01",
+        "2026-06-01"
+      ],
+      "gam0_AR": 1280.85,
+      "gam0_MDD": -29.24,
+      "gam0_Sortino": 5.7365,
+      "gam0_Calmar": 43.8047195622435,
+      "gam0_trades": 160,
+      "noF3_AR": 1131.1,
+      "noF3_MDD": -29.57,
+      "noF3_Sortino": 5.5405,
+      "noF3_Calmar": 38.25160635779506,
+      "noF3_trades": 160
+    },
+    "3Y_early": {
+      "window": [
+        "2020-06-01",
+        "2023-06-01"
+      ],
+      "gam0_AR": 68.78,
+      "gam0_MDD": -38.86,
+      "gam0_Sortino": 1.7591,
+      "gam0_Calmar": 1.7699433865156975,
+      "gam0_trades": 376,
+      "noF3_AR": 67.36,
+      "noF3_MDD": -39.82,
+      "noF3_Sortino": 1.7341,
+      "noF3_Calmar": 1.6916122551481667,
+      "noF3_trades": 372
+    },
+    "3Y_mid": {
+      "window": [
+        "2021-06-01",
+        "2024-06-01"
+      ],
+      "gam0_AR": 31.18,
+      "gam0_MDD": -31.17,
+      "gam0_Sortino": 1.1622,
+      "gam0_Calmar": 1.0003208213025345,
+      "gam0_trades": 349,
+      "noF3_AR": 32.86,
+      "noF3_MDD": -29.81,
+      "noF3_Sortino": 1.2008,
+      "noF3_Calmar": 1.1023146595102316,
+      "noF3_trades": 340
+    },
+    "3Y_late": {
+      "window": [
+        "2022-06-01",
+        "2025-06-01"
+      ],
+      "gam0_AR": 72.08,
+      "gam0_MDD": -34.26,
+      "gam0_Sortino": 1.9825,
+      "gam0_Calmar": 2.1039112667834208,
+      "gam0_trades": 376,
+      "noF3_AR": 76.84,
+      "noF3_MDD": -33.92,
+      "noF3_Sortino": 2.0829,
+      "noF3_Calmar": 2.265330188679245,
+      "noF3_trades": 371
+    }
+  },
+  "consistency": {
+    "d_AR": {
+      "positive": 2,
+      "negative": 4,
+      "avg": -25.0683,
+      "verdict": "MIXED"
+    },
+    "d_MDD": {
+      "positive": 3,
+      "negative": 3,
+      "avg": -0.025,
+      "verdict": "MIXED"
+    },
+    "d_Sortino": {
+      "positive": 2,
+      "negative": 4,
+      "avg": -0.0171,
+      "verdict": "MIXED"
+    },
+    "d_Calmar": {
+      "positive": 2,
+      "negative": 4,
+      "avg": -0.9234,
+      "verdict": "MIXED"
+    }
+  }
+}

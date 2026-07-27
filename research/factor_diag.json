@@ -1,0 +1,53 @@
+{
+  "meta": {
+    "source": "factor_dispersion.csv",
+    "n_days": 856,
+    "dates": [
+      "2022-12-30",
+      "2026-07-16"
+    ]
+  },
+  "A_f3_contribution": {
+    "avg_dominance": {
+      "f1": 0.5833,
+      "f3": 0.0902,
+      "f7": 0.3265
+    },
+    "avg_std": {
+      "f1": 7.2345,
+      "f3": 1.0284,
+      "f7": 23.1497
+    },
+    "f3_mean_range": [
+      50.304,
+      52.633
+    ],
+    "f3_max_dominance": 0.2467,
+    "f3_gt_10pct_days": 424,
+    "f3_gt_15pct_days": 124,
+    "verdict": "F3 contributes essentially zero"
+  },
+  "B_f1f7_pattern": {
+    "corr_f1dom_f7dom": -0.9964,
+    "dominance_wins": {
+      "f1": 548,
+      "f1_pct": 64.0,
+      "f3": 0,
+      "f3_pct": 0.0,
+      "f7": 308,
+      "f7_pct": 36.0
+    },
+    "mutual_exclusivity": {
+      "f1_hi_f7_lo": 471,
+      "f7_hi_f1_lo": 188,
+      "both_mid": 25,
+      "exclusive_pct": 77.0
+    },
+    "verdict": "F1/F7 strongly exclusive"
+  },
+  "C_f7_insurance": {
+    "corr_f1mean_f7mean": 0.2028,
+    "corr_f1mean_f7std": 0.1556,
+    "corr_f1dom_f7max": -0.6959
+  }
+}

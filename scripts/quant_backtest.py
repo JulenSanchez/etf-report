@@ -713,7 +713,12 @@ def run_backtest(start_date: str = "2026-05-01", end_date: str = None,
     if conf_type == "ma_trend":
         for idx_code in benchmarks:
             try:
-                daily = load_index_daily_cached(idx_code)
+                # BUG-061: prefer intraday-merged benchmark data from Tuner preloaded
+                bm_merged = (preloaded or {}).get("benchmark_daily_merged", {}).get(idx_code)
+                if bm_merged is not None:
+                    daily = bm_merged
+                else:
+                    daily = load_index_daily_cached(idx_code)
                 weekly = build_index_weekly(daily)
                 cache = build_ma_trend_cache(daily, weekly, ma_trend_period) or {}
                 benchmark_above_maps[idx_code] = cache.get("above", {})

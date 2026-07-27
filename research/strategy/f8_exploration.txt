@@ -1,0 +1,144 @@
+Loaded 51 ETFs
+Sectors: ['传统', '制造', '医药', '另类', '平台经济', '新能源', '海外科技', '消费', '科技', '资源周期', '金融']
+
+Precomputing volume/price features for all ETFs...
+Done.
+
+======================================================================
+(A) VOLUME PERCENTILE → FORWARD RETURN
+======================================================================
+Total pool observations: 68,906
+
+Forward 5d/10d/20d return by volume percentile bin:
+Bin           Count   Fwd5d_mean  Fwd10d_mean  Fwd20d_mean   Ret1d_mean
+------------------------------------------------------------
+  0             6,193     +0.0068     +0.0072     -0.0105     -0.0040
+  10            5,043     -0.0181     -0.0069     -0.0073     -0.0053
+  20            4,897     +0.0019     +0.0050     +0.0081     -0.0011
+  30            5,124     +0.0020     +0.0059     +0.0119     -0.0004
+  40            5,526     +0.0031     +0.0055     +0.0106     -0.0011
+  50            6,030     +0.0025     +0.0050     +0.0115     -0.0009
+  60            6,852     +0.0037     +0.0064     +0.0119     -0.0000
+  70            7,705     +0.0037     +0.0060     +0.0131     +0.0007
+  80            8,898     +0.0020     +0.0040     +0.0069     -0.0015
+  90            5,095     +0.0031     +0.0054     +0.0069     +0.0024
+  95            7,543     +0.0026     +0.0044     +0.0046     +0.0069
+
+======================================================================
+(B) VOLUME EXPANSION STREAKS (amt > 1.5x 60d avg)
+======================================================================
+Total streaks (>=3d high vol): 1122
+  Up-streaks (price rising during high vol):  709, fwd20d_mean=+0.0129
+  Down-streaks (price falling during high vol): 401, fwd20d_mean=+0.0121
+
+  Long up-streaks (>=10d): 167, fwd20d_mean=+0.0217
+  Long down-streaks (>=10d): 36, fwd20d_mean=-0.0005
+
+======================================================================
+(C) VOLUME-PRICE DIVERGENCE (amt up + price flat/down → future reversal?)
+======================================================================
+Divergence (high vol + falling price): 1,787 obs, fwd20d_mean=-0.0393
+Convergence (high vol + rising price):  7,705 obs, fwd20d_mean=+0.0087
+Normal (low vol + flat price):          13,926 obs, fwd20d_mean=+0.0062
+
+  Divergence + today_up (放量止跌): 596 obs, fwd20d_mean=+0.0057
+  Divergence + today_dn (放量续跌): 1,170 obs, fwd20d_mean=-0.0634
+
+======================================================================
+(D) EXTREME VOLUME DAYS (top 5% percentile per ETF)
+======================================================================
+Extreme volume days: 7,543
+  Up days:   4,475, fwd20d=+0.0052
+  Down days: 3,068, fwd20d=+0.0036
+
+  By sector:
+    传统      : n= 1169, up_fwd20d=-0.0044, dn_fwd20d=-0.0138
+    制造      : n=  367, up_fwd20d=-0.0026, dn_fwd20d=+0.0034
+    医药      : n=  397, up_fwd20d=-0.0033, dn_fwd20d=-0.0121
+    另类      : n=  728, up_fwd20d=-0.0010, dn_fwd20d=+0.0094
+    平台经济    : n=  642, up_fwd20d=-0.0027, dn_fwd20d=-0.0072
+    新能源     : n=  239, up_fwd20d=+0.0280, dn_fwd20d=+0.0328
+    海外科技    : n=  820, up_fwd20d=+0.0026, dn_fwd20d=+0.0082
+    消费      : n=  602, up_fwd20d=+0.0105, dn_fwd20d=+0.0089
+    科技      : n=  800, up_fwd20d=+0.0351, dn_fwd20d=+0.0307
+    资源周期    : n=  740, up_fwd20d=+0.0009, dn_fwd20d=+0.0006
+    金融      : n= 1039, up_fwd20d=+0.0054, dn_fwd20d=-0.0012
+
+======================================================================
+(E) VOLUME TREND × PRICE TREND QUADRANTS
+======================================================================
+  量价齐升 (amt↑ price↑): 8,874 obs, fwd20d=+0.0116
+  量升价跌 (amt↑ price↓): 3,274 obs, fwd20d=-0.0263
+  量缩价升 (amt↓ price↑): 4,282 obs, fwd20d=+0.0059
+  量缩价跌 (amt↓ price↓): 5,846 obs, fwd20d=+0.0283
+
+======================================================================
+(F) LEAD-LAG: Volume → Future Return (per ETF cross-correlation)
+======================================================================
+Average corr(amount_ratio, fwd_ret_Nd) across all ETFs:
+  Horizon  1d: mean=+0.00368, median=-0.00065, pos=25, neg=26
+  Horizon  3d: mean=+0.00581, median=-0.00166, pos=24, neg=27
+  Horizon  5d: mean=+0.00899, median=-0.00040, pos=25, neg=26
+  Horizon 10d: mean=+0.00068, median=+0.00555, pos=28, neg=23
+  Horizon 20d: mean=-0.00791, median=-0.00381, pos=24, neg=27
+
+  Top 10 ETFs with strongest amt→fwd20d correlation:
+    159509 纳指科技ETF: r=+0.1836
+    563300 微盘ETF: r=+0.1798
+    159755 电池ETF: r=+0.1537
+    159996 家电ETF: r=+0.1044
+    159697 石油ETF: r=+0.0981
+    513090 港券ETF: r=+0.0969
+    159851 金融科技ETF: r=+0.0855
+    159518 标普油气: r=+0.0749
+    159870 化工ETF: r=+0.0624
+    159206 卫星ETF: r=+0.0565
+
+======================================================================
+(G) CONSECUTIVE HIGH-VOLUME DAYS × PRICE DIRECTION
+======================================================================
+
+  3d consecutive high-volume:
+    Total: 5161, Up: 2975 (fwd20d=+0.0069), Dn: 2186 (fwd20d=+0.0118)
+
+  5d consecutive high-volume:
+    Total: 3307, Up: 2025 (fwd20d=+0.0049), Dn: 1282 (fwd20d=+0.0096)
+
+  10d consecutive high-volume:
+    Total: 1551, Up: 1105 (fwd20d=+0.0017), Dn: 446 (fwd20d=+0.0012)
+
+======================================================================
+(H) VOLUME BREAKOUT: amount exceeds N-day max
+======================================================================
+
+  Volume > 20d max:
+    Total: 4502, Up: 3123 (fwd20d=+0.0176), Dn: 1307 (fwd20d=+0.0143)
+      传统      : n=  783, up_fwd20d=+0.0212
+      制造      : n=  239, up_fwd20d=+0.0166
+      医药      : n=  233, up_fwd20d=-0.0043
+      另类      : n=  451, up_fwd20d=+0.0132
+      平台经济    : n=  374, up_fwd20d=+0.0165
+      新能源     : n=  173, up_fwd20d=+0.0270
+      海外科技    : n=  450, up_fwd20d=+0.0197
+      消费      : n=  351, up_fwd20d=+0.0085
+      科技      : n=  391, up_fwd20d=+0.0436
+      资源周期    : n=  473, up_fwd20d=+0.0085
+      金融      : n=  584, up_fwd20d=+0.0181
+
+  Volume > 60d max:
+    Total: 2112, Up: 1482 (fwd20d=+0.0123), Dn: 597 (fwd20d=+0.0097)
+      传统      : n=  344, up_fwd20d=+0.0001
+      制造      : n=  117, up_fwd20d=-0.0122
+      医药      : n=  102, up_fwd20d=-0.0097
+      另类      : n=  205, up_fwd20d=+0.0092
+      平台经济    : n=  179, up_fwd20d=+0.0123
+      新能源     : n=   71, up_fwd20d=+0.0312
+      海外科技    : n=  228, up_fwd20d=+0.0168
+      消费      : n=  158, up_fwd20d=+0.0012
+      科技      : n=  224, up_fwd20d=+0.0451
+      资源周期    : n=  221, up_fwd20d=+0.0040
+      金融      : n=  263, up_fwd20d=+0.0288
+
+======================================================================
+SAVING RESULTS
+======================================================================

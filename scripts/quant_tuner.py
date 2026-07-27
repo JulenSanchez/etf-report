@@ -463,51 +463,76 @@ def _reload_csv_to_cache(cfg):
 
 def _sina_batch_append(cfg, date_str, rt_prices):
     """Append one day's Sina realtime data to all ETF CSVs (single-day only).
+    Covers both universe ETFs AND benchmark ETFs (510050/510300/510500/159915).
     DESIGN PRINCIPLE: only call this post-market (>=15:10) with confirmed close data.
     Refuses to write if current time < COOL_OFF_TIME as defense-in-depth.
     """
+    BM_CODES = ("510050", "510300", "510500", "159915")
+    total_count = len(cfg["universe"]) + len(BM_CODES)
+    uni_count = len(cfg["universe"])
     now = datetime.now()
     if now.hour * 60 + now.minute < COOL_OFF_TIME:
         print(f"  [Sina] REFUSED: intraday data must never touch CSV (current time < 15:10)")
-        return 0, len(cfg["universe"])
+        return 0, uni_count, 0, len(BM_CODES)
     # Validate date_str is a real date, not a time string
     if not __import__('re').match(r'^\d{4}-\d{2}-\d{2}$', str(date_str)):
         print(f"  [Sina] REFUSED: date_str is not a valid date: {date_str}")
-        return 0, len(cfg["universe"])
+        return 0, uni_count, 0, len(BM_CODES)
     # Audit log
     log_path = DATA_DIR / ".sina_write_log.txt"
     log_path.parent.mkdir(parents=True, exist_ok=True)
     try:
         with open(log_path, "a", encoding="utf-8") as lf:
-            lf.write(f"[{now.isoformat()}] date={date_str} etfs={len(cfg['universe'])}\n")
+            lf.write(f"[{now.isoformat()}] date={date_str} etfs={total_count}\n")
     except Exception:
         pass
     from quant_data_fetcher import append_csv, save_csv, DATA_DIR as QDATA_DIR
     import pandas as _pd
-    ok, fail = 0, 0
+
+    def _append_one(code, rt):
+        """Append one day's Sina data to daily CSV, rebuild weekly."""
+        daily_path = QDATA_DIR / f"{code}_daily.csv"
+        weekly_path = QDATA_DIR / f"{code}_weekly.csv"
+        new_row = _pd.DataFrame([{
+            "date": date_str, "open": rt["open"], "close": rt["price"],
+            "high": rt["high"], "low": rt["low"],
+            "volume": int(float(rt.get("volume", 0))), "amount": rt.get("amount", 0),
+        }])
+        append_csv(new_row, daily_path)
+        full_daily = _pd.read_csv(daily_path)
+        weekly = rebuild_weekly_from_daily(full_daily)
+        save_csv(weekly, weekly_path)
+
+    uni_ok, uni_fail = 0, 0
     for etf in cfg["universe"]:
         code = etf["code"]
         rt = rt_prices.get(code)
         if not rt or rt.get("price", 0) <= 0:
-            fail += 1
+            uni_fail += 1
             continue
         try:
-            daily_path = QDATA_DIR / f"{code}_daily.csv"
-            weekly_path = QDATA_DIR / f"{code}_weekly.csv"
-            new_row = _pd.DataFrame([{
-                "date": date_str, "open": rt["open"], "close": rt["price"],
-                "high": rt["high"], "low": rt["low"],
-                "volume": int(float(rt.get("volume", 0))), "amount": rt.get("amount", 0),
-            }])
-            append_csv(new_row, daily_path)
-            full_daily = _pd.read_csv(daily_path)
-            weekly = rebuild_weekly_from_daily(full_daily)
-            save_csv(weekly, weekly_path)
-            ok += 1
+            _append_one(code, rt)
+            uni_ok += 1
         except Exception as e:
             print(f"  [Sina] FAIL {code}: {e}")
-            fail += 1
-    return ok, fail
+            uni_fail += 1
+
+    # BUG-061: also write benchmark ETF close to CSV (same Sina request,
+    # data already in rt_prices — just wasn't being written).
+    bm_ok, bm_fail = 0, 0
+    for bm_code in BM_CODES:
+        rt = rt_prices.get(bm_code)
+        if not rt or rt.get("price", 0) <= 0:
+            bm_fail += 1
+            continue
+        try:
+            _append_one(bm_code, rt)
+            bm_ok += 1
+        except Exception as e:
+            print(f"  [Sina] FAIL {bm_code}: {e}")
+            bm_fail += 1
+
+    return uni_ok, uni_fail, bm_ok, bm_fail
 
 
 _SPLIT_EVENTS = {}       # code → [events], populated once per session
@@ -654,11 +679,11 @@ def _full_refetch_split_etfs(cfg):
 def _populate_intraday_cache(cfg, now, today_str, time_label, codes=None):
     """Populate intraday cache from Sina real-time API.
     codes: optional list of ETF codes to update; None = all universe ETFs.
-    Returns (updated_count, halted_count).
+    Returns (uni_updated, halted_count, bm_updated).
     """
     rt_prices = _fetch_sina_realtime(cfg)
     if not rt_prices:
-        return 0, 0
+        return 0, 0, 0
 
     # Retry missing ETFs
     missing = [e for e in cfg["universe"] if e["code"] not in rt_prices or rt_prices[e["code"]]["price"] <= 0]
@@ -724,7 +749,29 @@ def _populate_intraday_cache(cfg, now, today_str, time_label, codes=None):
         }
         updated += 1
 
-    return updated, halted_count
+    # BUG-061: also store benchmark ETF (510050/510300/510500/159915) intraday data.
+    # _fetch_sina_realtime already fetches them; _populate_intraday_cache just needs to write.
+    bm_updated = 0
+    BM_CODES = ("510050", "510300", "510500", "159915")
+    for bm_code in BM_CODES:
+        rt = rt_prices.get(bm_code)
+        if not rt or rt["price"] <= 0:
+            continue
+        raw_vol = rt.get("volume", 0)
+        vol = _estimate_eod_volume(raw_vol, now) if raw_vol > 0 else 0
+        CACHE["intraday_cache"][bm_code] = {
+            "date": today_str, "time": time_label,
+            "open": rt.get("open", rt["price"]),
+            "close": rt["price"],
+            "high": rt.get("high", rt["price"]),
+            "low": rt.get("low", rt["price"]),
+            "volume": vol, "amount": rt.get("amount", 0),
+            "raw_volume": raw_vol, "raw_amount": rt.get("amount", 0),
+            "halted": False,
+        }
+        bm_updated += 1
+
+    return updated, halted_count, bm_updated
 
 
 def refresh_data():
@@ -754,106 +801,112 @@ def refresh_data():
     intraday = trading and not pre_market and not post_market
 
     ok, fail = 0, 0
+    uni_ok = bm_ok = 0
     ran_fetch = False
     used_sina = False
 
-    # ── Single-day Sina fast path (post-market only, gap = exactly 1 trading day) ──
+    # ── Single-day Sina fast path (post-market only) ──
     # DESIGN PRINCIPLE: intraday data must NEVER touch CSV. Only post-market confirmed close.
-    # The _is_post_market() guard is necessary but NOT sufficient — hard-check time explicitly.
+    # Always try Sina — _fetch_sina_realtime pulls all 58 ETFs in one request.
+    # If it succeeds, gap detection below uses prev_td (yesterday) as the target, so only
+    # ETFs with multi-day gaps trigger Tencent.  If Sina fails, Tencent fills everything.
+    prev_td = last_trading_day(now) if post_market else None
     if post_market:
         now_minutes = now.hour * 60 + now.minute
         if now_minutes >= COOL_OFF_TIME:
-            from quant_data_fetcher import get_last_date, DATA_DIR as QDATA_DIR, _latest_allowed_date
-            prev_td = last_trading_day(now)
-            all_yesterday = True
-            for etf in cfg["universe"]:
-                last = get_last_date(QDATA_DIR / f"{etf['code']}_daily.csv")
-                if last is None or last < prev_td:
-                    all_yesterday = False
-                    break
-            if all_yesterday:
-                print(f"  [Refresh] Post-market — trying Sina single-day fast path...")
-                try:
-                    rt = _fetch_sina_realtime(cfg)
-                    if rt:
-                        ok, fail = _sina_batch_append(cfg, today_str, rt)
-                        if fail == 0:
-                            used_sina = True
-                            _reload_csv_to_cache(cfg)
-                            print(f"  [Refresh] Sina fast path: {ok} OK, ~2s")
-                        else:
-                            print(f"  [Refresh] Sina fast path partial: {ok} OK, {fail} fail — falling back")
-                except Exception as e:
-                    print(f"  [Refresh] Sina fast path crashed: {e} — falling back to incremental")
-                else:
-                    print(f"  [Refresh] Sina API failed — falling back to incremental")
+            print(f"  [Refresh] Post-market — trying Sina fast path...")
+            try:
+                rt = _fetch_sina_realtime(cfg)
+                if rt:
+                    uni_ok, uni_fail, bm_ok, bm_fail = _sina_batch_append(cfg, today_str, rt)
+                    fail = uni_fail + bm_fail
+                    if fail == 0:
+                        used_sina = True
+                        ok = uni_ok + bm_ok
+                        _reload_csv_to_cache(cfg)
+                        print(f"  [Refresh] Sina fast path: {uni_ok}+{bm_ok} OK, ~2s")
+                    else:
+                        ok = uni_ok + bm_ok
+                        print(f"  [Refresh] Sina fast path partial: {uni_ok}+{bm_ok} OK, {fail} fail — falling back")
+            except Exception as e:
+                print(f"  [Refresh] Sina fast path crashed: {e} — falling back to incremental")
+            else:
+                print(f"  [Refresh] Sina API failed — falling back to incremental")
 
     # ── Step 1: Fetch today's data (Sina fast path or intraday cache) ──
     # ── Step 2: Always check for historical gaps and fill them ──
-    from quant_data_fetcher import get_last_date, DATA_DIR as QDATA_DIR, _latest_allowed_date
+    from quant_data_fetcher import get_last_date, DATA_DIR as QDATA_DIR, _latest_allowed_date, update_single, FRESH_MARKER
     gap_ok, gap_fail = 0, 0
+    bm_gap_ok, bm_gap_fail = 0, 0
+    BM_CODES = ("510050", "510300", "510500", "159915")
+    _bm_entries = [
+        {"code": "510050", "name": "上证50", "market": "sh"},
+        {"code": "510300", "name": "沪深300", "market": "sh"},
+        {"code": "510500", "name": "中证500", "market": "sh"},
+        {"code": "159915", "name": "创业板指", "market": "sz"},
+    ]
+
     need_gap_fill = False
-    _expected_date = _latest_allowed_date(now) if intraday else today_str
+    # Target date for gap detection:
+    #   Used Sina → today's close written to all 58 CSVs; only detect gaps BEFORE prev_td
+    #   No Sina    → need Tencent to fill today's data (and any earlier gaps)
+    _gap_target = prev_td if (used_sina and prev_td) else (_latest_allowed_date(now) if intraday else today_str)
     for etf in cfg["universe"]:
         last = get_last_date(QDATA_DIR / f"{etf['code']}_daily.csv")
-        if last is None or last < _expected_date:
+        if last is None or last < _gap_target:
             need_gap_fill = True
             break
+    if not need_gap_fill:
+        for bm_code in BM_CODES:
+            last = get_last_date(QDATA_DIR / f"{bm_code}_daily.csv")
+            if last is None or last < _gap_target:
+                need_gap_fill = True
+                break
+
     if need_gap_fill:
+        # Clear freshness marker — we just detected gaps, so it's stale.
+        # _run_incremental_fetch trusts the marker and would skip everything.
+        if FRESH_MARKER.exists():
+            FRESH_MARKER.unlink()
         print(f"  [Refresh] Historical gaps detected — running incremental fetch...")
         gap_ok, gap_fail = _run_incremental_fetch(cfg)
         ran_fetch = True
         _reload_csv_to_cache(cfg)
+        # Also update benchmark ETFs (unified with universe gap fill)
+        for bm in _bm_entries:
+            last = get_last_date(QDATA_DIR / f"{bm['code']}_daily.csv")
+            if last is not None and last >= _gap_target:
+                continue
+            try:
+                _, _, _ = update_single(bm, full=False)
+                bm_gap_ok += 1
+            except Exception as e:
+                print(f"    {bm['code']}: FAIL ({e})")
+                bm_gap_fail += 1
     elif not used_sina and not intraday:
         # No gaps, not intraday, not already fetched via Sina → still need fetch
         print(f"  [Refresh] Running incremental fetch...")
         gap_ok, gap_fail = _run_incremental_fetch(cfg)
         ran_fetch = True
         _reload_csv_to_cache(cfg)
+        for bm in _bm_entries:
+            try:
+                _, _, _ = update_single(bm, full=False)
+                bm_gap_ok += 1
+            except Exception as e:
+                print(f"    {bm['code']}: FAIL ({e})")
+                bm_gap_fail += 1
     elif intraday:
         print(f"  [Refresh] Intraday — CSV write skipped (live data → cache only)")
         _reload_csv_to_cache(cfg)
 
-    ok = max(ok, gap_ok)
-    fail = max(fail, gap_fail)
     if used_sina:
-        gap_msg = f"Sina batch | {ok} OK, {fail} fail"
+        # uni_ok/bm_ok already set from _sina_batch_append unpacking
+        gap_msg = f"Sina收盘 | {uni_ok}+{bm_ok} OK, {fail} fail"
     elif ran_fetch:
-        gap_msg = f"CSV gap-fill | {ok} OK, {fail} fail"
+        gap_msg = f"Tencent增量 | {gap_ok}+{bm_gap_ok} OK, {gap_fail+bm_gap_fail} fail"
     else:
         gap_msg = ""
-
-    # BUG-060: also check and fill benchmark ETF (510050/510300/510500/159915) gaps
-    bm_ok, bm_fail = 0, 0
-    bm_need = False
-    _bm_expected = _latest_allowed_date(now) if intraday else today_str
-    for bm_code in ("510050", "510300", "510500", "159915"):
-        bm_last = get_last_date(QDATA_DIR / f"{bm_code}_daily.csv")
-        if bm_last is None or bm_last < _bm_expected:
-            bm_need = True
-            break
-    if bm_need:
-        print(f"  [Refresh] Benchmark ETF gaps detected — filling...")
-        from quant_data_fetcher import fetch_etf_kline, rebuild_weekly_from_daily, save_csv
-        for bm_code in ("510050", "510300", "510500", "159915"):
-            bm_last = get_last_date(QDATA_DIR / f"{bm_code}_daily.csv")
-            if bm_last is None or bm_last < _bm_expected:
-                try:
-                    bm_mkt = "sh" if bm_code.startswith("5") else "sz"
-                    df = fetch_etf_kline(bm_code, bm_mkt)
-                    if df is not None and len(df) > 0:
-                        save_csv(df, QDATA_DIR / f"{bm_code}_daily.csv")
-                        df_w = rebuild_weekly_from_daily(df)
-                        save_csv(df_w, QDATA_DIR / f"{bm_code}_weekly.csv")
-                        bm_ok += 1
-                        print(f"    {bm_code}: OK ({len(df)} rows)")
-                    else:
-                        raise RuntimeError("empty")
-                except Exception as e:
-                    bm_fail += 1
-                    print(f"    {bm_code}: FAIL ({e})")
-        if bm_ok > 0 and gap_msg:
-            gap_msg += f" | Benchmark OK={bm_ok} FAIL={bm_fail}"
 
     _ensure_splits_detected(cfg)
     _apply_split_memory_bridge(cfg)
@@ -908,10 +961,10 @@ def refresh_data():
         }
 
     # ── Intraday (09:30–15:10): historical gaps filled + intraday cache ──
-    updated, halted_count = _populate_intraday_cache(cfg, now, today_str, time_label)
+    uni_updated, halted_count, bm_updated = _populate_intraday_cache(cfg, now, today_str, time_label)
     vol_note = " (vol est. EOD)" if _trading_elapsed_minutes(now) < TOTAL_TRADING_MINUTES else ""
     halt_note = f" | {halted_count} halted" if halted_count > 0 else ""
-    msg = f"{time_label} | Intraday | {updated} ETFs{vol_note}{halt_note} | {gap_msg}"
+    msg = f"{time_label} | Sina实时 | {uni_updated}+{bm_updated} ETFs{vol_note}{halt_note} | {gap_msg}"
     print(f"  [Refresh] {msg}")
 
     return {
@@ -966,6 +1019,53 @@ def _get_daily_with_cache(code):
             "amount": cached["amount"],
         }])
         df = pd.concat([df, new_row], ignore_index=True)
+
+    return df
+
+
+def _get_benchmark_daily_with_cache(code):
+    """Like _get_daily_with_cache but for benchmark ETFs not in CACHE['all_daily'].
+    Loads daily from CSV, then merges intraday cache if available.
+    BUG-061: gives HS300 MA trend calculation access to today's intraday price."""
+    import pandas as _pd
+    from quant_data_fetcher import DATA_DIR as _QDATA_DIR
+
+    csv_path = _QDATA_DIR / f"{code}_daily.csv"
+    if not csv_path.exists():
+        return None
+
+    daily_df = _pd.read_csv(csv_path, parse_dates=["date"])
+
+    cached = CACHE.get("intraday_cache", {}).get(code)
+    if not cached:
+        return daily_df
+
+    cache_date = cached["date"]
+    last_date = daily_df["date"].iloc[-1]
+    last_str = last_date.strftime("%Y-%m-%d") if hasattr(last_date, "strftime") else str(last_date)[:10]
+
+    df = daily_df.copy()
+
+    if last_str == cache_date:
+        df.at[df.index[-1], "open"] = cached["open"]
+        df.at[df.index[-1], "close"] = cached["close"]
+        df.at[df.index[-1], "high"] = cached["high"]
+        df.at[df.index[-1], "low"] = cached["low"]
+        if "volume" in df.columns:
+            df.at[df.index[-1], "volume"] = cached["volume"]
+        if "amount" in df.columns:
+            df.at[df.index[-1], "amount"] = cached["amount"]
+    elif last_str < cache_date:
+        new_row = _pd.DataFrame([{
+            "date": _pd.Timestamp(cache_date),
+            "open": cached["open"],
+            "close": cached["close"],
+            "high": cached["high"],
+            "low": cached["low"],
+            "volume": cached["volume"],
+            "amount": cached["amount"],
+        }])
+        df = _pd.concat([df, new_row], ignore_index=True)
 
     return df
 
@@ -1391,6 +1491,15 @@ def run_tuner_backtest(params, progress_callback=None):
         all_daily = all_daily_exec
         all_daily_exec = None  # engine falls back to all_daily when None
 
+    # BUG-061: merge benchmark ETF (510050/510300/510500/159915) intraday data
+    # so HS300 MA trend calculation sees today's intraday price instead of yesterday's close.
+    _bm_merged = {}
+    if CACHE.get("intraday_cache") and not _is_post_market():
+        for _bm_code in ("510050", "510300", "510500", "159915"):
+            _merged = _get_benchmark_daily_with_cache(_bm_code)
+            if _merged is not None:
+                _bm_merged[_bm_code] = _merged
+
     universe_filter, _universe_mode = _parse_universe_filter(params)
     if universe_filter is not None:
         all_daily = {k: v for k, v in all_daily.items() if k in universe_filter}
@@ -1408,6 +1517,7 @@ def run_tuner_backtest(params, progress_callback=None):
         "market_regimes": CACHE.get("market_regimes", {}),
         "hs300_above_ma": ma_cache.get("above", {}),
         "hs300_ma_rising": ma_cache.get("ma_rising", {}),
+        "benchmark_daily_merged": _bm_merged,  # BUG-061
     }
 
     # Factor precomputation and price lookup now handled inside run_backtest()
@@ -2448,7 +2558,13 @@ def api_data_status():
                 bm_df = pd.read_csv(bm_csv, parse_dates=["date"]) if bm_csv.exists() else None
             if bm_df is not None and len(bm_df) > 0:
                 bm_last = bm_df["date"].iloc[-1].strftime("%Y-%m-%d")
-                bm_status[bm_code] = {"date": bm_last, "rows": len(bm_df)}
+                bm_entry = {"date": bm_last, "rows": len(bm_df)}
+                # BUG-061: reflect intraday cache availability for benchmark ETFs
+                bm_ic = ic.get(bm_code)
+                if bm_ic and bm_ic.get("date"):
+                    bm_entry["intraday"] = bm_ic["date"]
+                    bm_entry["intradayTime"] = bm_ic.get("time", "")
+                bm_status[bm_code] = bm_entry
     except Exception:
         pass
 
@@ -3011,10 +3127,10 @@ def api_data_fill_gaps():
 
     # Add benchmark indices to target list
     BM_ENTRIES = [
-        {"code": "000300", "name": "沪深300", "market": "sh"},
-        {"code": "000016", "name": "上证50", "market": "sh"},
-        {"code": "000905", "name": "中证500", "market": "sh"},
-        {"code": "399006", "name": "创业板指", "market": "sz"},
+        {"code": "510300", "name": "沪深300", "market": "sh"},
+        {"code": "510050", "name": "上证50", "market": "sh"},
+        {"code": "510500", "name": "中证500", "market": "sh"},
+        {"code": "159915", "name": "创业板指", "market": "sz"},
     ]
     all_etfs.extend(BM_ENTRIES)
 
