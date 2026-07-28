@@ -33,7 +33,7 @@ d in csv_dates?
 ## 异常检测
 
 - 日收益率 = `(close - prev_close) / prev_close`
-- 阈值：所有 ETF 统一 20%（含 QDII）
+- 阈值：所有 ETF 统一，定义在 `quant_tuner.py:DM_ANOMALY_THRESHOLD`（当前 25%）。修改时只需改这一处——HTML 占位符 `{DM_ANOMALY_THRESHOLD_PCT}` 在 Tuner 启动时自动替换，`/api/data_status.anomalyThreshold` 对前端暴露
 - 前端：`.dm-cell.anomaly-surge`（红底脉冲）/ `.anomaly-plunge`（绿底脉冲）
 
 ## 选择交互

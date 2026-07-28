@@ -45,7 +45,7 @@ PARAM_SCHEMA = {
                 {"key": "ma_trend_period", "label": "MA Trend 周期", "unit": "weeks", "engine_path": "confidence.ma_trend_period"},
                 {"key": "ma_bull_pos", "label": "MA 上方仓位", "unit": "ratio", "engine_path": "confidence.ma_bull_pos"},
                 {"key": "ma_bear_pos", "label": "MA 下方仓位", "unit": "ratio", "engine_path": "confidence.ma_bear_pos"},
-                {"key": "ma_direction_confirm", "label": "MA 方向确认", "unit": "bool", "engine_path": "confidence.ma_direction_confirm"},
+                {"key": "ma_direction_confirm", "label": "MA 方向确认", "unit": "bool", "engine_path": "confidence.ma_direction_confirm", "locked": True, "lock_reason": "未测试过 False。关闭可能减少误判但也可能引入反向信号，不优化。"},
                 {"key": "dead_zone", "label": "旧信心函数死区", "unit": "ui_percent", "engine_path": "confidence.dead_zone"},
                 {"key": "full_zone", "label": "旧信心函数满配阈值", "unit": "ui_percent", "engine_path": "confidence.full_zone"},
             ],
@@ -61,7 +61,7 @@ PARAM_SCHEMA = {
                 {"key": "c_sensitivity", "label": "C 动态灵敏度", "unit": "raw", "engine_path": "position.c_sensitivity"},
                 {"key": "rebalance_freq", "label": "调仓频率", "unit": "enum", "engine_path": "position.rebalance_freq", "locked": True, "lock_reason": "固定日调仓。周调仓因信号延迟已被淘汰。"},
                 {"key": "band", "label": "B 分数带", "unit": "raw", "engine_path": "position.band"},
-                {"key": "band_sensitivity", "label": "BS 分数带灵敏度", "unit": "raw", "engine_path": "position.band_sensitivity"},
+                {"key": "band_sensitivity", "label": "BS 分数带灵敏度", "unit": "raw", "engine_path": "position.band_sensitivity", "locked": True, "lock_reason": "2026-07-28 扫参：所有非零值严格劣于静态（-3~-25pp AR）。动态 band 引入过度交易。"},
             ],
         },
         {
@@ -188,6 +188,8 @@ LOCKED_PARAMS = {
     "rebalance_freq":  {"value": "daily",    "reason": "固定日调仓。周调仓因信号延迟已被淘汰。"},
     "benchmarks":      {"value": ["510300"], "reason": "固定沪深 300 单票。多指数投票未见稳健超额。"},
     "f1_active_days":  {"value": 1,     "reason": "固定周五抢跑。多日抢跑未见稳健超额。"},
+    "ma_direction_confirm": {"value": True, "reason": "未测试过 False。关闭可能减少误判但也可能引入反向信号，不优化。"},
+    "band_sensitivity": {"value": 0.0, "reason": "2026-07-28 扫参：所有非零值严格劣于静态 band=0.03（-3~-25pp AR）。动态 band 引入过度交易。"},
 }
 
 

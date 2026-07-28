@@ -209,7 +209,8 @@
 | BUG-059 | **盘中拆股检测失效 — DM 面板不显示 ⚠** — REQ-354 bridge 先清洗内存 → REQ-360 `api_split_status` 查不到跳变 → `pending_repair` 永远不触发。修复：(1) 新增 `_detect_pending_splits_from_cache()` 只检测不洗数据；(2) 检测入口从 `refresh_data` 移到 `/api/split_status`（DM 加载时触发）；(3) bridge 命中后记 `_SPLIT_PENDING_REPAIR` 确保 ⚠ 可见 | 🔴 Critical | fixed | v3.13.0 | REQ-354, REQ-360 | 2026-07-21 | bridge 清洗证据 → api 查不到跳变；检测入口散布在三个不同端点 | v3.13.0 |
 | BUG-061 | **HS300 基准指数盘中仍用收盘价，无实时数据路径** — 三重修复：(1) `_populate_intraday_cache` 盘后循环末尾写入四支基准 ETF（510050/510300/510500/159915）到 intraday_cache；(2) 新增 `_get_benchmark_daily_with_cache(code)` 从 CSV 加载基准日线 + 合并 intraday_cache；(3) `run_tuner_backtest` 盘中合并基准数据通过 preloaded 传入回测，`run_backtest` MA 趋势加载优先使用合并数据。 | 🟡 Medium | fixed | v3.15.0 | — | 2026-07-24 | BUG-060 把基准 ETF 加进 Sina 请求但没有写入 intraday_cache，且回测侧基准数据加载不经过 _get_daily_with_cache | v3.15.0 |
 | BUG-062 | **DM面板"补全空缺"只补交易ETF不补基准ETF** — `api_data_fill_gaps` 的 `BM_ENTRIES` 用了指数代码（000300/000016/000905/399006），而前端 DM 矩阵返回的是 ETF 代码（510300/510050/510500/159915）。选中基准 ETF 格子点"补全空缺"时，后端代码过滤 `510300 != 000300` → 全部跳过。修复：`BM_ENTRIES` 四行改为 ETF 代码，与 `api_data_matrix` / `api_data_refetch` / `api_data_full_refetch` 保持一致。 | 🟡 Medium | fixed | v3.11.0 | REQ-355 | 2026-07-24 | BM_ENTRIES 指数代码与 DM 矩阵 ETF 代码不匹配 | v3.15.0 |
-
+| BUG-063 | **DM 面板操作数据层错配** — 三项子问题：(a) 周线模式"删除选中"连带删除日线：`api_data_delete` 永远操作日线 CSV → 修复：加 `freq` 参数，weekly 时用交易日历展开周边界再删日线；(b) 因子模式"删除选中"无因子特殊处理 → 修复：`dmDeleteSelected()` 加 `if (dmFreq === 'factor')` 跳转 `dmDeleteCache()`；(c) 周线"补全空缺"不先检查日线完整性 → 修复：weekly 分支内先跑 daily gap fill 再重建周线。详见 `docs/design/dm-panel-operations-audit.md`。 | 🟡 Medium | fixed | v3.11.0 | REQ-355 | 2026-07-27 | (a) 后端无数据层感知；(b) 前端漏因子分支；(c) 周线补全缺日线前置检查 | v3.15.0 |
+| BUG-064 | **preclose_push Stage 2 刷新数据 HTTP 500 — `refresh_data()` NameError: `updated` 未定义** — `_populate_intraday_cache` 返回值从 2 元组扩展为 3 元组（`bm_updated`）时，`refresh_data()` 解包变量从 `updated` 改名为 `uni_updated`，但返回字典中 `"count": updated` 漏改，盘中路径触发 NameError → Flask 返回 HTML 500。修复：(1) `"count": uni_updated + bm_updated` 变量名修正；(2) `api_refresh_data` 加 try/except 兜底，500 时返回 JSON 而非 HTML。 | 🔴 Critical | fixed | v3.15.0 (c8fa45e) | REQ-390, BUG-061 | 2026-07-28 | 解包变量 `uni_updated` 与返回字典引用 `updated` 不一致 | v3.15.0 |
 
 
 
@@ -233,7 +234,7 @@
 
 **下一个需求 ID**: REQ-394
 
-**下一个 Bug ID**: BUG-063
+**下一个 Bug ID**: BUG-065
 
 
 

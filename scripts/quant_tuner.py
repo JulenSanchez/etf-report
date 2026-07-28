@@ -212,15 +212,23 @@ def preload():
     # Load ETF metadata (AUM + top10 holdings)
     _load_etf_metadata()
 
-    # Precompute factor caches for production preset (gam-0)
+    # Precompute factor caches for production preset (gam-0).
+    # Parameters must match gam-0 preset exactly, otherwise the cache key
+    # won't match and the first backtest will rebuild all caches from scratch.
     print("  Precomputing factor caches (gam-0)...")
     try:
-        from quant_backtest import _precompute_factors
+        from quant_backtest import _precompute_factors, load_config as _load_cfg
+        _gam0_cfg = _load_cfg("gam-0")
+        _fcfg = _gam0_cfg.get("factors", {})
         _precompute_factors(
             dict(CACHE["all_daily"]), dict(CACHE["all_weekly"]),
-            ema_period=20, vol_window=20,
-            f7_window=20, f7_lookback=250, f7_min_days=60, f7_sigma_floor=0.01,
-            f1_daily_ema=False, f1_daily_ma=False, f1_active_days=127,
+            ema_period=_fcfg["ema"]["period_weeks"],
+            vol_window=_fcfg["volume_ratio"]["window_days"],
+            f7_window=_fcfg.get("log_return_deviation", {}).get("window_days", 17),
+            f7_lookback=_fcfg.get("log_return_deviation", {}).get("lookback_days", 250),
+            f7_min_days=_fcfg.get("log_return_deviation", {}).get("min_days", 60),
+            f7_sigma_floor=_fcfg.get("log_return_deviation", {}).get("sigma_floor", 0.01),
+            f1_active_days=_fcfg.get("f1_active_days", 1),
         )
         print("  Factor caches ready.")
     except Exception as e:
@@ -247,6 +255,13 @@ AFTERNOON_OPEN = 780  # 13:00
 AFTERNOON_CLOSE = 900 # 15:00
 TOTAL_TRADING_MINUTES = 240  # 4 hours
 COOL_OFF_TIME = 910   # 15:10 — confirmed data available after this
+
+# ── DM panel constants (single source of truth) ──
+# Anomaly detection: single-day return threshold.  Daily return exceeding
+# this absolute value is flagged as a surge (>0) or plunge (<0) anomaly.
+# Synced to: /api/data_status.anomalyThreshold, tuner-right.html legend,
+#            docs/design/data-management-panel.md
+DM_ANOMALY_THRESHOLD = 0.25
 
 def _trading_elapsed_minutes(now=None):
     """How many trading minutes have elapsed today. 0 before open, 240 after close."""
@@ -970,7 +985,7 @@ def refresh_data():
     return {
         "status": "intraday",
         "message": msg,
-        "count": updated,
+        "count": uni_updated + bm_updated,
         "date": today_str,
         "time": time_label,
         "haltedCount": halted_count,
@@ -1880,6 +1895,7 @@ def index():
     skeleton = (ASSETS_DIR / "tuner.html").read_text(encoding="utf-8")
     left = (ASSETS_DIR / "tuner-left.html").read_text(encoding="utf-8")
     right = (ASSETS_DIR / "tuner-right.html").read_text(encoding="utf-8")
+    right = right.replace("{DM_ANOMALY_THRESHOLD_PCT}", str(int(DM_ANOMALY_THRESHOLD * 100)))
     html = skeleton.replace("<!-- LEFT_PANEL -->", left).replace("<!-- RIGHT_PANEL -->", right)
     from flask import make_response
     resp = make_response(html)
@@ -1939,44 +1955,49 @@ def api_result(task_id):
 
 @app.route("/api/run", methods=["POST"])
 def api_run():
-    guard = _require_ready()
-    if guard:
-        return guard
-    params = request.json or {}
-    is_async = request.args.get("async") == "1"
-
-    if is_async:
-        task_id = _cache_version_hash()[:8] + "-bt"
-        print(f"  [ASYNC] Starting backtest task {task_id}")
-        _task_start(task_id, 100, "准备回测...")
-        def _run():
-            try:
-                def _cb(current, total, msg):
-                    pct = int(current / max(total, 1) * 100)
-                    _task_update(task_id, pct, msg)
-                try:
-                    result = run_tuner_backtest(params, progress_callback=_cb)
-                except Exception as _e:
-                    import traceback as _tb
-                    result = {"error": f"{type(_e).__name__}: {_e}", "traceback": _tb.format_exc()}
-                    _task_update(task_id, 100, f"错误: {_e}")
-                _save_backtest_cache(params, result)
-                _task_done(task_id, result=result)
-                print(f"  [ASYNC] Task {task_id} done, elapsed={TASK_STORE.get(task_id,{}).get('elapsed',0)}s")
-            except Exception as e:
-                import traceback; traceback.print_exc()
-                _task_done(task_id, error=f"{type(e).__name__}: {str(e)}")
-        threading.Thread(target=_run, daemon=True).start()
-        return jsonify({"task_id": task_id})
-
     try:
-        result = run_tuner_backtest(params)
+        guard = _require_ready()
+        if guard:
+            return guard
+        params = request.json or {}
+        is_async = request.args.get("async") == "1"
+
+        if is_async:
+            task_id = _cache_version_hash()[:8] + "-bt"
+            print(f"  [ASYNC] Starting backtest task {task_id}")
+            _task_start(task_id, 100, "准备回测...")
+            def _run():
+                try:
+                    def _cb(current, total, msg):
+                        pct = int(current / max(total, 1) * 100)
+                        _task_update(task_id, pct, msg)
+                    try:
+                        result = run_tuner_backtest(params, progress_callback=_cb)
+                    except Exception as _e:
+                        import traceback as _tb
+                        result = {"error": f"{type(_e).__name__}: {_e}", "traceback": _tb.format_exc()}
+                        _task_update(task_id, 100, f"错误: {_e}")
+                    _save_backtest_cache(params, result)
+                    _task_done(task_id, result=result)
+                    print(f"  [ASYNC] Task {task_id} done, elapsed={TASK_STORE.get(task_id,{}).get('elapsed',0)}s")
+                except Exception as e:
+                    import traceback; traceback.print_exc()
+                    _task_done(task_id, error=f"{type(e).__name__}: {str(e)}")
+            threading.Thread(target=_run, daemon=True).start()
+            return jsonify({"task_id": task_id})
+
+        try:
+            result = run_tuner_backtest(params)
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            return jsonify({"error": f"{type(e).__name__}: {str(e)}"}), 500
+        _save_backtest_cache(params, result)
+        return jsonify(result)
     except Exception as e:
         import traceback
         traceback.print_exc()
-        return jsonify({"error": f"{type(e).__name__}: {str(e)}"}), 500
-    _save_backtest_cache(params, result)
-    return jsonify(result)
+        return jsonify({"error": f"api_run: {type(e).__name__}: {str(e)}"}), 500
 
 
 def _save_backtest_cache(params, result):
@@ -2523,8 +2544,13 @@ def api_refresh_data():
     if guard:
         return guard
     """Fetch latest data: intraday cache (pre-market) or confirmed CSV update (post-market)."""
-    result = refresh_data()
-    return jsonify(result)
+    try:
+        result = refresh_data()
+        return jsonify(result)
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"ok": False, "error": str(e), "traceback": traceback.format_exc()}), 500
 
 
 @app.route("/api/data_status")
@@ -2580,6 +2606,7 @@ def api_data_status():
         "isPostMarket": _is_post_market(),
         "haltedEtfs": halted_codes,
         "benchmarkStatus": bm_status,
+        "anomalyThreshold": DM_ANOMALY_THRESHOLD,
     })
 
 
@@ -2855,7 +2882,7 @@ def api_data_matrix():
                 csv_close_for_anomaly[d] = float(row["close"])
 
         # Anomaly detection on close (always, regardless of field)
-        anomaly_threshold = 0.20
+        anomaly_threshold = DM_ANOMALY_THRESHOLD
         anomalies = {}
         csv_dates_sorted = sorted(csv_dates)
         for i in range(1, len(csv_dates_sorted)):
@@ -2947,18 +2974,62 @@ def api_data_matrix():
 
 @app.route("/api/data_delete", methods=["POST"])
 def api_data_delete():
-    """Delete CSV rows for given ETF x continuous-date-range operations."""
+    """Delete CSV rows for given ETF x continuous-date-range operations.
+
+    Accepts optional 'freq' param:
+      - 'daily' (default): delete date range from daily CSV, rebuild weekly
+      - 'weekly': expand each selected week to its trading-day boundaries,
+                   delete those days from daily CSV, rebuild weekly
+    """
     guard = _require_ready()
     if guard:
         return guard
     body = request.get_json(silent=True) or {}
     ops = body.get("operations", [])
+    freq = body.get("freq", "daily")
     if not ops:
         return jsonify({"ok": False, "error": "empty operations"}), 400
 
     today_str = datetime.now().strftime("%Y-%m-%d")
     deleted_total = 0
     errors = []
+
+    # For weekly mode: expand week boundaries using trading calendar
+    if freq == "weekly":
+        cal = load_trading_calendar()
+        cal_dates = [d for d in cal]  # sorted list of trading days
+        expanded_ops = []
+        for op in ops:
+            code = op.get("code", "")
+            start = op.get("start", "")
+            end = op.get("end", "")
+            if not code or not start or not end:
+                errors.append(f"invalid op: {op}")
+                continue
+            if start == "1900-01-01" and end == "2099-12-31":
+                # Full row delete → keep as-is
+                expanded_ops.append(op)
+                continue
+            # Find the week containing each selected date, expand to full week
+            week_dates = set()
+            for sel_date in [start, end]:
+                sel_dt = datetime.strptime(sel_date, "%Y-%m-%d")
+                sel_isoweek = sel_dt.isocalendar()[1]
+                sel_isoyear = sel_dt.isocalendar()[0]
+                for d in cal_dates:
+                    dt = datetime.strptime(d, "%Y-%m-%d")
+                    if dt.isocalendar()[0] == sel_isoyear and dt.isocalendar()[1] == sel_isoweek:
+                        week_dates.add(d)
+            if not week_dates:
+                expanded_ops.append(op)
+                continue
+            sorted_week = sorted(week_dates)
+            expanded_ops.append({
+                "code": code,
+                "start": sorted_week[0],
+                "end": sorted_week[-1],
+            })
+        ops = expanded_ops
 
     for op in ops:
         code = op.get("code", "")
@@ -3166,7 +3237,8 @@ def api_data_fill_gaps():
         code = etf["code"]
 
         if freq == "weekly":
-            # Check weekly CSV for gaps, rebuild from daily
+            # Check weekly CSV for gaps, rebuild from daily.
+            # BUG-063c: first fill daily gaps, then rebuild weekly.
             weekly_df = CACHE["all_weekly"].get(code)
             csv_dates = set()
             if weekly_df is not None:
@@ -3180,7 +3252,34 @@ def api_data_fill_gaps():
             if not missing:
                 continue
 
-            # Rebuild weekly from daily (fills all gaps at once)
+            # Step 1: fill daily gaps first (so weekly rebuild has complete source)
+            daily_df = CACHE["all_daily"].get(code)
+            if daily_df is None:
+                daily_df, _ = load_etf_data(code)
+            if daily_df is not None and len(daily_df) > 0:
+                daily_dates = set()
+                for _, row in daily_df.iterrows():
+                    d = row["date"]
+                    if hasattr(d, "strftime"): d = d.strftime("%Y-%m-%d")
+                    else: d = str(d)[:10]
+                    daily_dates.add(d)
+                # expected dates for daily: all trading days in range
+                daily_expected = [d for d in cal if start <= d <= effective_end]
+                daily_missing = [d for d in daily_expected if d not in daily_dates]
+                if daily_missing:
+                    gap_end = daily_missing[-1]
+                    gap_start = daily_missing[0]
+                    try:
+                        rows, _, mode = update_single(etf, full=False, end_date=gap_end)
+                        # Reload daily after fetch
+                        daily_df, _ = load_etf_data(code)
+                        if daily_df is not None:
+                            CACHE["all_daily"][code] = daily_df
+                    except Exception as e:
+                        filled[code] = {"gaps": len(missing), "error": f"daily gap fill failed: {e}"}
+                        continue
+
+            # Step 2: rebuild weekly from (now complete) daily
             daily_df = CACHE["all_daily"].get(code)
             if daily_df is None:
                 daily_df, _ = load_etf_data(code)
@@ -3322,24 +3421,25 @@ def api_factor_cache_rebuild():
     if guard: return guard
 
     body = request.get_json(silent=True) or {}
-    codes = body.get("codes") or []
+    codes = body.get("codes")  # None/null = all ETFs
     cache_dir = DATA_DIR / "quant" / ".factor_cache"
     if not cache_dir.exists():
         return jsonify({"ok": True, "rebuilt": 0})
 
+    # None/null means "all ETFs" — collect all codes with cached data
+    if codes is None:
+        codes = list(CACHE.get("all_daily", {}).keys())
+
     deleted = 0
-    for code in codes:
-        daily_df = CACHE["all_daily"].get(code)
-        if daily_df is None: continue
-        n_rows = len(daily_df)
-        for f in cache_dir.glob("fc_*.pickle"):
+    for code in (codes or []):
+        # Delete ALL cached factor files for this ETF (by filename prefix).
+        # Parameter change → hash changes → old caches become orphan files.
+        # Row-count matching is fragile (misses orphans when data rows change).
+        # Delete everything; the backtest engine will rebuild with current gam-0 params.
+        for f in cache_dir.glob(f"fc_{code}_*.pickle"):
             try:
-                import pickle
-                with open(f, "rb") as fp:
-                    data = pickle.load(fp)
-                if "daily_dates" in data and len(data.get("daily_dates", [])) == n_rows:
-                    f.unlink()
-                    deleted += 1
+                f.unlink()
+                deleted += 1
             except Exception:
                 pass
 

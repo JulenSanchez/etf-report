@@ -4651,6 +4651,7 @@ function dmExpandFullRows() {
 }
 
 async function dmDeleteSelected() {
+ if (dmFreq === 'factor') { dmDeleteCache(); return; }
  var keys = Object.keys(dmSelected);
  if (!keys.length) return;
  var ok = await dmConfirm('确定删除 ' + keys.length + ' 条选中的数据吗？此操作不可逆。');
@@ -4684,7 +4685,7 @@ async function dmDeleteSelected() {
  try {
   var resp = await fetch('/api/data_delete', {
    method: 'POST', headers: {'Content-Type': 'application/json'},
-   body: JSON.stringify({operations: ops})
+   body: JSON.stringify({operations: ops, freq: dmFreq})
   });
   var data = await resp.json();
   _hideProgress();

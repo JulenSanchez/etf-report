@@ -161,7 +161,16 @@ log("Stage 2: Refresh market data")
 # Long timeout: cold start (full fetch) ~6min; warm cache returns in ~30s.
 # HTTP request ends when server responds — the timeout is a safety net, not a delay.
 r = requests.post(f"{TUNER_URL}/api/refresh_data", timeout=600)
-status = r.json()
+if r.status_code != 200:
+    log(f"ERROR: Tuner returned HTTP {r.status_code}")
+    log(f"  Response body (first 500 chars): {r.text[:500]}")
+    sys.exit(1)
+try:
+    status = r.json()
+except Exception:
+    log(f"ERROR: Tuner response is not valid JSON (HTTP {r.status_code})")
+    log(f"  Response body (first 500 chars): {r.text[:500]}")
+    sys.exit(1)
 log(f"  Status: {status.get('status', '?')} | {status.get('count', status.get('fetchOk', 0))} ETFs")
 halted = status.get("haltedCount", 0)
 if halted:

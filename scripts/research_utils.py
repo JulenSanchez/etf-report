@@ -69,9 +69,48 @@ def redistribute_weights(w7, base_w1=0.71, base_w3=0.13):
 
 def _build_override(params: dict) -> dict:
     """Convert flat param dict → config_override for run_backtest.
-    All defaults read from DEFAULT_LOCK — single source of truth.
+
+    Enforces PARAM_SCHEMA locked params: any locked parameter passed by the
+    caller is silently ignored and the locked value from LOCKED_PARAMS is used
+    instead.  This makes the Tuner schema the single source of truth for
+    "can this be optimized?" — if a slider is grayed out in the UI, it cannot
+    be overridden via backtest() either.
     """
     D = DEFAULT_LOCK
+
+    # ── Enforce locked params from PARAM_SCHEMA ──
+    # Flat-key aliases used in backtest() → schema-key in PARAM_SCHEMA.
+    # If a param is locked in the schema, it cannot be overridden via backtest()
+    # either — same as the Tuner UI graying out the slider.
+    # Flat alias → schema key.  Build reverse map for lookup.
+    _FLAT_TO_SCHEMA = {"N": "signal_steps"}
+    _SCHEMA_TO_FLAT = {v: k for k, v in _FLAT_TO_SCHEMA.items()}
+    try:
+        from etf_report.core.quant_contract import PARAM_SCHEMA, LOCKED_PARAMS
+        for group in PARAM_SCHEMA.get("groups", []):
+            for p in group.get("params", []):
+                sk = p["key"]
+                if not p.get("locked"):
+                    continue
+                if sk not in LOCKED_PARAMS:
+                    continue
+                locked_val = LOCKED_PARAMS[sk]["value"]
+                # Check both the schema key and its flat alias (if any)
+                aliases = {sk}
+                if sk in _SCHEMA_TO_FLAT:
+                    aliases.add(_SCHEMA_TO_FLAT[sk])
+                for fk in aliases:
+                    if fk in params and params[fk] != locked_val:
+                        import sys as _sys
+                        print(f"[research_utils] LOCKED: {fk}={params[fk]} ignored, "
+                              f"using locked value {fk}={locked_val} "
+                              f"({LOCKED_PARAMS[sk].get('reason', '')})",
+                              file=_sys.stderr)
+                        params = dict(params)
+                        params[fk] = locked_val
+    except ImportError:
+        pass  # quant_contract not available (e.g. in test environment)
+
     override = {
         "position": {
             "max_holdings": params.get("MH", D["MH"]),

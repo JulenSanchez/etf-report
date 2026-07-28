@@ -601,12 +601,12 @@ presets:
       log_return_deviation: *id006
   gam-0:
     label: '0'
-    description: AR最大 MH=2 N=40 TB=8
+    description: AR最大 MH=2 N=40 TB=8 w3=20%
     scoring:
       weights:
-        ema_deviation: 0.71
-        volume_ratio: 0.13
-        log_return_deviation: 0.16
+        ema_deviation: 0.65
+        volume_ratio: 0.20
+        log_return_deviation: 0.15
       bias_bonus: 0.0
       sensitivity:
         f1: 9.6
