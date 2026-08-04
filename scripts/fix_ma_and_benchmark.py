@@ -324,7 +324,7 @@ def fetch_kline_from_csv(code, market, target_days):
             float(row["low"]),
             float(row["high"]),
         ])
-    volumes = df["volume"].astype(int).tolist()
+    volumes = df["volume"].fillna(0).astype(int).tolist()
     amounts = df["amount"].fillna(0).astype(int).tolist()
 
     latest_close = float(df["close"].iloc[-1])
