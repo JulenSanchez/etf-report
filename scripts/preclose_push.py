@@ -171,7 +171,7 @@ except Exception:
     log(f"ERROR: Tuner response is not valid JSON (HTTP {r.status_code})")
     log(f"  Response body (first 500 chars): {r.text[:500]}")
     sys.exit(1)
-log(f"  Status: {status.get('status', '?')} | {status.get('count', status.get('fetchOk', 0))} ETFs")
+log(f"  Status: {status.get('status', '?')} | {status.get('count', status.get('fetchOk', 0))} ETFs | {status.get('message', '')}")
 halted = status.get("haltedCount", 0)
 if halted:
     log(f"  Halted ETFs detected: {halted}")
