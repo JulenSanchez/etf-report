@@ -106,9 +106,7 @@
 
     var tags = [];
     var w1 = Math.round((weights.ema_deviation || 0) * 100);
-    var w3 = Math.round((weights.volume_ratio || 0) * 100);
     tags.push({l:"F1", v:w1+"%", c:w1>0?C.blue:C.gray});
-    tags.push({l:"F3", v:w3+"%", c:w3>0?C.green:C.gray});
     tags.push({l:"MA", v:(conf.ma_trend_period||20)+"", c:C.cyan});
     tags.push({l:"Bull", v:((conf.ma_bull_pos||1)*100).toFixed(0)+"%", c:C.green});
     tags.push({l:"Bear", v:((conf.ma_bear_pos||0.4)*100).toFixed(0)+"%", c:C.orange});

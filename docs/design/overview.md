@@ -72,7 +72,7 @@
 
 | 子系统 | 设计文档 | 核心代码 |
 |--------|---------|---------|
-| 因子体系（F1/F3/F7） | `factors.md` | `scripts/quant_backtest.py:_precompute_factors()` |
+| 因子体系（F1/F7） | `factors.md` | `scripts/quant_backtest.py:_precompute_factors()` |
 | 回测引擎（循环/仓位/信心/执行） | `backtest-engine.md` | `scripts/quant_backtest.py::run_backtest()` |
 | 两融账户与杠杆风险 | `margin-account-model.md` | v3.9 账户层建模 |
 | ETF 贡献分析 | `etf-contribution.md` | `scripts/quant_tuner.py:_compute_etf_contributions()` |
@@ -98,9 +98,9 @@ config/quant_universe.yaml preset
 
 当前所有 preset 使用日调仓（`rebalance_freq: daily`）。`score_band` 机制阻止小幅分数波动导致的频繁换仓。`same_close` 成交口径用于复盘回测。
 
-### 三因子
+### 因子体系
 
-当前活跃因子 F1/F3/F7。F2 已移除；F4/F5/F6 已于 2026-05~06 退役（权重=0，部分兼容代码仍保留）。
+当前活跃因子 F1/F7（两因子体系）。F3 于 2026-07 v3.15.0 退役——空白对照实验确认其信号价值≈0，历史作用（得分尺度调节）已被 `base_score` 参数替代。F2/F4/F5/F6 已于 2026-05~06 退役（权重=0，代码保留）。详见 `plans/REQ-393.md`。
 
 ### 检查点/冻结模型（F1 抢跑）
 

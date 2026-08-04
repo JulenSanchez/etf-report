@@ -66,7 +66,7 @@ body { font-family: -apple-system, 'Segoe UI', sans-serif; background: var(--bg-
 .panel-left-scroll::-webkit-scrollbar { display: none; }
 .panel-left-foot { flex-shrink: 0; padding: 8px 20px 20px 20px; border-top: 1px solid var(--border); background: var(--bg-body); box-shadow: 0 -6px 18px rgba(0,0,0,0.4); position: relative; z-index: 1; }
 .panel-left-foot .section-head { margin-top: 8px; }
-.panel-right { flex: 1; padding: 20px; overflow-y: auto; }
+.panel-right { flex: 1; padding: 20px; overflow: hidden; }
 
 h2 { font-size: 16px; color: var(--text-heading); margin-bottom: 12px; }
 .section-head { font-size: 13px; color: var(--accent); margin: 18px 0 8px; font-weight: 600; padding-bottom: 4px; border-bottom: 1px solid var(--accent-border); }
@@ -95,9 +95,9 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px;
 .dual-range-labels .val { color: var(--accent-light); font-weight: 600; font-family: monospace; }
 .btn-nudge { background: none; border: 1px solid transparent; color: var(--text-dim); cursor: pointer; font-size: 11px; padding: 1px 3px; border-radius: 3px; line-height: 1; }
 .btn-nudge:hover { border-color: var(--border-muted); color: #9ca3af; }
-th[data-sort] { user-select: none; }
+th[data-sort] { user-select: none; position: relative; }
 th[data-sort]:hover { color: var(--text-body); }
-.snap-sort-arrow { display: inline-block; width: 12px; }
+.snap-sort-arrow { position: absolute; right: 0; width: 12px; }
 .toggle-pill { font-size:10px; padding:2px 7px; border-radius:10px; cursor:pointer; user-select:none; border:1px solid var(--border-muted); color:var(--text-muted); background:transparent; }
 .toggle-pill:hover { border-color:var(--text-dim); color:#9ca3af; }
 .toggle-pill.on { background:var(--accent-bg); border-color:var(--accent); color:var(--accent-light); }
@@ -156,6 +156,8 @@ th[data-sort]:hover { color: var(--text-body); }
 /* Right panel views */
 .right-view { display: none; }
 .right-view.active { display: block; }
+#right-view-guide.active { display: block; max-height: calc(100vh - 120px); overflow-y: auto; scrollbar-width: none; -ms-overflow-style: none; }
+#right-view-guide.active::-webkit-scrollbar { display: none; }
 .right-view.dm-flex-col.active { display: flex; flex-direction: column; }
 
 /* Params guide */

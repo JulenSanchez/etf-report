@@ -212,7 +212,6 @@ def build_ma_trend_cache(daily_df, weekly_df, period):
         w[["date", "above", "ma_rising"]],
         on="date",
         direction="backward",
-        tolerance=pd.Timedelta(days=6),
     ).dropna(subset=["above"])
     date_keys = merged["date"].dt.strftime("%Y-%m-%d")
     above_map = dict(zip(date_keys, merged["above"].astype("boolean").fillna(False).astype(bool)))

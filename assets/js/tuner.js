@@ -651,7 +651,7 @@ function validateBullBear() {
 
 function syncWeights() {
  $id('v-w1').textContent = $id('w1').value + '%';
- $id('v-w3').textContent = $id('w3').value + '%';
+ var _vw3 = $id('v-w3'); if (_vw3) _vw3.textContent = $id('w3').value + '%';
  $id('v-w7').textContent = $id('w7').value + '%';
  var total = getWeightTotal();
  var te = $id('v-total');
@@ -869,10 +869,10 @@ function setParams(p) { console.log('setParams called with keys:', Object.keys(p
   selectedBenchmarks = p.benchmarks.slice();
  }
  if (p.f1_ema_period != null) { setSlider('f1_ema_period', p.f1_ema_period); $id('v-f1-ema').textContent = p.f1_ema_period + ' 周'; }
- if (p.f3_vol_window != null) { setSlider('f3_vol_window', p.f3_vol_window); $id('v-vol').textContent = p.f3_vol_window + ' 日'; }
+ if (p.f3_vol_window != null) { setSlider('f3_vol_window', p.f3_vol_window); var _vv = $id('v-vol'); if (_vv) _vv.textContent = p.f3_vol_window + ' 日'; }
  if (p.f1_active_days != null) { setF1ActiveDays(p.f1_active_days); }
  if (p.f1_sensitivity != null) { setSlider('f1_sensitivity', p.f1_sensitivity); $id('v-f1s').textContent = parseFloat(p.f1_sensitivity).toFixed(1); }
- if (p.f3_sensitivity != null) { setSlider('f3_sensitivity', p.f3_sensitivity); $id('v-f3s').textContent = parseFloat(p.f3_sensitivity).toFixed(1); }
+ if (p.f3_sensitivity != null) { setSlider('f3_sensitivity', p.f3_sensitivity); var _vf = $id('v-f3s'); if (_vf) _vf.textContent = parseFloat(p.f3_sensitivity).toFixed(1); }
  if (p.band != null) { setSlider('band', p.band); $id('v-band').textContent = (p.band * 100).toFixed(1) + '%'; }
  if (p.band_sensitivity != null) { setSlider('band_sensitivity', p.band_sensitivity); $id('v-band-sensitivity').textContent = p.band_sensitivity; }
  if (p.f7_up_power != null) { setSlider('f7_up_power', p.f7_up_power); $id('v-f7-up-power').textContent = p.f7_up_power; }
@@ -2041,7 +2041,7 @@ function renderNavChart(data) {
     return html;
    },
   },
-  legend:{data:series.filter(s=>!s.name.startsWith('_')).map(s=>s.name), textStyle:{color:'#9ca3af', fontSize:11}, top:0, selected:{'仓位集中度':true, '超额区间':false, '💜 F7驱动':false}},
+  legend:{data:series.filter(s=>!s.name.startsWith('_')).map(s=>s.name), textStyle:{color:'#9ca3af', fontSize:11}, top:0, selected:{'仓位集中度':false, '超额区间':false, '💜 F7驱动':true}},
   grid:{left:50, right:20, top:30, bottom:30},
   xAxis:{type:'category', data:dates, boundaryGap:false, axisLabel:{fontSize:10, color:TC.textMuted}, axisLine:{lineStyle:{color:TC.border}}},
   yAxis:[
@@ -2284,7 +2284,6 @@ function getSnapSortVal(d, code, col) {
    }
    return '';
   case 'f1': return d.f1 || 0;
-  case 'f3': return d.f3 || 0;
   case 'f7': return (d.f7 != null ? d.f7 : 50);
   case 'score': return d.score || 0;
   case 'z': return d.z || 0;
@@ -2293,16 +2292,19 @@ function getSnapSortVal(d, code, col) {
  }
 }
 
-/* ====== Snapshot F7 原始 Z 值切换 ====== */
-var f7ShowRaw = false;
-function toggleF7Raw() {
- f7ShowRaw = !f7ShowRaw;
- var el = $id('f7-z-toggle');
+/* ====== Snapshot 全局翻转：加工值 ↔ 原始值 ====== */
+var snapShowRaw = false;
+function toggleSnapRaw() {
+ snapShowRaw = !snapShowRaw;
+ var el = $id('snap-flip-btn');
  if (el) {
-  el.style.color = f7ShowRaw ? 'var(--accent)' : '';
-  
-  el.title = f7ShowRaw ? '切换回映射分 (F7)' : '切换显示原始 Z 值';
+  el.style.background = snapShowRaw ? 'var(--accent)' : 'var(--bg-input)';
+  el.style.color = snapShowRaw ? '#fff' : 'var(--text-muted)';
+  el.textContent = snapShowRaw ? '原始' : '加工';
  }
+ var hdr = $id('snap-score-hdr'); if (hdr) hdr.textContent = snapShowRaw ? '离散度' : '综合';
+ var h1 = $id('snap-f1-hdr'); if (h1) h1.textContent = snapShowRaw ? 'F1_raw' : 'F1';
+ var h7 = $id('snap-f7-hdr'); if (h7) h7.textContent = snapShowRaw ? 'F7_raw' : 'F7';
  renderTunerSnapshot(tunerSnapshotIdx);
 }
 
@@ -2467,42 +2469,52 @@ function renderTunerSnapshot(idx) {
   var rowBg = isTop ? 'background:rgba(16,185,129,0.04);' : '';
   var hotSuffix = isTop ? ' <span style="color:var(--warning);font-size:11px;">&#x1F525;</span>' : '';
 
-  // Factor bar — weighted F1/F3/F7 contributions (REQ-233)
-  var w1=0.5, w3=0.4, w7=0.1;
-  var f1v = d.f1 || 50, f3v = d.f3 || 50, f7v = (d.f7 != null ? d.f7 : 50);
-  // F7 cell display: toggle between mapped score (offset from 50) and raw Z
-  var f7Disp, f7ColorRaw;
+  // Factor bar — weighted F1/F7 contributions (F3 retired v3.15.0)
+  var w1=0.82, w7=0.18;
+  var f1v = d.f1 || 50, f7v = (d.f7 != null ? d.f7 : 50);
+  // F1/F7/Score cells: snapShowRaw flips all to raw values
+  var f1Disp, f1Color, f7Disp, f7Color, scoreDisp, scoreColor;
   if (isSuspended) {
-   f7Disp = '—'; f7ColorRaw = TC.textDim;
-  } else if (f7ShowRaw) {
-   var rz = d.f7_raw || 0;
-   f7Disp = (rz >= 0 ? '+' : '') + rz.toFixed(2);
-   f7ColorRaw = rz >= 2.0 ? TC.positive : rz <= -2.0 ? TC.negative : TC.textSecondary;
+   f1Disp = '—'; f1Color = TC.textDim;
+   f7Disp = '—'; f7Color = TC.textDim;
+   scoreDisp = '—'; scoreColor = TC.textDim;
+  } else if (snapShowRaw) {
+   // Raw mode: F1=EMA%, F7=Z-score, Score=Z(d.z)
+   var f1r = d.f1_raw || 0;
+   f1Disp = (f1r >= 0 ? '+' : '') + f1r.toFixed(1) + '%';
+   f1Color = f1r >= 10 ? TC.positive : f1r <= -10 ? TC.negative : TC.textSecondary;
+   var f7r = d.f7_raw || 0;
+   f7Disp = (f7r >= 0 ? '+' : '') + f7r.toFixed(2);
+   f7Color = f7r >= 2.0 ? TC.positive : f7r <= -2.0 ? TC.negative : TC.textSecondary;
+   var z = d.z != null ? d.z : 0;
+   scoreDisp = (z >= 0 ? '+' : '') + z.toFixed(2);
+   scoreColor = z >= 1.5 ? TC.positive : z <= -1.5 ? TC.negative : TC.textSecondary;
   } else {
+   // Processed mode: F1=±50, F7=±50, Score=0-100
+   f1Disp = ((d.f1||0)-50).toFixed(0);
+   f1Color = (d.f1 || 50) >= 65 ? TC.positive : (d.f1 || 50) <= 35 ? TC.negative : TC.textSecondary;
    f7Disp = (d.f7 != null ? (d.f7 - 50).toFixed(0) : 'N/A');
-   f7ColorRaw = d.f7 != null ? (d.f7 <= 20 ? TC.negative : d.f7 >= 80 ? TC.positive : TC.textSecondary) : TC.textDim;
+   f7Color = d.f7 != null ? (d.f7 <= 20 ? TC.negative : d.f7 >= 80 ? TC.positive : TC.textSecondary) : TC.textDim;
+   scoreDisp = score.toFixed(1);
+   scoreColor = 'var(--text-secondary)';
   }
-  var c1 = f1v * w1, c3 = f3v * w3, c7 = f7v * w7, cTot = c1 + c3 + c7 || 1;
-  var p1 = Math.round(c1 / cTot * 100), p3 = Math.round(c3 / cTot * 100), p7 = 100 - p1 - p3;
-  if (p1 < 0) p1 = 0; if (p3 < 0) p3 = 0; if (p7 < 0) p7 = 0;
-  var f1r = d.f1_raw, f3r = d.f3_raw, f7r = d.f7_raw;
-  var fBarTT = 'F1: EMA' + (f1r>0?'+':'') + (f1r||0).toFixed(1) + '% → ' + (f1v-50).toFixed(0);
-   + ' | F3: 量比' + (f3r||1).toFixed(2) + ' → ' + f3v.toFixed(0) + '分'
+  var c1 = f1v * w1, c7 = f7v * w7, cTot = c1 + c7 || 1;
+  var p1 = Math.round(c1 / cTot * 100), p7 = 100 - p1;
+  if (p1 < 0) p1 = 0; if (p7 < 0) p7 = 0;
+  var f1r = d.f1_raw, f7r = d.f7_raw;
+  var fBarTT = 'F1: EMA' + (f1r>0?'+':'') + (f1r||0).toFixed(1) + '% → ' + (f1v-50).toFixed(0)
    + ' | F7: Z=' + (f7r||0).toFixed(2) + ' → ' + (f7v-50).toFixed(0);
   var fBar = isSuspended ? '<span style="color:var(--text-dim);font-size:10px;">—</span>' : '<div style="display:inline-flex;gap:1px;width:56px;height:8px;border-radius:2px;overflow:hidden;" title="' + fBarTT + '">'
    + '<span style="width:' + p1 + '%;height:100%;background:var(--accent);border-radius:1px 0 0 1px;"></span>'
-   + '<span style="width:' + p3 + '%;height:100%;background:#06b6d4;"></span>'
    + '<span style="width:' + p7 + '%;height:100%;background:#a855f7;border-radius:0 1px 1px 0;"></span></div>';
 
   html += '<tr data-code="' + code + '" class="snap-row" data-sector="' + etfSector + '" data-group1="' + (etfMeta ? (etfMeta.group1||'') : '') + '" style="border-bottom:1px solid var(--bg-hover);cursor:pointer;' + rowBg + '">' +
    '<td class="snap-sector-cell" style="padding:9px 2px;text-align:center;vertical-align:middle;">' + sectorDot + '</td>' +
    '<td style="padding:9px 8px;font-size:12px;white-space:nowrap;"><span style="color:var(--accent-light);font-weight:600;">' + code + '</span> <span style="color:var(--text-secondary);font-size:12px;font-weight:600;">' + name + '</span>' + marginBadge + suspendedBadge + hotSuffix + '</td>' +
    '<td style="padding:9px 4px;text-align:center;vertical-align:middle;">' + fBar + '</td>' +
-   '<td style="padding:9px 6px;text-align:center;font-size:12px;color:' + (isSuspended ? TC.textDim : (d.f1 || 50) >= 65 ? TC.positive : (d.f1 || 50) <= 35 ? TC.negative : TC.textSecondary) + ';">' + (isSuspended ? '—' : ((d.f1||0)-50).toFixed(0)) + '</td>' +
-   '<td style="padding:9px 6px;text-align:center;font-size:12px;color:' + (isSuspended ? TC.textDim : 'var(--text-secondary)') + ';">' + (isSuspended ? '—' : ((d.f3||0)-50).toFixed(0)) + '</td>' +
-   '<td style="padding:9px 6px;text-align:center;font-size:12px;color:' + f7ColorRaw + ';">' + f7Disp + '</td>' +
-   '<td style="padding:9px 3px;text-align:center;font-size:12px;font-weight:700;color:var(--text-secondary);" title="' + (isSuspended ? '停牌' : 'F1=' + (d.f1||0).toFixed(0) + ' F3=' + (d.f3||0).toFixed(0) + ' F7=' + (d.f7!=null?d.f7.toFixed(0):'N/A') + ' | C_eff=' + ((sig.cEff||0.5).toFixed(1))) + (isSuspended ? '' : (d.f1_raw!=null ? '&#10;F1_raw: EMA' + (d.f1_raw>0?'+':'') + d.f1_raw.toFixed(1) + '%' : '') + (d.f3_raw!=null ? ' F3_raw: 量比' + d.f3_raw.toFixed(2) : '') + (d.f7_raw!=null ? ' F7_raw: Z=' + d.f7_raw.toFixed(2) : '')) + '">' + (isSuspended ? '—' : score.toFixed(1)) + '</td>' +
-   '<td style="padding:9px 6px;text-align:center;font-size:12px;color:' + (isSuspended ? TC.textDim : (d.z > 1.5 ? TC.positive : d.z > 0 ? TC.textSecondary : TC.negative)) + ';font-weight:600;">' + (isSuspended ? '—' : (d.z != null ? (d.z > 0 ? '+' : '') + d.z.toFixed(2) : '-')) + '</td>' +
+   '<td style="padding:9px 6px;text-align:center;font-size:12px;color:' + f1Color + ';">' + f1Disp + '</td>' +
+   '<td style="padding:9px 6px;text-align:center;font-size:12px;color:' + f7Color + ';">' + f7Disp + '</td>' +
+   '<td style="padding:9px 3px;text-align:center;font-size:12px;font-weight:700;color:' + scoreColor + ';" title="' + (isSuspended ? '停牌' : (snapShowRaw ? 'z=' + (d.z!=null?(d.z>0?'+':'')+d.z.toFixed(2):'N/A') : 'F1=' + (d.f1||0).toFixed(0) + ' F7=' + (d.f7!=null?d.f7.toFixed(0):'N/A'))) + '">' + scoreDisp + '</td>' +
    '<td style="padding:9px 6px;text-align:center;font-size:12px;' +
  (pos >= 30 ? 'color:var(--highlight);font-weight:700;' : pos >= 20 ? 'color:var(--warning);font-weight:700;' : pos >= 10 ? 'color:#d97706;font-weight:600;' : pos > 0 ? 'color:#b45309;font-weight:400;' : '') +
  '">' + (pos > 0 ? (_lrPositions[code] != null ? _lrPositions[code] + '%' : '-') : '-') + '</td>' +
@@ -2560,8 +2572,15 @@ function renderTunerSnapshot(idx) {
      '<span style="font-size:10px;' + (off ? 'text-decoration:line-through;' : '') + '">' + item.key + '</span></span> ';
    }
   }
-  legHtml += '<span style="margin-left:auto;display:flex;gap:2px;"><button id=\"group-level-btn\" data-action=\"toggleGroupLevel\" style=\"background:var(--bg-input);border:1px solid var(--border);color:var(--text-muted);font-size:10px;padding:2px 8px;border-radius:3px;cursor:pointer;\">一级</button></span>';
+  legHtml += '<span style="margin-left:auto;display:flex;gap:2px;"><button id=\"group-level-btn\" data-action=\"toggleGroupLevel\" style=\"background:var(--bg-input);border:1px solid var(--border);color:var(--text-muted);font-size:10px;padding:2px 8px;border-radius:3px;cursor:pointer;\">一级</button><button id=\"snap-flip-btn\" data-action=\"toggleSnapRaw\" style=\"background:var(--bg-input);border:1px solid var(--border);color:var(--text-muted);font-size:10px;padding:2px 8px;border-radius:3px;cursor:pointer;\">加工</button></span>';
   footer.innerHTML = legHtml;
+ // Restore toggle button states (footer is rebuilt on every render)
+ var gb = $id('group-level-btn'); if (gb) gb.textContent = (groupLevel === 'sector' ? '二级' : '一级');
+ var fb = $id('snap-flip-btn');
+ if (fb && snapShowRaw) { fb.style.background = 'var(--accent)'; fb.style.color = '#fff'; fb.textContent = '原始'; }
+ var sh = $id('snap-score-hdr'); if (sh) sh.textContent = snapShowRaw ? '离散度' : '综合';
+ var h1 = $id('snap-f1-hdr'); if (h1) h1.textContent = snapShowRaw ? 'F1_raw' : 'F1';
+ var h7 = $id('snap-f7-hdr'); if (h7) h7.textContent = snapShowRaw ? 'F7_raw' : 'F7';
  }
 
  // After table re-render, restore K-line for selected code (if any).
@@ -4849,7 +4868,7 @@ document.addEventListener('click', function(e) {
       case 'switchRightView': switchRightView(el.dataset.view); break;
       case 'switchKlineFreq': switchKlineFreq(el.dataset.freq); break;
       case 'switchKlineView': switchKlineView(el.dataset.view); break;
-      case 'toggleF7Raw': toggleF7Raw(); break;
+      case 'toggleSnapRaw': toggleSnapRaw(); break;
       case 'switchHeatmapPeriod': switchHeatmapPeriod(parseInt(el.dataset.days)); break;
       case 'dmSetRange': dmSetRange(parseInt(el.dataset.days)); break;
       case 'dmSetFreq': dmSetFreq(el.dataset.freq); break;

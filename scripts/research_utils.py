@@ -398,6 +398,149 @@ def optimize_group(preset_name: str, vary_keys: list, bounds: dict,
         "trials": len(study.trials),
     }
 
+def optimize_dual(preset_name: str,
+                  bull_keys: list, bull_bounds: dict,
+                  bear_keys: list, bear_bounds: dict,
+                  lock: dict = None,
+                  metric: str = "AR", mdd_bound: float = -40,
+                  n_trials: int = 30, seed: int = 42) -> dict:
+    """TPE optimization for dual-strategy (bull/bear).
+
+    Each trial samples bull_params and bear_params independently,
+    constructs strategies={ma_above: bull, ma_below: bear},
+    and runs a single 6Y backtest with regime-switching.
+
+    Returns {"bull_params": {...}, "bear_params": {...},
+             "before": {AR,MDD}, "after": {AR,MDD}, "trials": N}
+    """
+    import optuna, warnings
+    optuna.logging.set_verbosity(optuna.logging.WARNING)
+    warnings.filterwarnings("ignore")
+
+    lock = lock or {}
+    _data = str(Path(__file__).resolve().parent.parent / "data" / "quant")
+    _proj = str(Path(__file__).resolve().parent.parent)
+
+    # ── Baseline (strategies=None) ──
+    runner = BacktestRunner(preset_name, _data, _proj, verbose=False)
+    _, _, extra0 = run_backtest("2020-06-01", "2026-06-01", preset=preset_name,
+                                preloaded=runner._ensure_preloaded() or runner._preloaded,
+                                config_override=_qc.tuner_params_to_config_override(lock),
+                                verbose=False)
+    if not extra0:
+        return {"error": "baseline backtest failed"}
+    b_metric = extra0.get("annual_return", 0)
+    b_mdd = extra0.get("max_drawdown", 0)
+    print(f"Baseline: {metric}={b_metric:.1f}  MDD={b_mdd:.1f}%  ({preset_name})")
+    print(f"MDD constraint: >= {mdd_bound:.1f}%")
+
+    # ── Current gam-0 as seed ──
+    import yaml as _yaml
+    yp = Path(__file__).resolve().parent.parent / "config" / "quant_universe.yaml"
+    with open(yp, "r", encoding="utf-8") as f:
+        cfg = _yaml.safe_load(f)
+    preset = cfg["presets"].get(preset_name, {})
+    pos = preset.get("position", {})
+    sens = preset.get("scoring", {}).get("sensitivity", {})
+    w = preset.get("scoring", {}).get("weights", {})
+
+    def _seed_params(keys, bounds):
+        """Build seed params from current preset values."""
+        p = {}
+        if "w7" in keys:
+            p["w7"] = int(round(w.get("log_return_deviation", 0.16) * 100))
+            p["w1_raw"] = int(round(w.get("ema_deviation", 0.71) * 100))
+            p["w3_raw"] = int(round(w.get("volume_ratio", 0.13) * 100))
+        for k in keys:
+            if k == "w7": continue
+            if k in ("MH",): p[k] = pos.get("max_holdings", 2)
+            elif k in ("C",): p[k] = pos.get("concentration", 0.62)
+            elif k in ("CS",): p[k] = pos.get("c_sensitivity", 16.4)
+            elif k in ("band",): p[k] = pos.get("band", 0.038)
+            elif k in ("f1_s",): p[k] = sens.get("f1", 9.6)
+            elif k in ("f7_up_power",): p[k] = sens.get("f7_up_power", 23)
+            elif k in ("f7_up_span",): p[k] = sens.get("f7_up_span", 3.1)
+            elif k in ("f7_down_power",): p[k] = sens.get("f7_down_power", 14)
+            elif k in ("f7_down_span",): p[k] = sens.get("f7_down_span", 2.5)
+        return p
+
+    bull_seed = _seed_params(bull_keys, bull_bounds)
+    bear_seed = _seed_params(bear_keys, bear_bounds)
+
+    # ── Objective ──
+    def objective(trial):
+        # Sample bull params
+        bp = dict(lock)
+        _sample_params(trial, bull_keys, bull_bounds, bp, "bull_")
+        # Sample bear params
+        _sample_params(trial, bear_keys, bear_bounds, bp, "bear_")
+        # Build strategies
+        bull_p = {k: bp.get(f"bull_{k}", bp.get(k)) for k in set(list(bull_keys) + list(lock.keys()))}
+        bear_p = {k: bp.get(f"bear_{k}", bp.get(k)) for k in set(list(bear_keys) + list(lock.keys()))}
+        # Add shared lock params that weren't varied
+        for k, v in lock.items():
+            bull_p.setdefault(k, v)
+            bear_p.setdefault(k, v)
+        strategies = {"ma_above": bull_p, "ma_below": bear_p}
+        # Run backtest
+        r = BacktestRunner(preset_name, _data, _proj, verbose=False)
+        try:
+            nav_df, _, extra = r.run_raw(lock, "2020-06-01", "2026-06-01", strategies=strategies)
+        except Exception:
+            return -9999
+        if nav_df is None or len(nav_df) == 0:
+            return -9999
+        nav = nav_df.sort_values("date")["nav"].values
+        ar = (nav[-1]/nav[0])**(252/len(nav)) - 1
+        mdd = np.min(nav / np.maximum.accumulate(nav) - 1)
+        if mdd_bound is not None and mdd*100 < mdd_bound:
+            return -9999
+        return ar * 100
+
+    # ── TPE ──
+    study = optuna.create_study(
+        direction="maximize",
+        sampler=optuna.samplers.TPESampler(seed=seed, n_startup_trials=30),
+    )
+    study.enqueue_trial({**{f"bull_{k}": v for k,v in bull_seed.items()},
+                         **{f"bear_{k}": v for k,v in bear_seed.items()}})
+    study.optimize(objective, n_trials=n_trials, show_progress_bar=False)
+
+    a_metric = study.best_value
+    print(f"Optimized: {metric}={a_metric:.2f}  (delta {a_metric-b_metric:+.2f})  trials={len(study.trials)}")
+
+    return {
+        "preset": preset_name,
+        "bull_params": {k: study.best_params.get(f"bull_{k}", study.best_params.get(k))
+                        for k in bull_keys},
+        "bear_params": {k: study.best_params.get(f"bear_{k}", study.best_params.get(k))
+                        for k in bear_keys},
+        "before": {"AR": b_metric, "MDD": b_mdd},
+        "after": {"AR": a_metric, "MDD": None},  # filled by caller
+        "trials": len(study.trials),
+    }
+
+
+def _sample_params(trial, keys, bounds, out, prefix):
+    """Sample params from TPE trial, with weight handling."""
+    if "w7" in keys:
+        w7v = trial.suggest_int(f"{prefix}w7", *bounds.get("w7", (5, 30)))
+        w1r = trial.suggest_int(f"{prefix}w1_raw", 30, 80)
+        w3r = trial.suggest_int(f"{prefix}w3_raw", 5, 40)
+        scale = (100 - w7v) / (w1r + w3r) if (w1r + w3r) > 0 else 1.0
+        out[f"{prefix}w1"] = int(round(w1r * scale))
+        out[f"{prefix}w3"] = int(round(w3r * scale))
+        out[f"{prefix}w7"] = w7v
+    for k in keys:
+        if k in ("w1", "w3", "w7"):
+            continue
+        lo, hi = bounds.get(k, (0, 100))
+        if isinstance(lo, int) and isinstance(hi, int):
+            out[f"{prefix}{k}"] = trial.suggest_int(f"{prefix}{k}", lo, hi)
+        else:
+            out[f"{prefix}{k}"] = trial.suggest_float(f"{prefix}{k}", lo, hi)
+
+
 def pick_best(results: list[dict], group_by: str = None,
               metric: str = "AR") -> list[dict]:
     """Pick best result per group, sorted by metric descending.
@@ -478,7 +621,7 @@ try:
 except ImportError:
     optuna = None
 
-from quant_backtest import load_config as _load_backtest_config, count_actual_rebalances
+from quant_backtest import load_config as _load_backtest_config, compute_metrics
 from etf_report.core.quant_data_utils import load_etf_data
 from etf_report.core import quant_contract as _qc
 
@@ -486,46 +629,8 @@ _WEIGHT_KEYS = frozenset({"w1", "w3", "w7"})
 
 
 def _extract_metrics(nav_df, signal_history, extra):
-    """Compute standard backtest metrics from NAV DataFrame.
-
-    Returns dict with: total_return, annual_return, max_drawdown,
-    sharpe, sortino, calmar, n_trades, n_signals, commission, final_nav.
-    """
-    ic = 1_000_000.0
-    fn = nav_df["nav"].iloc[-1]
-    total_return = (fn / ic - 1) * 100
-    days = (nav_df["date"].iloc[-1] - nav_df["date"].iloc[0]).days
-    if days > 0:
-        annual_return = ((fn / ic) ** (365.0 / days) - 1) * 100
-    else:
-        annual_return = 0.0
-    cummax = nav_df["nav"].cummax()
-    mdd = ((nav_df["nav"] - cummax) / cummax * 100).min()
-    dr = nav_df["nav"].pct_change().dropna()
-    if len(dr) > 0 and dr.std() > 0:
-        sharpe = (dr.mean() * 252 - 0.02) / (dr.std() * np.sqrt(252))
-    else:
-        sharpe = 0.0
-    ds = dr[dr < 0]
-    if len(ds) > 0 and ds.std() > 0:
-        sortino = (dr.mean() * 252 - 0.02) / (ds.std() * np.sqrt(252))
-    else:
-        sortino = 0.0
-    calmar = annual_return / abs(mdd) if mdd != 0 else 0.0
-    actual_trades = count_actual_rebalances(signal_history)
-    commission_total = extra.get("total_commission", 0) if extra else 0
-    return {
-        "total_return": round(total_return, 4),
-        "annual_return": round(annual_return, 4),
-        "max_drawdown": round(mdd, 4),
-        "sharpe": round(sharpe, 4),
-        "sortino": round(sortino, 4),
-        "calmar": round(calmar, 4),
-        "n_trades": actual_trades,
-        "n_signals": len(signal_history),
-        "commission": round(commission_total, 2),
-        "final_nav": round(fn, 2),
-    }
+    """Thin wrapper: delegates to shared compute_metrics in quant_backtest."""
+    return compute_metrics(nav_df, signal_history, extra)
 
 
 def _check_constraints(trial_params: dict, trial_metrics: dict, constraints: list):
@@ -711,7 +816,7 @@ class BacktestRunner:
         if self.verbose:
             print(f"  [preload] {len(all_daily)} ETFs loaded", flush=True)
 
-    def run_raw(self, params: dict, start_date: str, end_date: str):
+    def run_raw(self, params: dict, start_date: str, end_date: str, strategies: dict = None):
         """Run backtest and return raw (nav_df, signal_history, extra)."""
         self._ensure_preloaded()
         config_override = _qc.tuner_params_to_config_override(params)
@@ -721,12 +826,13 @@ class BacktestRunner:
             preset=self.preset,
             preloaded=self._preloaded,
             config_override=config_override,
+            strategies=strategies,
             universe_filter=self.universe_filter,
             verbose=self.verbose,
         )
         return nav_df, signal_history, extra
 
-    def run(self, params: dict, start_date: str, end_date: str) -> dict:
+    def run(self, params: dict, start_date: str, end_date: str, strategies: dict = None) -> dict:
         """Run backtest and return metrics dict (or None on failure)."""
         self._ensure_preloaded()
         config_override = _qc.tuner_params_to_config_override(params)
@@ -736,6 +842,7 @@ class BacktestRunner:
             preset=self.preset,
             preloaded=self._preloaded,
             config_override=config_override,
+            strategies=strategies,
             universe_filter=self.universe_filter,
             verbose=self.verbose,
         )

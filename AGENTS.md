@@ -184,7 +184,8 @@ AI 在冷启动时应读取该列，识别哪些话题处于探索阶段、不�
 |------|--------|--------------------------|
 | 改参数 | "删参数 X"/"加参数 Y"/"改参数 Z" | `PARAM_SCHEMA` → `PARAM_BOUNDS` → `defaults.yaml` → `preset_to_tuner_params` → `tuner_params_to_config_override` → `tuner.html` 控件 → `quant_tuner.py` getParams/setParams → `quant_backtest.py` 消费 → tests |
 | 改默认值 | "改某参数的默认值" | `defaults.yaml` → `preset_to_tuner_params` → `tuner_params_to_config_override` → `quant_backtest.py` load_config → CLI 验证 → 更新 `research/params/baseline.yaml` |
-| 改因子 | "改 F1/F3/F7" | `quant_factors.py` → `quant_backtest.py` compute/sensitivity → `quant_contract.py` 映射 → `tuner.html` 控件 → `config/quant_universe.yaml` preset → `docs/design/factors.md` |
+| 改因子 | "改 F1/F7"（F3 已退役，量能研究见下方） | `quant_factors.py` → `quant_backtest.py` compute/sensitivity → `quant_contract.py` 映射 → `tuner.html` 控件 → `config/quant_universe.yaml` preset → `docs/design/factors.md` |
+| 量能/F3 | "重新研究 F3"、"研究量能因子"、"量能信息" | **先读** `research/strategy/volume-revival-notes.md`（退役原因 + 复活方向），再讨论。不要直接改代码 |
 | 改引擎 | "改回测逻辑"/"改仓位分配" | `quant_backtest.py` → `quant_contract.py` config_override → `docs/design/backtest-engine.md` → tests |
 | 改盘中数据 | "改数据刷新"/"改缓存合并"/"改日期逻辑"/"改回测数据源" | `trading_calendar.py` `latest_allowed_close_date` → `quant_data_fetcher.py` `_latest_allowed_date` → `quant_tuner.py` `refresh_data` gap 检测 → `_run_incremental_fetch` → `update_single` 新鲜度检查 → `fetch_etf_kline` 日期过滤器 → `_fetch_sina_realtime` → `_get_daily_with_cache` → `run_tuner_backtest` data merge → 验证: CSV 不含今日 incomplete bar + intraday_cache 含今日数据 + 回测正确合并 |
 
@@ -207,7 +208,7 @@ AI 在冷启动时应读取该列，识别哪些话题处于探索阶段、不�
 - 正式页/推送/数据管线 → `docs/runbook/v1-report.md` 常见问题
 - 不要猜进程/网络/缓存
 - **Tuner 与 CLI 数据路径不同**：用户的 Tuner 观察是事实，AI 禁止用 CLI 结论反驳。排障优先查 `debug_tuner.json`。数据路径差异表见 `docs/runbook/v2-quant/overview.md` 故障排查索引
-- **用户描述任何回测观察时，优先读 `debug_tuner.json`** — 用户在 Tuner 勾选 debug 跑回测后，`data/quant/debug_tuner.json` 包含完整快照（F1/F3/F7 分值、top6 持仓、参数签名）。AI 听到"今天的 F7 很高"/"选出来的 ETF 不对"/"某个数值异常"等描述时，第一步是检查这个文件是否存在并读取——而不是写临时脚本重新跑回测。重新跑回测存在参数不一致、窗口不一致、数据不一致三重风险。
+- **用户描述任何回测观察时，优先读 `debug_tuner.json`** — 用户在 Tuner 勾选 debug 跑回测后，`data/debug_tuner.json` 包含完整快照（F1/F7 分值、top6 持仓、参数签名）。AI 听到"今天的 F7 很高"/"选出来的 ETF 不对"/"某个数值异常"等描述时，第一步是检查这个文件是否存在并读取——而不是写临时脚本重新跑回测。debug_tuner.json 包含 F1/F7 分值、top6 持仓、参数签名（F3 保留计算但生产权重=0）。重新跑回测存在参数不一致、窗口不一致、数据不一致三重风险。
 
 ### 验证门禁（硬性）
 
@@ -319,40 +320,56 @@ pytest tests/ → X passed, Y failed, Z skipped
 
 ## 术语协议
 
-### 沟通语言规则
+### 沟通铁律：AI 只能说 Tuner 前端存在的文本
 
-AI 与用户沟通时，必须使用 `docs/design/glossary.md` 中的**概念层**术语，不得使用代码层符号（函数名、变量名、文件名）。
+用户在 Tuner 前端看到的文本 = 唯一的沟通词汇表。AI 不得使用前端不存在的词来解释任何东西。
 
-| ❌ 禁止（代码符号） | ✅ 正确（概念层） |
-|------|------|
-| `_get_daily_with_cache` 合并路径 | 日线合并（CSV 历史 + 盘中实时价） |
-| `CACHE["intraday_cache"]` 为空 | 盘中缓存没有数据 |
-| 走 `_run_incremental_fetch` 补 | 走腾讯增量补历史缺口 |
-| `FRESH_MARKER` 导致跳过 | 新鲜度标记让 Tuner 以为今天拉过了 |
-| `_sina_batch_append` 写 CSV | 盘后快写：Sina 一次性把收盘价写入 CSV |
+| AI 可以用（前端原文） | AI 不可以用（代码符号） |
+|----------------------|------------------------|
+| "刷新数据"按钮 | `refresh_data()` |
+| 控制台输出 `Sina实时` | `_populate_intraday_cache` Sina 路径 |
+| 控制台输出 `Tencent增量` | `_run_incremental_fetch` |
+| "补全空缺"按钮 | `api_data_fill_gaps` |
+| 盘中缓存 | `CACHE["intraday_cache"]` |
+| 日线合并 | `_get_daily_with_cache` |
+| 新鲜度标记 | `FRESH_MARKER` |
 
-### 术语表触发检查
+**输出闸门**：AI 输出分析结论前，逐句检查是否含代码符号（函数名、变量名、文件名、行号、`if/for`）。含 → 翻译为前端文本。翻译不了 → 术语表有缺口 → 先补术语表再继续。
 
-以下任一情况发生时，AI 必须问用户"要不要加入术语表"：
+### 代码层触发词
 
-1. **AI 用了函数名/变量名来解释功能** — 说明术语表缺了这条映射
-2. **用户问"这个 XXX 是什么意思"** — XXX 可能是 UI 标签、控制台输出、或 AI 刚用的术语
-3. **UI 上的文本标签被新增或修改** — 控制台输出（如 `Sina收盘`）、按钮名、面板标签，变更后必须同步更新 glossary.md 用户层
+只有用户消息包含 **"代码"** 关键词时，AI 才可输出代码符号。例如：
 
-### 对话末尾检查
+- "结合代码讨论这个 bug"
+- "看看代码怎么写的"
+- "代码层面分析一下"
 
-每次对话结束前（用户说"提交"/"发布"或自然结束），执行：
+其余所有情况下，代码符号禁止出现在 AI 输出中。
 
-1. 回顾本次对话中出现的**新概念、新 UI 标签、被用来沟通的函数名**
-2. 检查 `docs/design/glossary.md` 是否已收录
-3. 未收录的列出清单 → 用户确认 → 写入 glossary.md
+### 分析结论格式
 
-### 术语表结构
+```
+症状: [用户在 Tuner 看到什么——按钮名、控制台输出、面板标签]
+路径: [数据/流程经过了哪几个环节，只用前端文本]
+根因: [什么问题，只用前端文本]
+修复: [改哪里，只用前端文本]
+```
 
-`docs/design/glossary.md` 分三层：
+### 修复表述格式
 
-| 层 | 视角 | 内容 | 读者 |
-|---|------|------|------|
-| 用户层 | 界面上看到的 | 按钮名、控制台输出、面板标签、DM 单元格颜色 | 用户 + AI |
-| 概念层 | 功能与数据流 | 数据刷新、日线合并、盘中缓存、缺口补拉… | **AI 与用户沟通的标准语言** |
-| 代码层 | 实现细节 | 函数名、变量名、文件路径 → 概念层的交叉引用 | 仅 AI
+说"改哪里"时用 Tuner 界面位置描述：如"数据管理面板的删除按钮"、"刷新数据的盘中分支"，不说文件名/函数名。如果需要引用代码位置让 AI 自己看，用 `file:line` 格式写在 AI 内部笔记里，不给用户看。
+
+### 术语表维护
+
+`docs/design/glossary.md` 只保留两层：
+
+| 层 | 内容 | 读者 |
+|----|------|------|
+| 前端文本 | Tuner 上出现的所有文本（按钮、控制台输出、面板标签、DM 单元格颜色）+ 含义解释 | 用户 + AI |
+| 代码交叉引用 | 函数/变量/文件 → 前端文本的反向索引 | AI 自用 |
+
+以下时机触发术语表更新：
+
+1. **AI 翻译不了** → 术语表缺条目 → 先补再继续
+2. **UI 标签变更** → 同步更新术语表前端文本层
+3. **对话末尾** → 检查本次有无新出现的 Tuner 文本、控制台输出

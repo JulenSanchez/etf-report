@@ -1,19 +1,20 @@
 # 生产预设 (gam-0) 固定 6Y 窗口关键指标
-updated: "2026-07-28"
+updated: "2026-07-31"
 preset: gam-0
 window: "2020-06-01 ~ 2026-06-01 (固定 6Y)"
 
 metrics:
-  annual_return_pct: 143.0
-  max_drawdown_pct: -38.0
-  sortino: 2.66
-  calmar: 3.76
-  sharpe: 1.75
+  annual_return_pct: 156.5
+  max_drawdown_pct: -38.5
+  sortino: 2.78
+  calmar: 4.07
+  sharpe: 1.83
 
 config_signature:
-  w1: 65
-  w3: 20
-  w7: 15
+  w1: 82
+  w3: 0
+  w7: 18
+  band: 0.038
   ma_bull_pos: 1.80
   ma_bear_pos: 1.00
   max_holdings: 2
@@ -22,7 +23,6 @@ config_signature:
   top_boost: 8
   concentration: 0.62
   c_sensitivity: 16.4
-  band: 0.03
   f7_up_power: 23
   f7_up_span: 3.1
   f7_down_power: 14

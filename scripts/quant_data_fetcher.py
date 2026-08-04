@@ -140,7 +140,10 @@ def _parse_tx_rows(rows: list) -> list[dict]:
     for row in rows:
         if len(row) < 6:
             continue
-        vol = int(float(row[5]))
+        try:
+            vol = int(float(row[5]))
+        except (ValueError, TypeError):
+            continue  # skip rows with non-numeric volume (API edge case)
         close = float(row[2])
         parsed.append({
             "date": row[0],

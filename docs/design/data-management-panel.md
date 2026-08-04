@@ -70,6 +70,8 @@ d in csv_dates?
 
 ### 因子模式
 
+> 注：F3 于 v3.15.0 退役（生产 gam-0 w3=0），DM 面板仍可查看 F3 缓存供研究/调试。
+
 - 数据源：`data/quant/.factor_cache/fc_{sha256}.pickle`（缓存 key 设计见 `backtest-engine.md` §12）
 - 每个 pickle 含 `daily_dates` + `f1`/`f3`/`f7` 数组（逐日粒度）
 - 无缓存时显示 missing，可通过"强制更新"（删缓存+回测重算）或"补全空缺"（只补缺失）重建

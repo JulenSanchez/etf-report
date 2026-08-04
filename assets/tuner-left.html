@@ -63,21 +63,11 @@
     </div>
    </div>
   </div>
-  
-    <div class="slider-group" id="param-w3" aria-label="F3权重">
-   <div class="slider-label"><span class="name">F3 自归一化量比</span><span class="val" id="v-w3">60%</span></div>
-   <input type="range" id="w3" min="0" max="100" step="1" value="60" oninput="syncWeights()" aria-label="F3方向性量比权重">
-  </div>
-  <div class="factor-sub" id="tuner-sec-f3">
-   <div class="slider-group" id="param-vol" aria-label="量比窗口">
-    <div class="slider-label"><span class="name">量比窗口</span><span class="val" id="v-vol">20 日</span></div>
-    <input type="range" id="f3_vol_window" min="5" max="60" step="1" value="20" oninput="$id('v-vol').textContent=this.value+' 日'" aria-label="量比窗口">
-   </div>
-   <div class="slider-group" id="param-f3s" aria-label="F3指数尺度">
-    <div class="slider-label"><span class="name">指数尺度</span><span class="val" id="v-f3s">1.0</span></div>
-    <input type="range" id="f3_sensitivity" min="0.5" max="8.0" step="0.1" value="1.0" oninput="$id('v-f3s').textContent=parseFloat(this.value).toFixed(1)" aria-label="F3指数尺度">
-   </div>
-  </div>
+
+  <!-- F3 sliders hidden (v3.15.0 retired). Elements kept for non-gam-0 preset compatibility. -->
+  <input type="range" id="w3" min="0" max="100" step="1" value="0" oninput="syncWeights()" style="display:none" aria-hidden="true">
+  <input type="range" id="f3_vol_window" min="5" max="60" step="1" value="20" style="display:none" aria-hidden="true">
+  <input type="range" id="f3_sensitivity" min="0.5" max="8.0" step="0.1" value="1.0" style="display:none" aria-hidden="true">
 
 
 

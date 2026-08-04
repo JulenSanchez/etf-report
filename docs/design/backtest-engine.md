@@ -180,12 +180,13 @@ price_field = execution_price_field()
 
 1. 用执行日取成交价格。
 2. 用信号日二分查找预计算因子数组（`searchsorted`）。
-3. F1/F3/F7 任一为 NaN 则跳过该 ETF。
+3. F1/F7 任一为 NaN 则跳过该 ETF（F3 weight=0 在 production 中不影响 composite，但引擎仍计算 F3 值供 DM 面板/调试使用）。
 
 ### 6.4 综合分
 
 ```text
 composite = F1*w1 + F3*w3 + F7*w7 + bias
+> 注：生产 preset gam-0 中 w3=0（F3 已退役）。引擎仍计算 F3 但通过权重归零使其不影响 composite。base_score 作为常数项加在 composite 末尾。
 ```
 
 F2/F4/F5/F6 已退役，权重恒为 0。F7 NaN 时 fallback 为 0.5。
@@ -215,7 +216,7 @@ HS300 below MA -> ma_bear_pos
 
 #### 6.6.1 设计哲学：为什么信心函数是二值跳变而非连续渐变
 
-策略的 Layer 1（选股）全部是连续平滑的——F1/F3/F7 的 Z-score 映射、softmax 权重分配、分数带过滤——每个环节的输出都是连续值。Layer 2（总仓位）则恰好相反：**二值跳变，要么满仓要么防守，没有中间态**。
+策略的 Layer 1（选股）全部是连续平滑的——F1/F7 的 Z-score 映射、softmax 权重分配、分数带过滤——每个环节的输出都是连续值。Layer 2（总仓位）则恰好相反：**二值跳变，要么满仓要么防守，没有中间态**。
 
 这不是一个待优化的缺陷。渐变仓位在直觉上更"精细"，但在牛转熊时减仓速度不够快——仓位从满仓滑到防守的过程中，策略仍在承受高仓位下的回撤。等滑到最低仓位时，大部分跌幅已经吃完了。MA 的金叉/死叉瞬间切换解决了这个问题：信号触发即到位，不犹豫。
 
@@ -358,7 +359,7 @@ date / signal_date    — 信号日和实际执行日
 positions             — {code: target_weight}  目标仓位（离散化后的理想值）
 actual_positions      — {code: actual_weight}  实际仓位（调仓后 shares×px/NAV）
 actual_leverage       — 实际杠杆 = sum(actual_positions.values())
-detail                — {code: {f1, f3, f7, score, z, position, price, ...}}  逐ETF因子明细
+detail                — {code: {f1, f3, f7, score, z, position, price, ...}}  逐ETF因子明细（f3 保留计算但生产 w3=0）
                          detail[code].position 使用 actual_positions（非目标仓位）
 regime                — "ma_above" / "ma_below"
 ```
@@ -406,7 +407,7 @@ trade_log            — [{code, buy_date, sell_date, buy_price, sell_price, sha
         {"code": str, "score": float, "softmax_w": float, "position": float, "px": float}
     ],
     "all_px": {code: price},         # 持仓+目标并集的价格
-    "all_factors": {                 # 全池因子快照
+    "all_factors": {                 # 全池因子快照（f3 保留计算）
         code: {f1, f3, f7, composite}
     }
 }
@@ -533,7 +534,7 @@ tests/test_update_report.py -k "quant_preset_params or quant_payload_config_sect
 
 ## 12. 因子缓存（性能优化）
 
-每次回测需要计算 F1/F3/F7 因子序列（遍历全部历史日线），54 支 ETF × 全量日线 ≈ 数万次运算。为避免重复计算，引入磁盘缓存。
+每次回测需要计算 F1/F7 因子序列（遍历全部历史日线），54 支 ETF × 全量日线 ≈ 数万次运算。F3 保留计算但生产权重=0。为避免重复计算，引入磁盘缓存。
 
 ### 缓存 key
 
@@ -547,7 +548,7 @@ SHA256(
   + daily_df 末笔收盘价        ← 数据指纹
   + weekly_df 行数 + 末笔日期
   + ema_period                 ← F1 参数
-  + vol_window                 ← F3 参数
+  + vol_window                 ← F3 参数（已退役，生产 gam-0 中 w3=0 但引擎仍计算）
   + f7_window + f7_lookback
     + f7_min_days + f7_sigma_floor  ← F7 参数
   + f1_daily_ema + f1_daily_ma

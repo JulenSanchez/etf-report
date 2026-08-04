@@ -1,0 +1,158 @@
+{
+  "results": [
+    {
+      "label": "R5_wideBand",
+      "AR": 150.91,
+      "MDD": -40.11,
+      "Sortino": 2.72
+    },
+    {
+      "label": "B4_concentrated+R5_wideBand",
+      "AR": 150.91,
+      "MDD": -40.11,
+      "Sortino": 2.72
+    },
+    {
+      "label": "B4_concentrated",
+      "AR": 150.51,
+      "MDD": -37.98,
+      "Sortino": 2.71
+    },
+    {
+      "label": "B3_balancedHi+R5_wideBand",
+      "AR": 146.0,
+      "MDD": -42.74,
+      "Sortino": 2.66
+    },
+    {
+      "label": "B3_balancedHi",
+      "AR": 145.49,
+      "MDD": -40.71,
+      "Sortino": 2.65
+    },
+    {
+      "label": "R7_lowF1",
+      "AR": 138.65,
+      "MDD": -32.86,
+      "Sortino": 2.61
+    },
+    {
+      "label": "B4_concentrated+R7_lowF1",
+      "AR": 138.65,
+      "MDD": -32.86,
+      "Sortino": 2.61
+    },
+    {
+      "label": "R3_diversified",
+      "AR": 137.22,
+      "MDD": -34.71,
+      "Sortino": 2.58
+    },
+    {
+      "label": "B4_concentrated+R3_diversified",
+      "AR": 137.22,
+      "MDD": -34.71,
+      "Sortino": 2.58
+    },
+    {
+      "label": "R8_tightBand",
+      "AR": 137.09,
+      "MDD": -34.09,
+      "Sortino": 2.57
+    },
+    {
+      "label": "B8_momentumLo",
+      "AR": 134.76,
+      "MDD": -41.06,
+      "Sortino": 2.66
+    },
+    {
+      "label": "B7_diverse",
+      "AR": 134.48,
+      "MDD": -39.11,
+      "Sortino": 2.63
+    },
+    {
+      "label": "B8_momentumLo+R5_wideBand",
+      "AR": 134.11,
+      "MDD": -43.08,
+      "Sortino": 2.66
+    },
+    {
+      "label": "B2_momentumHi",
+      "AR": 133.31,
+      "MDD": -41.22,
+      "Sortino": 2.51
+    },
+    {
+      "label": "R4_moderate",
+      "AR": 131.82,
+      "MDD": -34.5,
+      "Sortino": 2.51
+    },
+    {
+      "label": "B3_balancedHi+R7_lowF1",
+      "AR": 131.66,
+      "MDD": -33.95,
+      "Sortino": 2.53
+    },
+    {
+      "label": "B3_balancedHi+R3_diversified",
+      "AR": 130.28,
+      "MDD": -35.11,
+      "Sortino": 2.5
+    },
+    {
+      "label": "B8_momentumLo+R3_diversified",
+      "AR": 126.99,
+      "MDD": -32.97,
+      "Sortino": 2.58
+    },
+    {
+      "label": "B8_momentumLo+R7_lowF1",
+      "AR": 126.03,
+      "MDD": -32.7,
+      "Sortino": 2.6
+    },
+    {
+      "label": "B5_wideBand",
+      "AR": 124.71,
+      "MDD": -40.4,
+      "Sortino": 2.39
+    },
+    {
+      "label": "R2_defensiveHi",
+      "AR": 120.91,
+      "MDD": -33.35,
+      "Sortino": 2.38
+    },
+    {
+      "label": "B6_highF7down",
+      "AR": 118.14,
+      "MDD": -40.28,
+      "Sortino": 2.36
+    },
+    {
+      "label": "R6_highF7up",
+      "AR": 112.54,
+      "MDD": -34.94,
+      "Sortino": 2.27
+    },
+    {
+      "label": "R1_defensiveMax",
+      "AR": 110.9,
+      "MDD": -33.6,
+      "Sortino": 2.27
+    },
+    {
+      "label": "B1_momentumMax",
+      "AR": 109.6,
+      "MDD": -42.24,
+      "Sortino": 2.22
+    }
+  ],
+  "gam0_baseline": {
+    "AR": 150.08,
+    "MDD": -38.47
+  }
+}

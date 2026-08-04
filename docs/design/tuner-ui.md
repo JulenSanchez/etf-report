@@ -308,6 +308,57 @@ JS 中引用示例：`el.style.color = TC.positive;`
 - **调仓快照右栏比左栏高**：`#tuner-snapshot-section` 高度 1180px，与 `#results` 相同。实际视觉效果是右栏略高于左栏 ETF 快照（518px）。该偏差在当前视口下不触发滚动条，属于可接受范围。
 - **DD 图与 NAV 图宽度不一致**：当前 DD 图 `width:100%` 实际渲染宽度可能与 NAV 图不同。由于 tooltip cross-hair 依赖相同 X 轴对齐，DD 图宽度应显式约束为与 NAV 图一致（≈1261px）。
 
+### 2.5 滚动条规范
+
+**全局规则：禁用 HTML 原生滚动条。** 所有滚动区域必须使用以下两种模式之一。
+
+#### 模式 A：无滚动条（`scrollbar-width: none`）
+
+内容可滚动但滚动条不可见。用户通过滚轮/触控板操作。
+
+**CSS 模板**：
+```css
+.container {
+  overflow-y: auto;
+  scrollbar-width: none;          /* Firefox */
+  -ms-overflow-style: none;       /* IE/Edge */
+}
+.container::-webkit-scrollbar { display: none; }  /* Chrome/Safari */
+```
+
+**适用场景**：
+- 侧栏参数面板（`#tuner-panel-left` 内 `.panel-left-scroll`）
+- 指南视图（`#right-view-guide`）
+- 快照表格体（`#tuner-snapshot-body` 所属的 `#tuner-snapshot-table-block`）
+- 纯内容浏览场景——用户不需要知道"滚到哪了"，只需内容跟随
+
+**判断规则**：容器内容为**连续阅读流**（文本、指南、参数列表、表格行）→ 用模式 A。
+
+#### 模式 B：蓝色自定义滑块
+
+用 `<div>` 自建滑块，配色与系统强调色一致，不依赖原生滚动条。
+
+**参考实现**：`#hm-vslider-wrap`（热力图垂直滑块，`tuner-right.html:392-395`）。核心样式：
+- 轨道：`background: var(--bg-panel); border-left: 1px solid var(--border)`
+- 滑块：`background: var(--blue-dark); border-radius: 3px; cursor: grab`
+
+**适用场景**：
+- 热力图垂直/水平滑块
+- 数据管理面板滚动
+- 任何需要**空间定位**的滚动——用户需要看到"当前视口在全局中的位置"（如矩阵的可见行列范围）
+
+**判断规则**：容器内容为**二维矩阵/网格**（热力图、DM 面板），或用户需要**精确控制可见区域位置**→ 用模式 B。
+
+#### 模式选择决策树
+
+```
+容器内容需要滚动？
+  ├─ 用户需要知道"滚到哪了"？
+  │   ├─ 是 → 模式 B（蓝色自定义滑块）
+  │   └─ 否 → 模式 A（无滚动条）
+  └─ 不需要滚动 → 不处理
+```
+
 ## §7 修改指南
 
 任何 Tuner UI 改动 REQ 必须先回答：

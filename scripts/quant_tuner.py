@@ -248,6 +248,12 @@ SINA_HEADERS = {
     "Referer": "https://finance.sina.com.cn/",
 }
 
+TENCENT_URL = "http://qt.gtimg.cn/q="
+TENCENT_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+    "Referer": "https://gu.qq.com/",
+}
+
 # A-share trading schedule (minutes from midnight)
 MORNING_OPEN = 570    # 9:30
 MORNING_CLOSE = 690   # 11:30
@@ -338,6 +344,76 @@ def _fetch_sina_realtime(cfg):
                 "volume": vol,
                 "amount": float(data[9]) if data[9] else 0,
                 # L1 halt detection: open==prev_close and zero volume → hasn't started trading
+                "possibly_halted": (opn > 0 and abs(opn - prev) < 0.001 and vol == 0),
+            }
+        except (ValueError, IndexError):
+            continue
+    return results
+
+
+def _fetch_tencent_realtime(cfg):
+    """Fetch real-time quotes from Tencent API (qt.gtimg.cn).
+    Fallback when Sina (hq.sinajs.cn) is unreachable (e.g., CI runners outside China).
+    Returns dict: {code: {name, open, prev_close, price, high, low, volume, amount, possibly_halted}}
+    Same return contract as _fetch_sina_realtime — drop-in replacement.
+    """
+    symbols = []
+    code_list = []
+    for etf in cfg["universe"]:
+        code = etf["code"]
+        m = etf.get("market", "sz")
+        symbols.append(f"{m}{code}")
+        code_list.append(code)
+    # Also fetch benchmark ETFs (same as Sina path)
+    for code, mkt in [("510050", "sh"), ("510300", "sh"), ("510500", "sh"), ("159915", "sz")]:
+        symbols.append(f"{mkt}{code}")
+        code_list.append(code)
+
+    url = f"{TENCENT_URL}{','.join(symbols)}"
+    try:
+        resp = requests.get(url, headers=TENCENT_HEADERS, timeout=10)
+        resp.encoding = "gbk"
+    except Exception as e:
+        print(f"  [Tencent] API failed: {e}")
+        return {}
+
+    results = {}
+    lines = resp.text.strip().split(";")
+    for i, line in enumerate(lines):
+        line = line.strip()
+        if not line or "=" not in line:
+            continue
+        match = re.search(r'"([^"]*)"', line)
+        if not match:
+            continue
+        data = match.group(1).split("~")
+        if len(data) < 7:  # need at least through volume field
+            continue
+        code = code_list[i] if i < len(code_list) else None
+        if not code:
+            continue
+        try:
+            opn = float(data[5]) if data[5] else 0
+            prev = float(data[4]) if data[4] else 0
+            price = float(data[3]) if data[3] else 0
+            # Tencent volume: 手 → 股 (×100)
+            vol = int(float(data[6]) * 100) if data[6] else 0
+            # Tencent amount: 万元 → 元 (×10000)
+            amt = float(data[37]) * 10000 if len(data) > 37 and data[37] else 0
+            # high/low: guarded access, fallback to price
+            high = float(data[33]) if len(data) > 33 and data[33] else price
+            low = float(data[34]) if len(data) > 34 and data[34] else price
+
+            results[code] = {
+                "name": data[1],
+                "open": opn,
+                "prev_close": prev,
+                "price": price,
+                "high": high,
+                "low": low,
+                "volume": vol,
+                "amount": amt,
+                # Same halt-detection heuristic as Sina: open==prev_close + zero volume
                 "possibly_halted": (opn > 0 and abs(opn - prev) < 0.001 and vol == 0),
             }
         except (ValueError, IndexError):
@@ -697,19 +773,27 @@ def _populate_intraday_cache(cfg, now, today_str, time_label, codes=None):
     Returns (uni_updated, halted_count, bm_updated).
     """
     rt_prices = _fetch_sina_realtime(cfg)
+    source_name = "Sina"
     if not rt_prices:
-        return 0, 0, 0
+        print("  [Intraday] Sina returned empty, trying Tencent fallback...")
+        rt_prices = _fetch_tencent_realtime(cfg)
+        source_name = "Tencent"
+        if not rt_prices:
+            print("  [Intraday] Tencent also returned empty — no intraday data available")
+            return 0, 0, 0, source_name
 
-    # Retry missing ETFs
-    missing = [e for e in cfg["universe"] if e["code"] not in rt_prices or rt_prices[e["code"]]["price"] <= 0]
-    if missing:
-        time.sleep(2)
-        retry_cfg = dict(cfg)
-        retry_cfg["universe"] = missing
-        retry_rt = _fetch_sina_realtime(retry_cfg)
-        for code, data in retry_rt.items():
-            if data.get("price", 0) > 0:
-                rt_prices[code] = data
+    # Retry missing ETFs only when Sina was the primary source.
+    # Tencent is single-shot — retrying with the same source that already failed is pointless.
+    if source_name == "Sina":
+        missing = [e for e in cfg["universe"] if e["code"] not in rt_prices or rt_prices[e["code"]]["price"] <= 0]
+        if missing:
+            time.sleep(2)
+            retry_cfg = dict(cfg)
+            retry_cfg["universe"] = missing
+            retry_rt = _fetch_sina_realtime(retry_cfg)
+            for code, data in retry_rt.items():
+                if data.get("price", 0) > 0:
+                    rt_prices[code] = data
 
     qdii_codes = {e["code"] for e in cfg["universe"] if e.get("qdii")}
     prev_ic = CACHE.get("intraday_cache", {})
@@ -786,7 +870,7 @@ def _populate_intraday_cache(cfg, now, today_str, time_label, codes=None):
         }
         bm_updated += 1
 
-    return updated, halted_count, bm_updated
+    return updated, halted_count, bm_updated, source_name
 
 
 def refresh_data():
@@ -976,10 +1060,10 @@ def refresh_data():
         }
 
     # ── Intraday (09:30–15:10): historical gaps filled + intraday cache ──
-    uni_updated, halted_count, bm_updated = _populate_intraday_cache(cfg, now, today_str, time_label)
+    uni_updated, halted_count, bm_updated, source_name = _populate_intraday_cache(cfg, now, today_str, time_label)
     vol_note = " (vol est. EOD)" if _trading_elapsed_minutes(now) < TOTAL_TRADING_MINUTES else ""
     halt_note = f" | {halted_count} halted" if halted_count > 0 else ""
-    msg = f"{time_label} | Sina实时 | {uni_updated}+{bm_updated} ETFs{vol_note}{halt_note} | {gap_msg}"
+    msg = f"{time_label} | {source_name}实时 | {uni_updated}+{bm_updated} ETFs{vol_note}{halt_note} | {gap_msg}"
     print(f"  [Refresh] {msg}")
 
     return {
@@ -1559,27 +1643,17 @@ def run_tuner_backtest(params, progress_callback=None):
 
     elapsed = time.time() - t0
     initial_cap = 1000000.0
-    final_nav_val = float(nav_df["nav"].iloc[-1])
-    start_nav_val = float(nav_df["nav"].iloc[0])
-    total_return = (final_nav_val / start_nav_val - 1) * 100
-    days = (nav_df["date"].iloc[-1] - nav_df["date"].iloc[0]).days
-    annual_return = ((final_nav_val / start_nav_val) ** (365 / max(days, 1)) - 1) * 100 if days > 0 else 0
-
+    # Base metrics from shared compute_metrics (single source of truth)
+    from quant_backtest import compute_metrics as _cm
+    _base = _cm(nav_df, signal_history, extra)
+    total_return = _base["total_return"]
+    annual_return = _base["annual_return"]
+    max_drawdown = _base["max_drawdown"]
+    sharpe = _base["sharpe"]
+    sortino = _base["sortino"]
+    # Drawdown series for frontend chart
     cummax = nav_df["nav"].cummax()
     dd = (nav_df["nav"] - cummax) / cummax * 100
-    max_drawdown = float(dd.min())
-
-    daily_rets = nav_df["nav"].pct_change().dropna()
-    if len(daily_rets) > 0 and daily_rets.std() > 0:
-        sharpe = (daily_rets.mean() * 252 - 0.02) / (daily_rets.std() * np.sqrt(252))
-    else:
-        sharpe = 0.0
-
-    downside = daily_rets[daily_rets < 0]
-    if len(downside) > 0 and downside.std() > 0:
-        sortino = (daily_rets.mean() * 252 - 0.02) / (downside.std() * np.sqrt(252))
-    else:
-        sortino = 0.0
 
     monthly_groups = nav_df.groupby(nav_df["date"].dt.to_period("M"))
     monthly_rets = monthly_groups["nav"].last().pct_change().dropna()
@@ -1603,6 +1677,8 @@ def run_tuner_backtest(params, progress_callback=None):
     worst_month = float(monthly_rets.min() * 100) if len(monthly_rets) > 0 else 0.0
     calmar = annual_return / abs(max_drawdown) if abs(max_drawdown) > 0 else 0.0
 
+    # Win/loss streaks from daily returns
+    daily_rets = nav_df["nav"].pct_change().dropna()
     max_win_streak = 0
     max_loss_streak = 0
     current_streak = 0
@@ -1648,6 +1724,7 @@ def run_tuner_backtest(params, progress_callback=None):
     hs_sliced = _rebase_slice(hs_full, eq_dates, nav_date_strs)
     eq_sliced = _rebase_slice(eq_full, eq_dates, nav_date_strs)
     # Excess return vs HS300 (both rebased to 100)
+    final_nav_val = _base["final_nav"]
     excess_return = round((final_nav_val / initial_cap) - (hs_sliced[-1] / 100 if hs_sliced else 1), 4) * 100
     excess_return = round(excess_return, 1)
 
@@ -1780,9 +1857,9 @@ def run_tuner_backtest(params, progress_callback=None):
                 "count": len(snaps), "snapshots": snaps,
                 "_params": {k: v for k, v in params.items() if not k.startswith('_')},
                 "_config_override": config_override,
-                "_ar": round(annual_return, 1),
-                "_mdd": round(max_drawdown, 1),
-                "_sortino": round(sortino, 2),
+                "_ar": round(_base["annual_return"], 1),
+                "_mdd": round(_base["max_drawdown"], 1),
+                "_sortino": round(_base["sortino"], 2),
             }, _f, ensure_ascii=False, indent=2)
         print(f"DEBUG: {len(snaps)} snapshots saved → {debug_path}")
 

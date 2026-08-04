@@ -355,20 +355,21 @@ confidence:
   clarity_threshold: 0.03
   dd_sensitivity: 0.2
 position:
-  max_holdings: 6
+  max_holdings: 2
   max_holdings_special: 8
-  signal_steps: 32
-  top_boost: 0
+  signal_steps: 40
+  top_boost: 8
   weighting: arithmetic
-  rebalance_freq: W-FRI
+  rebalance_freq: daily
   execution_timing: same_close
-  band: 0
+  band: 0.038
+  band_sensitivity: 0.0
   commission_rate: 0.00026
 factors:
   ema:
-    period_weeks: 16
+    period_weeks: 6
   volume_ratio:
-    window_days: 20
+    window_days: 40
 presets:
   act-1:
     label: '1'
@@ -601,12 +602,12 @@ presets:
       log_return_deviation: *id006
   gam-0:
     label: '0'
-    description: AR最大 MH=2 N=40 TB=8 w3=20%
+    description: AR最大 MH=2 N=40 TB=8 F1/F7=82/18
     scoring:
       weights:
-        ema_deviation: 0.65
-        volume_ratio: 0.20
-        log_return_deviation: 0.15
+        ema_deviation: 0.82
+        volume_ratio: 0.0
+        log_return_deviation: 0.18
       bias_bonus: 0.0
       sensitivity:
         f1: 9.6
@@ -621,18 +622,6 @@ presets:
       ma_bull_pos: 1.8
       ma_bear_pos: 1.0
       ma_direction_confirm: true
-      dead_zone: 17
-      full_zone: 65
-      regime_base:
-        bull_trend: 0.95
-        choppy_range: 0.75
-        bear_trend: 0.35
-      regime_window: 8
-      regime_threshold: 0.03
-      breadth_weight: 0.2
-      clarity_threshold: 0.03
-      dd_sensitivity: 0.2
-      mdd_cap: -40
       benchmarks:
       - '510300'
     position:
@@ -641,7 +630,7 @@ presets:
       c_sensitivity: 16.4
       rebalance_freq: daily
       execution_timing: same_close
-      band: 0.03
+      band: 0.038
       commission_rate: 0.00026
       max_holdings_special: 8
       weighting: arithmetic

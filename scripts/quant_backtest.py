@@ -25,7 +25,7 @@ if str(SRC_DIR) not in sys.path:
 sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
 
 from quant_factors import (
-    map_f1, map_f3, map_f4, map_f7,
+    map_f1, map_f3, map_f7,
     confidence_function, regime_confidence, infer_regime_from_nav, dd_trigger_confidence, momentum_crash_confidence, ma_trend_confidence, multi_benchmark_confidence,
 )
 from etf_report.core.quant_data_utils import load_etf_data as _load_etf_data, get_price_on_date as _get_price_on_date
@@ -546,6 +546,7 @@ def run_backtest(start_date: str = "2026-05-01", end_date: str = None,
                  universe_filter: list = None,
                  preloaded: dict = None,
                  config_override: dict = None,
+                 strategies: dict = None,
                  return_details: bool = False,
                  return_debug: bool = False,
                  return_data: bool = False,
@@ -560,6 +561,11 @@ def run_backtest(start_date: str = "2026-05-01", end_date: str = None,
          "market_regimes": {date: regime}, "hs300_above_ma": {date: bool}}
     config_override: 可选配置覆盖字典，在 preset 加载后应用:
         {"scoring": {...}, "confidence": {...}, "position": {...}, "factors": {...}}
+    strategies: 可选 regime 切换参数字典:
+        {"ma_above": {w1:82, w7:18, MH:2, C:0.62, band:0.038, ...},
+         "ma_below": {w1:75, w7:25, MH:4, C:0.45, band:0.025, ...}}
+        当 strategies 不为 None 时，每个调仓日根据 hs300_above_ma 选择对应参数组。
+        未指定的参数回退到 config_override / preset 默认值。
     all_daily_exec: 可选执行价格查询专用数据（含 intraday 合并），
         因子计算仍使用 preloaded["all_daily"]（CSV 原始数据）。
         不传时默认等于 all_daily（向后兼容）。
@@ -598,6 +604,10 @@ def run_backtest(start_date: str = "2026-05-01", end_date: str = None,
     daily_financing_rate = financing_rate_annual / 360.0 if financing_rate_annual > 0 else 0.0
 
     weights = scoring_cfg["weights"]
+    # Baseline values for per-iteration strategy switching
+    w1_base = weights.get("ema_deviation", 0.35)
+    w3_base = weights.get("volume_ratio", 0.35)
+    w7_base = weights.get("log_return_deviation", 0.0)
     sensitivity = scoring_cfg.get("sensitivity", {})
     f1_sens = sensitivity.get("f1", _df["scoring"]["sensitivity"]["f1"])
     if rebalance_freq is None:
@@ -616,9 +626,10 @@ def run_backtest(start_date: str = "2026-05-01", end_date: str = None,
     commission_rate = position_cfg.get("commission_rate", _df["position"]["commission_rate"])
     f3_sens = sensitivity.get("f3", _df["scoring"]["sensitivity"]["f3"])
     conf_type = confidence_cfg.get("type", _df["confidence"]["type"])
-    # dead_zone/full_zone 在 YAML 中为百分制(如 25/65)，需转为 [0,1]
-    dead_zone = confidence_cfg["dead_zone"] / 100.0
-    full_zone = confidence_cfg["full_zone"] / 100.0
+    # dead_zone/full_zone: legacy confidence params, only used in non-ma_trend branches.
+    # Default to 17/65 (neutral values) when absent — gam-0 (ma_trend) never reaches this code path.
+    dead_zone = confidence_cfg.get("dead_zone", 17) / 100.0
+    full_zone = confidence_cfg.get("full_zone", 65) / 100.0
     dispersion_threshold = confidence_cfg.get("dispersion_threshold", 0.0)  # 0=关闭
     breadth_power = confidence_cfg.get("breadth_power", 0.0)  # 0=关闭
     regime_base_cfg = confidence_cfg.get("regime_base", {"bull_trend": 0.90, "choppy_range": 0.55, "bear_trend": 0.25})
@@ -843,6 +854,34 @@ def run_backtest(start_date: str = "2026-05-01", end_date: str = None,
         turnover_today = {}  # 成交额，用于买入排序
         rb_np = np.datetime64(rb_date)
         exec_key = execution_date.strftime("%Y-%m-%d")
+        rb_date_str = rb_date.strftime("%Y-%m-%d") if hasattr(rb_date, "strftime") else str(rb_date)[:10]
+
+        # ── Per-iteration strategy switching: override params based on regime ──
+        # (Must be BEFORE factor lookup, since MH may differ per regime)
+        _f1_sens = f1_sens; _f3_sens = f3_sens
+        _f7_up = f7_up_power; _f7_usp = f7_up_span
+        _f7_dp = f7_down_power; _f7_dsp = f7_down_span
+        _w1 = w1_base; _w3 = w3_base; _w7 = w7_base
+        _mh = max_holdings; _conc = concentration; _csens = c_sensitivity; _band = band
+        if strategies:
+            _bm = benchmarks[0] if benchmarks else "510300"
+            _raw_above = benchmark_above_maps.get(_bm, {}).get(rb_date_str, True)
+            _regime_key = "ma_above" if _raw_above else "ma_below"
+            _s = strategies.get(_regime_key, {})
+            _f1_sens = _s.get("f1_s", _f1_sens)
+            _f3_sens = _s.get("f3_s", _f3_sens)
+            _f7_up = _s.get("f7_up_power", _f7_up)
+            _f7_usp = _s.get("f7_up_span", _f7_usp)
+            _f7_dp = _s.get("f7_down_power", _f7_dp)
+            _f7_dsp = _s.get("f7_down_span", _f7_dsp)
+            _mh = _s.get("MH", _mh)
+            _conc = _s.get("C", _conc)
+            _csens = _s.get("CS", _csens)
+            _band = _s.get("band", _band)
+            if "w1" in _s:
+                _w1 = _s["w1"] / 100.0
+                _w7 = _s.get("w7", 18) / 100.0
+                _w3 = max(0.0, 1.0 - _w1 - _w7)
 
         for code in all_daily:
             daily_df = all_daily[code]
@@ -873,39 +912,32 @@ def run_backtest(start_date: str = "2026-05-01", end_date: str = None,
 
             factors = {
                 "f1_ema_dev": f1_val,
-                "f3_volume_ratio": f3_val, "f4_valuation": 50.0,
+                "f3_volume_ratio": f3_val,
                 "f7_log_return_dev": f7_val,
             }
             factors_data[code] = factors
             prices_today[code] = exec_price
 
-        if len(factors_data) < max_holdings:
+        if len(factors_data) < _mh:
             continue
 
         # ------ 2. 连续映射 + 合成 ------
         factors_df = pd.DataFrame(factors_data).T
 
-        mapped_f1 = factors_df["f1_ema_dev"].apply(lambda v: map_f1(v, f1_sens))
-        mapped_f3 = factors_df["f3_volume_ratio"].apply(lambda v: map_f3(v, f3_sens))
+        mapped_f1 = factors_df["f1_ema_dev"].apply(lambda v: map_f1(v, _f1_sens))
+        mapped_f3 = factors_df["f3_volume_ratio"].apply(lambda v: map_f3(v, _f3_sens))
 
-        mapped_f7 = factors_df["f7_log_return_dev"].apply(lambda v: map_f7(v, up_power=f7_up_power, up_span=f7_up_span, down_power=f7_down_power, down_span=f7_down_span)).fillna(0.5)
-        w1 = weights.get("ema_deviation", 0.35)
-        w3 = weights.get("volume_ratio", 0.35)
-        w4 = weights.get("valuation", 0.15)
-        w7 = weights.get("log_return_deviation", 0.0)
-        # Validate weights sum to ~1.0 (engine scale 0-1, tolerance 1%)
-        _wsum = w1 + w3 + w7
+        mapped_f7 = factors_df["f7_log_return_dev"].apply(lambda v: map_f7(v, up_power=_f7_up, up_span=_f7_usp, down_power=_f7_dp, down_span=_f7_dsp)).fillna(0.5)
+        _wsum = _w1 + _w3 + _w7
         if abs(_wsum - 1.0) > 0.01:
             raise ValueError(
-                f"Weight sum must be 1.0, got w1={w1:.4f}+w3={w3:.4f}+w7={w7:.4f}={_wsum:.4f}. "
-                f"Use research_utils.redistribute_weights(w7, base_w1, base_w3) to fix."
+                f"Weight sum must be 1.0, got w1={_w1:.4f}+w3={_w3:.4f}+w7={_w7:.4f}={_wsum:.4f}."
             )
 
-        composite = mapped_f1 * w1 + mapped_f3 * w3
-        if w7 > 0:
-            composite = composite + mapped_f7 * w7
+        composite = mapped_f1 * _w1 + mapped_f3 * _w3
+        if _w7 > 0:
+            composite = composite + mapped_f7 * _w7
 
-        # F4 估值因子（regime-aware）
         rb_date_str = rb_date.strftime("%Y-%m-%d") if hasattr(rb_date, "strftime") else str(rb_date)[:10]
 
         # Multi-benchmark voting (or single HS300 for backward compat)
@@ -920,12 +952,8 @@ def run_backtest(start_date: str = "2026-05-01", end_date: str = None,
         hs300_ma_rising = benchmark_rising_maps.get(_single_bm, {}).get(rb_date_str, True)
         market_regime = market_regimes.get(rb_date_str, "choppy_range")
 
-        if w4 > 0 and "f4_valuation" in factors_df.columns:
-            mapped_f4 = factors_df["f4_valuation"].apply(lambda v: map_f4(v, market_regime))
-            composite = composite + mapped_f4 * w4
-
         # ------ 3. Top-6 选股 + 仓位 ------
-        top_n = composite.nlargest(max_holdings)
+        top_n = composite.nlargest(_mh)
 
         # Dynamic B: compute dispersion from z-scores, then effective_band
         # (Must be BEFORE band filtering, which uses effective_band)
@@ -946,12 +974,12 @@ def run_backtest(start_date: str = "2026-05-01", end_date: str = None,
                     _ema_fast = _alpha_fast * _d + (1 - _alpha_fast) * _ema_fast
                     _ema_slow = _alpha_slow * _d + (1 - _alpha_slow) * _ema_slow
                 _trend = (_ema_fast - _ema_slow) / max(_ema_slow, 0.01)
-                effective_band = band - band_sensitivity * _trend
+                effective_band = _band - band_sensitivity * _trend
                 effective_band = max(_dyn_floor, min(_dyn_ceiling, effective_band))
             else:
-                effective_band = band
+                effective_band = _band
         else:
-            effective_band = band
+            effective_band = _band
 
         # 分数带过滤：新标的替换被挤出持仓时，分数优势必须 > effective_band
         if effective_band > 0 and portfolio:
@@ -977,7 +1005,7 @@ def run_backtest(start_date: str = "2026-05-01", end_date: str = None,
             for c, s in ousted.items():
                 if c not in merged:
                     merged[c] = s
-            top_n = pd.Series(merged).nlargest(max_holdings)
+            top_n = pd.Series(merged).nlargest(_mh)
 
         # 信心函数
         avg_conf = 0.0  # 默认值，legacy分支会覆盖
@@ -992,11 +1020,11 @@ def run_backtest(start_date: str = "2026-05-01", end_date: str = None,
 
         # Dynamic C: c_mult = 1 + sensitivity × (dispersion − 0.5)
         dispersion = max(float(z_scores.std()), 0.0)
-        if c_sensitivity > 0:
-            c_mult = 1.0 + c_sensitivity * (dispersion - 0.5)
-            effective_c = concentration * max(c_mult, 0.1)  # floor to prevent zero
+        if _csens > 0:
+            c_mult = 1.0 + _csens * (dispersion - 0.5)
+            effective_c = _conc * max(c_mult, 0.1)  # floor to prevent zero
         else:
-            effective_c = concentration
+            effective_c = _conc
 
         exp_scores = np.exp(z_scores * effective_c)
         softmax_w = exp_scores / exp_scores.sum()
@@ -1242,7 +1270,7 @@ def run_backtest(start_date: str = "2026-05-01", end_date: str = None,
             _f7_d = mapped_f7.to_dict() if "f7_log_return_dev" in factors_df.columns else {}
             _comp_d = composite.to_dict()
             _pos_d = actual_positions  # REQ-373: use actual (post-execution), not target
-            _has_f7 = "f7_log_return_dev" in factors_df.columns and w7 > 0
+            _has_f7 = "f7_log_return_dev" in factors_df.columns and w7_base > 0
             # Raw factor values for attribution (REQ-233)
             _f1_raw = factors_df["f1_ema_dev"].to_dict()
             _f3_raw = factors_df["f3_volume_ratio"].to_dict()
@@ -1612,6 +1640,57 @@ def main():
             json.dump({"count": len(snaps), "snapshots": snaps}, f, ensure_ascii=False, indent=2)
         if not args.quiet:
             print(f"\nDEBUG: {len(snaps)} snapshots saved → {debug_path}")
+
+
+def compute_metrics(nav_df, signal_history, extra=None):
+    """Compute standard backtest metrics from NAV DataFrame.
+
+    Single source of truth for AR/MDD/Sortino/Sharpe/Calmar computation.
+    Used by both Tuner (quant_tuner.py) and research tools (research_utils.py).
+
+    Args:
+        nav_df: DataFrame with columns 'date' and 'nav'
+        signal_history: list of per-day signal dicts
+        extra: optional dict with 'total_commission' key
+
+    Returns dict with: total_return, annual_return, max_drawdown,
+        sharpe, sortino, calmar, n_trades, n_signals, commission, final_nav.
+    """
+    ic = 1_000_000.0
+    fn = nav_df["nav"].iloc[-1]
+    total_return = (fn / ic - 1) * 100
+    n = len(nav_df)
+    if n > 0:
+        annual_return = ((fn / ic) ** (252 / n) - 1) * 100
+    else:
+        annual_return = 0.0
+    cummax = nav_df["nav"].cummax()
+    mdd = ((nav_df["nav"] - cummax) / cummax * 100).min()
+    dr = nav_df["nav"].pct_change().dropna()
+    if len(dr) > 0 and dr.std() > 0:
+        sharpe = (dr.mean() * 252 - 0.02) / (dr.std() * np.sqrt(252))
+    else:
+        sharpe = 0.0
+    ds = dr[dr < 0]
+    if len(ds) > 0 and ds.std() > 0:
+        sortino = (dr.mean() * 252 - 0.02) / (ds.std() * np.sqrt(252))
+    else:
+        sortino = 0.0
+    calmar = annual_return / abs(mdd) if mdd != 0 else 0.0
+    actual_trades = count_actual_rebalances(signal_history)
+    commission_total = extra.get("total_commission", 0) if extra else 0
+    return {
+        "total_return": round(total_return, 4),
+        "annual_return": round(annual_return, 4),
+        "max_drawdown": round(mdd, 4),
+        "sharpe": round(sharpe, 4),
+        "sortino": round(sortino, 4),
+        "calmar": round(calmar, 4),
+        "n_trades": actual_trades,
+        "n_signals": len(signal_history),
+        "commission": round(commission_total, 2),
+        "final_nav": round(fn, 2),
+    }
 
 
 if __name__ == "__main__":

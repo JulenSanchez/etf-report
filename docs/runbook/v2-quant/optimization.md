@@ -23,7 +23,7 @@
 | N | 🔒 40 | 40 | 纯摩擦参数。减小 N 会隐式提升集中度，与头名加成 TB 越俎代庖（REQ-365/366/323） |
 | f7_lookback | 🔒 250 | 250 | REQ-382 联合扫参：250 日在 6Y 上最优，缩短无益 |
 | f1_s | [4, 16] | 9.6 | |
-| f3_s | [2, 8] | 4.79 | |
+| f3_s | [2, 8] | 4.79 | 🔒 已退役（v3.15.0 gam-0 w3=0） |
 | f7_up_power | [12, 30] | 23.0 | |
 | f7_up_span | [1.5, 5.0] | 3.1 | |
 | f7_down_power | [6, 24] | 14.0 | |
@@ -35,7 +35,7 @@
 ```
 1. 因子评分 ─ "谁是好的"
    ├── F1 子组 ── w1, f1_sensitivity, f1_ema_period
-   ├── F3 子组 ── w3, f3_sensitivity, f3_vol_window
+   ├── F3 子组 ── w3, f3_sensitivity, f3_vol_window  🔒 v3.15.0 退役（gam-0 w3=0）
    └── F7 子组 ── w7, f7_up_power, f7_up_span, f7_down_power, f7_down_span, F7_window
 
 2. 信心 ─ "下注多少"
