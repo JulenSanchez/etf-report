@@ -44,8 +44,8 @@ jobs:
 
       - name: Run tests with coverage
         run: |
-          python -m pytest tests -v --tb=short \
+          python -m pytest tests -q --tb=line --timeout=120 \
             --cov=scripts --cov=src \
             --cov-report=term-missing \
             --cov-report=html \
-            --timeout=120
+            -p no:terminal
