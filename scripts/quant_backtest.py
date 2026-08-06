@@ -1513,6 +1513,7 @@ def run_backtest(start_date: str = "2026-05-01", end_date: str = None,
         sortino = 0
 
     actual_trades = count_actual_rebalances(signal_history)
+    comm = total_commission2  # from second-pass NAV loop (matches returned NAV curve)
 
     if verbose:
         print("\n" + "=" * 60)
@@ -1528,7 +1529,6 @@ def run_backtest(start_date: str = "2026-05-01", end_date: str = None,
         print(f"  索提诺比率:  {sortino:.2f}")
         print(f"  最终 NAV:    {final_nav:,.0f} (初始 {initial_capital:,.0f})")
         print(f"  最终持仓数:  {nav_df['holdings'].iloc[-1]}")
-        comm = total_commission2  # from second-pass NAV loop (matches returned NAV curve)
         if comm > 0:
             print(f"  交易佣金:    {comm:,.0f} ({comm/initial_capital*100:.2f}% 本金)")
         print("=" * 60)
