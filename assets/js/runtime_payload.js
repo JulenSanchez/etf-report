@@ -1,5 +1,5 @@
 window.__ETF_REPORT_RUNTIME__ = {
-  "generatedAt": "2026-08-07T16:20:43.880143",
+  "generatedAt": "2026-08-07T17:40:35.424118",
   "klineData": {
     "512400": {
       "name": "有色金属ETF",
@@ -11340,7 +11340,7 @@ window.__ETF_REPORT_RUNTIME__ = {
         }
       ],
       "total_ratio": 49.3,
-      "timestamp": "2026-08-07T16:14:12.487755"
+      "timestamp": "2026-08-07T17:34:01.755814"
     },
     "513120": {
       "name": "港股创新药ETF",
@@ -11399,7 +11399,7 @@ window.__ETF_REPORT_RUNTIME__ = {
         }
       ],
       "total_ratio": 69.92,
-      "timestamp": "2026-08-07T16:14:13.411987"
+      "timestamp": "2026-08-07T17:34:02.695499"
     },
     "512070": {
       "name": "证券保险ETF",
@@ -11458,7 +11458,7 @@ window.__ETF_REPORT_RUNTIME__ = {
         }
       ],
       "total_ratio": 78.93,
-      "timestamp": "2026-08-07T16:14:14.334137"
+      "timestamp": "2026-08-07T17:34:03.612983"
     },
     "515880": {
       "name": "通信设备ETF",
@@ -11517,7 +11517,7 @@ window.__ETF_REPORT_RUNTIME__ = {
         }
       ],
       "total_ratio": 67.23,
-      "timestamp": "2026-08-07T16:14:15.258641"
+      "timestamp": "2026-08-07T17:34:04.538535"
     },
     "159755": {
       "name": "电池ETF广发",
@@ -11576,7 +11576,7 @@ window.__ETF_REPORT_RUNTIME__ = {
         }
       ],
       "total_ratio": 65.2,
-      "timestamp": "2026-08-07T16:14:16.182182"
+      "timestamp": "2026-08-07T17:34:05.465013"
     },
     "159865": {
       "name": "养殖ETF",
@@ -11635,7 +11635,7 @@ window.__ETF_REPORT_RUNTIME__ = {
         }
       ],
       "total_ratio": 69.16,
-      "timestamp": "2026-08-07T16:14:17.107942"
+      "timestamp": "2026-08-07T17:34:06.404739"
     }
   }
 };
