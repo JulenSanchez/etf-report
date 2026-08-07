@@ -135,7 +135,7 @@ def _tx_request(tx_code: str, period: str, count: int,
 
 def _parse_tx_rows(rows: list) -> list[dict]:
     """Parse Tencent kline rows: [date, open, close, high, low, volume].
-    Returns only amount (estimated from volume * close), not raw volume."""
+    Returns volume AND amount (estimated from volume * close)."""
     parsed = []
     for row in rows:
         if len(row) < 6:
@@ -151,6 +151,7 @@ def _parse_tx_rows(rows: list) -> list[dict]:
             "close": close,
             "high": float(row[3]),
             "low": float(row[4]),
+            "volume": vol,
             "amount": round(close * vol * 100, 2),
         })
     return parsed
@@ -218,11 +219,11 @@ def fetch_etf_kline(code: str, market: str, period: str = "daily",
             all_rows.extend(batch)
 
     if not all_rows:
-        return pd.DataFrame(columns=["date", "open", "close", "high", "low", "amount"])
+        return pd.DataFrame(columns=["date", "open", "close", "high", "low", "volume", "amount"])
 
     parsed = _parse_tx_rows(all_rows)
     if not parsed:
-        return pd.DataFrame(columns=["date", "open", "close", "high", "low", "amount"])
+        return pd.DataFrame(columns=["date", "open", "close", "high", "low", "volume", "amount"])
 
     df = pd.DataFrame(parsed)
 

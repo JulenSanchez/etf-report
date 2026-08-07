@@ -24,6 +24,7 @@
 | 2026-07-31 | REQ-396 | 回测引擎参数切换基建 — 支持 regime-based 多策略参数 | ✅ done |
 | 2026-08-07 | REQ-397 | 盘后报告迁移到 GitHub Actions — daily_report.bat → workflow，消除 stable 仓库 uncommitted 改动 | ⏳ 待盘中验证 |
 | 2026-08-07 | REQ-398 | 盘后数据刷新独立化 — 新增 refresh_data.bat（仅 quant_data_fetcher，Sina 批量~2s），报告生成交给 Actions | ✅ 已实现 |
+| 2026-08-07 | REQ-399 | stable 仓库退役 — 信号推送迁至 Actions（本地 PowerShell 精准触发 + cron 兜底），报告/数据各归其位 | ✅ 已实现 |
 
 ## discussing (讨论中)
 
