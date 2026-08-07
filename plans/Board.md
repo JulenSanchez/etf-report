@@ -22,6 +22,7 @@
 | 2026-07-31 | REQ-394 | Tuner 快照表全局翻转 — 加工值/原始值一键切换，F1/F7/综合分同步翻转 | ✅ done |
 | 2026-07-31 | REQ-395 | 多因子仓位控制 — 选股与仓位决策分离，Phase 1 节后效应覆盖 | 讨论中 |
 | 2026-07-31 | REQ-396 | 回测引擎参数切换基建 — 支持 regime-based 多策略参数 | ✅ done |
+| 2026-08-07 | REQ-397 | 盘后报告迁移到 GitHub Actions — daily_report.bat → workflow，消除 stable 仓库 uncommitted 改动 | ⏳ 待盘中验证 |
 
 ## discussing (讨论中)
 
@@ -216,6 +217,8 @@
 | BUG-062 | **DM面板"补全空缺"只补交易ETF不补基准ETF** — `api_data_fill_gaps` 的 `BM_ENTRIES` 用了指数代码（000300/000016/000905/399006），而前端 DM 矩阵返回的是 ETF 代码（510300/510050/510500/159915）。选中基准 ETF 格子点"补全空缺"时，后端代码过滤 `510300 != 000300` → 全部跳过。修复：`BM_ENTRIES` 四行改为 ETF 代码，与 `api_data_matrix` / `api_data_refetch` / `api_data_full_refetch` 保持一致。 | 🟡 Medium | fixed | v3.11.0 | REQ-355 | 2026-07-24 | BM_ENTRIES 指数代码与 DM 矩阵 ETF 代码不匹配 | v3.15.0 |
 | BUG-063 | **DM 面板操作数据层错配** — 三项子问题：(a) 周线模式"删除选中"连带删除日线：`api_data_delete` 永远操作日线 CSV → 修复：加 `freq` 参数，weekly 时用交易日历展开周边界再删日线；(b) 因子模式"删除选中"无因子特殊处理 → 修复：`dmDeleteSelected()` 加 `if (dmFreq === 'factor')` 跳转 `dmDeleteCache()`；(c) 周线"补全空缺"不先检查日线完整性 → 修复：weekly 分支内先跑 daily gap fill 再重建周线。详见 `docs/design/dm-panel-operations-audit.md`。 | 🟡 Medium | fixed | v3.11.0 | REQ-355 | 2026-07-27 | (a) 后端无数据层感知；(b) 前端漏因子分支；(c) 周线补全缺日线前置检查 | v3.15.0 |
 | BUG-064 | **preclose_push Stage 2 刷新数据 HTTP 500 — `refresh_data()` NameError: `updated` 未定义** — `_populate_intraday_cache` 返回值从 2 元组扩展为 3 元组（`bm_updated`）时，`refresh_data()` 解包变量从 `updated` 改名为 `uni_updated`，但返回字典中 `"count": updated` 漏改，盘中路径触发 NameError → Flask 返回 HTML 500。修复：(1) `"count": uni_updated + bm_updated` 变量名修正；(2) `api_refresh_data` 加 try/except 兜底，500 时返回 JSON 而非 HTML。 | 🔴 Critical | fixed | v3.15.0 (c8fa45e) | REQ-390, BUG-061 | 2026-07-28 | 解包变量 `uni_updated` 与返回字典引用 `updated` 不一致 | v3.15.0 |
+| BUG-066 | **GitHub Actions 收盘前信号推送延迟 ~3h** — cron `45 6 * * 1-5` (06:45 UTC = 14:45 CST) 设定正确，但实际 job 约 09:28 UTC (17:28 CST) 才开始执行，延迟 ~2h43m。用户约 17:30 收到推送。根因：GitHub Actions 免费计划 cron 调度队列延迟，非代码 TZ bug。暂不修复，留待后续评估是否需要外部触发。 | 🟡 Medium | open | v3.15.0 | REQ-390 | 2026-08-07 | GitHub Actions 免费计划 cron 无执行时间 SLA，高峰期排队延迟 | — |
+
 | BUG-065 | **年化收益率口径不一致 + Tuner/BacktestRunner 各有一份指标代码** — (1) Tuner 用 `365/日历天数` 年化（~147%），而行业标准股票日频策略用 `252/交易日数`（~156%）；(2) `quant_tuner.py` 和 `research_utils.py` 各自独立实现 AR/MDD/Sortino/Sharpe/Calmar 计算，源码重复。修复：(1) 统一为 `252/len(nav_df)` 交易日年化；(2) 抽取 `compute_metrics()` 到 `quant_backtest.py` 作为唯一来源，两端改为调用同一个函数 | 🟡 Medium | fixed | v3.15.0 | — | 2026-07-31 | 年化公式用日历天而非交易日；指标计算代码重复 | v3.15.0 |
 
 
@@ -238,9 +241,9 @@
 
 ## ID 计数器
 
-**下一个需求 ID**: REQ-397
+**下一个需求 ID**: REQ-398
 
-**下一个 Bug ID**: BUG-066
+**下一个 Bug ID**: BUG-067
 
 
 

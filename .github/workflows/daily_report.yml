@@ -1,0 +1,73 @@
+name: 盘后报告更新
+
+on:
+  schedule:
+    # 08:30 UTC 周一至周五。预期 GitHub Actions cron 延迟 ~2-3h，实际执行约 16:30-19:30 CST
+    - cron: '30 8 * * 1-5'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Check trading day
+        id: trading-day
+        env:
+          TZ: Asia/Shanghai
+        run: |
+          if python scripts/trading_calendar.py --is-trading-day; then
+            echo "is_trading_day=true" >> $GITHUB_OUTPUT
+            echo "Trading day: YES"
+          else
+            echo "is_trading_day=false" >> $GITHUB_OUTPUT
+            echo "Trading day: NO — skipping"
+          fi
+
+      - name: Restore quant data cache
+        if: steps.trading-day.outputs.is_trading_day == 'true'
+        id: cache-restore
+        uses: actions/cache/restore@v4
+        with:
+          path: data/quant
+          key: quant-data-${{ github.run_date }}
+          restore-keys: quant-data-
+          enableCrossOsArchive: true
+
+      - name: Configure git
+        if: steps.trading-day.outputs.is_trading_day == 'true'
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+
+      - name: Run report update
+        if: steps.trading-day.outputs.is_trading_day == 'true'
+        env:
+          TZ: Asia/Shanghai
+        run: python scripts/update_report.py --publish
+
+      - name: Save quant data cache
+        if: always() && steps.trading-day.outputs.is_trading_day == 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: data/quant
+          key: quant-data-${{ github.run_date }}
+          enableCrossOsArchive: true
