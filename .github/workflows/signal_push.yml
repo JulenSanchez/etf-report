@@ -44,6 +44,10 @@ jobs:
           restore-keys: quant-data-
           enableCrossOsArchive: true
 
+      - name: Full fetch on cold start
+        if: steps.cache-restore.outputs.cache-hit != 'true'
+        run: python scripts/quant_data_fetcher.py --full
+
       - name: Run signal push
         env:
           TZ: Asia/Shanghai
