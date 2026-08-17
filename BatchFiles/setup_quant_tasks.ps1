@@ -3,9 +3,8 @@ $repoDir = Split-Path -Parent $PSScriptRoot
 $settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -MultipleInstances IgnoreNew
 
 $tasks = @(
-    @{Name='etf早盘报告';     Time='11:20'; Script='trigger_signal_push.ps1'; Type='ps1'},
-    @{Name='etf午盘报告';     Time='14:50'; Script='trigger_signal_push.ps1'; Type='ps1'},
-    @{Name='etf盘后数据更新'; Time='15:30'; Script='refresh_data.bat';          Type='bat'}
+    @{Name='etf-远端 早盘推送'; Time='11:20'; Script='trigger_signal_push.ps1'; Type='ps1'},
+    @{Name='etf-远端 午盘推送'; Time='14:50'; Script='trigger_signal_push.ps1'; Type='ps1'}
 )
 
 foreach ($t in $tasks) {
