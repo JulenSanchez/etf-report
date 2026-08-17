@@ -58,6 +58,10 @@ jobs:
           restore-keys: quant-data-
           enableCrossOsArchive: true
 
+      - name: Full fetch on cold start
+        if: steps.cache-restore.outputs.cache-hit != 'true' && steps.trading-day.outputs.is_trading_day == 'true'
+        run: python scripts/quant_data_fetcher.py --full
+
       - name: Configure git
         if: steps.trading-day.outputs.is_trading_day == 'true'
         run: |
