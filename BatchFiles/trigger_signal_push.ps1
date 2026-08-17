@@ -1,12 +1,12 @@
 # Trigger GitHub Actions signal_push workflow via workflow_dispatch API.
-# Requires GITHUB_PAT environment variable (repo-level or user-level).
+# Requires ETF_REPORT_GITHUB_PAT environment variable (repo-level or user-level).
 # Usage: powershell -File trigger_signal_push.ps1
 $ErrorActionPreference = "Stop"
 
-$token = $env:GITHUB_PAT
+$token = $env:ETF_REPORT_GITHUB_PAT
 if (-not $token) {
-    Write-Host "[ERROR] GITHUB_PAT environment variable not set."
-    Write-Host "  Run: setx GITHUB_PAT ""ghp_xxxx"""
+    Write-Host "[ERROR] ETF_REPORT_GITHUB_PAT environment variable not set."
+    Write-Host "  Run: setx ETF_REPORT_GITHUB_PAT ""ghp_xxxx"""
     exit 1
 }
 
