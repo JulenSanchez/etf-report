@@ -2483,6 +2483,14 @@ def api_universe_save():
                     "active": active_count, "dormant": dormant_count})
 
 
+def _snapshot_for_undo():
+    """Snapshot config + overrides to .bak files before a save (single-level undo)."""
+    import shutil
+    for src in (CONFIG_PATH, OVERRIDES_PATH):
+        if src.exists():
+            shutil.copy2(src, str(src) + ".bak")
+
+
 def _save_to_preset(preset_name, overrides):
     """Deep-merge overrides into a specific preset inside quant_universe.yaml.
     If the preset doesn't exist yet, auto-create it from the zen-1 template."""
@@ -2521,6 +2529,7 @@ def api_save():
         # Build config fragment from shared parameter contract
         overrides = qc.tuner_params_to_preset_patch(params, load_config())
 
+        _snapshot_for_undo()
         if preset_name and not preset_name.startswith("frontier"):
             _save_to_preset(preset_name, overrides)
         else:
@@ -2533,6 +2542,24 @@ def api_save():
         return jsonify({"ok": True})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)})
+
+
+@app.route("/api/undo_save", methods=["POST"])
+def api_undo_save():
+    """Restore config + overrides from the .bak snapshot taken before the last save."""
+    if CACHE.get("readonly"):
+        return jsonify({"error": "Tuner is in read-only mode"}), 403
+    import shutil
+    restored = []
+    for src in (CONFIG_PATH, OVERRIDES_PATH):
+        bak = Path(str(src) + ".bak")
+        if bak.exists():
+            shutil.copy2(bak, src)
+            restored.append(src.name)
+    if not restored:
+        return jsonify({"ok": False, "error": "没有可撤销的保存记录"})
+    CACHE["cfg"] = load_config()
+    return jsonify({"ok": True, "restored": restored})
 
 
 @app.route("/api/kline")

@@ -2234,6 +2234,15 @@ function jumpToSnapshotByDate(clickDate) {
  renderTunerSnapshot(bestIdx);
 }
 
+async function undoSave() {
+ try {
+  var resp = await fetch('/api/undo_save', { method:'POST', headers:{'Content-Type':'application/json'} });
+  var data = await resp.json();
+  if (data.ok) { $id('status').textContent = '已撤销保存 (' + (data.restored||[]).join(', ') + ')'; loadPresets(); }
+  else { $id('status').textContent = '撤销失败: ' + (data.error||''); }
+ } catch(e) { $id('status').textContent = '撤销出错: ' + e.message; }
+}
+
 async function saveYAML() {
  try {
   if (!validateRunInputs()) {
@@ -4843,6 +4852,7 @@ document.addEventListener('click', function(e) {
       case 'refreshData': refreshData(); break;
       case 'refreshMetadata': refreshMetadata(); break;
       case 'saveYAML': saveYAML(); break;
+      case 'undoSave': undoSave(); break;
       case 'flipMetricsPage': flipMetricsPage(); break;
       case 'flipSortinoSharpe': flipSortinoSharpe(); break;
       case 'resetHeatmapSort': resetHeatmapSort(); break;
