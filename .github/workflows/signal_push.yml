@@ -29,12 +29,18 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      - name: Get date
+        id: date
+        env:
+          TZ: Asia/Shanghai
+        run: echo "date=$(date +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
+
       - name: Restore quant data cache
         id: cache-restore
         uses: actions/cache/restore@v4
         with:
           path: data/quant
-          key: quant-data-${{ github.run_date }}
+          key: quant-data-${{ steps.date.outputs.date }}
           restore-keys: quant-data-
           enableCrossOsArchive: true
 
@@ -54,5 +60,5 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: data/quant
-          key: quant-data-${{ github.run_date }}
+          key: quant-data-${{ steps.date.outputs.date }}
           enableCrossOsArchive: true

@@ -42,13 +42,19 @@ jobs:
             echo "Trading day: NO — skipping"
           fi
 
+      - name: Get date
+        id: date
+        env:
+          TZ: Asia/Shanghai
+        run: echo "date=$(date +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
+
       - name: Restore quant data cache
         if: steps.trading-day.outputs.is_trading_day == 'true'
         id: cache-restore
         uses: actions/cache/restore@v4
         with:
           path: data/quant
-          key: quant-data-${{ github.run_date }}
+          key: quant-data-${{ steps.date.outputs.date }}
           restore-keys: quant-data-
           enableCrossOsArchive: true
 
@@ -69,5 +75,5 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: data/quant
-          key: quant-data-${{ github.run_date }}
+          key: quant-data-${{ steps.date.outputs.date }}
           enableCrossOsArchive: true
