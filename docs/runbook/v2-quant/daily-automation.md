@@ -29,10 +29,14 @@ batchfiles/daily_report.bat
 ### 触发链路
 
 ```text
-腾讯云 SCF 定时 14:48 CST (Mon-Fri)
+腾讯云 SCF 两个定时触发器 (Mon-Fri)
+  ├─ 11:20 早盘（应对 QDII 如 513310 有时仅上午可交易，需提前调仓）
+  └─ 14:48 尾盘（主信号）
   → POST workflow_dispatch API（inputs.dry_run=false）
     → signal_push.yml → preclose_push.py → Server酱推送
 ```
+
+两个触发器推的是**同一份全池信号**（gam-0，54 支 ETF），只差时点：早盘用上午实时价，尾盘用尾盘实时价。
 
 ### 为什么是 14:48（不是 14:50）
 
@@ -52,7 +56,9 @@ batchfiles/daily_report.bat
 
 - 函数名 `trigger-signal-push`，Python 3.9，标准库 `urllib`（无第三方依赖）
 - 环境变量 `ETF_REPORT_GITHUB_PAT` = Fine-grained PAT（仅 `actions: write`、仅 etf-report 仓）
-- 定时 Cron：`0 48 14 * * MON-FRI *`（7 段：秒 分 时 日 月 星期 年）
+- 定时 Cron（两个触发器，7 段：秒 分 时 日 月 星期 年）：
+  - 早盘 `0 20 11 * * MON-FRI *`（11:20 触发 → ~11:21:30 推送，赶在 11:30 收盘前）
+  - 尾盘 `0 48 14 * * MON-FRI *`（14:48 触发 → ~14:49:30 推送）
 
 ### PAT 最小权限
 
