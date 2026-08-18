@@ -59,8 +59,14 @@ jobs:
           enableCrossOsArchive: true
 
       - name: Full fetch on cold start
-        if: steps.cache-restore.outputs.cache-hit != 'true' && steps.trading-day.outputs.is_trading_day == 'true'
-        run: python scripts/quant_data_fetcher.py --full
+        if: steps.trading-day.outputs.is_trading_day == 'true'
+        run: |
+          if [ -z "$(ls -A data/quant/*_daily.csv 2>/dev/null)" ]; then
+            echo "No daily data — full fetch"
+            python scripts/quant_data_fetcher.py --full
+          else
+            echo "Daily data present — skip full fetch"
+          fi
 
       - name: Configure git
         if: steps.trading-day.outputs.is_trading_day == 'true'

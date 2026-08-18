@@ -42,8 +42,13 @@ jobs:
           enableCrossOsArchive: true
 
       - name: Full fetch on cold start
-        if: steps.cache-restore.outputs.cache-hit != 'true'
-        run: python scripts/quant_data_fetcher.py --full
+        run: |
+          if [ -z "$(ls -A data/quant/*_daily.csv 2>/dev/null)" ]; then
+            echo "No daily data — full fetch"
+            python scripts/quant_data_fetcher.py --full
+          else
+            echo "Daily data present — skip full fetch"
+          fi
 
       - name: Run signal push
         env:
