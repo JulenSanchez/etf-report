@@ -21,5 +21,4 @@ set EXITCODE=%ERRORLEVEL%
 
 echo.
 echo [%date% %time%] Exit code: %EXITCODE%
-pause
 exit /b %EXITCODE%

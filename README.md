@@ -100,7 +100,6 @@ etf-report/
 | `docs/runbook/v1-report.md` | 正式页报告本地生成与排障 |
 | `docs/runbook/v2-quant/overview.md` | 量化系统总览与运维索引 |
 | `docs/runbook/release.md` | GitHub Pages 发布门禁 |
-| `docs/runbook/stable.md` | stable 仓库与计划任务运维 |
 | `docs/runbook/audit.md` | 项目审计方法 |
 | `docs/design/glossary.md` | 核心术语 |
 | `research/README.md` | 研究索引 |

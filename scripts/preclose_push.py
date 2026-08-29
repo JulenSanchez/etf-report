@@ -13,7 +13,7 @@ sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 from trading_calendar import is_trading_day
 
-TUNER_PORT = 5180  # stable uses 5180 to avoid conflict with dev Tuner on 5179
+TUNER_PORT = 5180  # preclose_push uses 5180 to avoid conflict with dev Tuner on 5179
 TUNER_URL = f"http://localhost:{TUNER_PORT}"
 REFRESH_ONLY = "--refresh-only" in sys.argv
 OUTPUT_MD = "--output-md" in sys.argv   # REQ-353: write markdown to Desktop instead of push

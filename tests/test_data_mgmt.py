@@ -279,6 +279,15 @@ def test_sina_batch_append_writes_csv(temp_quant_dir, monkeypatch):
     import scripts.quant_tuner as qt
     from quant_data_fetcher import DATA_DIR as QDATA_DIR, append_csv, save_csv
 
+    # Mock time to post-market so _sina_batch_append doesn't refuse (intraday gate)
+    monkeypatch.setattr("scripts.quant_tuner.datetime", type(
+        "FakeDT", (), {
+            "now": classmethod(lambda cls: datetime(2026, 7, 24, 15, 30)),
+            "strptime": datetime.strptime,
+            "__new__": datetime.__new__,
+        }
+    ))
+
     # Point DATA_DIR to temp
     monkeypatch.setattr("quant_data_fetcher.DATA_DIR", temp_quant_dir)
 
@@ -381,6 +390,14 @@ def test_csv_continuity_after_trim_and_restore(temp_quant_dir):
 def test_bulk_sina_batch_58_etfs(temp_quant_dir, monkeypatch):
     """Simulate 54 universe + 4 benchmark ETFs through Sina batch append."""
     import scripts.quant_tuner as qt
+    # Mock time to post-market so _sina_batch_append doesn't refuse (intraday gate)
+    monkeypatch.setattr("scripts.quant_tuner.datetime", type(
+        "FakeDT", (), {
+            "now": classmethod(lambda cls: datetime(2026, 7, 24, 15, 30)),
+            "strptime": datetime.strptime,
+            "__new__": datetime.__new__,
+        }
+    ))
     monkeypatch.setattr("quant_data_fetcher.DATA_DIR", temp_quant_dir)
 
     today = datetime.now().strftime("%Y-%m-%d")

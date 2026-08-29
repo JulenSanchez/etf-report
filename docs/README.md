@@ -8,7 +8,6 @@
 | `runbook/release.md` | 发布唯一门禁 |
 | `runbook/v2-quant/overview.md` | 量化运维总览 |
 | `runbook/v1-report.md` | 正式页本地生成与排障 |
-| `runbook/stable.md` | stable 仓与 Windows 计划任务 |
 
 ## 设计文档
 

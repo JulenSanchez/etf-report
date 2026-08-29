@@ -82,8 +82,8 @@ def test_preset_to_tuner_params_uses_defaults():
     # Check non-searchable params are sourced from defaults.yaml or YAML preset
     assert result.get("f1_active_days") == df["factors"]["f1_active_days"], \
         f"f1_active_days mismatch: {result.get('f1_active_days')} != {df['factors']['f1_active_days']}"
-    assert result.get("dead_zone") == gam0_cfg["confidence"]["dead_zone"], \
-        "dead_zone should come from YAML preset"
+    assert result.get("dead_zone") == global_conf.get("dead_zone"), \
+        "dead_zone should fall back to global confidence (gam-0 removed it after F3 retirement)"
     assert result.get("rebalance_freq") == gam0_cfg["position"]["rebalance_freq"], \
         f"rebalance_freq mismatch"
 

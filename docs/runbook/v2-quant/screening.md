@@ -41,7 +41,7 @@ python scripts/scan_etf_universe.py --debug
 docs/runbook/v2-quant/pool-change.md
 ```
 
-筛选流程不负责提交、发布、stable 更新。
+筛选流程不负责提交、发布。
 
 ## 最小验证
 

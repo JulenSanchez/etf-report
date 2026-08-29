@@ -28,7 +28,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+if sys.platform == "win32" and "pytest" not in sys.modules:
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
 
 PROJECT_ROOT = next(parent for parent in Path(__file__).resolve().parents if (parent / "config").is_dir() and (parent / "scripts").is_dir())
 sys.path.insert(0, str(PROJECT_ROOT / "scripts"))

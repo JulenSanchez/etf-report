@@ -525,7 +525,7 @@ def main():
         mode_label = "full"
     else:
         mode_label = "incremental"
-    print(f"=== ETF K-line fetch ({mode_label}) · {len(universe)} ETFs ===\n")
+    print(f"=== ETF K-line fetch ({mode_label}) · {len(universe)} 交易池 ETF + 4 基准指数 ===\n")
 
     # Global freshness check: skip entire loop if already updated today
     if not args.full and not patch_mode and FRESH_MARKER.exists():
@@ -622,7 +622,7 @@ def fetch_benchmark_indices(full=False):
     Uses the same update_single pipeline as universe ETFs for data consistency.
     """
     from datetime import datetime as _dt
-    print("\n=== Benchmark ETFs ===\n")
+    print("\n=== 基准指数 ETF（4 支）===\n")
     ok, fail = 0, 0
     allowed = _latest_allowed_date()
     for etf_code, symbol in BENCHMARK_ETF_AKSHARE.items():
@@ -647,7 +647,7 @@ def fetch_benchmark_indices(full=False):
         except Exception as e:
             print("  [{}] {} FAIL: {}".format(etf_code, name, e))
             fail += 1
-    print("\n=== Benchmark ETFs: OK={}, FAIL={} ===".format(ok, fail))
+    print("\n=== 基准指数: OK={}, FAIL={} ===".format(ok, fail))
 
 
 if __name__ == "__main__":

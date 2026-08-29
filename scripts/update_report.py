@@ -554,7 +554,7 @@ def default_quant_preset_params():
         "band": 0.03, "band_sensitivity": 0,
         "f1_ema_period": 5, "f3_vol_window": 20,
         "f1_sensitivity": 8.0, "f3_sensitivity": 1.5,
-        "f7_up_power": 15.0, "f7_up_span": 3.5, "f7_window": 20,
+        "f7_up_power": 15.0, "f7_up_span": 3.5, "f7_window": 20, "f7_lookback": 250,
         "f6_rsi_thresh": 80.0, "f6_drop_thresh": 2.5, "f6_base_penalty": 0.15,
     }
 
@@ -1966,7 +1966,7 @@ def main(publish: bool = False):
                 import deployer
                 deployer.main(PROJECT_ROOT, html_source_path=working_html_file)
             except ImportError:
-                logger.info("deployer 模块未找到，跳过 GitHub 部署（stable 环境预期行为）")
+                logger.info("deployer 模块未找到，跳过 GitHub 部署")
             except Exception as e:
                 logger.error("GitHub 部署失败", {"error": str(e)})
         

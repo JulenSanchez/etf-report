@@ -22,10 +22,11 @@
 | v3.8.0 | 2026-06-18 | REQ-274/277/280/281/282/283/284/286/287/289/290/291 | shared 模块包化 Phase 1+2（src/etf_report/core/ 迁入 7 个 shared 模块）、ETF 全市场自动筛选引擎 v2 + R14 换池(48支)、ETF 默认勾选机制(active+5%TR阈值)、三派优化 promotion 评审、参数优化报告规范(8节+6方法论)、权重转换逻辑工程化修复、AI 文档/治理文档去 Skill 化、量化运维文档拆分精简、stable 自动更新与计划任务观测、BUG-032/033/034 修复 |
 | v3.9.0 | 2026-06-24 | REQ-296/297/298/299/300/278/292/306/308 + 三派赌徒完整优化 | Stage A 合成杠杆引擎(exposure管线+风险指标+Tuner展示)、三周期等权 composite 优化体系、三派赌徒分层优化(gam-1 mdd=-20% bull=0.89 / gam-2 mdd=-25% bull=1.58 / gam-3 mdd=-35% bull=1.92)、MH=2范式发现与沉淀、bootstrap稳健性验证、交易日历CNY后处理(akshare Sina历史数据)、四类聚合标签(group1+一级/二级切换+配色重设计)、宽基ETF白名单筛选(科创50流程走完)、Tuner十大成分股展示、正式页合成杠杆摘要、筛选流datalen修复+并发限流、Sina batch盘中冷却修复、优化器--two-stage串联+analyzer复合排序、子Agent报告生成流程 |
 | **v3.10.0** | **2026-07-02** | REQ-310/322/325/327/328/331/332/335/336/337/338/339/341/344/347 + REQ-340(closed) + BUG-041/042 | financing (rate=0.06) + C/CS/B/BS dynamic band + 44 frontier pts re-ran + multi-zone + Tuner cards 15->10 + baseline.yaml + defaults.yaml |
-| **v3.11.0** | **2026-07-06** | REQ-348/353/354/355/357 + BUG-042/043/044 | 盘后定价信号推送 + 实盘调仓执行表 + 数据管理面板 + 因子缓存治理 + 引擎NaN防护 + 去杠杆计算修复 |
+| **v3.11.0** | **2026-07-06** | REQ-348/353/354/355/357/343/345/346 + BUG-042/043/044 | 盘后定价信号推送 + 实盘调仓执行表 + 数据管理面板 + 因子缓存治理 + 引擎NaN防护 + 去杠杆计算修复 + Tuner UI 布局/净值涨跌分布/进度条 |
 | **v3.12.0** | **2026-07-08** | REQ-360 + BUG-045/047 | disc_step slider精度修复 + stable交易日历修复 + Gambler前沿扩区(6区→6点) + 拆股后数据修复工作流 |
 | **v3.13.0** | **2026-07-17** | REQ-112/159/174/236/268/349/350/351/356/359/361/362/364/365/366/367(证伪)/368/371/372/373/374/375/376 + top_boost/N-TB研究 + BUG-046/048/052/053/054/055 | 预设清理+优化原子提取(research_utils)、F7 双侧参数与双侧扫参(gam-0 AR 119.7%→137.6%, f7_up_power/f7_up_span/f7_down_power/f7_down_span 命名)、信号/执行步长分离+top_boost、参数缩放统一、杠杆上限治理(移除 max_gross_exposure)、停牌感知、分组约束优化框架、Tuner onclick→事件委托+三文件拆分、调仓决策可追溯、NAV 事件锚点、回测输出分级 |
 | **v3.14.0** | **2026-07-21** | REQ-323(WF方法论) + REQ-377(因子驱动力) + REQ-379(MDD约束) + REQ-382(f7_lookback) + REQ-383(契约护栏) + REQ-384(基准指数切换) + REQ-385/386(WF前置) + REQ-388(HTML拆分) + REQ-389(参数锁定) + BUG-056/057/058 | WF方法论验证通过、σ_F7面积图+摘要卡、MDD固定-40%、参数分组优化流程、LOCKED_PARAMS单源治理、Tuner L1面板拆分(Flask服务端拼装)、两种锁样式(slider灰/enum隐藏btn-row) |
+| **v3.15.0** | **2026-08-30** | REQ-390/391/392/393/394/396/397/398/399/400 + BUG-056/057/058/059/060/061/062/063/064/065/066/067/068/069 | F3 退役 + gam-0 82/18 两因子 + base_score + 逃顶证伪 + 术语表分层 + 远端部署兜底(SCF 定时触发) + Tuner 快照翻转/参数切换基建/撤销保存 + 盘后报告与数据刷新迁移 Actions + stable 仓库退役 |
 
 
 
@@ -63,6 +64,27 @@
 | BUG-054 | defaults.yaml 缺 F7 超跌侧参数 → Tuner 回退硬编码值 → AR 差 17pp | 🟡 Medium | closed | v3.13.0 | REQ-375 | 2026-07-16 | 新增参数契约未完整覆盖 defaults.yaml | v3.13.0 |
 | BUG-055 | research_utils `_build_override` 提前 return → F7/权重扫参静默失效 | 🟡 Medium | closed | v3.13.0 | REQ-362, REQ-375 | 2026-07-16 | 死代码（return 后逻辑不可达）；同族修正两处测试 fixture 权重量程 | v3.13.0 |
 
+### v3.15.0 发布归档（2026-08-30，原 Board bugs 区，均 fixed → closed）
+
+| ID | 标题 | 严重度 | 状态 | 引入版本 | 关联 | 发现日期 | 根因 | 修复版本 |
+|----|------|--------|------|---------|------|---------|------|---------|
+| BUG-056 | **盘中 MA 信号延迟/错误 — 周五牛转熊漏报 + 周一假熊转牛** — 三重根因：(1) `_build_ma_trend_cache` 注入 000300 实时价用的 Sina 指数代码 `s_sh000300` 多余前缀致拉取失败；(2) 盘中降级时未跳过 Tuner 启动时建的旧 MA 缓存（不含当日），回测缺当日日期默认 bull；(3) 未注入 000300 实时价到日线/周线致 MA 延迟一个周线窗口。修复：代码 → `sh000300` + 降级跳过旧缓存 + 注入逐日线 | 🟡 Medium | closed | v3.13.0 | — | 2026-07-20 | (1) Sinan 指数代码多余 `s_` 前缀；(2) 缓存逻辑在盘中降级时未区分启动缓存 | v3.13.0 |
+| BUG-057 | **"刷新数据"不更新基准指数** — `refresh_data()` 只拉 ETF 日线，HS300 指数 CSV 只在 Tuner 启动时加载一次，盘中缺数据或过期只能重启。修复：`refresh_data()` 末尾重新 `load_hs300_daily_cached()` + 重建周线 + 清 MA 缓存 | 🔴 Critical | closed | v3.13.0 | — | 2026-07-20 | `_run_incremental_fetch` 只遍历 ETF universe，不含指数 | v3.13.0 |
+| BUG-058 | **`_build_override` 默认值与 gam-0 不一致** — 硬编码默认值多处偏离；修复：全部默认值改为从 `DEFAULT_LOCK` 读取，`DEFAULT_LOCK` 补全 f7_window/f7_lookback | 🔴 Critical | closed | v3.13.0 | REQ-382 | 2026-07-20 | 双重默认源（DEFAULT_LOCK + _build_override 硬编码）未对齐 | v3.13.0 |
+| BUG-059 | **盘中拆股检测失效 — DM 面板不显示 ⚠** — REQ-354 bridge 先清洗内存 → REQ-360 `api_split_status` 查不到跳变 → `pending_repair` 永远不触发。修复：(1) 新增 `_detect_pending_splits_from_cache()` 只检测不洗数据；(2) 检测入口从 `refresh_data` 移到 `/api/split_status`（DM 加载时触发）；(3) bridge 命中后记 `_SPLIT_PENDING_REPAIR` 确保 ⚠ 可见 | 🔴 Critical | closed | v3.13.0 | REQ-354, REQ-360 | 2026-07-21 | bridge 清洗证据 → api 查不到跳变；检测入口散布在三个不同端点 | v3.13.0 |
+| BUG-060 | **基准指数数据管线缺陷（regime 周内翻转 + 无盘中数据）** — 两个关联问题：(1) 周线日期修复：`build_index_weekly` 周线 bar 日期改为当周最后交易日，未完成周指向未来，`merge_asof` 自动跳过 ✅。(2) 基准 ETF 纳入盘中数据：`_fetch_sina_realtime` 加四支基准、`refresh_data` 加 gap 检测和补拉、`/api/data_status` 返回基准状态 ✅ 代码完成，⏳ 待明日盘中验证 DM 面板拉基准盘中数据是否生效。**2026-07-24 回归**：移除盘中 patch 逻辑时删漏 `patched` 变量引用（`_build_ma_trend_cache:1050`），导致 `preclose_push.bat` 报 `NameError: name 'patched' is not defined`。修复：删除残留的 `tag = " (intraday-patched)" if patched else ""` 引用。 | 🔴 Critical | closed | v3.13.0 | — | 2026-07-23 | (1) 周线日期未指向当周最后交易日；(2) 基准 ETF 从未被纳入数据管线；(3) 回归：`patched` 变量定义被移除但引用残留 | v3.15.0 |
+| BUG-061 | **HS300 基准指数盘中仍用收盘价，无实时数据路径** — 三重修复：(1) `_populate_intraday_cache` 盘后循环末尾写入四支基准 ETF（510050/510300/510500/159915）到 intraday_cache；(2) 新增 `_get_benchmark_daily_with_cache(code)` 从 CSV 加载基准日线 + 合并 intraday_cache；(3) `run_tuner_backtest` 盘中合并基准数据通过 preloaded 传入回测，`run_backtest` MA 趋势加载优先使用合并数据。 | 🟡 Medium | closed | v3.15.0 | — | 2026-07-24 | BUG-060 把基准 ETF 加进 Sina 请求但没有写入 intraday_cache，且回测侧基准数据加载不经过 _get_daily_with_cache | v3.15.0 |
+| BUG-062 | **DM面板"补全空缺"只补交易ETF不补基准ETF** — `api_data_fill_gaps` 的 `BM_ENTRIES` 用了指数代码（000300/000016/000905/399006），而前端 DM 矩阵返回的是 ETF 代码（510300/510050/510500/159915）。选中基准 ETF 格子点"补全空缺"时，后端代码过滤 `510300 != 000300` → 全部跳过。修复：`BM_ENTRIES` 四行改为 ETF 代码，与 `api_data_matrix` / `api_data_refetch` / `api_data_full_refetch` 保持一致。 | 🟡 Medium | closed | v3.11.0 | REQ-355 | 2026-07-24 | BM_ENTRIES 指数代码与 DM 矩阵 ETF 代码不匹配 | v3.15.0 |
+| BUG-063 | **DM 面板操作数据层错配** — 三项子问题：(a) 周线模式"删除选中"连带删除日线：`api_data_delete` 永远操作日线 CSV → 修复：加 `freq` 参数，weekly 时用交易日历展开周边界再删日线；(b) 因子模式"删除选中"无因子特殊处理 → 修复：`dmDeleteSelected()` 加 `if (dmFreq === 'factor')` 跳转 `dmDeleteCache()`；(c) 周线"补全空缺"不先检查日线完整性 → 修复：weekly 分支内先跑 daily gap fill 再重建周线。详见 `docs/design/dm-panel-operations-audit.md`。 | 🟡 Medium | closed | v3.11.0 | REQ-355 | 2026-07-27 | (a) 后端无数据层感知；(b) 前端漏因子分支；(c) 周线补全缺日线前置检查 | v3.15.0 |
+| BUG-064 | **preclose_push Stage 2 刷新数据 HTTP 500 — `refresh_data()` NameError: `updated` 未定义** — `_populate_intraday_cache` 返回值从 2 元组扩展为 3 元组（`bm_updated`）时，`refresh_data()` 解包变量从 `updated` 改名为 `uni_updated`，但返回字典中 `"count": updated` 漏改，盘中路径触发 NameError → Flask 返回 HTML 500。修复：(1) `"count": uni_updated + bm_updated` 变量名修正；(2) `api_refresh_data` 加 try/except 兜底，500 时返回 JSON 而非 HTML。 | 🔴 Critical | closed | v3.15.0 (c8fa45e) | REQ-390, BUG-061 | 2026-07-28 | 解包变量 `uni_updated` 与返回字典引用 `updated` 不一致 | v3.15.0 |
+| BUG-065 | **年化收益率口径不一致 + Tuner/BacktestRunner 各有一份指标代码** — (1) Tuner 用 `365/日历天数` 年化（~147%），而行业标准股票日频策略用 `252/交易日数`（~156%）；(2) `quant_tuner.py` 和 `research_utils.py` 各自独立实现 AR/MDD/Sortino/Sharpe/Calmar 计算，源码重复。修复：(1) 统一为 `252/len(nav_df)` 交易日年化；(2) 抽取 `compute_metrics()` 到 `quant_backtest.py` 作为唯一来源，两端改为调用同一个函数 | 🟡 Medium | closed | v3.15.0 | — | 2026-07-31 | 年化公式用日历天而非交易日；指标计算代码重复 | v3.15.0 |
+| BUG-066 | **GitHub Actions 收盘前信号推送延迟 ~3h** — cron 有队列延迟（~3h），实际 17:28 才执行。修复：腾讯云 SCF 定时触发器 14:48 CST → workflow_dispatch API（无队列延迟，热缓存推送 ~14:49）。详见 `docs/runbook/v2-quant/daily-automation.md`「远端定时触发」。 | 🟡 Medium | closed | v3.15.0 | REQ-390 | 2026-08-07 | GitHub Actions 免费计划 cron 无执行时间 SLA | v3.15.0 |
+| BUG-067 | **远端信号推送仓位不对** — 收到(远端)推送但仓位错误（107%+73%=180% 牛市，正确 60%+40%=100% 熊市）。双重根因：(1) cache key `github.run_date` 非法 → key 空 → 缓存冻结在 07-24（仅390KB）；(2) 冷启动无全量拉取 → 新浪快速路径写 1 行数据骗过 gap 检测。修复：cache key 改用 shell 日期 + 缓存未命中时先 `--full` 全量拉取。已验证：dry-run + 实盘推送仓位均正确（A股创新药 60% + 纳指科技 40%）。 | 🟡 Medium | closed | v3.15.0 | REQ-390 | 2026-08-17 | cache key 空 + 冷启动无全量拉取 | v3.15.0 |
+| BUG-068 | **前端仓位列/动作列用「实际仓位」而非「目标仓位」** — REQ-373 为处理停牌冻结，在 `_pos_d` 处把数据源从 target 一刀切改成 actual，导致正常持仓也显示"实际仓位"（股数×价格/净值，随价格每天漂移）。后果：无任何交易时，动作列仍因被动漂移标出 adj_up/adj_down，仓位列显示对交易者无意义的漂移值。修复：`_pos_d` 改回 `target_positions.to_dict()`（目标仓位/策略意图）+ `totalPosition`/`cashPct` 改用 `total_target`（顶部总仓位指标），停牌持仓仍用 actual + suspended（REQ-373 本意保留）。 | 🟡 Medium | closed | v3.15.0 | REQ-373 | 2026-08-24 | REQ-373 "use actual not target" 过度实施 | v3.15.0 |
+| BUG-069 | **setup_quant_tasks.ps1 中文编码乱码** — UTF-8 无 BOM 脚本在 PS 5.1 下以 GBK 读取导致任务名乱码。修复：另存为 UTF-8 with BOM | 🟡 Medium | closed | v3.14.0 | — | 2026-07-21 | PS1 无 BOM，PowerShell 5.1 默认 ANSI(GBK) 读取 | v3.14.0 |
+
+### 早期 bug 归档（v1.0 ~ v3.7.0 散落条目）
+
 | ID | 标题 | 结论 | 严重度 | 发现日期 | 关闭日期 | 备注 |
 |----|------|------|--------|---------|---------|------|
 | BUG-001 | ETF 详情页卡片高度与业绩区间距异常 | closed | minor | 2026-04-13 | 2026-04-13 | 用户确认“很顺眼”；已统一双栏等高策略，并为“近期业绩表现”补充分组标题间距规范 |
@@ -85,10 +107,10 @@
 | BUG-019 | 515880 通信设备 ETF 的 K 线基准、页面业绩基准、基金合同基准三者不一致 | closed | minor | 2026-04-21 | 2026-04-21 | 随 `v2.5.0` 发布收口：K 线基准与页面文案已统一改为创业板指。 |
 | BUG-020 | 文档暴露本地绝对路径与用户级规则引用 | closed | major | 2026-04-21 | 2026-04-21 | `README.md` 曾写入本机 `file:///c:/Users/...` 绝对路径，并引用用户级规则文件；`SKILL.md`、`CONTRIBUTING.md`、`plans/REQ-161.md` 也带有用户级规则路径。现已统一改写为仓库内自洽表述，并将 `PLAN.md` 加入 `.gitignore` 且从 Git 跟踪中移出。 |
 | BUG-021 | 发布前唯一门禁未收束到 `plans/private/GIT_WORKFLOW.md` | closed | major | 2026-04-21 | 2026-04-21 | 已完成治理收口：`.codebuddy/rules/etf-report.mdc` 与 `PLAN.md` 不再并列维护发布前检查，统一改为只引用 `plans/private/GIT_WORKFLOW.md`；该文档现已重写为发布前唯一门禁，并加入 `.gitignore` 且从 Git 跟踪中移出。 |
-| BUG-024 | FetchData 后 Tuner 回测/K线仍停在 2026-05-08 | closed | medium | 2026-05-11 | 2026-05-12 | FetchData 依赖腾讯 weekly K线，周内未生成当周周线；已改为由本地 daily 重建 weekly。v3.1.0 修复。 |
-| BUG-032 | **F1 跨周冻结失效** — checkpoint_f1 在周边界被重置为 None，新周周一跌入 else 分支重算 base，导致周一 F1 ≠ 上周五 | fixed | critical | 2026-06-15 | 2026-06-18 | `checkpoint_f1 = None` → 应携带 `f1_val[i-1]`。v3.6.1 修复。 |
-| BUG-033 | **Tuner 启动白屏** — `SCHOOLS[3]`(`自定义`)缺 `target`/`constraint`，`renderPresetCards()` `school.target.split()` 抛 TypeError 阻塞页面 | fixed | critical | 2026-06-16 | 2026-06-18 | 补字段 + JS 加固 `undefined.split()`。v3.7.0 修复。 |
-| BUG-034 | **Snapshot 仓位显示非整数** — 离散化后归一化 `* (total_target/pos_sum)` 把步长整数倍（22%/33%）变成浮点（22.2%/33.3%），前后端不一致 | fixed | medium | 2026-06-17 | 2026-06-18 | 归一化替为残量补最大权重者，保持步长整数倍。v3.7.0 修复。 |
+| BUG-022 | FetchData 后 Tuner 回测/K线仍停在 2026-05-08 | closed | medium | 2026-05-11 | 2026-05-12 | FetchData 依赖腾讯 weekly K线，周内未生成当周周线；已改为由本地 daily 重建 weekly。v3.1.0 修复。（原误编号 BUG-024，与 set() 迭代顺序冲突，改号为 022） |
+| BUG-032 | **F1 跨周冻结失效** — checkpoint_f1 在周边界被重置为 None，新周周一跌入 else 分支重算 base，导致周一 F1 ≠ 上周五 | closed | critical | 2026-06-15 | 2026-06-18 | `checkpoint_f1 = None` → 应携带 `f1_val[i-1]`。v3.6.1 修复。 |
+| BUG-033 | **Tuner 启动白屏** — `SCHOOLS[3]`(`自定义`)缺 `target`/`constraint`，`renderPresetCards()` `school.target.split()` 抛 TypeError 阻塞页面 | closed | critical | 2026-06-16 | 2026-06-18 | 补字段 + JS 加固 `undefined.split()`。v3.7.0 修复。 |
+| BUG-034 | **Snapshot 仓位显示非整数** — 离散化后归一化 `* (total_target/pos_sum)` 把步长整数倍（22%/33%）变成浮点（22.2%/33.3%），前后端不一致 | closed | medium | 2026-06-17 | 2026-06-18 | 归一化替为残量补最大权重者，保持步长整数倍。v3.7.0 修复。 |
 | BUG-030 | 回测历史信号漂移：全量重拉CSV后6/3煤炭得分从65.3降至62.7，排名从第2跌至第7 | closed | critical | 2026-06-05 | 2026-06-05 | f1_active_days 重构重写了整个 F1 管线（rebuild_weekly + bitmask），旧基线不可比。 |
 | BUG-031 | 交易日历缺失历史节假日 | closed | medium | 2026-06-10 | 2026-06-10 | 已转 REQ-278：增加中国节假日后处理修正日历，替换临时硬编码。 |
 
@@ -106,4 +128,50 @@
 | ID | 标题 | 废弃日期 | 原因 |
 |----|------|---------|------|
 | REQ-109 | 资源优化（压缩 CSS/JS） | 2026-04-17 | 用户确认废弃：此前曾实现过一版压缩/单行化思路，结果导致 `index.html` 挂掉，后续修复继续恶化，最终只能在 GitHub 回退版本；当前不再继续沿此方向推进。 |
+| REQ-114 | WebSocket 实时更新集成 | 2026-05-16 | 模糊构想，从未进入实际开发。 |
+| REQ-115 | 技术分析指标（布林带、MACD、RSI） | 2026-05-16 | 模糊构想，从未进入实际开发。 |
+| REQ-116 | 多格式报告生成（PDF、JSON） | 2026-05-16 | 模糊构想，从未进入实际开发。 |
+| REQ-117 | 高级过滤 UI（行业、业绩范围） | 2026-05-16 | 模糊构想，从未进入实际开发。 |
+| REQ-180 | 量化回测前端二期优化 | 2026-05-21 | Tuner 已独立演进（热力图/snapshot/参数契约），原需求范围已被覆盖。 |
+| REQ-181 | 桌面版仪表盘重设计 | 2026-05-21 | Tuner 已独立发展成完整工坊，原设计过时。 |
+| REQ-182 | 移动/传播版海报生成 + 自动发布 | 2026-05-21 | 依赖 REQ-181，链式废弃。 |
+| REQ-161 | 调试工具栏重构 + 三档配置周更支线 | 2026-05-21 | 用户明确推迟过，且 Tuner 已覆盖调试需求。 |
+| REQ-122 | 底栏扩展性与模块滚动优化 | 2026-05-21 | 从 REQ-120 衍生，原始上下文已消失。 |
+| REQ-226 | ETF 相关性矩阵热力图 | 2026-05-26 | 已实现并回退。44×44 热力图不填满视口、首帧渲染 bug、用户判定无可行洞察。CS 重审确认废弃。 |
+| REQ-227 | 极端行情压力测试 | 2026-05-26 | 已尝试并放弃。2008/2015/2020H1 危机期早于回测数据，无法回放。尝试转滚动最差收益被用户否决（与 MDD 冗余）。CS 重审确认废弃。 |
+| REQ-231 | 策略对比模式 | 2026-05-26 | 已尝试 3 次均失败（同一数据叠加 3 次/图例破坏 NAV 线）。用户终止。CS 重审确认废弃。 |
+| REQ-234 | 调仓日历视图 | 2026-05-26 | 评审阶段否决。CS 重审确认废弃。 |
+| REQ-235 | 扇区轮动流向图 | 2026-05-26 | 评审阶段否决。CS 重审确认废弃。 |
+| REQ-237 | 策略健康仪表盘 | 2026-05-26 | 已实现并回退。破坏"无滚动"页面布局，内容与快照冗余。CS 重审确认废弃。 |
+| REQ-239 | 暗色/亮色主题切换 | 2026-05-26 | 合并入 REQ-167 |
+| REQ-178 | ETF 估值引擎全覆盖 | 2026-05-28 | F4 退役，估值引擎失去使用场景 |
+| REQ-225 | 因子衰减分析 | 2026-05-28 | 已完成→确认无衰减，归档 |
+| REQ-249 | CS 至暗时刻 NAV 标记 | 2026-05-28 | 赌徒 CS 10→6 后极端持仓减少，需求消失 |
+| REQ-165 | 涨跌配色由"绿涨红跌"反转为"红涨绿跌" | 2026-04-21 | 2026-04-21 代码已回退到最初 `#10b981`/`#ef4444`。废弃原因：红涨绿跌方案虽完成端到端落地（CSS 12 处 / JS 9 处 / Python 3 处 / 测试翻转 128 全绿），但用户视觉回访时觉得深蓝底+饱和红刺眼、不舒服，继而认识到"配色反转是个系统性问题、不能只改涨跌语义那一层"。REQ-165 本身是**色值层级的局部替换**，与 REQ-166 都属于"只改一部分逻辑"的思路；用户判定这条路线从根本上不对，应归入 REQ-167 的整体视觉重设计。代码已完整回滚，id 命名（`text-green` / `highlight-red` / `.positive` / `.bullish` 等）与原始绿/红颜色语义保持一致，避免 id 和颜色错位的语义债务。 |
+| REQ-166 | 涨跌配色改为蓝橙脱钩色（富途/Stripe 风格，评级/推荐/风险卡脱钩到青紫灰） | 2026-04-21 | 2026-04-21 代码已回退到最初 `#10b981`/`#ef4444`。废弃原因：在 REQ-165 视觉回访基础上设计了"涨=琥珀 `#fbbf24`，跌=蓝 `#60a5fa`，评级=青紫灰"的两色板脱钩方案，端到端落地后（128 全绿 / `update_report.py` EXIT=0）用户发现**涨跌蓝色与页面内其他中性/信息性蓝色（如 `holdings-concentration-value-*` 等）产生严重冲突**——这证明了一个更深的问题："方向性语义色"无法脱离"全页配色系统"单独设计，蓝色不是"未被使用的安全色"，它已经作为中性信息色在很多 id 里占位。由此得出用户判断：**配色方案必须是整体设计，单改一部分逻辑都不太好**。相关愿景归入 REQ-167（重新立意为"整体视觉重设计 + 主题切换器"）。本次的代码完整回退，保留了最初 `text-green`/`text-red`/`.positive`/`.bullish` 的 id 语义与颜色一致性，给未来的整体重设计留干净的起点。 |
+
+## 历史需求池（来自已废弃的 Backlog.md）
+
+> 2026-08-29 清理废弃的 `plans/Backlog.md` 时归档。以下需求来自该文件的历史沉积，
+> 多数已被后续版本演进覆盖、自然搁置或转正为其他 REQ。状态未逐一核对，保留清单以防线索丢失。
+
+| ID | 标题 | 去向/状态 |
+|----|------|----------|
+| REQ-172 | PB 数据源攻关（自建 X6 方案） | 搁置 |
+| REQ-170 | ETF 估值与估值百分位模块（方法 B'） | 搁置 |
+| REQ-162 | 主行情链换源 AKShare | 搁置 |
+| REQ-176 | 中央汇金数据分析模块 | 搁置 |
+| REQ-177 | 多因子量化打分系统 | 被 v3 三因子体系取代 |
+| REQ-188 | 内部人减持因子 | 搁置 |
+| REQ-194 | 统一数据获取管线 | 搁置 |
+| REQ-200 | F7 波动率偏离因子 | 收编入 REQ-387 |
+| REQ-201 | 回测单 ETF 拆解分析 | 搁置 |
+| REQ-203 | 不同标的池回测对比 | 搁置 |
+| REQ-222 | 多周期稳健性测试 | 结果已用于 v4 数据地基 |
+| REQ-223 | Walk-forward 优化 | 演进为 REQ-323（WF 方法论） |
+| REQ-230 | 一键快捷回测 | 搁置 |
+| REQ-233 | 因子归因面板 | 结果已用于 v4 数据地基 |
+| REQ-238 | 键盘快捷键 | 搁置 |
+| REQ-250 | 凯利准则 + Bootstrap 稳健性 | 结果已用于 v4 数据地基 |
+| REQ-251 | v2 vs v3 牛熊分化验证 | 搁置 |
 

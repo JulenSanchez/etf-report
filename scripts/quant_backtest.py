@@ -1269,7 +1269,7 @@ def run_backtest(start_date: str = "2026-05-01", end_date: str = None,
             _f3_d = mapped_f3.to_dict()
             _f7_d = mapped_f7.to_dict() if "f7_log_return_dev" in factors_df.columns else {}
             _comp_d = composite.to_dict()
-            _pos_d = actual_positions  # REQ-373: use actual (post-execution), not target
+            _pos_d = target_positions.to_dict()  # 目标仓位（策略意图）；停牌持仓下方另用 actual（REQ-373）
             _has_f7 = "f7_log_return_dev" in factors_df.columns and w7_base > 0
             # Raw factor values for attribution (REQ-233)
             _f1_raw = factors_df["f1_ema_dev"].to_dict()

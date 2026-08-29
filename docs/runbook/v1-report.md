@@ -5,7 +5,7 @@
 
 ## 一、每日自动化
 
-计划任务的注册、检查和 stable 仓运维统一见 `docs/runbook/stable.md`。本文只说明正式页生成链路。
+正式页报告现由 GitHub Actions 自动生成（见 `docs/runbook/v2-quant/daily-automation.md`）。本文只说明本地生成链路。
 
 ### 数据流
 
@@ -75,7 +75,7 @@ cd etf-report
 python scripts/quant_data_fetcher.py --full
 
 # 4. 安装定时任务
-# 详见 docs/runbook/stable.md
+# 详见 docs/runbook/v2-quant/daily-automation.md
 powershell -ExecutionPolicy Bypass -File batchfiles\setup_report_task.ps1
 ```
 
@@ -91,7 +91,6 @@ powershell -ExecutionPolicy Bypass -File batchfiles\setup_report_task.ps1
 | 发布失败 | SSH / secrets 问题 | `ssh -T git@github.com` |
 | 量化板块为空 | `quant_payload.js` 未生成或字段缺失 | 运行 `python scripts/quant_build_payload.py`，再看 `docs/runbook/v2-quant/overview.md` |
 | 推送内容 ETF 显示代码非中文名 | `preclose_push.py` 的 name map 未更新 | 确认 `config/quant_universe.yaml` 有 `name` 字段 |
-| 定时任务跑了 stable 目录但结果含新 ETF | stable/main 双源分裂：Tuner 进程跑在另一仓库 | `netstat -ano \| findstr 5179`，确认进程路径 |
 | preclose_push 盘中数据不刷新 | 盘中缓存规则：15:10 前不拉取收盘数据 | 检查 `history_days.json` 时间戳；`--force-refresh` 拒绝 pre-close |
 | 发布后页面日期滞后 | 非交易日数据正常显示 | 不视为异常 |
 

@@ -29,7 +29,8 @@ import pandas as pd
 import requests
 import yaml
 
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+if sys.platform == "win32" and "pytest" not in sys.modules:
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
 
 PROJECT_ROOT_FALLBACK = next(parent for parent in Path(__file__).resolve().parents if (parent / "config").is_dir() and (parent / "scripts").is_dir())
 SRC_DIR = PROJECT_ROOT_FALLBACK / "src"
@@ -1812,8 +1813,8 @@ def run_tuner_backtest(params, progress_callback=None):
             "positions": s.get("actual_positions", s.get("positions", {})),
             "detail": detail,
             "avgConfidence": round(s.get("total_target", 0) * 100, 0),
-            "totalPosition": round(sum(s.get("actual_positions", s.get("positions", {})).values()) * 100, 1),
-            "cashPct": round((1.0 - sum(s.get("actual_positions", s.get("positions", {})).values())) * 100, 1),
+            "totalPosition": round(s.get("total_target", 0) * 100, 1),
+            "cashPct": round((1.0 - s.get("total_target", 0)) * 100, 1),
             "regime": s.get("regime", ""),
             "cEff": c_eff,
             "actualLeverage": s.get("actual_leverage", 0),
