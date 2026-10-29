@@ -27,6 +27,7 @@
 | **v3.13.0** | **2026-07-17** | REQ-112/159/174/236/268/349/350/351/356/359/361/362/364/365/366/367(证伪)/368/371/372/373/374/375/376 + top_boost/N-TB研究 + BUG-046/048/052/053/054/055 | 预设清理+优化原子提取(research_utils)、F7 双侧参数与双侧扫参(gam-0 AR 119.7%→137.6%, f7_up_power/f7_up_span/f7_down_power/f7_down_span 命名)、信号/执行步长分离+top_boost、参数缩放统一、杠杆上限治理(移除 max_gross_exposure)、停牌感知、分组约束优化框架、Tuner onclick→事件委托+三文件拆分、调仓决策可追溯、NAV 事件锚点、回测输出分级 |
 | **v3.14.0** | **2026-07-21** | REQ-323(WF方法论) + REQ-377(因子驱动力) + REQ-379(MDD约束) + REQ-382(f7_lookback) + REQ-383(契约护栏) + REQ-384(基准指数切换) + REQ-385/386(WF前置) + REQ-388(HTML拆分) + REQ-389(参数锁定) + BUG-056/057/058 | WF方法论验证通过、σ_F7面积图+摘要卡、MDD固定-40%、参数分组优化流程、LOCKED_PARAMS单源治理、Tuner L1面板拆分(Flask服务端拼装)、两种锁样式(slider灰/enum隐藏btn-row) |
 | **v3.15.0** | **2026-08-30** | REQ-390/391/392/393/394/396/397/398/399/400 + BUG-056/057/058/059/060/061/062/063/064/065/066/067/068/069 | F3 退役 + gam-0 82/18 两因子 + base_score + 逃顶证伪 + 术语表分层 + 远端部署兜底(SCF 定时触发) + Tuner 快照翻转/参数切换基建/撤销保存 + 盘后报告与数据刷新迁移 Actions + stable 仓库退役 |
+| **v3.16.0** | **2026-10-29** | REQ-401 + BUG-070/071/072 | 筛选流改用最近已结束交易日收盘数据（与运行时刻解耦）+ Tuner 端口配置化（config/tuner_config.json 单一事实源，Python/PowerShell 同源）+ 筛选流 3 项 bug 修复 |
 
 
 
@@ -82,6 +83,14 @@
 | BUG-067 | **远端信号推送仓位不对** — 收到(远端)推送但仓位错误（107%+73%=180% 牛市，正确 60%+40%=100% 熊市）。双重根因：(1) cache key `github.run_date` 非法 → key 空 → 缓存冻结在 07-24（仅390KB）；(2) 冷启动无全量拉取 → 新浪快速路径写 1 行数据骗过 gap 检测。修复：cache key 改用 shell 日期 + 缓存未命中时先 `--full` 全量拉取。已验证：dry-run + 实盘推送仓位均正确（A股创新药 60% + 纳指科技 40%）。 | 🟡 Medium | closed | v3.15.0 | REQ-390 | 2026-08-17 | cache key 空 + 冷启动无全量拉取 | v3.15.0 |
 | BUG-068 | **前端仓位列/动作列用「实际仓位」而非「目标仓位」** — REQ-373 为处理停牌冻结，在 `_pos_d` 处把数据源从 target 一刀切改成 actual，导致正常持仓也显示"实际仓位"（股数×价格/净值，随价格每天漂移）。后果：无任何交易时，动作列仍因被动漂移标出 adj_up/adj_down，仓位列显示对交易者无意义的漂移值。修复：`_pos_d` 改回 `target_positions.to_dict()`（目标仓位/策略意图）+ `totalPosition`/`cashPct` 改用 `total_target`（顶部总仓位指标），停牌持仓仍用 actual + suspended（REQ-373 本意保留）。 | 🟡 Medium | closed | v3.15.0 | REQ-373 | 2026-08-24 | REQ-373 "use actual not target" 过度实施 | v3.15.0 |
 | BUG-069 | **setup_quant_tasks.ps1 中文编码乱码** — UTF-8 无 BOM 脚本在 PS 5.1 下以 GBK 读取导致任务名乱码。修复：另存为 UTF-8 with BOM | 🟡 Medium | closed | v3.14.0 | — | 2026-07-21 | PS1 无 BOM，PowerShell 5.1 默认 ANSI(GBK) 读取 | v3.14.0 |
+
+### v3.16.0 发布归档（2026-10-29，原 Board bugs 区，均 fixed → closed）
+
+| ID | 标题 | 严重度 | 状态 | 引入版本 | 关联 | 发现日期 | 根因 | 修复版本 |
+|----|------|--------|------|---------|------|---------|------|---------|
+| BUG-070 | AUM 补拉依赖丢失的临时模块 `_working/fetch_aum_ttjj.py` | 🟡 Medium | closed | - | REQ-401, REQ-213 | 2026-09-14 | `scan_etf_universe.py` 硬依赖从未 commit 的临时模块，被 skill-sanitization 清理后悬空引用；复用 `fetch_etf_metadata.py::fetch_aum` | v3.16.0 |
+| BUG-071 | 开放式基金混入 universe（正则过宽，BAD_TYPES 未覆盖混合/股票型） | 🟡 Medium | closed | v3.8.0 | REQ-274, REQ-401 | 2026-09-14 | 正则 `5[1-9]\d{4}` 纳入 58 段东吴开放式基金，换历史日线后有 amount 通过过滤；加 type 过滤排除混合型/股票型 | v3.16.0 |
+| BUG-072 | 筛选流生成 xlsx 无差别强杀全部 Excel（含未保存工作） | 🟡 Medium | closed | v3.8.0 | REQ-274, REQ-401 | 2026-10-12 | `os.system('taskkill /f /im excel.exe')` 无差别杀全部 Excel；改为 PermissionError 报错 | v3.16.0 |
 
 ### 早期 bug 归档（v1.0 ~ v3.7.0 散落条目）
 

@@ -23,6 +23,8 @@ research/**/*.db
 research/params/archive/
 research/**/__pycache__/
 .tuner_ready_to_bind
+.tuner_startup.out.log
+.tuner_startup.err.log
 config/quant_user_overrides.yaml
 
 # ========= 虚拟环境 / IDE =========

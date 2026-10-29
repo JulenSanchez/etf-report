@@ -1,8 +1,10 @@
-"""Kill any process listening on port 5179 (Quant Tuner)."""
+"""Kill any process listening on the dev Tuner port (config/tuner_config.json)."""
 import subprocess
 import sys
 
-PORT = 5179
+from tuner_config import DEV_TUNER_PORT
+
+PORT = DEV_TUNER_PORT
 
 try:
     output = subprocess.check_output(

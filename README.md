@@ -28,7 +28,7 @@ python scripts/report_site/health_check.py
 # 启动量化 Tuner
 python scripts/quant_tuner.py
 python scripts/quant_lab/quant_tuner.py
-# 浏览器打开 http://localhost:5179
+# 浏览器打开 http://localhost:5181（端口见 config/tuner_config.json）
 
 # 生成正式页量化 payload
 python scripts/quant_build_payload.py

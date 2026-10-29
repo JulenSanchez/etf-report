@@ -1,0 +1,5 @@
+{
+  "_comment": "Single source of truth for Tuner ports. Change ports ONLY here. dev_port = local tuning Tuner (StartTuner.ps1, update_report.py, kill_tuner.py, quant_tuner.py default). prod_port = preclose_push.py production Tuner (kept separate to avoid conflicts with dev).",
+  "dev_port": 5181,
+  "prod_port": 5180
+}

@@ -8,7 +8,7 @@ REQ-179: Quant Tuner - 本地调参工具
 
 用法:
     python scripts/quant_tuner.py
-    # -> http://localhost:5179
+    # -> http://localhost:5181（端口见 config/tuner_config.json）
 """
 import gc
 import io
@@ -43,6 +43,7 @@ if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
 from quant_factors import calc_ema, calc_rsi
+from tuner_config import DEV_TUNER_PORT
 from etf_report.core.quant_data_utils import load_etf_data, rebuild_weekly_from_daily
 from etf_report.core import quant_contract as qc
 from benchmark_data import load_hs300_daily_cached, build_hs300_pct, build_hs300_weekly, build_ma_trend_cache
@@ -3727,7 +3728,7 @@ def api_data_full_refetch():
     return jsonify({"ok": True, "results": results})
 
 
-TUNER_PORT = 5179
+TUNER_PORT = DEV_TUNER_PORT
 
 
 def is_port_in_use(port):
@@ -3775,11 +3776,11 @@ if __name__ == "__main__":
                          help="Hot-swap: preload synchronously, signal via file, then wait for old process to be killed before binding port")
     _parser.add_argument("--readonly", action="store_true",
                          help="Disable write endpoints — for stable/production use")
-    _parser.add_argument("--port", type=int, default=5179,
-                         help="HTTP server port (default: 5179)")
+    _parser.add_argument("--port", type=int, default=DEV_TUNER_PORT,
+                         help="HTTP server port (default: %(default)s)")
     _args = _parser.parse_args()
 
-    if _args.port != 5179:
+    if _args.port != DEV_TUNER_PORT:
         TUNER_PORT = _args.port
 
     _hot_swap = _args.preload_then_wait
@@ -3861,7 +3862,7 @@ if __name__ == "__main__":
 
     # Preload
     if _hot_swap:
-        # Hot-swap: preload synchronously while old process still serves port 5179.
+        # Hot-swap: preload synchronously while old process still serves the port.
         # Then signal PowerShell to kill the old process by writing a marker file.
         # Wait until PowerShell deletes the marker (means old process is gone),
         # then bind the port and start Flask.

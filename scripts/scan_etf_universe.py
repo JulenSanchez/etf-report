@@ -7,14 +7,10 @@ import sys, json, re, time, os, argparse
 from pathlib import Path
 from collections import defaultdict
 from datetime import datetime
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
 PROJECT_ROOT = next(parent for parent in Path(__file__).resolve().parents if (parent / "config").is_dir() and (parent / "scripts").is_dir())
-DATA_DIR = PROJECT_ROOT / "data" / "quant"
 SCREEN_DIR = PROJECT_ROOT / "data" / "screening"
 VOL_CACHE = SCREEN_DIR / "step2_amount.json"
-SINA_URL = "https://hq.sinajs.cn/list="
-SINA_HDR = {"User-Agent": "Mozilla/5.0", "Referer": "https://finance.sina.com.cn/"}
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--debug", action="store_true")
@@ -26,7 +22,7 @@ args = parser.parse_args()
 # 1. Load ETF universe
 # ============================================================
 print("[1/4] Loading ETF universe...")
-import akshare as ak, pandas as pd, numpy as np, yaml, requests
+import akshare as ak, pandas as pd, numpy as np, yaml
 
 # Load/cache listing dates (Sina K-line first bar date)
 _LISTING_CACHE = SCREEN_DIR / 'step3_listing_dates.json'
@@ -39,6 +35,9 @@ c_col, n_col, t_col = df.columns[0], df.columns[2], df.columns[3]
 ETF_RE = re.compile(r'^(159\d{3}|5[1-9]\d{4})$')
 df = df[df[c_col].apply(lambda c: bool(ETF_RE.match(str(c))))].copy()
 df.columns = ['code','pinyin','name','type','pf']
+# BUG-071: 排除开放式基金（混合型/股票型）。ETF 的 type 必为 指数型/QDII/货币型，
+# 绝不会是「混合型」或「股票型」——这两种是场外开放式基金独有，正则 5[1-9]\d{4} 会误纳 58 段东吴基金。
+df = df[~df['type'].astype(str).str.startswith(('混合型', '股票型'))].copy()
 print(f"  {len(df)} ETF-likes")
 
 # Load AUM cache (fund size from 天天基金, cached 168h)
@@ -59,150 +58,63 @@ if _SPOT_CACHE.exists():
         spot = pd.DataFrame()
 
 # ============================================================
-# 2. Fetch volume + exchange names from Sina
+# 2. Fetch latest completed trading day's amount + close + history
 # ============================================================
-print("[2/4] Volume data...")
+print("[2/4] Amount & history data...")
 now = datetime.now()
-# Only allow fetch after 15:10 (confirmed close data).
-# During session (9:30-15:10) and weekends: ALWAYS use cache — mid-session
-# accumulated volume is unreliable per REQ-274 screening rules.
-is_post_close = now.hour > 15 or (now.hour == 15 and now.minute >= 10)
-cache = {}; fetch_needed = True
+from trading_calendar import latest_allowed_close_date
+as_of = latest_allowed_close_date()
+as_of_date = datetime.strptime(as_of, "%Y-%m-%d").date()  # fund_etf_hist_sina 的 date 列是 datetime.date
+
+cache = {}
+fetch_needed = True
 if VOL_CACHE.exists() and not args.force_refresh:
     with open(VOL_CACHE) as f: cache = json.load(f)
-    age_h = (time.time() - os.path.getmtime(VOL_CACHE)) / 3600
-    codes_all = set(df['code'])
-    missing_n = sum(1 for c in codes_all if c not in cache)
-    if not is_post_close:
-        # Pre-close: never fetch — cache holds last close data, still valid
+    cached_as_of = cache.get('_meta', {}).get('as_of', '')
+    if cached_as_of == as_of:
         fetch_needed = False
-        print(f"  Pre-close: using cache ({len(cache)} ETFs, {age_h:.1f}h old, last close data)")
-    elif age_h < 24 and missing_n < len(codes_all) * 0.3:
-        fetch_needed = False
-        print(f"  Post-close cache valid ({len(cache)} ETFs, {age_h:.1f}h old)")
+        print(f"  Cache valid for {as_of} ({len(cache)-1} ETFs)")
+    else:
+        print(f"  Cache stale (as_of={cached_as_of or 'none'}), fetching {as_of}...")
+else:
+    print(f"  Fetching {as_of}..." + (" (force refresh)" if args.force_refresh else " (no cache)"))
 
 if fetch_needed:
-    if not is_post_close and args.force_refresh:
-        print(f"  *** REFUSING --force-refresh pre-close: mid-session data is unreliable ***")
-        print(f"  *** Using cache instead. Re-run after 15:10 if fresh close data is needed. ***")
-        with open(VOL_CACHE) as f: cache = json.load(f)
-        fetch_needed = False
-    else:
-        print(f"  Fetching {len(df)} ETFs via Sina (post-close refresh)...")
-    cache = {}
-    cache['_meta'] = {'fetched_at': now.isoformat(), 'is_close_data': True}
-    codes_sorted = sorted(df['code'])
-    market = {c: ('sh' if c.startswith(('51','56','58','52','50')) else 'sz') for c in codes_sorted}
-    symbols = [f"{market[c]}{c}" for c in codes_sorted]
-    n_total = (len(symbols) + 49) // 50
-    for i in range(0, len(symbols), 50):
-        batch = symbols[i:i+50]; bn = i // 50 + 1
-        try:
-            url = f"{SINA_URL}{','.join(batch)}"
-            resp = requests.get(url, headers=SINA_HDR, timeout=10)
-            resp.encoding = 'gbk'
-            for line in resp.text.strip().split('\n'):
-                if '=' not in line: continue
-                sm = re.match(r'var hq_str_(sh|sz)(\d{6})', line)
-                if not sm: continue
-                code = sm.group(2)
-                qm = re.search(r'"([^"]*)"', line)
-                if not qm: continue
-                parts = qm.group(1).split(',')
-                if len(parts) < 10: continue
-                cache[code] = {
-                    'name_ex': parts[0],
-                    'open': float(parts[1] or 0), 'prev_close': float(parts[2] or 0),
-                    'price': float(parts[3] or 0), 'vol': int(float(parts[8] or 0)),
-                }
-        except Exception as e:
-            print(f"  Batch {bn}/{n_total} error: {e}")
-        if bn < n_total: time.sleep(1.5)
-    SCREEN_DIR.mkdir(exist_ok=True)
-    with open(VOL_CACHE, 'w') as f: json.dump(cache, f, ensure_ascii=False)
-    print(f"  Cached {len(cache)} ETFs")
+    cache = {'_meta': {'as_of': as_of, 'fetched_at': now.isoformat()}}
 
-# Attach data
-df['name_ex'] = df['code'].apply(lambda c: cache.get(c, {}).get('name_ex', ''))
-df['vol'] = df['code'].apply(lambda c: cache.get(c, {}).get('vol', 0))
-df['price'] = df['code'].apply(lambda c: cache.get(c, {}).get('price', 0))
-df['amount'] = df['vol'] * df['price']
-df['amount_yi'] = (df['amount'] / 1e8).round(2)
-
-# Data length: how many trading days of history exist for each ETF.
-# Truth source: Sina historical K-line API (independent of quant/backtest flow).
-# Local 回测日线 CSV (data/quant/{code}_daily.csv) is only used as a cache —
-# when present we can skip the API call, but the data is the same external source.
-# Returns -1 as sentinel for "not checked yet" (resolved below via Sina).
-MIN_HISTORY_DAYS = 80  # F7 factor requires 80 daily bars minimum
-
-def _history_days(code):
-    """Return known trading-day count for an ETF code.
-    Checks local 回测日线 cache first (fast), returns -1 if not cached."""
-    kline_csv = DATA_DIR / f'{code}_daily.csv'  # 回测日线 (quant flow output, same Sina data)
-    if kline_csv.exists():
-        try:
-            return len(pd.read_csv(kline_csv))
-        except:
-            pass
-    return -1  # sentinel: cache miss, needs Sina API fetch below
-
-df['history_days'] = df['code'].apply(_history_days)
-n_csv = (df['history_days'] >= 0).sum()
-n_missing = (df['history_days'] == -1).sum()
-print(f"  Data check: {n_csv} from CSV, {n_missing} need API check")
-
-# For ETFs not in local cache, check history_days cache first, then fallback to Sina API.
-_HISTORY_CACHE = SCREEN_DIR / 'history_days.json'
-_history_map = {}
-if _HISTORY_CACHE.exists():
-    try:
-        _history_map = json.load(open(_HISTORY_CACHE, 'r', encoding='utf-8'))
-        # Use cached values for known codes
-        for _code, _rows in _history_map.items():
-            if _code in df['code'].values and df.loc[df['code'] == _code, 'history_days'].values[0] == -1:
-                df.loc[df['code'] == _code, 'history_days'] = _rows
-        print(f"  Loaded {len(_history_map)} history_days from cache")
-    except Exception:
-        _history_map = {}
-
-# Remaining unfetched ETFs that pass amount filter → fetch from Sina
-_rows_to_fetch = [c for c in df['code']
-                  if df.loc[df['code'] == c, 'history_days'].values[0] == -1
-                  and c in cache
-                  and cache[c].get('vol', 0) * cache[c].get('price', 0) >= 30_000_000]
-if _rows_to_fetch:
-    print(f"  Fetching data row counts for {len(_rows_to_fetch)} ETFs via Sina...")
-    SINA_HIST_URL = 'https://money.finance.sina.com.cn/quotes_service/api/json_v2.php/CN_MarketData.getKLineData'
-    SINA_HDR = {"User-Agent": "Mozilla/5.0", "Referer": "https://finance.sina.com.cn/"}
-    fetched_rows = 0
-
-    def _fetch_rows(code):
+    def _fetch_one(code):
         market = 'sh' if code.startswith(('51','56','58','52','50')) else 'sz'
         try:
-            r = requests.get(SINA_HIST_URL,
-                           params={'symbol': f'{market}{code}', 'scale': 240, 'ma': 'no', 'datalen': 5000},
-                           headers=SINA_HDR, timeout=8)
-            r.encoding = 'gbk'
-            data = json.loads(r.text)
-            return code, len(data) if isinstance(data, list) else 0
-        except:
-            return code, 0
+            h = ak.fund_etf_hist_sina(symbol=f'{market}{code}')
+            if h is None or h.empty or 'date' not in h.columns or 'amount' not in h.columns:
+                return {'amount': 0, 'close': 0.0, 'history_days': 0}
+            n_rows = int(len(h))
+            h = h[h['date'] <= as_of_date]
+            if h.empty:
+                return {'amount': 0, 'close': 0.0, 'history_days': n_rows}
+            last = h.iloc[-1]
+            return {'amount': int(last['amount']), 'close': float(last['close']), 'history_days': n_rows}
+        except Exception:
+            return {'amount': 0, 'close': 0.0, 'history_days': 0}
 
-    with ThreadPoolExecutor(max_workers=3) as pool:  # conservative to avoid IP ban
-        futures = {pool.submit(_fetch_rows, c): c for c in _rows_to_fetch}
-        for f in as_completed(futures):
-            code, rows = f.result()
-            df.loc[df['code'] == code, 'history_days'] = rows
-            _history_map[code] = rows
-            fetched_rows += 1
-            if fetched_rows % 100 == 0:
-                print(f'    {fetched_rows}/{len(_rows_to_fetch)}')
-    # Save cache (new codes appended)
-    json.dump(_history_map, open(_HISTORY_CACHE, 'w', encoding='utf-8'), ensure_ascii=False)
-    print(f'    Done: {fetched_rows} fetched, cache saved')
-# Mark remaining unfetched as 0 (will be filtered by minimum)
-df.loc[df['history_days'] == -1, 'history_days'] = 0
+    codes_sorted = sorted(df['code'])
+    # Sequential fetch: fund_etf_hist_sina creates a py_mini_racer MiniRacer (V8)
+    # per call, and concurrent V8 isolate init crashes with
+    # "IsConfigurablePoolInitialized". No thread pool here.
+    for fetched_n, code in enumerate(codes_sorted, 1):
+        cache[code] = _fetch_one(code)
+        if fetched_n % 200 == 0:
+            print(f'    {fetched_n}/{len(codes_sorted)}')
+    SCREEN_DIR.mkdir(exist_ok=True)
+    with open(VOL_CACHE, 'w') as f: json.dump(cache, f, ensure_ascii=False)
+    print(f"  Cached {len(cache)-1} ETFs for {as_of}")
+
+# Attach data
+df['amount'] = df['code'].apply(lambda c: cache.get(c, {}).get('amount', 0))
+df['amount_yi'] = (df['amount'] / 1e8).round(2)
+df['history_days'] = df['code'].apply(lambda c: cache.get(c, {}).get('history_days', 0))
+
+MIN_HISTORY_DAYS = 80  # F7 factor requires 80 daily bars minimum
 
 n_below = (df['history_days'] < MIN_HISTORY_DAYS).sum()
 print(f"  Final: {(df['history_days'] >= MIN_HISTORY_DAYS).sum()} ETFs >= {MIN_HISTORY_DAYS}d, {n_below} below")
@@ -218,21 +130,24 @@ if len(spot) > 0:
 # AUM: use cached data. Missing codes that pass amount filter will be fetched below.
 df['mcap_yi'] = df['code'].apply(lambda c: _spot_map.get(c, 0))
 
-# Proactively fill AUM gaps: fetch missing codes via 天天基金 API.
+# Proactively fill AUM gaps: fetch missing codes via 东财净资产规模（复用 REQ-213 元数据源，BUG-070 修复）
 _aum_missing = [c for c in df['code']
                 if c not in _spot_map
                 and c in cache
-                and cache[c].get('vol', 0) * cache[c].get('price', 0) >= 30_000_000]
+                and cache[c].get('amount', 0) >= 30_000_000]
 if _aum_missing:
     print(f'  Fetching AUM for {len(_aum_missing)} ETFs...')
     try:
-        sys.path.insert(0, str(PROJECT_ROOT))
-        from _working.fetch_aum_ttjj import fetch_batch as _aum_fetch
-        _new = _aum_fetch(_aum_missing, delay=0.35)
-        for k, v in _new.items():
-            _spot_map[k] = v
-            df.loc[df['code'] == k, 'mcap_yi'] = v
-        print(f'    Fetched {len(_new)} AUM records')
+        from fetch_etf_metadata import fetch_aum
+        _fetched = 0
+        for _c in _aum_missing:
+            _v = fetch_aum(_c)
+            if _v is not None:
+                _spot_map[_c] = _v
+                df.loc[df['code'] == _c, 'mcap_yi'] = _v
+                _fetched += 1
+            time.sleep(0.5)
+        print(f'    Fetched {_fetched}/{len(_aum_missing)} AUM records')
     except Exception as e:
         print(f'    [WARN] AUM fetch failed: {e} — {len(_aum_missing)} ETFs have AUM=0')
 
@@ -1101,9 +1016,11 @@ if args.debug:
     for i, w in enumerate(widths5):
         ws5.column_dimensions[get_column_letter(i+1)].width = w
 
-    os.system('taskkill /f /im excel.exe 2>nul')
-    import time; time.sleep(1)
-    wb.save(str(OUTPUT))
+    try:
+        wb.save(str(OUTPUT))
+    except PermissionError:
+        print(f"  [ERROR] 无法写入 {OUTPUT}：文件正被 Excel 等程序占用，请关闭后重跑 --debug。")
+        sys.exit(1)
     print(f"  Saved: {OUTPUT}")
     os.system(f'start excel "{OUTPUT}"')
 

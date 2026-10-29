@@ -12,8 +12,9 @@ PROJECT_ROOT = next(parent for parent in Path(__file__).resolve().parents if (pa
 sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 from trading_calendar import is_trading_day
+from tuner_config import PROD_TUNER_PORT
 
-TUNER_PORT = 5180  # preclose_push uses 5180 to avoid conflict with dev Tuner on 5179
+TUNER_PORT = PROD_TUNER_PORT  # prod Tuner uses its own port (config) to avoid conflict with dev Tuner
 TUNER_URL = f"http://localhost:{TUNER_PORT}"
 REFRESH_ONLY = "--refresh-only" in sys.argv
 OUTPUT_MD = "--output-md" in sys.argv   # REQ-353: write markdown to Desktop instead of push
@@ -41,12 +42,12 @@ def _tuner_ready():
 
 def _ensure_tuner():
     """Kill any existing Tuner on TUNER_PORT, then start a fresh one from THIS repo.
-    Uses a dedicated port (5180) to avoid conflict with dev Tuner on 5179.
+    Uses a dedicated port (config prod_port) to avoid conflict with dev Tuner (config dev_port).
     Works on Windows (netstat + taskkill) and Linux (fuser / lsof + kill)."""
     port_str = f":{TUNER_PORT}"
 
     if sys.platform == "win32":
-        # Windows: netstat -ano | findstr :5180 → taskkill /f /pid
+        # Windows: netstat -ano | findstr :<TUNER_PORT> → taskkill /f /pid
         try:
             result = subprocess.run(
                 ["netstat", "-ano"], capture_output=True, text=True, timeout=5

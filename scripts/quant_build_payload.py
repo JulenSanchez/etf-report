@@ -20,13 +20,14 @@ PROJECT_ROOT = next(parent for parent in Path(__file__).resolve().parents if (pa
 sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
 
 from update_report import generate_quant_baseline_payload
+from tuner_config import DEV_TUNER_PORT
 
 
 def main():
     print("=" * 60)
     print("Quant payload builder")
     print("Official path: update_report.generate_quant_baseline_payload()")
-    print("Requires Tuner running at http://localhost:5179")
+    print(f"Requires Tuner running at http://localhost:{DEV_TUNER_PORT}")
     print("=" * 60)
     output = generate_quant_baseline_payload()
     print(f"Payload written: {output}")

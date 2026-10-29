@@ -41,12 +41,14 @@ from logger import Logger
 
 from config_manager import get_config
 
+from tuner_config import DEV_TUNER_PORT
+
 # 工作目录
 WORK_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = str(PROJECT_ROOT_DIR)
 os.chdir(WORK_DIR)
 
-TUNER_URL = "http://localhost:5179"
+TUNER_URL = f"http://localhost:{DEV_TUNER_PORT}"
 TUNER_STARTUP_TIMEOUT = 60
 
 def _tuner_ready():
@@ -71,7 +73,7 @@ def _ensure_tuner():
                 encoding="utf-8", errors="ignore", timeout=5
             )
             for line in result.stdout.split("\n"):
-                if ":5179" in line and "LISTENING" in line:
+                if f":{DEV_TUNER_PORT}" in line and "LISTENING" in line:
                     pid = line.strip().split()[-1]
                     logger.info(f"Tuner: killing existing PID {pid}")
                     subprocess.run(["taskkill", "/f", "/pid", pid],
@@ -593,7 +595,7 @@ def generate_quant_baseline_payload():
         raise RuntimeError("Tuner failed to start; abort quant_payload generation")
 
     # ── 调用 tuner 运行 1yr + 3yr 回测 ─────────────────────
-    TUNER_RUN_URL = "http://localhost:5179/api/run"
+    TUNER_RUN_URL = f"http://localhost:{DEV_TUNER_PORT}/api/run"
 
     def run_backtest(label, start_date, end_date):
         """Run a single backtest via tuner API. Returns raw response dict or None."""

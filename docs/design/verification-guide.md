@@ -553,7 +553,7 @@ grep -E "(loaded.*ETFs|merged.*cache|intraday_cache)" tuner.log
 
 ```markdown
 需用户协助验证:
-1. 浏览器打开 http://localhost:5179 → F12 → Console → 检查无红色报错
+1. 浏览器打开 http://localhost:5181 → F12 → Console → 检查无红色报错
 2. 左侧栏"赌徒"标题应显示 "▶ 赌徒 (max AR, MDD≥-40)" → 点击展开 → 箭头变 "▼"
 3. 刷新数据按钮 → 进度条应均匀推进，不在 90% 卡住
 ```

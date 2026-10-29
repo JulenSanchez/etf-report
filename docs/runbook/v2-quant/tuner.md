@@ -2,7 +2,7 @@
 
 > **触发词**: `启动 Tuner` `Tuner 白屏` `Tuner 报错` `Tuner 端口占用`
 
-Tuner 是本地 Flask 调参和回测服务，默认地址 `http://localhost:5179`。
+Tuner 是本地 Flask 调参和回测服务，默认地址 `http://localhost:5181`（端口见 `config/tuner_config.json`）。
 
 ## 启动
 
