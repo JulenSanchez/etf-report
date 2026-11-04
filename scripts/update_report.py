@@ -622,7 +622,7 @@ def generate_quant_baseline_payload():
 
     # Determine date ranges from quant CSV data
     data_max_date = None
-    sample_csv = os.path.join(DATA_DIR, "quant", "512400_daily.csv")
+    sample_csv = os.path.join(DATA_DIR, "quant", "510300_daily.csv")
     if os.path.exists(sample_csv):
         try:
             import pandas as pd

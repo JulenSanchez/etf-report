@@ -7,7 +7,7 @@
 - 用户给出的方向：行业、主题、宽基、跨境、商品、风格等。
 - 当前 universe：`config/quant_universe.yaml`。
 - 筛选脚本：`scripts/scan_etf_universe.py`。
-- 成交额来源：历史日线（`fund_etf_hist_sina`）取「最近已结束交易日」的收盘成交额，日期由 `latest_allowed_close_date` 判定，与运行时刻解耦（盘中/盘后均可跑）。缓存按 `_meta.as_of` 日期自动刷新。
+- 成交额来源：历史日线（`fund_etf_hist_sina`）取「最近已结束交易日」的 **MA20 平均成交额**（替代单日值，抗抖动），日期由 `latest_allowed_close_date` 判定，与运行时刻解耦（盘中/盘后均可跑）。缓存按 `_meta.as_of` 日期自动刷新。
 
 ## 执行
 
@@ -65,3 +65,4 @@ python scripts/scan_etf_universe.py --debug
 | 2 | 不能并发取数 | `fund_etf_hist_sina` 内部用 `py_mini_racer`（V8），`MiniRacer()` 初始化非线程安全，并发会崩溃（`IsConfigurablePoolInitialized`） | 顺序取数，不用线程池 |
 | 3 | 上市日期占位值 | 缓存中大量 ETF 标注为 1 月 1 日 / 6 月 1 日——均为缺失数据的占位符 | 上市日期不能用于计算，只用于展示。数据行数以缓存 CSV 或 API 实际返回为准 |
 | 4 | 缓存值聚簇检查 | 某个数值（如 1024）出现频率异常高 | 每次运行后抽查缓存分布。若某值占比 >20%，排查 API 响应上限 |
+| 5 | 单日成交额抖动 | 某 ETF 单日缩量跌破 3000 万门槛被误杀（如 159329 沙特单日 2624 万 vs MA20 5010 万）；替换建议随单日成交额反复横跳（513630→513530） | 成交额取 MA20 均值；替换需 `log_score` 差 >0.12 且 MA20 成交额 ≥ 旧 × 1.25 |

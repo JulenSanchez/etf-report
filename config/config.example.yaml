@@ -19,19 +19,7 @@
 #                           选型原则：不能用 ETF 自己跟踪的指数（走势重合无意义），
 #                           而同市场宽基锚（A 股用沪深300，港股用恒生代理）
 etfs:
-  # ETF-1: 有色金属ETF
-  - code: "512400"
-    name: "有色金属ETF"
-    market: "sh"              # 市场代码：sh=上海 sz=深圳
-    tracking_index:
-      name: "中证申万有色金属指数"
-      source: "天天基金 fundf10.eastmoney.com"
-    performance_benchmark: "中证申万有色金属指数"
-    benchmark:
-      code: "sh510300"        # 基准指数代码
-      name: "沪深300"
-  
-  # ETF-2: 港股创新药ETF
+  # ETF-1: 港股创新药ETF
   - code: "513120"
     name: "港股创新药ETF"
     market: "sh"
@@ -39,7 +27,7 @@ etfs:
       code: "sh510300"
       name: "沪深300"
   
-  # ETF-3: 证券保险ETF
+  # ETF-2: 证券保险ETF
   - code: "512070"
     name: "证券保险ETF"
     market: "sh"
@@ -47,7 +35,7 @@ etfs:
       code: "sh510300"
       name: "沪深300"
   
-  # ETF-4: 通信设备ETF
+  # ETF-3: 通信设备ETF
   - code: "515880"
     name: "通信设备ETF"
     market: "sh"
@@ -55,7 +43,7 @@ etfs:
       code: "sh510300"
       name: "沪深300"
   
-  # ETF-5: 电池ETF广发
+  # ETF-4: 电池ETF广发
   - code: "159755"
     name: "电池ETF广发"
     market: "sz"
@@ -63,7 +51,7 @@ etfs:
       code: "sh510300"
       name: "沪深300"
   
-  # ETF-6: 养殖ETF
+  # ETF-5: 养殖ETF
   - code: "159865"
     name: "养殖ETF"
     market: "sz"
@@ -230,7 +218,6 @@ system_check:
   
   # ETF代码列表（用于验证所有ETF数据都已正确更新）
   etf_codes:
-    - "512400"
     - "513120"
     - "512070"
     - "515880"

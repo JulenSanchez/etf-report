@@ -1,12 +1,6 @@
 account:
   financing_rate_annual: 0.06
 universe:
-- code: '512400'
-  name: 有色金属ETF
-  market: sh
-  sector: 资源周期
-  marginable: true
-  group1: 周期博弈
 - code: '513120'
   name: 创新药ETF
   market: sh
@@ -39,6 +33,12 @@ universe:
   group1: 成长进攻
 - code: '159206'
   name: 卫星ETF
+  market: sz
+  sector: 科技
+  marginable: true
+  group1: 成长进攻
+- code: '159852'
+  name: 软件ETF
   market: sz
   sector: 科技
   marginable: true
@@ -98,18 +98,36 @@ universe:
   sector: 制造
   marginable: true
   group1: 成长进攻
-- code: '560710'
-  name: 船舶ETF
-  market: sh
-  sector: 制造
-  marginable: true
-  group1: 成长进攻
 - code: '560280'
   name: 工程机械ETF
   market: sh
   sector: 制造
   marginable: true
   group1: 成长进攻
+- code: '159981'
+  name: 能源化工期货ETF
+  market: sz
+  sector: 另类
+  marginable: true
+  group1: 跨市场另类
+- code: '159980'
+  name: 有色期货ETF
+  market: sz
+  sector: 另类
+  marginable: false
+  group1: 跨市场另类
+- code: '516150'
+  name: 稀土ETF
+  market: sh
+  sector: 资源周期
+  marginable: true
+  group1: 周期博弈
+- code: '517520'
+  name: 黄金股ETF
+  market: sh
+  sector: 资源周期
+  marginable: true
+  group1: 周期博弈
 - code: '159870'
   name: 化工ETF
   market: sz
@@ -164,8 +182,8 @@ universe:
   sector: 传统
   marginable: true
   group1: 防御避险
-- code: '513690'
-  name: 港股红利ETF
+- code: '513630'
+  name: 港股低波红利ETF
   market: sh
   sector: 传统
   marginable: true
@@ -270,7 +288,7 @@ universe:
   marginable: true
   group1: 跨市场另类
 - code: '159985'
-  name: 豆粕ETF
+  name: 豆粕期货ETF
   market: sz
   sector: 另类
   marginable: false
@@ -305,18 +323,6 @@ universe:
   sector: 资源周期
   marginable: true
   group1: 周期博弈
-- code: '159996'
-  name: 家电ETF
-  market: sz
-  sector: 消费
-  marginable: true
-  group1: 防御避险
-- code: '159745'
-  name: 建材ETF
-  market: sz
-  sector: 传统
-  marginable: true
-  group1: 防御避险
 - code: '159667'
   name: 工业母机ETF
   market: sz

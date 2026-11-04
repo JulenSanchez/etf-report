@@ -64,6 +64,7 @@ print('Done.')
 | 数据日期不新 | `python scripts/quant_data_fetcher.py --start <today> --end <today>` |
 | QDII 停牌/缺口 | 先看 `config/quant_universe.yaml` 的 qdii/active 状态，再查数据源返回 |
 | 接口 403/timeout | 降低频率、等待冷却，不要循环重试 |
+| HTTP 501 + `waf.tencent.com` | 腾讯频率风控（非接口废弃），间隔几分钟后自动恢复；降低请求频率，避免扫描流（1899 次请求）后立即批量拉数据 |
 
 ## 最小验证
 

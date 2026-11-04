@@ -131,9 +131,10 @@
 
 ### Phase 6: 预推送检查 `[AI 自主]`
 
-推送前再做一次远端视角核对：
+推送前再做一次远端视角核对。**注意**：每天 14:48 定时任务会持续向 `origin/main` 推数据提交，本地常落后，需先合并远端再推。
 
 - [ ] 运行 `git fetch origin`
+- [ ] 若本地落后远端（`git rev-list --left-right --count HEAD...origin/main` 右侧 > 0）：先 `git rebase origin/main`（本地改动与数据提交改的文件不相交时最干净；否则 `git merge origin/main`）
 - [ ] 运行 `git log origin/main..HEAD --oneline`
 - [ ] 运行 `git diff origin/main HEAD`
 - [ ] 确认没有混入无关提交、调试提交、敏感文件异常
@@ -177,7 +178,7 @@
 2. **验证**：`pytest tests -q` 全量（硬门禁，不得 -k 过滤）。失败先修复。纯 `docs/` / `README.md` / 注释改动（不碰 `scripts/` `src/` `tests/` `config/`）可跳过。
 3. **安全审查**：`git diff` 排查绝对路径 / secrets / 调试残留；`git ls-files config/secrets.yaml` 应为空。
 4. **版本治理**：`plans/Board.md` 当前版本 patch+1（如 v3.16.0 → v3.16.1）。若修复 BUG，Board bugs 区该条 fixed → 归档 Archive.md（修复版本 = patch 号），并更新 Bug 计数器。
-5. **提交 + 推送**：一个 commit，消息 `v3.16.1: <一句话摘要>`。推送前展示待推 commit 摘要并等用户确认。
+5. **提交 + 推送**：一个 commit，消息 `v3.16.1: <一句话摘要>`。推送前先 `git fetch` + `git rebase origin/main`（每日数据提交可能已推进远端），再展示待推 commit 摘要并等用户确认。
 
 ### 补丁不做的事
 

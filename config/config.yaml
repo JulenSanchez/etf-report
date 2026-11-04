@@ -31,17 +31,6 @@
 #   performance_benchmark = ETF 合同评估用谁（注释文档，暂不展示）
 #   benchmark             = 页面 K 线对比 + fund-info "业绩基准" 字段展示用谁（宽基锚）
 etfs:
-  - code: "512400"
-    name: "有色金属ETF"
-    market: "sh"
-    tracking_index:
-      name: "中证申万有色金属指数"
-      source: "天天基金 fundf10.eastmoney.com 2026-04-23"
-    performance_benchmark: "中证申万有色金属指数"
-    benchmark:
-      code: "sh510300"
-      name: "沪深300"
-
   - code: "513120"
     name: "港股创新药ETF"
     market: "sh"
@@ -252,7 +241,6 @@ system_check:
   
   # ETF代码（用于完整性检查）
   etf_codes:
-    - "512400"
     - "513120"
     - "512070"
     - "515880"

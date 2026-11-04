@@ -81,6 +81,7 @@ else:
 
 if fetch_needed:
     cache = {'_meta': {'as_of': as_of, 'fetched_at': now.isoformat()}}
+    AMOUNT_MA_DAYS = 20  # 成交额取 MA20 均值（替代单日值，抗抖动；新上市不足 20d 自然被压低）
 
     def _fetch_one(code):
         market = 'sh' if code.startswith(('51','56','58','52','50')) else 'sz'
@@ -92,8 +93,9 @@ if fetch_needed:
             h = h[h['date'] <= as_of_date]
             if h.empty:
                 return {'amount': 0, 'close': 0.0, 'history_days': n_rows}
-            last = h.iloc[-1]
-            return {'amount': int(last['amount']), 'close': float(last['close']), 'history_days': n_rows}
+            # MA20 平均成交额：抗单日放量/缩量抖动
+            recent = h.tail(AMOUNT_MA_DAYS)
+            return {'amount': int(recent['amount'].mean()), 'close': float(h.iloc[-1]['close']), 'history_days': n_rows}
         except Exception:
             return {'amount': 0, 'close': 0.0, 'history_days': 0}
 
@@ -289,6 +291,13 @@ NAME_GROUPS = [
 
 def classify(row):
     name = str(row['name']); code = str(row['code'])
+    # 商品/期货 ETF（指数型-其他）无股票成分股，前缀"商品-"以区别于同名股票组（如"化工"），豁免成分股 PK
+    if str(row['type']) == '指数型-其他':
+        for grp, kws in NAME_GROUPS:
+            for kw in kws:
+                if re.search(kw, name):
+                    return '商品-' + grp
+        return '商品'
     for grp, kws in NAME_GROUPS:
         for kw in kws:
             if re.search(kw, name):
@@ -352,17 +361,46 @@ for cg, grp in df_filtered.groupby('cg'):
     top1_per_cg.append(grp.iloc[0].to_dict())
 top1_per_cg.sort(key=lambda x: -x['log_score'])
 
+# Exemption rules (defined before the holdings fetch so it can use them)
+EXEMPT_PREFIXES = ('QD-', '商品-')  # QDII + 商品/期货 ETF 豁免重叠淘汰（HK ETFs participate）
+
+# Fetch holdings for A-share/HK ETFs BEFORE overlap elimination. An A-share/HK
+# ETF with no holdings (fetch failure) must be filtered out, not silently
+# treated as "no overlap".
+_missing = [s['code'] for s in top1_per_cg
+            if not holdings_data.get(s['code'])
+            and not s['cg'].startswith(EXEMPT_PREFIXES)]
+if _missing:
+    print(f"  Fetching holdings for {len(_missing)} A-share/HK ETFs...")
+    from fetch_etf_metadata import fetch_one
+    _tmp_meta = {}
+    for _code in _missing:
+        try:
+            _etf = {'code': _code, 'name': '', 'market': exch(_code), 'sector': ''}
+            _result = fetch_one(_etf, _tmp_meta)
+            holdings_data[_code] = _result.get('top10', [])
+        except Exception as e:
+            print(f'    {_code} FAIL: {e}')
+            holdings_data[_code] = []
+    json.dump(holdings_data, open(_HCACHE, 'w', encoding='utf-8'), ensure_ascii=False, indent=2)
+
 # ============================================================
 # Step 4: Greedy overlap reduction
 # Iteratively remove the ETF that shares the most duplicate stocks,
 # until no stock appears in >= 7 selected ETFs.
 # QDII/HK/commodity groups are exempt from elimination.
-EXEMPT_PREFIXES = ('QD-',)  # Only QDII exempt from overlap elimination (HK ETFs participate)
-EXEMPT_CGS = {'黄金', '豆粕'}  # 商品 ETF，无 A 股成分股。油气已移除（含 A 股 ETF）
 
 # Separate exempt (always kept) from candidates (may be eliminated)
-exempt = [s for s in top1_per_cg if s['cg'].startswith(EXEMPT_PREFIXES) or s['cg'] in EXEMPT_CGS]
+exempt = [s for s in top1_per_cg if s['cg'].startswith(EXEMPT_PREFIXES)]
 candidates = [s for s in top1_per_cg if s not in exempt]
+
+# Filter out A-share/HK ETFs whose holdings are missing (fetch failure) — they
+# must not enter the final selection.
+_missing_holdings = [s for s in candidates if not hs(s['code'])]
+if _missing_holdings:
+    print(f"  Excluded {len(_missing_holdings)} ETFs (missing holdings): "
+          f"{', '.join(s['code'] for s in _missing_holdings)}")
+    candidates = [s for s in candidates if hs(s['code'])]
 
 # Pre-load all A-share holdings
 _cand_holdings = {}
@@ -439,7 +477,7 @@ missing = pool_codes - sel_codes
 # Count by category
 n_qdii = sum(1 for s in kept if s['cg'].startswith('QD-'))
 n_hk = sum(1 for s in kept if s['cg'].startswith('HK-'))
-n_cmdty = sum(1 for s in kept if s['cg'] in EXEMPT_CGS)
+n_cmdty = sum(1 for s in kept if s['cg'].startswith('商品-'))
 n_a = len(kept) - n_qdii - n_hk - n_cmdty
 
 print(f"  Step 3: {len(top1_per_cg)} ETFs (top-1 per coarse group)")
@@ -569,24 +607,6 @@ if args.debug:
 
     # Sheet 4: Top-1 ETFs with Chinese holdings + Jaccard PK pairs
     ws4 = wb.create_sheet("4-成分股PK")
-    # Pre-fetch missing A-share holdings before xlsx generation
-    _missing = [s['code'] for s in top1_per_cg
-                if not holdings_data.get(s['code'])
-                and not (s['cg'].startswith('QD-') or s['cg'] in EXEMPT_CGS)]
-    if _missing:
-        print(f"  Fetching holdings for {len(_missing)} new A-share ETFs...")
-        # Use a temp meta dict just for the fetch (not pool's etf_metadata.json)
-        from fetch_etf_metadata import fetch_one
-        _tmp_meta = {}
-        for _code in _missing:
-            try:
-                _etf = {'code': _code, 'name': '', 'market': exch(_code), 'sector': ''}
-                _result = fetch_one(_etf, _tmp_meta)
-                holdings_data[_code] = _result.get('top10', [])
-            except Exception as e:
-                print(f'    {_code} FAIL: {e}')
-        json.dump(holdings_data, open(_HCACHE, 'w', encoding='utf-8'), ensure_ascii=False, indent=2)
-        print(f'    Saved holdings for {len(_missing)} new ETFs')
 
     def get_holding_names(etf_code):
         top10 = holdings_data.get(etf_code, [])
@@ -595,14 +615,13 @@ if args.debug:
     pk_pairs = []
     # Only exclude QDII and commodities — HK ETFs participate (their HK-stock
     # holdings can overlap with each other, even if they don't overlap with A-shares).
-    PK_EXEMPT_CGS = {'黄金', '豆粕'}
     for i, s1 in enumerate(top1_per_cg):
         cg1 = s1['cg']
-        if cg1.startswith('QD-') or cg1 in PK_EXEMPT_CGS: continue
+        if cg1.startswith(('QD-', '商品-')): continue
         for j, s2 in enumerate(top1_per_cg):
             if j <= i: continue
             cg2 = s2['cg']
-            if cg2.startswith('QD-') or cg2 in PK_EXEMPT_CGS: continue
+            if cg2.startswith(('QD-', '商品-')): continue
             if exch(s1['code']) != exch(s2['code']): continue
             sa, sb = hs(s1['code']), hs(s2['code'])
             if not sa or not sb: continue
@@ -613,7 +632,7 @@ if args.debug:
 
     # Sort: A-share first, then HK, then others (QDII/commodity)
     def _cat_order(cg):
-        if cg.startswith('QD-') or cg in EXEMPT_CGS: return 2
+        if cg.startswith(EXEMPT_PREFIXES): return 2
         if cg.startswith('HK-'): return 1
         return 0
     top1_sorted = sorted(top1_per_cg, key=lambda s: (_cat_order(s['cg']), s['cg'], -s['amount_yi']))
@@ -748,7 +767,8 @@ if args.debug:
             _group_winner[_cg] = (_s['code'], _s.get('log_score', 0))
 
     # Score margin threshold: if challenger beats pool ETF by < MARGIN, don't recommend
-    SCORE_MARGIN = 0.05
+    SCORE_MARGIN = 0.12  # log10 空间，0.12 ≈ 30% 差距，替换需显著优于
+    REPLACE_AMT_RATIO = 1.25  # 替换还需新 ETF MA20 成交额 ≥ 旧 ETF × 1.25
 
     # Build pool coarse-group set and holdings overlap lookup for rating
     _pool_cgs = set()
@@ -843,7 +863,11 @@ if args.debug:
                 _diff = _all_scores.get(code, 0) - _all_scores.get(_replaces, 0)
                 if _diff < SCORE_MARGIN:
                     return '中立', f'差距微弱 Δ={_diff:.3f}'
-                reasons.append(f'优于池内{_replaces} Δ={_diff:.3f}')
+                _old_amt = _get(_replaces, 'amount_yi', 0)
+                _amt_ratio = (amt / _old_amt) if _old_amt > 0 else 0.0
+                if _amt_ratio < REPLACE_AMT_RATIO:
+                    return '中立', f'MA20成交额未显著高于{_replaces}（{_amt_ratio:.2f}×<{REPLACE_AMT_RATIO}×）'
+                reasons.append(f'优于池内{_replaces} Δ={_diff:.3f}, MA20成交额{_amt_ratio:.1f}×')
             return _rating(score, reasons)
         return '—', '已覆盖'
 

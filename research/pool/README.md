@@ -8,6 +8,7 @@
 |---|---|
 | ETF 候选筛选 | `../../docs/runbook/v2-quant/screening.md` |
 | ETF 池变更 | `../../docs/runbook/v2-quant/pool-change.md` |
+| ETF 剔除备忘 | 用户说「记录剔除 XXX」/「为什么删了 XXX」时生成 → `removals/`（**默认不自动生成**）|
 | 研究结论投产 | 更新 `../../research/params/README.md` 时间线 + 对应 REQ 状态 |
 
 ## 字段参考
@@ -29,6 +30,8 @@
 | 记录 | 内容 | 状态 |
 |---|---|---|
 | `rounds/2026-06-16.md` | R15：+9/-4，油气→石油，池子 49→54 | 历史证据，当前池子仍以 config 为准 |
+| `rounds/2026-10-31.md` | R16：-4/+2，替换 1，池子 54→52 | 历史证据，当前池子仍以 config 为准 |
+| `removals/512400_2026-10-31.md` | 512400 有色金属ETF 剔除备忘（宽基有色被窄基瓜分，用户确认接受）| 2026-10-31 |
 
 ## Open Questions
 

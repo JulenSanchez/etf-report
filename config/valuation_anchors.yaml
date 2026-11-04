@@ -36,41 +36,6 @@
 anchors:
 
   # ============================================================
-  # 512400 有色金属ETF南方
-  # ============================================================
-  # 跟踪指数：中证申万有色金属指数 (000819)
-  # 主指标：PB（周期股专用，PE 在周期顶部/底部会严重失真）
-  #
-  # 行业特征：
-  #   - 强周期，跟随铜/锂/铝/稀土/黄金价格波动
-  #   - 2015-2016 熊市底 → 2021 锂铜大牛市顶 → 2022-2023 回落 → 2024-2026 黄金+铜新高
-  #   - 净资产相对稳定，PB 是比 PE 更可信的估值尺度
-  # ------------------------------------------------------------
-  "512400":
-    name: "有色金属ETF南方"
-    tracking_index: "中证申万有色金属指数"
-    tracking_index_code: "000819"
-    tushare_ts_code: "000819.SH"
-    data_source: "csindex"
-    primary_metric: pb
-    anchors:
-      extreme_low:  { value: 1.30, percentile: 5 }
-      low:          { value: 1.90, percentile: 25 }
-      median:       { value: 2.60, percentile: 50 }
-      high:         { value: 3.60, percentile: 75 }
-      extreme_high: { value: 5.20, percentile: 95 }
-    reference_events:
-      - { date: "2015-08", pb: 5.00, event: "2015 年股灾前高，有色疯炒" }
-      - { date: "2018-10", pb: 1.35, event: "中美贸易战 + 经济下行，周期底" }
-      - { date: "2020-03", pb: 1.45, event: "疫情冲击下的极低点" }
-      - { date: "2021-09", pb: 5.20, event: "碳中和 + 锂铜牛市顶" }
-      - { date: "2024-02", pb: 2.00, event: "国九条前调整低点" }
-      - { date: "2025-09", pb: 3.30, event: "铜金牛市中期" }
-    window_note: "2015-2026 约 10 年申万一级有色金属指数 PB 观测"
-    review_history:
-      - { date: "2026-04-23", reviewer: "AI-initial", change: "立项初版" }
-
-  # ============================================================
   # 513120 港股创新药ETF广发
   # ============================================================
   # 跟踪指数：中证香港创新药港币指数
@@ -537,30 +502,6 @@ anchors:
       extreme_high: { value: 23.09, percentile: 95 }
     reference_events: []
     window_note: "csindex 全量历史 2509 行有效 PE-TTM (2012-2026), 锚点基于纯历史百分位计算"
-    review_history:
-      - { date: "2026-04-28", reviewer: "AI-REQ-178", change: "Phase 1 批次新增, 全量历史百分位锚点" }
-
-  # ============================================================
-  # 560710 船舶ETF招商
-  # ============================================================
-  # 跟踪指数: 中证船舶指数 (931463)
-  # 主指标: PE-TTM (1462 行有效数据, 2015~2026)
-  # ------------------------------------------------------------
-  "560710":
-    name: "船舶ETF招商"
-    tracking_index: "中证船舶指数"
-    tracking_index_code: "931463"
-    tushare_ts_code: ""
-    data_source: "csindex"
-    primary_metric: pe_ttm
-    anchors:
-      extreme_low:  { value: 10.58, percentile: 5 }
-      low:          { value: 11.62, percentile: 25 }
-      median:       { value: 12.18, percentile: 50 }
-      high:         { value: 13.60, percentile: 75 }
-      extreme_high: { value: 16.11, percentile: 95 }
-    reference_events: []
-    window_note: "csindex 全量历史 1462 行有效 PE-TTM (2015-2026), 锚点基于纯历史百分位计算"
     review_history:
       - { date: "2026-04-28", reviewer: "AI-REQ-178", change: "Phase 1 批次新增, 全量历史百分位锚点" }
 

@@ -145,7 +145,7 @@ class TestValuationEngine:
         engine = engine_mod.ValuationEngine()
         etfs = engine.list_etfs()
         # 6 支核心 ETF 必须存在（锚点表可能包含更多扩展 ETF）
-        core_etfs = {"512400", "513120", "512070", "515880", "159755", "159865"}
+        core_etfs = {"513120", "512070", "515880", "159755", "159865"}
         assert core_etfs.issubset(set(etfs)), f"Missing core ETFs: {core_etfs - set(etfs)}, got: {set(etfs)}"
 
     def test_evaluate_returns_none_for_unknown_etf(self, load_module):
@@ -183,9 +183,9 @@ class TestValuationEngine:
         """锚点中位值 → 必定返回 50 分位（使用空 history_dir 保证走纯锚点）"""
         engine_mod = load_module("valuation_engine")
         engine = engine_mod.ValuationEngine(history_dir=tmp_path)
-        cfg = engine.get_etf_config("512400")
+        cfg = engine.get_etf_config("512070")
         median_pb = cfg["anchors"]["median"]["value"]
-        result = engine.evaluate("512400", median_pb)
+        result = engine.evaluate("512070", median_pb)
         assert result["percentile"] == pytest.approx(50.0)
         assert result["verdict"]["label"] == "合理"
 
@@ -193,17 +193,17 @@ class TestValuationEngine:
         engine_mod = load_module("valuation_engine")
         engine = engine_mod.ValuationEngine(history_dir=tmp_path)
         current = {
-            "512400": None,
+            "512070": None,
             "515880": 80.0,
             "159865": 3.6,  # median
         }
         results = engine.evaluate_all(current)
         # 应该覆盖全部锚点 ETF（未提供 current 的给 no-data）
-        core_etfs = {"512400", "513120", "512070", "515880", "159755", "159865"}
+        core_etfs = {"513120", "512070", "515880", "159755", "159865"}
         assert core_etfs.issubset(set(results.keys())), f"Missing core ETFs in results: {core_etfs - set(results.keys())}"
         assert results["515880"]["verdict"]["label"] == "偏高"
         assert results["159865"]["verdict"]["label"] == "合理"
-        assert results["512400"]["confidence"] == "no-data"
+        assert results["512070"]["confidence"] == "no-data"
 
 
 # ============================================================

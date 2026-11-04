@@ -36,20 +36,6 @@ fetcher:
     Referer: "https://finance.sina.com.cn/"
 
 etfs:
-  "512400":
-    name: "有色金属ETF"
-    top_stocks:
-      - symbol: "sh601899"
-        stock_name: "紫金矿业"
-      - symbol: "sh603993"
-        stock_name: "洛阳钼业"
-      - symbol: "sh600547"
-        stock_name: "山东黄金"
-    # 标题必须含至少一个 require 词才留，否则丢弃
-    require_keywords: ["有色", "铜", "金", "锂", "铝", "钴", "稀土", "矿业", "紫金", "洛阳钼业", "山东黄金", "金属"]
-    # 命中任一即丢弃（纯噪音）
-    exclude_keywords: ["车展", "房地产", "彩票", "娱乐"]
-
   "513120":
     name: "港股创新药ETF"
     # 换更活跃的港股标的（2026-04 实测新浪/富途新闻活跃度 + BD 相关）：

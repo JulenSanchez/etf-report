@@ -38,8 +38,8 @@ PROJECT_ROOT = os.path.dirname(WORK_DIR)  # 项目根目录
 HTML_FILE = os.path.join(PROJECT_ROOT, "index.html")
 
 
-# 6 支 ETF 代码（优先从配置读取，便于后续替换 ETF 时只维护一份名单）
-DEFAULT_ETF_CODES = ["512400", "513120", "512070", "515880", "159755", "159865"]
+# 5 支 ETF 代码（优先从配置读取，便于后续替换 ETF 时只维护一份名单）
+DEFAULT_ETF_CODES = ["513120", "512070", "515880", "159755", "159865"]
 
 
 

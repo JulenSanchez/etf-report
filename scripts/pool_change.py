@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Single-ETF pool change tool. Enforces docs/ops/pool-change.md SOP.
+"""Single-ETF pool change tool. Enforces docs/runbook/v2-quant/pool-change.md SOP.
 Usage:
   python scripts/pool_change.py --remove CODE
   python scripts/pool_change.py --add CODE --name "短名" --sector "扇区" --market sh|sz [--qdii]
@@ -13,6 +13,7 @@ from datetime import datetime
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 CONFIG_PATH = PROJECT_ROOT / "config" / "quant_universe.yaml"
+DATA_DIR = PROJECT_ROOT / "data" / "quant"
 TRACKING_DIR = PROJECT_ROOT / "research" / "pool" / "rounds"
 BACKTEST_CMD = [sys.executable, str(PROJECT_ROOT / "scripts" / "quant_backtest.py"),
                 "--start", "2020-05-22", "--end", "2026-06-12"]
@@ -66,6 +67,18 @@ def log(msg):
     print(f"[{datetime.now():%H:%M:%S}] {msg}")
 
 
+def cleanup_etf_data(code):
+    """Delete orphaned daily/weekly CSVs after an ETF leaves the pool."""
+    removed = []
+    for suffix in ("daily", "weekly"):
+        p = DATA_DIR / f"{code}_{suffix}.csv"
+        if p.exists():
+            p.unlink()
+            removed.append(p.name)
+    if removed:
+        log(f"  Cleaned orphan data: {', '.join(removed)}")
+
+
 # ═══════════════════════════════════════════════════
 # REMOVE
 # ═══════════════════════════════════════════════════
@@ -85,6 +98,7 @@ if args.remove:
     log("Step 2: updating config...")
     cfg["universe"] = [e for e in cfg["universe"] if e["code"] != code]
     write_config(cfg)
+    cleanup_etf_data(code)
 
     log("Step 3: verification backtest...")
     tr1, mdd1, sh1 = run_backtest()
@@ -181,6 +195,7 @@ elif args.replace:
         entry["qdii"] = True
     cfg["universe"].append(entry)
     write_config(cfg)
+    cleanup_etf_data(old)
 
     log("Step 4: verification backtest...")
     tr1, mdd1, sh1 = run_backtest()
